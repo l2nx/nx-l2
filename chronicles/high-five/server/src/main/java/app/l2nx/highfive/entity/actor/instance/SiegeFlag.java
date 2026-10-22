@@ -39,7 +39,8 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -186,7 +187,7 @@ public class SiegeFlag extends Npc {
             // Send warning to owners of headquarters that theirs base is under attack.
             clan.broadcastToOnlineMembers(new SystemMessage(SystemMessageId.YOUR_BASE_IS_BEING_ATTACKED));
             setCanTalk(false);
-            ThreadPool.schedule(new ScheduleTalkTask(), 20000);
+            WorldPartition.loop().schedule(new ScheduleTalkTask(), 20000, TimeUnit.MILLISECONDS);
         }
     }
 

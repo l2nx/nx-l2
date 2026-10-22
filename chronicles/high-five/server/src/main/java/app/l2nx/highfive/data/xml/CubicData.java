@@ -91,6 +91,16 @@ public class CubicData implements IXmlReader {
     }
 
     private void parseTemplate(Node cubicNode, CubicTemplate template) {
+        // The delay is the period of the cubic's action task, which the world loop rejects unless positive.
+        if (template.getDelay() <= 0) {
+            log.warn(
+                    "Skipping cubic template with a non-positive delay. cubicId: {} level: {} delay: {}",
+                    template.getId(),
+                    template.getLevel(),
+                    template.getDelay());
+            return;
+        }
+
         forEach(cubicNode, IXmlReader::isNode, innerNode -> {
             switch (innerNode.getNodeName()) {
                 case "conditions": {

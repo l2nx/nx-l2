@@ -13,7 +13,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /** Counts the sessions whose close is not yet handled, so the shutdown can wait for them. */
 public final class SessionFactory {
     private final Session.Limits limits;
-    private final DrainScheduler scheduler;
+    private final DrainScheduler connectedScheduler;
+    private final DrainScheduler authedScheduler;
     private final CommandDispatcher dispatcher;
     private final SessionMetrics metrics;
     private final ReentrantLock openLock = new ReentrantLock();
@@ -21,16 +22,28 @@ public final class SessionFactory {
     private int open;
 
     public SessionFactory(
-            Session.Limits limits, DrainScheduler scheduler, CommandDispatcher dispatcher, SessionMetrics metrics) {
+            Session.Limits limits,
+            DrainScheduler connectedScheduler,
+            DrainScheduler authedScheduler,
+            CommandDispatcher dispatcher,
+            SessionMetrics metrics) {
         this.limits = limits;
-        this.scheduler = scheduler;
+        this.connectedScheduler = connectedScheduler;
+        this.authedScheduler = authedScheduler;
         this.dispatcher = dispatcher;
         this.metrics = metrics;
     }
 
     public Session create(SessionTransport transport) {
         final Session session = new Session(
-                limits, scheduler, dispatcher, metrics, transport, TimeMeter.SYSTEM_NANOTIME, this::finished);
+                limits,
+                connectedScheduler,
+                authedScheduler,
+                dispatcher,
+                metrics,
+                transport,
+                TimeMeter.SYSTEM_NANOTIME,
+                this::finished);
         // Counted after the constructor, which cannot close the session, so a failed construction leaves no count.
         openLock.lock();
         try {

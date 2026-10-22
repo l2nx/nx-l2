@@ -22,23 +22,36 @@ shutdown order: [spec 002](../002-spring-boot-runtime.md).
 Partition and service loops own their threads ([execution.md §7](execution.md#7-threads)). Spring mechanisms that run
 code on other threads are not used in partition code:
 
-| Mechanism                            | In partition and service code | Elsewhere                                                       |
-| ------------------------------------ | ----------------------------- | --------------------------------------------------------------- |
-| `@Scheduled`, `TaskScheduler`        | no: use partition deadlines   | maintenance jobs; anything touching game state goes to an inbox |
-| `@Async`                             | no                            | no need                                                         |
-| `@EventListener`, application events | no: use the game event system | lifecycle only                                                  |
-| `@Transactional`                     | no                            | persistence services on the persistence executor                |
+| Mechanism                            | In partition and service code | Elsewhere                                                                                                                                                           |
+| ------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@Scheduled`, `TaskScheduler`        | no: use partition deadlines   | maintenance jobs and background tasks ([execution.md §7.1](execution.md#71-work-routed-into-the-world-partition-e6)); anything touching game state goes to an inbox |
+| `@Async`                             | no                            | no need                                                                                                                                                             |
+| `@EventListener`, application events | no: use the game event system | lifecycle only                                                                                                                                                      |
+| `@Transactional`                     | no                            | persistence services on the persistence executor                                                                                                                    |
 
 ## 3. Lifecycle and configuration
 
-- **The partition runtime is a `SmartLifecycle`** with its own phase: it starts after the data registries are
-  loaded and before the game port opens; on stop it stops accepting input, drains the inboxes, saves players
-  ([persistence.md §4](persistence.md#4-write-behind)) and stops the loops. This is the "engine stop" step of the
-  spec 002 stop order; the stop is bounded by `spring.lifecycle.timeout-per-shutdown-phase`
-  ([spec 002 §3](../002-spring-boot-runtime.md#stop)).
-  - TODO: today the partition runtime starts before the data registries load, since `GameServer.start()` both
-    loads them and opens the game port in one phase; the split into a loading step and a port step comes with E6
-    part 2.
+- **Start and stop are `SmartLifecycle` phases** after Tomcat's, in this order on start and the reverse on stop.
+  The management endpoints answer while the world loads, with readiness `OUT_OF_SERVICE`; liveness stays `BROKEN`
+  until the context has started (Boot publishes `CORRECT` only then), so a container healthcheck on liveness needs
+  a start period above the load time.
+  1. **Network** (`GameServer`, below the partition runtime): starts nothing itself, the Netty IO threads are a
+     bean of their own. On stop, last: the farewell to the clients and the close of their connections, a wait for
+     their sessions to close, then the accounts still online are reported as left and the GS-link shuts down.
+  2. **Partition runtime** (`PartitionRuntime.PHASE`, `DEFAULT_PHASE - 512`): the loop threads start, the world
+     loop is idle. On stop the loops drain and stop, bounded by `spring.lifecycle.timeout-per-shutdown-phase`.
+  3. **World** (above the partition runtime): offers static data and world loading to the world loop as its first
+     message and waits for it ([execution.md §7.1](execution.md#71-work-routed-into-the-world-partition-e6)). A
+     failure makes `start()` throw: Boot closes the context and the process exits with code 1 before any port
+     opens ([spec 002 §3](../002-spring-boot-runtime.md#start)). On stop it offers the shutdown work to the world
+     loop and waits for it to the end, as the synchronous save of spec 002 does: players logged out and saved
+     ([persistence.md §4](persistence.md#4-write-behind)) and their accounts reported to the login server, the
+     global saves (Seven Signs, olympiad, heroes, clans, manor, scripts).
+  4. **Game port** (`DEFAULT_PHASE`): binds the port after the world is loaded, so no input reaches a world without
+     its data, then starts the GS-link, so the login server lists the server only once it can take players. Boot sets readiness to `ACCEPTING_TRAFFIC` on
+     `ApplicationReadyEvent`; no own availability event. On stop, first: the server channel closes and client reads
+     stop, so nobody logs in or acts during the save, while the IO threads and the GS-link stay up for it.
+
 - **Engine settings are `@ConfigurationProperties`:** pass budget and minimum, cadences, packets per pass, byte
   budgets, handle quarantine, write-behind interval, loop thread count. They move together with the game settings
   ([#17](https://github.com/l2nx/nx-l2/issues/17)).
@@ -77,8 +90,10 @@ app.l2nx.highfive
   network     pipeline, protocol registry, protocol/<id>/ adapters (packets), gslink/; no game logic
   session     shared session kernel: the command handler base, legacy notices
   login       the game server's side of the login server: online accounts, server listing, LoginPort
+  partition   the world partition: world load and shutdown hook, the static bridges of legacy code to the world loop
+              and to background tasks
   combat  skill  effect  movement  ai  item  trade  mail  auction
-  clan  party  siege  olympiad  quest  chat  instance  ...
+  clan  party  siege  olympiad  quest  chat  reflection  ...
 ```
 
 - **A slice owns** its components and systems, its static data loader and registry, its commands and their

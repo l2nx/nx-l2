@@ -13,8 +13,10 @@ import app.l2nx.engine.core.loop.periodic.PeriodicSystem;
 import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerWheel;
+import app.l2nx.network.channel.RateLimitedLog;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.invoke.VarHandle;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,14 +24,18 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Single-writer event loop of a partition or a global service. {@link #offer} may be called from any thread;
- * everything else runs on the owner thread, the loop thread the loop is pinned to.
+ * Single-writer event loop of a partition or a global service. {@link #offer}, {@link #offerStartup}, {@link #schedule},
+ * {@link #scheduleAtFixedRate}, {@link #execute}, {@link #inLoop} and {@link #checkOwner} may be called from any
+ * thread; everything else runs on the owner thread, the loop thread the loop is pinned to.
  */
 @Slf4j
 public class Loop {
@@ -41,6 +47,12 @@ public class Loop {
 
     // The timer wheels' resolution: a deadline pass held back this long fires nothing later than its tick.
     private static final long DEADLINE_PASS_SPACING_MILLIS = 1;
+
+    private static final Duration VIOLATION_LOG_INTERVAL = Duration.ofMinutes(1);
+    private static final String CHECK_OWNER = "checkOwner";
+    private static final StackWalker CALLERS = StackWalker.getInstance();
+
+    static final long IDLE = 0;
 
     @Getter
     private final String name;
@@ -59,6 +71,7 @@ public class Loop {
     private final EnumMap<PassPhase, List<PassHook>> hooks = new EnumMap<>(PassPhase.class);
     private final long[] phaseNanos = new long[PassPhase.values().length];
     private final LoopMetrics metrics;
+    private final RateLimitedLog violationLog;
     private final PassRecorder recorder;
     private final TimerWheel gameTimers;
     private final TimerWheel wallTimers;
@@ -68,8 +81,13 @@ public class Loop {
     private ArrayDeque<Runnable> spare = new ArrayDeque<>();
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private boolean inputStopped;
+    private boolean liveClock;
+    private boolean startupPass;
+    private boolean stopped;
     // Volatile only for the ownership assertion, which runs on whichever thread calls in.
     private volatile Thread owner;
+    // Volatile: the watchdog thread reads it.
+    private volatile long runningPassStartNanos = IDLE;
 
     @Getter
     private long pass;
@@ -77,6 +95,9 @@ public class Loop {
     /** Game time of the current or last pass; before the first pass, the loop's start, a recorded reading too. */
     @Getter
     private long passTime;
+
+    @Getter
+    private long passWallTime;
 
     // Far enough in the past that pass-min never holds back the first pass.
     private long lastPassStart = Long.MIN_VALUE / 2;
@@ -101,10 +122,12 @@ public class Loop {
         this.random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seed);
         this.passMinMillis = settings.passMin().toMillis();
         this.passBudgetNanos = settings.passBudget().toNanos();
-        this.metrics = new LoopMetrics(registry, name, inbox);
+        this.metrics = new LoopMetrics(registry, name, inbox, this::runningPassStartNanos);
+        this.violationLog = new RateLimitedLog(VIOLATION_LOG_INTERVAL, metrics::monotonicTime);
         final long gameStart = clock.gameMillis();
         final long wallStart = clock.wallMillis();
         this.passTime = gameStart;
+        this.passWallTime = wallStart;
         this.gameTimers = new TimerWheel(gameStart, this::onFailure);
         this.wallTimers = new TimerWheel(wallStart, this::onFailure);
         recorder.loopStarted(name, seed, gameStart, wallStart);
@@ -129,6 +152,65 @@ public class Loop {
         return inbox.offer(new ReadySignal(Objects.requireNonNull(source, "source")));
     }
 
+    /** Startup work runs for minutes: it reads the clock live and is not held to the pass budget. */
+    public boolean offerStartup(Message work) {
+        return inbox.offer(new StartupWork(Objects.requireNonNull(work, "work")));
+    }
+
+    public boolean inLoop() {
+        final Thread pinned = owner;
+        return pinned != null ? pinned == Thread.currentThread() : CURRENT.get() == this;
+    }
+
+    /** Always on, unlike {@link #assertOwner}: game state has no locks, so a second writer corrupts it silently. */
+    public void checkOwner() {
+        if (inLoop()) {
+            return;
+        }
+        metrics.ownershipViolation();
+        final String site = callSite();
+        final IllegalStateException violation = new IllegalStateException("State of loop " + name
+                + " touched from thread " + Thread.currentThread().getName() + " at " + site);
+        if (violationLog.tryAcquire(site)) {
+            log.atError()
+                    .addKeyValue("loop", name)
+                    .setCause(violation)
+                    .log("Ownership violation of loop {} at {}", name, site);
+        }
+        throw violation;
+    }
+
+    public long gameNow() {
+        assertOwner();
+        return liveClock ? Math.max(passTime, clock.gameMillis()) : passTime;
+    }
+
+    public long wallNow() {
+        assertOwner();
+        return liveClock ? clock.wallMillis() : passWallTime;
+    }
+
+    /** From another thread the delay counts from the pass that applies the request: game time is the loop's to read. */
+    public ScheduledFuture<Void> schedule(Runnable task, long delay, TimeUnit unit) {
+        return arm(new ScheduledTask(this, Objects.requireNonNull(task, "task"), delayMillis(delay, unit), 0));
+    }
+
+    public ScheduledFuture<Void> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        final long periodMillis = unit.toMillis(period);
+        if (periodMillis < 1) {
+            throw new IllegalArgumentException("Period of a loop task must be at least 1 ms: " + period + " " + unit);
+        }
+        return arm(new ScheduledTask(
+                this, Objects.requireNonNull(task, "task"), delayMillis(initialDelay, unit), periodMillis));
+    }
+
+    /** Runs in the next pass, never the current one, so chains of such tasks do not count against the trigger depth. */
+    public void execute(Runnable task) {
+        if (!offer(new Execution(Objects.requireNonNull(task, "task")))) {
+            throw new RejectedExecutionException("Loop " + name + " has stopped");
+        }
+    }
+
     public RandomGenerator random() {
         assertOwner();
         return random;
@@ -139,13 +221,10 @@ public class Loop {
         return base == TimeBase.GAME ? gameTimers : wallTimers;
     }
 
-    /**
-     * The first run is one cadence after the pass time: a live clock reading would differ in a replay, which sets the
-     * clock to the recorded pass time.
-     */
+    /** The first run is one cadence after the pass time, not a live reading, which a replay would not reproduce. */
     public void addSystem(PeriodicSystem system) {
         assertOwner();
-        systems.add(system, passTime, metrics);
+        systems.add(system, gameNow(), metrics);
     }
 
     /** Work of the same pass, run in the side-effect phase. */
@@ -188,6 +267,11 @@ public class Loop {
         return hasQueuedWork() ? Long.MIN_VALUE : nextDeadlineAt();
     }
 
+    /** Any thread: monotonic start of the running pass or hook; {@code 0} between them and in a startup pass. */
+    long runningPassStartNanos() {
+        return runningPassStartNanos;
+    }
+
     long passGate() {
         return lastPassStart + passMinMillis;
     }
@@ -223,6 +307,7 @@ public class Loop {
         while ((source = ready.poll()) != null) {
             clearSignal(source);
         }
+        failure = runStage(failure, this::cancelPendingTasks);
         switch (failure) {
             case null -> {}
             case Error error -> throw error;
@@ -264,6 +349,27 @@ public class Loop {
         return joiner.toString();
     }
 
+    private static String callSite() {
+        return CALLERS.walk(frames -> frames.skip(1)
+                .dropWhile(frame -> frame.getMethodName().equals(CHECK_OWNER))
+                .findFirst()
+                .map(frame -> frame.getClassName() + "." + frame.getMethodName() + ":" + frame.getLineNumber())
+                .orElse("unknown"));
+    }
+
+    private static long delayMillis(long delay, TimeUnit unit) {
+        return Math.max(0, unit.toMillis(delay));
+    }
+
+    private ScheduledTask arm(ScheduledTask scheduled) {
+        if (inLoop() && !stopped) {
+            scheduled.arm();
+        } else if (!offer(new ArmTask(scheduled))) {
+            throw new RejectedExecutionException("Loop " + name + " has stopped");
+        }
+        return scheduled;
+    }
+
     private boolean hasQueuedWork() {
         return !inbox.isEmpty() || !ready.isEmpty() || !deferred.isEmpty();
     }
@@ -276,11 +382,18 @@ public class Loop {
 
     private void runCurrent(long now, boolean simulate) {
         final Loop previous = bindCurrent();
+        watchFromNow();
         try {
             runPhases(now, simulate);
         } finally {
+            runningPassStartNanos = IDLE;
             restoreCurrent(previous);
         }
+    }
+
+    private void watchFromNow() {
+        final long start = metrics.monotonicTime();
+        runningPassStartNanos = start == IDLE ? IDLE + 1 : start;
     }
 
     private Loop bindCurrent() {
@@ -301,6 +414,7 @@ public class Loop {
         final long wallNow = clock.wallMillis();
         pass++;
         passTime = now;
+        passWallTime = wallNow;
         lastPassStart = now;
         passMessages = 0;
         passTimers = 0;
@@ -343,12 +457,30 @@ public class Loop {
     private void runShutdownHook(ShutdownHook hook) {
         clearInterrupt("before a shutdown hook");
         final Loop previous = bindCurrent();
+        watchFromNow();
         try {
             hook.onShutdown(this);
         } catch (RuntimeException e) {
             log.error("Shutdown hook {} of loop {} failed", hook, name, e);
         } finally {
+            runningPassStartNanos = IDLE;
             restoreCurrent(previous);
+        }
+    }
+
+    /** As Netty on termination: nothing runs pending tasks, so a waiter in {@code get()} would block for good. */
+    private void cancelPendingTasks() {
+        stopped = true;
+        gameTimers.forEach(entry -> {
+            if (entry.getSpec().handler() instanceof ScheduledTask task) {
+                task.cancelOnStop();
+            }
+        });
+        Message message;
+        while ((message = inbox.poll()) != null) {
+            if (message instanceof ArmTask(ScheduledTask task)) {
+                task.cancelOnStop();
+            }
         }
     }
 
@@ -530,11 +662,25 @@ public class Loop {
         final long now = metrics.monotonicTime();
         final long nanos = now - mark;
         phaseNanos[phase.ordinal()] = nanos;
-        metrics.phase(phase, nanos);
+        if (!startupPass) {
+            metrics.phase(phase, nanos);
+        }
         return now;
     }
 
     private void completePass(long durationNanos) {
+        if (startupPass) {
+            startupPass = false;
+            log.atInfo()
+                    .addKeyValue("loop", name)
+                    .log(
+                            "Loop {} startup pass {} took {} ms: {}",
+                            name,
+                            pass,
+                            LoopMetrics.millis(durationNanos),
+                            breakdown(phaseNanos));
+            return;
+        }
         metrics.pass(durationNanos, passMessages, passInput, passTimers, gameTimers.size() + wallTimers.size());
         if (durationNanos > passBudgetNanos) {
             metrics.overBudget();
@@ -551,6 +697,35 @@ public class Loop {
     private void onFailure(PassPhase phase, Object source, RuntimeException failure) {
         metrics.failure(phase);
         log.error("{} failed in the {} phase of loop {} pass {}", source, phase.tag(), name, pass, failure);
+    }
+
+    private record Execution(Runnable task) implements Message {
+        @Override
+        public void execute(Loop loop) {
+            task.run();
+        }
+    }
+
+    // A record rather than a lambda, so the stop finds the tasks whose arming never ran.
+    private record ArmTask(ScheduledTask task) implements Message {
+        @Override
+        public void execute(Loop loop) {
+            task.arm();
+        }
+    }
+
+    private record StartupWork(Message work) implements Message {
+        @Override
+        public void execute(Loop loop) {
+            loop.runningPassStartNanos = IDLE;
+            loop.liveClock = true;
+            try {
+                work.execute(loop);
+            } finally {
+                loop.liveClock = false;
+                loop.startupPass = true;
+            }
+        }
     }
 
     private record ReadySignal(InputSource source) implements Message {

@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.highfive.GameServer;
+import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeoEngineConfig;
@@ -101,7 +101,7 @@ public class AdminServerInfo implements IAdminCommandHandler {
     }
 
     private String getServerUpTime() {
-        long time = ClockBridge.gameMillis() - GameServer.getStartTime();
+        long time = ClockBridge.gameMillis() - WorldLoader.getStartTime();
 
         final long days = TimeUnit.MILLISECONDS.toDays(time);
         time -= TimeUnit.DAYS.toMillis(days);

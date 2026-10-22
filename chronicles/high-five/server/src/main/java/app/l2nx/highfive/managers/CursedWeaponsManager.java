@@ -127,6 +127,7 @@ public class CursedWeaponsManager {
                             final String name = attrs.getNamedItem("name").getNodeValue();
                             final CursedWeapon cw = new CursedWeapon(id, skillId, name);
                             int val;
+                            int durationLost = 0;
                             for (Node cd = d.getFirstChild(); cd != null; cd = cd.getNextSibling()) {
                                 if ("dropRate".equalsIgnoreCase(cd.getNodeName())) {
                                     attrs = cd.getAttributes();
@@ -143,6 +144,7 @@ public class CursedWeaponsManager {
                                     val = Integer.parseInt(
                                             attrs.getNamedItem("val").getNodeValue());
                                     cw.setDurationLost(val);
+                                    durationLost = val;
                                 } else if ("disapearChance".equalsIgnoreCase(cd.getNodeName())) {
                                     attrs = cd.getAttributes();
                                     val = Integer.parseInt(
@@ -154,6 +156,14 @@ public class CursedWeaponsManager {
                                             attrs.getNamedItem("val").getNodeValue());
                                     cw.setStageKills(val);
                                 }
+                            }
+
+                            if (durationLost <= 0) {
+                                log.warn(
+                                        "Skipping cursed weapon {}: durationLost must be positive, was {}.",
+                                        id,
+                                        durationLost);
+                                continue;
                             }
 
                             // Store cursed weapon

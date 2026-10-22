@@ -51,12 +51,12 @@ class SliceLayoutArchitectureTest {
     @ArchTest
     static final ArchRule slicesWithoutNetwork = RULES.slicesWithoutNetwork();
 
-    // Legacy code breaks these; src/test/archunit-store holds its violations and may only shrink.
+    @ArchTest
+    static final ArchRule noImplOrGateway = RULES.noImplOrGateway();
+
+    // Legacy code breaks this; src/test/archunit-store holds its violations and may only shrink.
     @ArchTest
     static final ArchRule repositories = freeze(RULES.repositories());
-
-    @ArchTest
-    static final ArchRule noImplOrGateway = freeze(RULES.noImplOrGateway());
 
     @ArchTest
     static void modules(JavaClasses classes) {

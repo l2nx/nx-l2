@@ -47,11 +47,12 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -126,7 +127,7 @@ public class Duel {
         }
 
         // Schedule duel start
-        ThreadPool.schedule(new ScheduleStartDuelTask(this), 3000);
+        WorldPartition.loop().schedule(new ScheduleStartDuelTask(this), 3000, TimeUnit.MILLISECONDS);
     }
 
     public static class PlayerCondition {
@@ -215,13 +216,17 @@ public class Duel {
                         break;
                     }
                     case CONTINUE: {
-                        ThreadPool.schedule(this, 1000);
+                        WorldPartition.loop().schedule(this, 1000, TimeUnit.MILLISECONDS);
                         break;
                     }
                     default: {
                         setFinished(true);
                         playKneelAnimation();
-                        ThreadPool.schedule(new ScheduleEndDuelTask(duel, duel.checkEndDuelCondition()), 5000);
+                        WorldPartition.loop()
+                                .schedule(
+                                        new ScheduleEndDuelTask(duel, duel.checkEndDuelCondition()),
+                                        5000,
+                                        TimeUnit.MILLISECONDS);
                         InstanceManager.getInstance().destroyInstance(duel.getDueldInstanceId());
                         break;
                     }
@@ -252,10 +257,10 @@ public class Duel {
                     duel.teleportPlayers();
 
                     // give players 20 seconds to complete teleport and get ready (its ought to be 30 on official..)
-                    ThreadPool.schedule(this, duel.isPartyDuel() ? 20000 : 1);
+                    WorldPartition.loop().schedule(this, duel.isPartyDuel() ? 20000 : 1, TimeUnit.MILLISECONDS);
                 } else if (count > 0) // Duel not started yet - continue countdown.
                 {
-                    ThreadPool.schedule(this, 1000);
+                    WorldPartition.loop().schedule(this, 1000, TimeUnit.MILLISECONDS);
                 } else {
                     duel.startDuel();
                 }
@@ -437,7 +442,7 @@ public class Duel {
         broadcastToTeam2(B04_S01);
 
         // start duelling task
-        ThreadPool.schedule(new ScheduleDuelTask(this), 1000);
+        WorldPartition.loop().schedule(new ScheduleDuelTask(this), 1000, TimeUnit.MILLISECONDS);
     }
 
     /**

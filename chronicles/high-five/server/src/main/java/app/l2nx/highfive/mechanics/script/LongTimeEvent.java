@@ -43,7 +43,7 @@ import app.l2nx.highfive.mechanics.events.Containers;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.OnServerStart;
 import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -120,7 +121,7 @@ public class LongTimeEvent extends Script {
                 log.info("Event {} active till {}", eventName, endDate);
             } else if (startDate.after(now)) {
                 final long delay = startDate.getTime() - ClockBridge.wallMillis();
-                ThreadPool.schedule(new ScheduleStart(), delay);
+                WorldPartition.loop().schedule(new ScheduleStart(), delay, TimeUnit.MILLISECONDS);
                 log.info("Event {} will be started at {}", eventName, startDate);
             } else {
                 // Destroy items that must exist only on event period.
@@ -488,7 +489,7 @@ public class LongTimeEvent extends Script {
 
         // Schedule event end.
         final Long millisToEventEnd = endDate.getTime() - ClockBridge.wallMillis();
-        ThreadPool.schedule(new ScheduleEnd(), millisToEventEnd);
+        WorldPartition.loop().schedule(new ScheduleEnd(), millisToEventEnd, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -515,7 +516,8 @@ public class LongTimeEvent extends Script {
                 final Spawn spawn = npc.getSpawn();
                 spawn.setRespawnDelay(npcSpawn.respawnTime);
                 spawn.startRespawn();
-                ThreadPool.schedule(spawn::stopRespawn, millisToEventEnd - npcSpawn.respawnTime);
+                WorldPartition.loop()
+                        .schedule(spawn::stopRespawn, millisToEventEnd - npcSpawn.respawnTime, TimeUnit.MILLISECONDS);
             }
         }
     }

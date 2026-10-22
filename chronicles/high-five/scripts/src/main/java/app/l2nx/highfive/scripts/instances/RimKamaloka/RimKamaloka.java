@@ -42,12 +42,13 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPCCafePointInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -707,9 +708,11 @@ public class RimKamaloka extends Script {
 
             // Spawn NPCs.
             spawnKama(world);
-            world.finishTask = ThreadPool.schedule(new FinishTask(world), DURATION * 60000);
-            world.despawnTask = ThreadPool.scheduleAtFixedRate(new DespawnTask(world), 1000, 1000);
-            ThreadPool.schedule(new LockTask(world), LOCK_TIME * 60000);
+            world.finishTask =
+                    WorldPartition.loop().schedule(new FinishTask(world), DURATION * 60000, TimeUnit.MILLISECONDS);
+            world.despawnTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(new DespawnTask(world), 1000, 1000, TimeUnit.MILLISECONDS);
+            WorldPartition.loop().schedule(new LockTask(world), LOCK_TIME * 60000, TimeUnit.MILLISECONDS);
 
             world.addAllowed(player);
 

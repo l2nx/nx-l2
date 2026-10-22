@@ -41,8 +41,9 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ConfirmDlg;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SetupGauge;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
@@ -378,7 +379,7 @@ public class Wedding implements IVoicedCommandHandler {
         final EscapeFinalizer ef = new EscapeFinalizer(activeChar, partner.getLocation(), partner.isIn7sDungeon());
 
         // continue execution later
-        activeChar.setSkillCast(ThreadPool.schedule(ef, teleportTimer));
+        activeChar.setSkillCast(WorldPartition.loop().schedule(ef, teleportTimer, TimeUnit.MILLISECONDS));
         activeChar.forceIsCasting(GameTimeTaskManager.getInstance().getGameTicks()
                 + (teleportTimer / GameTimeTaskManager.MILLIS_IN_TICK));
 

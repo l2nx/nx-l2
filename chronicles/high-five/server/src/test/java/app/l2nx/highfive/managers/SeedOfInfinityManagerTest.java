@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.world.GlobalVariableRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -22,12 +22,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.MockedStatic;
 import org.slf4j.LoggerFactory;
 
+@ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock(WorldLoopExtension.LOCK)
 class SeedOfInfinityManagerTest {
     private static final long NOW = 1_800_000_000_000L;
     private static final long OPEN_DURATION = 24L * 60 * 60 * 1000;
@@ -36,7 +40,6 @@ class SeedOfInfinityManagerTest {
 
     private MockedStatic<ClockBridge> clock;
     private MockedStatic<DoorData> doors;
-    private MockedStatic<ThreadPool> threadPool;
     private Logger logger;
 
     @BeforeEach
@@ -48,7 +51,6 @@ class SeedOfInfinityManagerTest {
         when(doorData.getDoor(14240102)).thenReturn(mock(Door.class));
         doors = mockStatic(DoorData.class);
         doors.when(DoorData::getInstance).thenReturn(doorData);
-        threadPool = mockStatic(ThreadPool.class);
 
         appender.start();
         logger = (Logger) LoggerFactory.getLogger(SeedOfInfinityManager.class);
@@ -59,7 +61,6 @@ class SeedOfInfinityManagerTest {
     void releaseWorld() {
         logger.detachAppender(appender);
         appender.stop();
-        threadPool.close();
         doors.close();
         clock.close();
     }

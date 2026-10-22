@@ -36,14 +36,15 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.LotteryTicket;
 import app.l2nx.highfive.repository.minigame.LotteryRepository;
 import app.l2nx.highfive.repository.minigame.model.Lottery;
 import app.l2nx.highfive.repository.minigame.model.LotteryResult;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.MathUtil;
 import java.util.Calendar;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -127,13 +128,18 @@ public class LotteryManager {
 
                         if (LotteryManager.this.endDate > ClockBridge.wallMillis()) {
                             started = true;
-                            ThreadPool.schedule(
-                                    new finishLottery(), LotteryManager.this.endDate - ClockBridge.wallMillis());
+                            WorldPartition.loop()
+                                    .schedule(
+                                            new finishLottery(),
+                                            LotteryManager.this.endDate - ClockBridge.wallMillis(),
+                                            TimeUnit.MILLISECONDS);
                             if (LotteryManager.this.endDate > (ClockBridge.wallMillis() + (12 * MINUTE))) {
                                 sellableTickets = true;
-                                ThreadPool.schedule(
-                                        new stopSellingTickets(),
-                                        LotteryManager.this.endDate - ClockBridge.wallMillis() - (10 * MINUTE));
+                                WorldPartition.loop()
+                                        .schedule(
+                                                new stopSellingTickets(),
+                                                LotteryManager.this.endDate - ClockBridge.wallMillis() - (10 * MINUTE),
+                                                TimeUnit.MILLISECONDS);
                             }
                             return;
                         }
@@ -169,8 +175,9 @@ public class LotteryManager {
             World.broadcastToAllOnlinePlayers("Lottery tickets are now available for Lucky Lottery #" + id + ".");
 
             final long endDate = LotteryManager.this.endDate - ClockBridge.wallMillis();
-            ThreadPool.schedule(new stopSellingTickets(), Math.max(endDate - (10 * MINUTE), 0));
-            ThreadPool.schedule(new finishLottery(), Math.max(endDate, 0));
+            WorldPartition.loop()
+                    .schedule(new stopSellingTickets(), Math.max(endDate - (10 * MINUTE), 0), TimeUnit.MILLISECONDS);
+            WorldPartition.loop().schedule(new finishLottery(), Math.max(endDate, 0), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -318,7 +325,7 @@ public class LotteryManager {
                 log.warn("Lottery: Could not store finished lottery data: {}", e.getMessage(), e);
             }
 
-            ThreadPool.schedule(new startLottery(), MINUTE);
+            WorldPartition.loop().schedule(new startLottery(), MINUTE, TimeUnit.MILLISECONDS);
 
             started = false;
         }

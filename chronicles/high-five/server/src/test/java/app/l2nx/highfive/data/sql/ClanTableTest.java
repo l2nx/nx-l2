@@ -29,6 +29,7 @@ import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.FortSiege;
 import app.l2nx.highfive.mechanics.siege.Siege;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.clan.ClanNoticeRepository;
 import app.l2nx.highfive.repository.clan.ClanRankPrivilegeRepository;
@@ -55,9 +56,10 @@ import org.mockito.InOrder;
 import org.mockito.MockedStatic;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@ExtendWith(ClockBridgeExtension.class)
+@ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock(WorldLoopExtension.LOCK)
 class ClanTableTest {
     private static final int CLAN_ID = 268_435_456;
     private static final int CASTLE = 3;

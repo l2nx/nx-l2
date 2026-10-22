@@ -30,8 +30,9 @@ import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -199,8 +200,9 @@ public class ControllableAirShip extends AirShip {
     @Override
     public void onSpawn() {
         super.onSpawn();
-        checkTask = ThreadPool.scheduleAtFixedRate(new CheckTask(), 60000, 10000);
-        consumeFuelTask = ThreadPool.scheduleAtFixedRate(new ConsumeFuelTask(), 60000, 60000);
+        checkTask = WorldPartition.loop().scheduleAtFixedRate(new CheckTask(), 60000, 10000, TimeUnit.MILLISECONDS);
+        consumeFuelTask =
+                WorldPartition.loop().scheduleAtFixedRate(new ConsumeFuelTask(), 60000, 60000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -259,7 +261,7 @@ public class ControllableAirShip extends AirShip {
         public void run() {
             if (isSpawned() && isEmpty() && !isInDock()) {
                 // deleteMe() can't be called from CheckTask because task should not cancel itself
-                ThreadPool.execute(new DecayTask());
+                WorldPartition.loop().execute(new DecayTask());
             }
         }
     }

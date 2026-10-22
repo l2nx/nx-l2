@@ -12,6 +12,14 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(packages = "app.l2nx.highfive", importOptions = ImportOption.DoNotIncludeTests.class)
 class ScheduledWorkArchitectureTest {
     @ArchTest
-    static final ArchRule scheduledWorkGoesThroughThreadPool =
-            ScheduledWorkRules.SCHEDULED_WORK_GOES_THROUGH_THREAD_POOL;
+    static final ArchRule scheduledWorkGoesThroughTheLoop = ScheduledWorkRules.SCHEDULED_WORK_GOES_THROUGH_THE_LOOP;
+
+    @ArchTest
+    static final ArchRule noThreadsOrExecutors = ScheduledWorkRules.NO_THREADS_OR_EXECUTORS;
+
+    @ArchTest
+    static final ArchRule noExecutorFields = ScheduledWorkRules.NO_EXECUTOR_FIELDS;
+
+    @ArchTest
+    static final ArchRule noBlockingCalls = ScheduledWorkRules.NO_BLOCKING_CALLS;
 }

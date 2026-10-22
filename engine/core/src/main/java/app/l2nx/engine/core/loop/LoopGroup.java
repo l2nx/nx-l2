@@ -18,13 +18,17 @@ public final class LoopGroup {
     private final String prefix;
     private final MeterRegistry registry;
     private final ThreadFailureHandler failures;
+    private final LoopWatchdog watchdog;
     private final List<LoopThread> threads = new ArrayList<>();
     private boolean stopped;
 
-    public LoopGroup(String prefix, MeterRegistry registry, ThreadFailureHandler failures) {
+    public LoopGroup(String prefix, MeterRegistry registry, EngineProperties settings, ThreadFailureHandler failures) {
         this.prefix = Objects.requireNonNull(prefix, "prefix");
         this.registry = Objects.requireNonNull(registry, "registry");
         this.failures = Objects.requireNonNull(failures, "failures");
+        // The loops time their passes with the registry's clock, so the watchdog reads the same one.
+        this.watchdog = new LoopWatchdog(
+                Objects.requireNonNull(settings, "settings"), registry.config().clock()::monotonicTime, failures);
     }
 
     /** Pins the loop to a thread of its own named {@code <prefix>-<loop name>}. */
@@ -36,6 +40,12 @@ public final class LoopGroup {
         thread.add(loop);
         thread.start();
         threads.add(thread);
+        watchdog.watch(loop, thread.getThread());
+        watchdog.start(prefix + "-watchdog");
+    }
+
+    public void disarmExit() {
+        watchdog.disarmExit();
     }
 
     /**
@@ -51,6 +61,7 @@ public final class LoopGroup {
             stopped = true;
             stopping = List.copyOf(threads);
         }
+        disarmExit();
         stopping.forEach(LoopThread::requestStop);
         final Clock clock = registry.config().clock();
         final long deadline = clock.monotonicTime() + timeout.toNanos();
@@ -69,6 +80,8 @@ public final class LoopGroup {
             }
             thread.close();
         }
+        // Closed last so a drain pass blocked during the stop still gets its stack logged.
+        watchdog.close();
         if (!alive.isEmpty()) {
             // A shutdown hook that never returns must not hold the process; the rest of the stop goes on without it.
             log.warn(

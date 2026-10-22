@@ -58,7 +58,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySmallWindowAll;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySmallWindowDeleteAll;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 
@@ -344,7 +345,7 @@ public class AdminEditChar implements IAdminCommandHandler {
                             || (race != player.getRace())
                             || (((race == Race.HUMAN) || (race == Race.ORC)) && (isMage != player.isMageClass()))) {
                         TransformData.getInstance().transformPlayer(105, player);
-                        ThreadPool.schedule(new Untransform(player), 200);
+                        WorldPartition.loop().schedule(new Untransform(player), 200, TimeUnit.MILLISECONDS);
                     }
                 } else {
                     activeChar.sendSysMessage("Usage: //setclass <valid_new_classid>");
@@ -434,7 +435,7 @@ public class AdminEditChar implements IAdminCommandHandler {
 
             // Transform-untransorm player quickly to force the client to reload the character textures
             TransformData.getInstance().transformPlayer(105, player);
-            ThreadPool.schedule(new Untransform(player), 200);
+            WorldPartition.loop().schedule(new Untransform(player), 200, TimeUnit.MILLISECONDS);
         } else if (command.startsWith("admin_setcolor")) {
             try {
                 final String val = command.substring(15);

@@ -24,10 +24,11 @@ package app.l2nx.highfive.mechanics.skill;
 
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -44,7 +45,7 @@ public class BuffFinishTask {
                 final Creature effected = info.getEffected();
                 if ((effected != null) && info.isExpired()) {
                     // Stop this exact buff once, a newer buff of the same skill must not be affected.
-                    ThreadPool.execute(() -> effected.getEffectList().remove(SkillFinishType.NORMAL, info));
+                    WorldPartition.loop().execute(() -> effected.getEffectList().remove(SkillFinishType.NORMAL, info));
                     removeBuffInfo(info);
                 }
             }
@@ -64,7 +65,7 @@ public class BuffFinishTask {
         buffInfos.add(info);
 
         if ((task == null) && !stopped) {
-            task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);
+            task = WorldPartition.loop().scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -72,7 +73,7 @@ public class BuffFinishTask {
         stopped = false;
 
         if (!buffInfos.isEmpty() && (task == null)) {
-            task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);
+            task = WorldPartition.loop().scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000, TimeUnit.MILLISECONDS);
         }
     }
 

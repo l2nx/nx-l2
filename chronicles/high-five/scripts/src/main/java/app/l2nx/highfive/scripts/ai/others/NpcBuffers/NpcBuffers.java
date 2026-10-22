@@ -22,7 +22,8 @@ package app.l2nx.highfive.scripts.ai.others.NpcBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author UnAfraid
@@ -48,7 +49,7 @@ public class NpcBuffers extends Script {
     public void onSpawn(Npc npc) {
         final NpcBufferData data = npcBuffers.getNpcBuffer(npc.getId());
         for (NpcBufferSkillData skill : data.getSkills()) {
-            ThreadPool.schedule(new NpcBufferAI(npc, skill), skill.getInitialDelay());
+            WorldPartition.loop().schedule(new NpcBufferAI(npc, skill), skill.getInitialDelay(), TimeUnit.MILLISECONDS);
         }
     }
 

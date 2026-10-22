@@ -25,8 +25,9 @@ package app.l2nx.highfive.mechanics.events;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -131,7 +132,7 @@ public class EventDispatcher {
             throw new NullPointerException("Event cannot be null!");
         }
 
-        ThreadPool.schedule(() -> notifyEvent(event, container, null), delay);
+        WorldPartition.loop().schedule(() -> notifyEvent(event, container, null), delay, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -144,7 +145,7 @@ public class EventDispatcher {
             throw new NullPointerException("Event cannot be null!");
         }
 
-        ThreadPool.execute(() -> notifyEventToSingleContainer(event, container, null));
+        WorldPartition.loop().execute(() -> notifyEventToSingleContainer(event, container, null));
     }
 
     /**
@@ -157,7 +158,7 @@ public class EventDispatcher {
             throw new NullPointerException("Event cannot be null!");
         }
 
-        ThreadPool.execute(() -> notifyEventToMultipleContainers(event, containers, null));
+        WorldPartition.loop().execute(() -> notifyEventToMultipleContainers(event, containers, null));
     }
 
     /**

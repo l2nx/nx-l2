@@ -37,7 +37,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilderFactory;
 import lombok.Getter;
 import lombok.Setter;
@@ -159,7 +160,7 @@ public class Instance {
             checkTimeUpTask.cancel(true);
         }
 
-        checkTimeUpTask = ThreadPool.schedule(new CheckTimeUp(duration), 500);
+        checkTimeUpTask = WorldPartition.loop().schedule(new CheckTimeUp(duration), 500, TimeUnit.MILLISECONDS);
         instanceEndTime = ClockBridge.gameMillis() + duration + 500;
     }
 
@@ -379,8 +380,11 @@ public class Instance {
                 case "activitytime": {
                     a = n.getAttributes().getNamedItem("val");
                     if (a != null) {
-                        checkTimeUpTask =
-                                ThreadPool.schedule(new CheckTimeUp(Integer.parseInt(a.getNodeValue()) * 60000), 15000);
+                        checkTimeUpTask = WorldPartition.loop()
+                                .schedule(
+                                        new CheckTimeUp(Integer.parseInt(a.getNodeValue()) * 60000),
+                                        15000,
+                                        TimeUnit.MILLISECONDS);
                         instanceEndTime = ClockBridge.gameMillis() + (Long.parseLong(a.getNodeValue()) * 60000) + 15000;
                     }
                     break;
@@ -706,9 +710,10 @@ public class Instance {
 
         cancelTimer();
         if (remaining >= 10000) {
-            checkTimeUpTask = ThreadPool.schedule(new CheckTimeUp(remaining), interval);
+            checkTimeUpTask =
+                    WorldPartition.loop().schedule(new CheckTimeUp(remaining), interval, TimeUnit.MILLISECONDS);
         } else {
-            checkTimeUpTask = ThreadPool.schedule(new TimeUp(), interval);
+            checkTimeUpTask = WorldPartition.loop().schedule(new TimeUp(), interval, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -741,18 +746,20 @@ public class Instance {
             // Start eject task
             ejectDeadTasks.put(
                     player.getObjectId(),
-                    ThreadPool.schedule(
-                            () -> {
-                                if (player.isDead() && (player.getInstanceId() == id)) {
-                                    player.setInstanceId(0);
-                                    if (exitLoc != null) {
-                                        player.teleToLocation(exitLoc, true);
-                                    } else {
-                                        player.teleToLocation(TeleportWhereType.TOWN);
-                                    }
-                                }
-                            },
-                            ejectTime));
+                    WorldPartition.loop()
+                            .schedule(
+                                    () -> {
+                                        if (player.isDead() && (player.getInstanceId() == id)) {
+                                            player.setInstanceId(0);
+                                            if (exitLoc != null) {
+                                                player.teleToLocation(exitLoc, true);
+                                            } else {
+                                                player.teleToLocation(TeleportWhereType.TOWN);
+                                            }
+                                        }
+                                    },
+                                    ejectTime,
+                                    TimeUnit.MILLISECONDS));
         }
     }
 

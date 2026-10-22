@@ -25,10 +25,11 @@ package app.l2nx.highfive.taskmanagers;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.spawns.SpawnGroup;
 import app.l2nx.highfive.entity.spawns.SpawnGroupEntry;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Materializes pending spawn group replacements whose units were already reserved on death.<br>
@@ -40,7 +41,7 @@ public class SpawnGroupTaskManager implements Runnable {
     private static boolean working = false;
 
     protected SpawnGroupTaskManager() {
-        ThreadPool.scheduleAtFixedRate(this, 0, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

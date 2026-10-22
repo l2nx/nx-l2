@@ -24,12 +24,13 @@ package app.l2nx.highfive.taskmanagers;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.mechanics.buylist.Product;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -41,8 +42,8 @@ public class BuyListTaskManager {
     protected static boolean workingSaves = false;
 
     protected BuyListTaskManager() {
-        ThreadPool.scheduleAtFixedRate(new BuyListProductTask(), 1000, 60000);
-        ThreadPool.scheduleAtFixedRate(new BuyListSaveTask(), 50, 50);
+        WorldPartition.loop().scheduleAtFixedRate(new BuyListProductTask(), 1000, 60000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop().scheduleAtFixedRate(new BuyListSaveTask(), 50, 50, TimeUnit.MILLISECONDS);
     }
 
     protected class BuyListProductTask implements Runnable {

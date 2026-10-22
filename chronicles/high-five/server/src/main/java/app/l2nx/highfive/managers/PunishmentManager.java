@@ -38,14 +38,15 @@ import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.world.PunishmentRepository;
 import app.l2nx.highfive.repository.world.model.Punishment;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
@@ -219,7 +220,8 @@ public class PunishmentManager {
     }
 
     public static void handleIllegalPlayerAction(Player actor, String message, IllegalActionPunishmentType punishment) {
-        ThreadPool.schedule(new IllegalPlayerActionTask(actor, message, punishment), 5000);
+        WorldPartition.loop()
+                .schedule(new IllegalPlayerActionTask(actor, message, punishment), 5000, TimeUnit.MILLISECONDS);
     }
 
     // TODO: callers receive the bean through their constructor (#41).

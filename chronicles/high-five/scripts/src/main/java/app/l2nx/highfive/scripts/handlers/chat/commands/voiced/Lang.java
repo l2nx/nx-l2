@@ -31,8 +31,9 @@ import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo.NpcInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 public class Lang implements IVoicedCommandHandler {
     private static final String[] VOICED_COMMANDS = {"lang"};
@@ -66,11 +67,13 @@ public class Lang implements IVoicedCommandHandler {
                 for (WorldObject obj : World.getVisibleObjects()) {
                     if (obj.isNpc() && NpcNameLocalisationData.getInstance().hasLocalisation(obj.getId())) {
                         activeChar.sendPacket(new DeleteObject(obj));
-                        ThreadPool.schedule(
-                                () -> {
-                                    activeChar.sendPacket(new NpcInfo(obj.asNpc(), activeChar));
-                                },
-                                1000);
+                        WorldPartition.loop()
+                                .schedule(
+                                        () -> {
+                                            activeChar.sendPacket(new NpcInfo(obj.asNpc(), activeChar));
+                                        },
+                                        1000,
+                                        TimeUnit.MILLISECONDS);
                     }
                 }
 

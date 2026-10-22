@@ -42,7 +42,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tully's Workshop.
@@ -851,57 +852,60 @@ public class TullyWorkshop extends Script {
             DoorData.getInstance().getDoor(19260052).openMe();
 
             countdownTime = 600000;
-            countdown = ThreadPool.scheduleAtFixedRate(
-                    () -> {
-                        countdownTime -= 10000;
-                        Npc npcSpawn = null;
-                        if ((postMortemSpawn != null) && !postMortemSpawn.isEmpty()) {
-                            npcSpawn = postMortemSpawn.get(0);
-                        }
-
-                        if (countdownTime > 60000) {
-                            if (((countdownTime % 60000) == 0)
-                                    && (npcSpawn != null)
-                                    && (npcSpawn.getId() == INGENIOUS_CONTRAPTION)) {
-                                npcSpawn.broadcastSay(
-                                        ChatType.NPC_SHOUT,
-                                        NpcStringId.S1_MINUTE_S_ARE_REMAINING,
-                                        Integer.toString((countdownTime / 60000)));
-                            }
-                        } else if (countdownTime <= 0) {
-                            if (countdown != null) {
-                                countdown.cancel(false);
-                                countdown = null;
-                            }
-
-                            for (Npc spawnedNpc : postMortemSpawn) {
-                                if ((spawnedNpc != null)
-                                        && ((spawnedNpc.getId() == INGENIOUS_CONTRAPTION)
-                                                || (spawnedNpc.getId() == TIMETWISTER_GOLEM))) {
-                                    spawnedNpc.deleteMe();
+            countdown = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            () -> {
+                                countdownTime -= 10000;
+                                Npc npcSpawn = null;
+                                if ((postMortemSpawn != null) && !postMortemSpawn.isEmpty()) {
+                                    npcSpawn = postMortemSpawn.get(0);
                                 }
-                            }
 
-                            brokenContraptions.clear();
-                            rewardedContraptions.clear();
-                            talkedContraptions.clear();
-                            final ZoneType dmgZone = ZoneManager.getInstance().getZoneById(200011);
-                            if (dmgZone != null) {
-                                dmgZone.setEnabled(true);
-                            }
+                                if (countdownTime > 60000) {
+                                    if (((countdownTime % 60000) == 0)
+                                            && (npcSpawn != null)
+                                            && (npcSpawn.getId() == INGENIOUS_CONTRAPTION)) {
+                                        npcSpawn.broadcastSay(
+                                                ChatType.NPC_SHOUT,
+                                                NpcStringId.S1_MINUTE_S_ARE_REMAINING,
+                                                Integer.toString((countdownTime / 60000)));
+                                    }
+                                } else if (countdownTime <= 0) {
+                                    if (countdown != null) {
+                                        countdown.cancel(false);
+                                        countdown = null;
+                                    }
 
-                            startQuestTimer("disable_zone", 300000, null, null);
-                        } else {
-                            if ((npcSpawn != null) && (npcSpawn.getId() == INGENIOUS_CONTRAPTION)) {
-                                npcSpawn.broadcastSay(
-                                        ChatType.NPC_SHOUT,
-                                        NpcStringId.S1_SECOND_S_REMAINING,
-                                        Integer.toString((countdownTime / 1000)));
-                            }
-                        }
-                    },
-                    60000,
-                    10000);
+                                    for (Npc spawnedNpc : postMortemSpawn) {
+                                        if ((spawnedNpc != null)
+                                                && ((spawnedNpc.getId() == INGENIOUS_CONTRAPTION)
+                                                        || (spawnedNpc.getId() == TIMETWISTER_GOLEM))) {
+                                            spawnedNpc.deleteMe();
+                                        }
+                                    }
+
+                                    brokenContraptions.clear();
+                                    rewardedContraptions.clear();
+                                    talkedContraptions.clear();
+                                    final ZoneType dmgZone =
+                                            ZoneManager.getInstance().getZoneById(200011);
+                                    if (dmgZone != null) {
+                                        dmgZone.setEnabled(true);
+                                    }
+
+                                    startQuestTimer("disable_zone", 300000, null, null);
+                                } else {
+                                    if ((npcSpawn != null) && (npcSpawn.getId() == INGENIOUS_CONTRAPTION)) {
+                                        npcSpawn.broadcastSay(
+                                                ChatType.NPC_SHOUT,
+                                                NpcStringId.S1_SECOND_S_REMAINING,
+                                                Integer.toString((countdownTime / 1000)));
+                                    }
+                                }
+                            },
+                            60000,
+                            10000,
+                            TimeUnit.MILLISECONDS);
             postMortemSpawn
                     .get(0)
                     .broadcastSay(
@@ -1150,17 +1154,24 @@ public class TullyWorkshop extends Script {
     private void handleDoorsOnDeath() {
         DoorData.getInstance().getDoor(20250005).openMe();
         DoorData.getInstance().getDoor(20250004).openMe();
-        ThreadPool.schedule(new DoorTask(new int[] {20250006, 20250007}, STATE_OPEN), 2000);
-        ThreadPool.schedule(new DoorTask(new int[] {20250778}, STATE_CLOSE), 3000);
-        ThreadPool.schedule(new DoorTask(new int[] {20250777}, STATE_CLOSE), 6000);
-        ThreadPool.schedule(new DoorTask(new int[] {20250009, 20250008}, STATE_OPEN), 11000);
+        WorldPartition.loop()
+                .schedule(new DoorTask(new int[] {20250006, 20250007}, STATE_OPEN), 2000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop().schedule(new DoorTask(new int[] {20250778}, STATE_CLOSE), 3000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop().schedule(new DoorTask(new int[] {20250777}, STATE_CLOSE), 6000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop()
+                .schedule(new DoorTask(new int[] {20250009, 20250008}, STATE_OPEN), 11000, TimeUnit.MILLISECONDS);
     }
 
     private void handleDoorsOnRespawn() {
         DoorData.getInstance().getDoor(20250009).closeMe();
         DoorData.getInstance().getDoor(20250008).closeMe();
-        ThreadPool.schedule(new DoorTask(new int[] {20250777, 20250778}, STATE_OPEN), 1000);
-        ThreadPool.schedule(new DoorTask(new int[] {20250005, 20250004, 20250006, 20250007}, STATE_CLOSE), 4000);
+        WorldPartition.loop()
+                .schedule(new DoorTask(new int[] {20250777, 20250778}, STATE_OPEN), 1000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop()
+                .schedule(
+                        new DoorTask(new int[] {20250005, 20250004, 20250006, 20250007}, STATE_CLOSE),
+                        4000,
+                        TimeUnit.MILLISECONDS);
     }
 
     private static class DoorTask implements Runnable {

@@ -26,10 +26,11 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Formulas;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 public class CreatureStatus {
@@ -192,7 +193,8 @@ public class CreatureStatus {
             final int period = Formulas.getRegeneratePeriod(activeChar);
 
             // Create the HP/MP/CP Regeneration task.
-            regTask = ThreadPool.scheduleAtFixedRate(this::doRegeneration, period, period);
+            regTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(this::doRegeneration, period, period, TimeUnit.MILLISECONDS);
         }
     }
 

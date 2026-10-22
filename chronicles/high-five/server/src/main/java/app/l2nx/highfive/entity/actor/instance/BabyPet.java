@@ -39,10 +39,11 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 public class BabyPet extends Pet {
@@ -172,7 +173,7 @@ public class BabyPet extends Pet {
 
     private void startCastTask() {
         if ((majorHeal != null) || (buffs != null) || ((recharge != null) && (castTask == null) && !isDead())) {
-            castTask = ThreadPool.scheduleAtFixedRate(new CastTask(this), 3000, 2000);
+            castTask = WorldPartition.loop().scheduleAtFixedRate(new CastTask(this), 3000, 2000, TimeUnit.MILLISECONDS);
         }
     }
 

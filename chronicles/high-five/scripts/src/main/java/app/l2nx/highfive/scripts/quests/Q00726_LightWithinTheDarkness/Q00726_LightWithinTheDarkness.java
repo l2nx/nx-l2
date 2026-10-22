@@ -39,10 +39,11 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00727_HopeWithinTheDarkness.Q00727_HopeWithinTheDarkness;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -245,7 +246,7 @@ public class Q00726_LightWithinTheDarkness extends Quest {
         instance.setExitLoc(new Location(player));
         dungeon.setReEnterTime(ClockBridge.wallMillis() + 14400000);
         InstanceManager.getInstance().addWorld(world);
-        ThreadPool.schedule(new spawnNpcs((PAWORLD) world), 10000);
+        WorldPartition.loop().schedule(new spawnNpcs((PAWORLD) world), 10000, TimeUnit.MILLISECONDS);
         for (Player partyMember : party.getMembers()) {
             teleportPlayer(partyMember, coords, world.getInstanceId());
             world.addAllowed(partyMember);
@@ -340,22 +341,42 @@ public class Q00726_LightWithinTheDarkness extends Quest {
     }
 
     protected void FirstWave(PAWORLD world) {
-        ThreadPool.schedule(
-                () -> {
-                    addSpawn(SEDUCED_KNIGHT, 49384, -12232, -9384, 0, false, 0, false, world.getInstanceId());
-                    addSpawn(SEDUCED_RANGER, 49192, -12232, -9384, 0, false, 0, false, world.getInstanceId());
-                    addSpawn(SEDUCED_MAGE, 49192, -12456, -9392, 0, false, 0, false, world.getInstanceId());
-                    addSpawn(SEDUCED_WARRIOR, 49192, -11992, -9392, 0, false, 0, false, world.getInstanceId());
-                    addSpawn(KANADIS_GUIDE1, 50536, -12232, -9384, 32768, false, 0, false, world.getInstanceId());
-                    broadCastPacket(world, new ExShowScreenMessage(NpcStringId.BEGIN_STAGE_1, 2, 3000));
-                    for (int i = 0; i < 10; i++) {
-                        addSpawn(
-                                KANADIS_FOLLOWER1, 50536, -12232, -9384, 32768, false, 0, false, world.getInstanceId());
-                    }
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            addSpawn(SEDUCED_KNIGHT, 49384, -12232, -9384, 0, false, 0, false, world.getInstanceId());
+                            addSpawn(SEDUCED_RANGER, 49192, -12232, -9384, 0, false, 0, false, world.getInstanceId());
+                            addSpawn(SEDUCED_MAGE, 49192, -12456, -9392, 0, false, 0, false, world.getInstanceId());
+                            addSpawn(SEDUCED_WARRIOR, 49192, -11992, -9392, 0, false, 0, false, world.getInstanceId());
+                            addSpawn(
+                                    KANADIS_GUIDE1,
+                                    50536,
+                                    -12232,
+                                    -9384,
+                                    32768,
+                                    false,
+                                    0,
+                                    false,
+                                    world.getInstanceId());
+                            broadCastPacket(world, new ExShowScreenMessage(NpcStringId.BEGIN_STAGE_1, 2, 3000));
+                            for (int i = 0; i < 10; i++) {
+                                addSpawn(
+                                        KANADIS_FOLLOWER1,
+                                        50536,
+                                        -12232,
+                                        -9384,
+                                        32768,
+                                        false,
+                                        0,
+                                        false,
+                                        world.getInstanceId());
+                            }
 
-                    ThreadPool.schedule(() -> SecondWave(world), 8 * 60 * 1000);
-                },
-                10000);
+                            WorldPartition.loop()
+                                    .schedule(() -> SecondWave(world), 8 * 60 * 1000, TimeUnit.MILLISECONDS);
+                        },
+                        10000,
+                        TimeUnit.MILLISECONDS);
     }
 
     protected void SecondWave(PAWORLD world) {
@@ -365,7 +386,7 @@ public class Q00726_LightWithinTheDarkness extends Quest {
             addSpawn(KANADIS_FOLLOWER2, 50536, -12232, -9384, 32768, false, 0, false, world.getInstanceId());
         }
 
-        ThreadPool.schedule(() -> ThirdWave(world), 8 * 60 * 1000);
+        WorldPartition.loop().schedule(() -> ThirdWave(world), 8 * 60 * 1000, TimeUnit.MILLISECONDS);
     }
 
     protected void ThirdWave(PAWORLD world) {

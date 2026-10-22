@@ -70,15 +70,16 @@ import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackableThinkTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -404,16 +405,18 @@ public class AttackableAI extends CreatureAI {
     @Override
     public void notifyActionAfraid(WorldObject effector, boolean start) {
         if ((fearTime > 0) && (fearTask == null)) {
-            fearTask = ThreadPool.scheduleAtFixedRate(
-                    () -> {
-                        if (effector != null) {
-                            final int fearTimeLeft = getFearTime() - FEAR_TICKS;
-                            setFearTime(fearTimeLeft);
-                            notifyActionAfraid(effector, start);
-                        }
-                    },
-                    0,
-                    FEAR_TICKS * 1000);
+            fearTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            () -> {
+                                if (effector != null) {
+                                    final int fearTimeLeft = getFearTime() - FEAR_TICKS;
+                                    setFearTime(fearTimeLeft);
+                                    notifyActionAfraid(effector, start);
+                                }
+                            },
+                            0,
+                            FEAR_TICKS * 1000,
+                            TimeUnit.MILLISECONDS);
 
             actor.startAbnormalVisualEffect(true, AbnormalVisualEffect.TURN_FLEE);
         } else {

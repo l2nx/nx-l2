@@ -79,14 +79,15 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.RelationChanged;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.TeleportToLocation;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -216,16 +217,20 @@ public abstract class Summon extends Playable {
     @Override
     public void updateAbnormalEffect() {
         if (abnormalEffectTask == null) {
-            abnormalEffectTask = ThreadPool.schedule(
-                    () -> {
-                        if (isSpawned()) {
-                            World.forEachVisibleObject(
-                                    this, Player.class, player -> player.sendPacket(new SummonInfo(this, player, 1)));
-                        }
+            abnormalEffectTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                if (isSpawned()) {
+                                    World.forEachVisibleObject(
+                                            this,
+                                            Player.class,
+                                            player -> player.sendPacket(new SummonInfo(this, player, 1)));
+                                }
 
-                        abnormalEffectTask = null;
-                    },
-                    50);
+                                abnormalEffectTask = null;
+                            },
+                            50,
+                            TimeUnit.MILLISECONDS);
         }
     }
 

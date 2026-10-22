@@ -15,6 +15,7 @@ import app.l2nx.network.metrics.NetworkMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,8 @@ import org.springframework.util.function.SingletonSupplier;
 
 @AutoConfiguration(after = NetworkAutoConfiguration.class)
 public class SessionAutoConfiguration {
+    public static final String AUTHED_DRAIN_SCHEDULER = "authedDrainScheduler";
+
     @Bean
     @ConditionalOnMissingBean
     public CommandRegistry commandRegistry(ObjectProvider<CommandHandler<?>> handlers) {
@@ -30,8 +33,9 @@ public class SessionAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SessionMetrics sessionMetrics(ObjectProvider<MeterRegistry> registry) {
-        return new SessionMetrics(registry.getIfAvailable(() -> Metrics.globalRegistry));
+    public SessionMetrics sessionMetrics(NetworkProperties properties, ObjectProvider<MeterRegistry> registry) {
+        return new SessionMetrics(
+                registry.getIfAvailable(() -> Metrics.globalRegistry), properties.inboundQueueLimit());
     }
 
     @Bean(destroyMethod = "close")
@@ -63,10 +67,13 @@ public class SessionAutoConfiguration {
             NetworkProperties properties,
             BlockingTaskExecutor sessionDrainExecutor,
             CommandDispatcher commandDispatcher,
-            SessionMetrics sessionMetrics) {
+            SessionMetrics sessionMetrics,
+            @Qualifier(AUTHED_DRAIN_SCHEDULER) ObjectProvider<DrainScheduler> authedDrainScheduler) {
+        final DrainScheduler pool = DrainScheduler.pool(sessionDrainExecutor::execute, sessionMetrics.drainFailures());
         return new SessionFactory(
                 Session.Limits.of(properties),
-                DrainScheduler.pool(sessionDrainExecutor::execute, sessionMetrics.drainFailures()),
+                pool,
+                authedDrainScheduler.getIfAvailable(() -> pool),
                 commandDispatcher,
                 sessionMetrics);
     }

@@ -25,11 +25,12 @@ package app.l2nx.highfive.managers;
 import app.l2nx.highfive.Shutdown;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -92,8 +93,11 @@ public class ServerRestartManager {
                                     .atZone(ClockBridge.wallClock().getZone()));
                 }
 
-                ThreadPool.schedule(
-                        new ServerRestartTask(), lastDelay - (ServerConfig.SERVER_RESTART_SCHEDULE_COUNTDOWN * 1000));
+                WorldPartition.loop()
+                        .schedule(
+                                new ServerRestartTask(),
+                                lastDelay - (ServerConfig.SERVER_RESTART_SCHEDULE_COUNTDOWN * 1000),
+                                TimeUnit.MILLISECONDS);
                 log.info("Scheduled server restart at {}.", lastRestart.getTime());
             }
         } catch (Exception e) {

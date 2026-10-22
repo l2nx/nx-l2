@@ -33,7 +33,6 @@ import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -66,10 +65,8 @@ class AuthenticationResultHandler implements SessionCommandHandler<Authenticatio
         client.setAccountId(accountId);
         accounts.enter(accountId, client);
         port.accountsEntered(List.of(accountId));
-        client.authenticated();
         client.setSessionId(pending.sessionKey());
-        final CharSelectionInfo selection = new CharSelectionInfo(client);
-        client.sendPacket(selection);
-        client.setCharSelection(selection.getCharInfo());
+        client.authenticated();
+        session.offerInternal(new ListCharacters());
     }
 }

@@ -39,13 +39,14 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.type.ClanHallZone;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -133,9 +134,9 @@ public abstract class ClanHall {
 
             final long currentTime = ClockBridge.wallMillis();
             if (endTime > currentTime) {
-                ThreadPool.schedule(new FunctionTask(cwh), endTime - currentTime);
+                WorldPartition.loop().schedule(new FunctionTask(cwh), endTime - currentTime, TimeUnit.MILLISECONDS);
             } else {
-                ThreadPool.schedule(new FunctionTask(cwh), 0);
+                WorldPartition.loop().schedule(new FunctionTask(cwh), 0, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -167,7 +168,7 @@ public abstract class ClanHall {
                                     .destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, fee, null, null);
                         }
 
-                        ThreadPool.schedule(new FunctionTask(true), rate);
+                        WorldPartition.loop().schedule(new FunctionTask(true), rate, TimeUnit.MILLISECONDS);
                     } else {
                         removeFunction(type);
                     }

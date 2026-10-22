@@ -39,8 +39,8 @@ import app.l2nx.highfive.mechanics.siege.manor.ManorMode;
 import app.l2nx.highfive.mechanics.siege.manor.Seed;
 import app.l2nx.highfive.mechanics.siege.manor.SeedProduction;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.residence.CastleManorRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.time.Instant;
@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
@@ -126,10 +127,12 @@ public class CastleManorManager implements IXmlReader {
 
             // Schedule auto-save if not saving all actions.
             if (!GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
-                ThreadPool.scheduleAtFixedRate(
-                        this::storeMe,
-                        GeneralConfig.ALT_MANOR_SAVE_PERIOD_RATE * 60 * 60 * 1000,
-                        GeneralConfig.ALT_MANOR_SAVE_PERIOD_RATE * 60 * 60 * 1000);
+                WorldPartition.loop()
+                        .scheduleAtFixedRate(
+                                this::storeMe,
+                                TimeUnit.HOURS.toMillis(GeneralConfig.ALT_MANOR_SAVE_PERIOD_RATE),
+                                TimeUnit.HOURS.toMillis(GeneralConfig.ALT_MANOR_SAVE_PERIOD_RATE),
+                                TimeUnit.MILLISECONDS);
             }
         } else {
             mode = ManorMode.DISABLED;
@@ -275,7 +278,7 @@ public class CastleManorManager implements IXmlReader {
             nextModeChange.setTimeInMillis(ClockBridge.wallMillis() + delay);
         }
 
-        ThreadPool.schedule(this::changeMode, delay);
+        WorldPartition.loop().schedule(this::changeMode, delay, TimeUnit.MILLISECONDS);
     }
 
     public void changeMode() {

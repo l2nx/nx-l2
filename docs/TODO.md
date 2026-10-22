@@ -28,38 +28,42 @@ lists what is open.
 - [#40](https://github.com/l2nx/nx-l2/issues/40) Dropped items lose augmentation and elemental attributes across a restart
 - [#41](https://github.com/l2nx/nx-l2/issues/41) E10: inject beans instead of the static getInstance() bridges
 - [#42](https://github.com/l2nx/nx-l2/issues/42) E7/E8: cadence settings for periodic systems (`l2nx.engine.cadence.*`)
-- [#43](https://github.com/l2nx/nx-l2/issues/43) E6 part 2: split `GameServer.start()` so the partition runtime starts
-  between data load and port open
 - [#44](https://github.com/l2nx/nx-l2/issues/44) Replay production incidents of the world loop
 - [#45](https://github.com/l2nx/nx-l2/issues/45) Input runs against timers due up to one pass earlier (sub-tick order)
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
 - [#51](https://github.com/l2nx/nx-l2/issues/51) Replace key-value variable stores with typed owner state
 - [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
-- [#54](https://github.com/l2nx/nx-l2/issues/54) Dimensional Rift state races between player actions and its jump task
 - [#55](https://github.com/l2nx/nx-l2/issues/55) Pet.destroyItem never sends the disappeared message
 - [#56](https://github.com/l2nx/nx-l2/issues/56) Ended long-time event items on the ground come back after a restart
 - [#57](https://github.com/l2nx/nx-l2/issues/57) Mail keeps its cash-on-delivery price after its attachments are destroyed
 - [#58](https://github.com/l2nx/nx-l2/issues/58) Castle circlets stay with the old owner from the second change of owner on
 - [#59](https://github.com/l2nx/nx-l2/issues/59) A clan hall sale auction without bids leaves its row behind
-- [#60](https://github.com/l2nx/nx-l2/issues/60) Event item cleanup can delete rows of a container that loads during it
 - [#61](https://github.com/l2nx/nx-l2/issues/61) Castle.setOwner throws for a castle without a territory
-- [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
 - [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
 - [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
 - [#68](https://github.com/l2nx/nx-l2/issues/68) E0: load harness in a separate process, gate of the E6 cutover ([spec 009](specs/009-load-harness.md))
+- [#69](https://github.com/l2nx/nx-l2/issues/69) JDBC runs on the world loop until write-behind (E4)
 - [#70](https://github.com/l2nx/nx-l2/issues/70) AdminPForge: forge a client packet through the player's adapter
 - [#71](https://github.com/l2nx/nx-l2/issues/71) Load scenario replaying recorded sessions
 - [#72](https://github.com/l2nx/nx-l2/issues/72) Castle siege as a load scenario
 - [#73](https://github.com/l2nx/nx-l2/issues/73) E10: move send-time side effects of legacy server packets into slice handlers
 - [#74](https://github.com/l2nx/nx-l2/issues/74) GrandBossDataTest fails depending on test order
 - [#76](https://github.com/l2nx/nx-l2/issues/76) Server list shows no character count for the account
+- [#77](https://github.com/l2nx/nx-l2/issues/77) Fishing with 17 lures has no guts-check period
 - [#78](https://github.com/l2nx/nx-l2/issues/78) SystemMessage writes the declared parameter count even when it skips a null parameter
 - [#79](https://github.com/l2nx/nx-l2/issues/79) Alliance chat ignores the block list
 - [#80](https://github.com/l2nx/nx-l2/issues/80) Restart into offline trade disconnects the trader just created when OfflineDisconnectSameAccount is on
+- [#82](https://github.com/l2nx/nx-l2/issues/82) Aborting an alt-mode craft during its final delay still finishes it
+- [#83](https://github.com/l2nx/nx-l2/issues/83) PostRepositoryTest sometimes cannot get a JDBC connection
 - [#84](https://github.com/l2nx/nx-l2/issues/84) Game server loses its login registration (hexid.txt) on every installDist
 
 ## Done
 
+- [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
+- [#60](https://github.com/l2nx/nx-l2/issues/60) Event item cleanup can delete rows of a container that loads during it
+- [#54](https://github.com/l2nx/nx-l2/issues/54) Dimensional Rift state races between player actions and its jump task
+- [#43](https://github.com/l2nx/nx-l2/issues/43) E6 part 2: split `GameServer.start()` so the partition runtime starts
+  between data load and port open
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#81](https://github.com/l2nx/nx-l2/issues/81) NetworkServer close leaves a connection accepted during shutdown open forever
 - [#75](https://github.com/l2nx/nx-l2/issues/75) REUSE licences check fails on main: ten files without SPDX information

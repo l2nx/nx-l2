@@ -50,7 +50,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.BuyList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBuySellList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShowBoard;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -170,25 +170,34 @@ public class HomeBoard implements IParseBoardHandler {
             final int multisellId = Integer.parseInt(buypassOptions[0]);
             final String page = buypassOptions[1];
             returnHtml = HtmCache.getInstance().getHtm(player, "data/html/CommunityBoard/Custom/" + page + ".html");
-            ThreadPool.schedule(
-                    () -> MultisellData.getInstance().separateAndSend(multisellId, player, null, false), 100);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> MultisellData.getInstance().separateAndSend(multisellId, player, null, false),
+                            100,
+                            TimeUnit.MILLISECONDS);
         } else if (command.startsWith("_bbsexcmultisell")) {
             final String fullBypass = command.replace("_bbsexcmultisell;", "");
             final String[] buypassOptions = fullBypass.split(",");
             final int multisellId = Integer.parseInt(buypassOptions[0]);
             final String page = buypassOptions[1];
             returnHtml = HtmCache.getInstance().getHtm(player, "data/html/CommunityBoard/Custom/" + page + ".html");
-            ThreadPool.schedule(
-                    () -> MultisellData.getInstance().separateAndSend(multisellId, player, null, true), 100);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> MultisellData.getInstance().separateAndSend(multisellId, player, null, true),
+                            100,
+                            TimeUnit.MILLISECONDS);
         } else if (command.startsWith("_bbssell")) {
             final String page = command.replace("_bbssell;", "");
             returnHtml = HtmCache.getInstance().getHtm(player, "data/html/CommunityBoard/Custom/" + page + ".html");
-            ThreadPool.schedule(
-                    () -> {
-                        player.sendPacket(new BuyList(BuyListData.getInstance().getBuyList(423), player.getAdena(), 0));
-                        player.sendPacket(new ExBuySellList(player, false));
-                    },
-                    100);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                player.sendPacket(
+                                        new BuyList(BuyListData.getInstance().getBuyList(423), player.getAdena(), 0));
+                                player.sendPacket(new ExBuySellList(player, false));
+                            },
+                            100,
+                            TimeUnit.MILLISECONDS);
         } else if (command.startsWith("_bbsteleport")) {
             final String teleBuypass = command.replace("_bbsteleport;", "");
             if (player.getInventory().getInventoryItemCount(CommunityBoardConfig.COMMUNITYBOARD_CURRENCY, -1)
@@ -206,7 +215,7 @@ public class HomeBoard implements IParseBoardHandler {
                 player.setIn7sDungeon(false);
                 player.setInstanceId(0);
                 player.teleToLocation(CommunityBoardConfig.COMMUNITY_AVAILABLE_TELEPORTS.get(teleBuypass), 0);
-                ThreadPool.schedule(player::enableAllSkills, 3000);
+                WorldPartition.loop().schedule(player::enableAllSkills, 3000, TimeUnit.MILLISECONDS);
             }
         } else if (command.startsWith("_bbsbuff")) {
             final String fullBypass = command.replace("_bbsbuff;", "");

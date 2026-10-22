@@ -22,7 +22,8 @@ package app.l2nx.highfive.entity.actor.tasks.attackable;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author xban1x
@@ -46,7 +47,7 @@ public class CommandChannelTimer implements Runnable {
             attackable.setFirstCommandChannelAttacked(null);
             attackable.setCommandChannelLastAttack(0);
         } else {
-            ThreadPool.schedule(this, 10000); // 10sec
+            WorldPartition.loop().schedule(this, 10000, TimeUnit.MILLISECONDS); // 10sec
         }
     }
 }

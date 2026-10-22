@@ -22,8 +22,9 @@ package app.l2nx.highfive.entity.item.holders;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 /**
@@ -79,6 +80,6 @@ public class DropProtection implements Runnable {
             throw new NullPointerException("Trying to protect dropped item to null owner");
         }
 
-        task = ThreadPool.schedule(this, PROTECTED_MILLIS_TIME);
+        task = WorldPartition.loop().schedule(this, PROTECTED_MILLIS_TIME, TimeUnit.MILLISECONDS);
     }
 }

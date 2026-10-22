@@ -72,16 +72,17 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PetInventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StopMove;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.pet.model.PetRow;
 import app.l2nx.highfive.repository.pet.model.SummonEffectRow;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -915,7 +916,7 @@ public class Pet extends Summon {
         // Stop feeding task if it is active.
         stopFeed();
         if (!isDead() && (getOwner().getSummon() == this)) {
-            feedTask = ThreadPool.scheduleAtFixedRate(new FeedTask(), 10000, 10000);
+            feedTask = WorldPartition.loop().scheduleAtFixedRate(new FeedTask(), 10000, 10000, TimeUnit.MILLISECONDS);
         }
     }
 

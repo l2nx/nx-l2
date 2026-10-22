@@ -14,6 +14,10 @@ import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.clock.SystemGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
@@ -25,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.context.LifecycleAutoConfiguration;
@@ -137,6 +142,84 @@ class EngineAutoConfigurationTest {
                         assertThat(world.join(Duration.ofSeconds(5))).isTrue();
                         assertThat(exits).isEmpty();
                     });
+        }
+    }
+
+    @Nested
+    class Close {
+        @Test
+        void close_shouldWarnButNotExit_whenAWorldSaveBlocksAPassPastTheExitLimit() {
+            final ListAppender<ILoggingEvent> logs = new ListAppender<>();
+            final Logger watchdogLog = (Logger) LoggerFactory.getLogger("app.l2nx.engine.core.loop.LoopWatchdog");
+            logs.start();
+            watchdogLog.addAppender(logs);
+            try {
+                runner.withBean(BlockingSave.class)
+                        .withPropertyValues(
+                                "l2nx.engine.blocked-pass-warning=50ms", "l2nx.engine.blocked-pass-exit=100ms")
+                        .run(context -> {
+                            assertThat(context).hasNotFailed();
+
+                            context.close();
+
+                            assertThat(exits).isEmpty();
+                        });
+            } finally {
+                watchdogLog.detachAppender(logs);
+            }
+
+            // Tests run in parallel and share the logger: only a stack inside this save counts.
+            assertThat(logs.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getThrowableProxy().getStackTraceElementProxyArray())
+                        .anySatisfy(frame -> assertThat(frame.getSTEAsString()).contains("BlockingSave"));
+            });
+        }
+    }
+
+    static final class BlockingSave implements SmartLifecycle {
+        // Past the exit limit by more than a watchdog check interval, so an armed exit would fire.
+        private static final long BLOCKED_MILLIS = 1_500;
+
+        private final PartitionRuntime runtime;
+        private volatile boolean running;
+
+        BlockingSave(PartitionRuntime runtime) {
+            this.runtime = runtime;
+        }
+
+        @Override
+        public void start() {
+            running = true;
+        }
+
+        @Override
+        public void stop() {
+            final CompletableFuture<Void> saved = new CompletableFuture<>();
+            runtime.world().offer(loop -> {
+                save();
+                saved.complete(null);
+            });
+            saved.orTimeout(10, TimeUnit.SECONDS).join();
+            running = false;
+        }
+
+        @Override
+        public boolean isRunning() {
+            return running;
+        }
+
+        @Override
+        public int getPhase() {
+            return PartitionRuntime.PHASE + 1;
+        }
+
+        private static void save() {
+            try {
+                Thread.sleep(BLOCKED_MILLIS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

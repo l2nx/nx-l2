@@ -38,10 +38,11 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.Earthquake;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -285,7 +286,10 @@ public abstract class Chamber extends InstanceScript {
     public void onEnterInstance(Player player, InstanceWorld world, boolean firstEntrance) {
         if (firstEntrance) {
             world.setParameter("PartyInside", player.getParty());
-            world.setParameter("banishTask", ThreadPool.scheduleAtFixedRate(new BanishTask(world), 60000, 60000));
+            world.setParameter(
+                    "banishTask",
+                    WorldPartition.loop()
+                            .scheduleAtFixedRate(new BanishTask(world), 60000, 60000, TimeUnit.MILLISECONDS));
             enter(world);
         } else {
             teleportPlayer(
@@ -478,7 +482,10 @@ public abstract class Chamber extends InstanceScript {
 
         // Schedule next room change only if remaining time is enough
         if ((instance.getInstanceEndTime() - ClockBridge.gameMillis()) > nextInterval) {
-            world.setParameter("roomChangeTask", ThreadPool.schedule(new ChangeRoomTask(world), nextInterval - 5000));
+            world.setParameter(
+                    "roomChangeTask",
+                    WorldPartition.loop()
+                            .schedule(new ChangeRoomTask(world), nextInterval - 5000, TimeUnit.MILLISECONDS));
         }
     }
 
@@ -538,7 +545,17 @@ public abstract class Chamber extends InstanceScript {
         public void run() {
             try {
                 earthQuake(world);
-                Thread.sleep(5000);
+                // Replaces the handle, so stopRoomChangeTask still cancels the change during the earthquake.
+                world.setParameter(
+                        "roomChangeTask",
+                        WorldPartition.loop().schedule(this::changeRoomAfterEarthquake, 5000, TimeUnit.MILLISECONDS));
+            } catch (Exception e) {
+                log.warn("Room change failed", e);
+            }
+        }
+
+        private void changeRoomAfterEarthquake() {
+            try {
                 changeRoom(world);
             } catch (Exception e) {
                 log.warn("Room change failed", e);

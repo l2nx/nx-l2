@@ -41,7 +41,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchCCMyRecor
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchCCRecord;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchCCRetire;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -53,6 +53,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -235,9 +236,11 @@ public class KrateiArena {
 
         teleportAllPlayers();
         final long time = 1200000;
-        eventTask = ThreadPool.schedule(this::endEvent, time);
-        timeTask = ThreadPool.schedule(this::timeLeftInfo, time - 11000);
-        watcherTask = ThreadPool.schedule(this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000);
+        eventTask = WorldPartition.loop().schedule(this::endEvent, time, TimeUnit.MILLISECONDS);
+        timeTask = WorldPartition.loop().schedule(this::timeLeftInfo, time - 11000, TimeUnit.MILLISECONDS);
+        watcherTask = WorldPartition.loop()
+                .schedule(
+                        this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000, TimeUnit.MILLISECONDS);
         activeNow = true;
     }
 
@@ -325,7 +328,9 @@ public class KrateiArena {
             watcherRotation = true;
         }
 
-        watcherTask = ThreadPool.schedule(this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000);
+        watcherTask = WorldPartition.loop()
+                .schedule(
+                        this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000, TimeUnit.MILLISECONDS);
     }
 
     private Map<Player, Integer> getParticipants() {
@@ -425,8 +430,11 @@ public class KrateiArena {
             }
         }
 
-        doorTask =
-                ThreadPool.schedule(() -> changeDoorStatus(active), (getParams().getInt("doorRotationTime") * 1000));
+        doorTask = WorldPartition.loop()
+                .schedule(
+                        () -> changeDoorStatus(active),
+                        getParams().getInt("doorRotationTime") * 1000,
+                        TimeUnit.MILLISECONDS);
     }
 
     private void changeDoorsStatus(List<Door> doors, boolean isOpen) {
@@ -627,13 +635,13 @@ public class KrateiArena {
         }
 
         if (!getPlayers().isEmpty()) {
-            ThreadPool.schedule(new MessageTask(getPlayers(), 10, 1), 0);
+            WorldPartition.loop().schedule(new MessageTask(getPlayers(), 10, 1), 0, TimeUnit.MILLISECONDS);
         }
     }
 
     public void waitTimeInfo() {
         if (!getPlayers().isEmpty()) {
-            ThreadPool.schedule(new MessageTask(getPlayers(), 10, 0), 0);
+            WorldPartition.loop().schedule(new MessageTask(getPlayers(), 10, 0), 0, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -671,7 +679,7 @@ public class KrateiArena {
 
                 time--;
                 if (time > 0) {
-                    ThreadPool.schedule(new MessageTask(players, time, type), 1000);
+                    WorldPartition.loop().schedule(new MessageTask(players, time, type), 1000, TimeUnit.MILLISECONDS);
                 }
             }
         }
@@ -679,7 +687,8 @@ public class KrateiArena {
 
     public void setRespawnTask(Player player) {
         if (player != null) {
-            ThreadPool.schedule(new RespawnTask(player, getParams().getInt("respawnTime")), 0);
+            WorldPartition.loop()
+                    .schedule(new RespawnTask(player, getParams().getInt("respawnTime")), 0, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -700,7 +709,7 @@ public class KrateiArena {
                         .addInt(time));
                 time--;
                 if (time > 0) {
-                    ThreadPool.schedule(new RespawnTask(player, time), 1000);
+                    WorldPartition.loop().schedule(new RespawnTask(player, time), 1000, TimeUnit.MILLISECONDS);
                 } else {
                     respawnEffects(player);
                     player.teleToLocation(

@@ -24,8 +24,9 @@ package app.l2nx.highfive.mechanics.script;
 
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 public class QuestTimer {
@@ -53,9 +54,12 @@ public class QuestTimer {
         this.repeating = repeating;
 
         if (repeating) {
-            scheduler = ThreadPool.scheduleAtFixedRate(new ScheduleTimerTask(), time, time); // Prepare auto end task.
+            scheduler = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new ScheduleTimerTask(), time, time, TimeUnit.MILLISECONDS); // Prepare auto end task.
         } else {
-            scheduler = ThreadPool.schedule(new ScheduleTimerTask(), time); // Prepare auto end task.
+            scheduler = WorldPartition.loop()
+                    .schedule(new ScheduleTimerTask(), time, TimeUnit.MILLISECONDS); // Prepare auto end task.
         }
 
         if (npc != null) {

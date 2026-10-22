@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.handler;
 
-import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -30,12 +29,11 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerAction;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ConfirmDlg;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.GMAudit;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.DurationFormatUtils;
 
 @Slf4j
 public class AdminCommandHandler implements IHandler<IAdminCommandHandler, String> {
@@ -100,10 +98,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
             player.addAction(PlayerAction.ADMIN_COMMAND);
             player.sendPacket(dlg);
         } else {
-            // Admin Commands must run through a long running task, otherwise a command that takes too much time will
-            // freeze the server, this way you'll feel only a minor spike.
-            ThreadPool.execute(() -> {
-                final long begin = ClockBridge.gameMillis();
+            WorldPartition.loop().execute(() -> {
                 try {
                     if (GeneralConfig.GMAUDIT) {
                         final WorldObject target = player.getTarget();
@@ -117,12 +112,6 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
                 } catch (RuntimeException e) {
                     player.sendMessage("Exception during execution of  '" + fullCommand + "': " + e.toString());
                     log.warn("Exception during execution of {}", fullCommand, e);
-                } finally {
-                    final long runtime = ClockBridge.gameMillis() - begin;
-                    if (runtime > 5000) {
-                        player.sendMessage("The execution of '" + fullCommand + "' took "
-                                + DurationFormatUtils.formatDurationWords(runtime, true, true) + ".");
-                    }
                 }
             });
         }

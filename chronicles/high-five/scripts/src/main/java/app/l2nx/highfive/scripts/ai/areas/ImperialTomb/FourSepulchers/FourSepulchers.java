@@ -44,8 +44,8 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00620_FourGoblets.Q00620_FourGoblets;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.io.File;
 import java.util.ArrayList;
@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -316,7 +317,8 @@ public class FourSepulchers extends Script implements IXmlReader {
                         for (int[] doorInfo : DOORS) {
                             if ((doorInfo[0] == sepulcherId) && (doorInfo[1] == currentWave)) {
                                 openDoor(doorInfo[2], 0);
-                                ThreadPool.schedule(() -> closeDoor(doorInfo[2], 0), 15000);
+                                WorldPartition.loop()
+                                        .schedule(() -> closeDoor(doorInfo[2], 0), 15000, TimeUnit.MILLISECONDS);
                                 break;
                             }
                         }
@@ -649,11 +651,13 @@ public class FourSepulchers extends Script implements IXmlReader {
         showHtmlFile(player, npcId + "-OK.html", npc, null);
 
         // Kick all players when/if time is over.
-        ThreadPool.schedule(
-                () -> ZoneManager.getInstance()
-                        .getZoneById(MANAGER_ZONES.get(npcId))
-                        .oustAllPlayers(),
-                EVENT_TIME * 60 * 1000);
+        WorldPartition.loop()
+                .schedule(
+                        () -> ZoneManager.getInstance()
+                                .getZoneById(MANAGER_ZONES.get(npcId))
+                                .oustAllPlayers(),
+                        EVENT_TIME * 60 * 1000,
+                        TimeUnit.MILLISECONDS);
 
         // Init progress.
         STORED_PROGRESS.put(sepulcherId, 1); // Start from 1.

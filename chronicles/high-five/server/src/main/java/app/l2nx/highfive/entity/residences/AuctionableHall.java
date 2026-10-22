@@ -37,9 +37,10 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.residence.model.ClanHallState;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -99,15 +100,17 @@ public class AuctionableHall extends ClanHall {
     private void initialyzeTask(boolean forced) {
         final long currentTime = ClockBridge.wallMillis();
         if (paidUntil > currentTime) {
-            ThreadPool.schedule(new FeeTask(), paidUntil - currentTime);
+            WorldPartition.loop().schedule(new FeeTask(), paidUntil - currentTime, TimeUnit.MILLISECONDS);
         } else if (!paid && !forced) {
             if ((ClockBridge.wallMillis() + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
-                ThreadPool.schedule(new FeeTask(), 3600000 * 24);
+                WorldPartition.loop().schedule(new FeeTask(), 3600000 * 24, TimeUnit.MILLISECONDS);
             } else {
-                ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - ClockBridge.wallMillis());
+                WorldPartition.loop()
+                        .schedule(
+                                new FeeTask(), (paidUntil + CH_RATE) - ClockBridge.wallMillis(), TimeUnit.MILLISECONDS);
             }
         } else {
-            ThreadPool.schedule(new FeeTask(), 0);
+            WorldPartition.loop().schedule(new FeeTask(), 0, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -123,7 +126,7 @@ public class AuctionableHall extends ClanHall {
 
                 final long time = ClockBridge.wallMillis();
                 if (paidUntil > time) {
-                    ThreadPool.schedule(new FeeTask(), paidUntil - time);
+                    WorldPartition.loop().schedule(new FeeTask(), paidUntil - time, TimeUnit.MILLISECONDS);
                     return;
                 }
 
@@ -141,7 +144,7 @@ public class AuctionableHall extends ClanHall {
                             .getClan(getOwnerId())
                             .getWarehouse()
                             .destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, getLease(), null, null);
-                    ThreadPool.schedule(new FeeTask(), paidUntil - time);
+                    WorldPartition.loop().schedule(new FeeTask(), paidUntil - time, TimeUnit.MILLISECONDS);
                     paid = true;
                     updateDb();
                 } else {
@@ -155,7 +158,7 @@ public class AuctionableHall extends ClanHall {
                                             SystemMessageId
                                                     .THE_CLAN_HALL_FEE_IS_ONE_WEEK_OVERDUE_THEREFORE_THE_CLAN_HALL_OWNERSHIP_HAS_BEEN_REVOKED));
                         } else {
-                            ThreadPool.schedule(new FeeTask(), 3000);
+                            WorldPartition.loop().schedule(new FeeTask(), 3000, TimeUnit.MILLISECONDS);
                         }
                     } else {
                         updateDb();
@@ -165,9 +168,10 @@ public class AuctionableHall extends ClanHall {
                         sm.addInt(lease);
                         clan.broadcastToOnlineMembers(sm);
                         if ((time + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
-                            ThreadPool.schedule(new FeeTask(), 3600000 * 24);
+                            WorldPartition.loop().schedule(new FeeTask(), 3600000 * 24, TimeUnit.MILLISECONDS);
                         } else {
-                            ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - time);
+                            WorldPartition.loop()
+                                    .schedule(new FeeTask(), (paidUntil + CH_RATE) - time, TimeUnit.MILLISECONDS);
                         }
                     }
                 }

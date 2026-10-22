@@ -23,9 +23,10 @@
 package app.l2nx.highfive.taskmanagers;
 
 import app.l2nx.highfive.entity.actor.Creature;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -35,7 +36,7 @@ public class CreatureSeeTaskManager implements Runnable {
     private static boolean working = false;
 
     protected CreatureSeeTaskManager() {
-        ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 1000, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

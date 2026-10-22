@@ -18,6 +18,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.loop.Loop;
+import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -29,15 +31,14 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.auction.ClanHallAuctionRepository;
 import app.l2nx.highfive.repository.auction.model.ClanHallAuctionRow;
 import app.l2nx.highfive.repository.auction.model.ClanHallBid;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -49,9 +50,10 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.MockedStatic;
 import org.springframework.dao.DataAccessResourceFailureException;
 
-@ExtendWith(ClockBridgeExtension.class)
+@ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock(WorldLoopExtension.LOCK)
 class ClanHallAuctionTest {
     private static final int HALL = 22;
     private static final int BIDDER_CLAN = 7;
@@ -132,7 +134,6 @@ class ClanHallAuctionTest {
 
         private final ClanHallAuctionManager manager = mock(ClanHallAuctionManager.class);
         private final ClanHallTable halls = mock(ClanHallTable.class);
-        private final ScheduledFuture<?> endTask = mock(ScheduledFuture.class);
         private final List<ClanHallAuction> auctions = new ArrayList<>();
         private final List<MockedStatic<?>> bridges = new ArrayList<>();
 
@@ -143,9 +144,6 @@ class ClanHallAuctionTest {
             bind(ClanHallTable.class, ClanHallTable::getInstance, halls);
             bind(ClanTable.class, ClanTable::getInstance, clans);
             bind(ClanHallData.class, ClanHallData::getInstance, mock(ClanHallData.class));
-            final MockedStatic<ThreadPool> threadPool = mockStatic(ThreadPool.class);
-            threadPool.when(() -> ThreadPool.schedule(any(), anyLong())).thenAnswer(invocation -> endTask);
-            bridges.add(threadPool);
 
             when(manager.getAuctions()).thenReturn(auctions);
             when(manager.findAuction(HALL))
@@ -178,12 +176,19 @@ class ClanHallAuctionTest {
         }
 
         @Test
-        void cancelAuction_shouldCancelScheduledEnd() {
-            final ClanHallAuction sale = storedSale();
+        void cancelAuction_shouldCancelScheduledEnd(Loop world) {
+            final List<Long> timers = new ArrayList<>();
 
-            sale.cancelAuction();
+            WorldLoopExtension.runInPass(() -> {
+                timers.add(world.timers(TimeBase.GAME).size());
+                final ClanHallAuction sale = storedSale();
+                timers.add(world.timers(TimeBase.GAME).size());
+                sale.cancelAuction();
+                timers.add(world.timers(TimeBase.GAME).size());
+            });
 
-            verify(endTask).cancel(false);
+            final long before = timers.getFirst();
+            assertThat(timers).containsExactly(before, before + 1, before);
         }
 
         @Test

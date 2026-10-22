@@ -29,7 +29,8 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPCCafePointInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 public class PcCafePointsManager {
     public void run(Player player) {
@@ -40,10 +41,12 @@ public class PcCafePointsManager {
             return;
         }
 
-        ThreadPool.scheduleAtFixedRate(
-                () -> giveRetailPcCafePont(player),
-                PremiumSystemConfig.PC_CAFE_REWARD_TIME,
-                PremiumSystemConfig.PC_CAFE_REWARD_TIME);
+        WorldPartition.loop()
+                .scheduleAtFixedRate(
+                        () -> giveRetailPcCafePont(player),
+                        PremiumSystemConfig.PC_CAFE_REWARD_TIME,
+                        PremiumSystemConfig.PC_CAFE_REWARD_TIME,
+                        TimeUnit.MILLISECONDS);
     }
 
     public void giveRetailPcCafePont(Player player) {

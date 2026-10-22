@@ -39,9 +39,10 @@ import app.l2nx.highfive.mechanics.buylist.Product;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShopPreviewInfo;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -227,7 +228,8 @@ public class RequestPreviewItem extends ClientPacket {
             player.sendPacket(new ShopPreviewInfo(itemList));
 
             // Schedule task
-            ThreadPool.schedule(new RemoveWearItemsTask(player), GeneralConfig.WEAR_DELAY * 1000);
+            WorldPartition.loop()
+                    .schedule(new RemoveWearItemsTask(player), GeneralConfig.WEAR_DELAY * 1000, TimeUnit.MILLISECONDS);
         }
     }
 }

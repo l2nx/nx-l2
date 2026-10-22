@@ -26,13 +26,14 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -157,7 +158,7 @@ public class Parade extends Script {
         // Starts at 8:00 and repeats every 6 hours.
         final long diff = timeLeftMilli(8, 0, 0);
         final long cycle = 3600000;
-        ThreadPool.scheduleAtFixedRate(new Start(), diff, cycle);
+        WorldPartition.loop().scheduleAtFixedRate(new Start(), diff, cycle, TimeUnit.MILLISECONDS);
 
         // Test - Starts 3 minutes after server startup and repeats every 20 minutes.
         // final long diff = timeLeftMilli(8, 0, 0), cycle = 600000;
@@ -198,9 +199,9 @@ public class Parade extends Script {
         @Override
         public void run() {
             load();
-            spawnTask = ThreadPool.scheduleAtFixedRate(new Spawn(), 0, 5000);
-            deleteTask = ThreadPool.scheduleAtFixedRate(new Delete(), 10000, 1000);
-            cleanTask = ThreadPool.schedule(new Clean(), 420000);
+            spawnTask = WorldPartition.loop().scheduleAtFixedRate(new Spawn(), 0, 5000, TimeUnit.MILLISECONDS);
+            deleteTask = WorldPartition.loop().scheduleAtFixedRate(new Delete(), 10000, 1000, TimeUnit.MILLISECONDS);
+            cleanTask = WorldPartition.loop().schedule(new Clean(), 420000, TimeUnit.MILLISECONDS);
         }
     }
 

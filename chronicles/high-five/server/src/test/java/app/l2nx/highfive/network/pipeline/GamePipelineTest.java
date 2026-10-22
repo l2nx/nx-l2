@@ -532,11 +532,9 @@ class GamePipelineTest {
         final CommandDispatcher dispatcher =
                 new CommandDispatcher(registry, address -> Optional.empty(), NetworkMetrics.noop());
         final SessionMetrics metrics = SessionMetrics.noop();
-        return new SessionFactory(
-                limits,
-                DrainScheduler.pool((drain, abandoned) -> drains.execute(drain), metrics.drainFailures()),
-                dispatcher,
-                metrics);
+        final DrainScheduler scheduler =
+                DrainScheduler.pool((drain, abandoned) -> drains.execute(drain), metrics.drainFailures());
+        return new SessionFactory(limits, scheduler, scheduler, dispatcher, metrics);
     }
 
     private static GameChannelInitializer initializer(

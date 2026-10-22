@@ -14,26 +14,29 @@ import app.l2nx.highfive.data.holders.GrandBossSpawn;
 import app.l2nx.highfive.data.xml.GrandBossData;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.boss.GrandBossStateRepository;
 import app.l2nx.highfive.repository.boss.GrandBossZoneCharacterRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.MockedStatic;
 
+@ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock(WorldLoopExtension.LOCK)
 class GrandBossManagerTest {
     private static final int LISTED_BOSS_ID = 29001;
     private static final int UNLISTED_BOSS_ID = 99999;
 
     private MockedStatic<GrandBossData> bossData;
     private MockedStatic<NpcData> npcData;
-    private MockedStatic<ThreadPool> threadPool;
     private GrandBossManager manager;
 
     @BeforeEach
@@ -49,7 +52,6 @@ class GrandBossManagerTest {
         when(npcs.getTemplate(LISTED_BOSS_ID)).thenReturn(mock(NpcTemplate.class));
         npcData = mockStatic(NpcData.class);
         npcData.when(NpcData::getInstance).thenReturn(npcs);
-        threadPool = mockStatic(ThreadPool.class);
 
         manager = new GrandBossManager(
                 mock(GrandBossStateRepository.class), mock(GrandBossZoneCharacterRepository.class));
@@ -58,7 +60,6 @@ class GrandBossManagerTest {
 
     @AfterEach
     void releaseStatics() {
-        threadPool.close();
         npcData.close();
         bossData.close();
     }

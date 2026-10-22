@@ -17,15 +17,21 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.context.event.ContextClosedEvent;
 
 /**
- * Stop waits at most {@code stopTimeout} for the world loop to drain; a dying loop thread exits with
- * {@link ServerExitCode#CRASH} so the supervisor restarts the process.
+ * Stop waits at most {@code stopTimeout} for the world loop to drain; a dying loop thread, or a pass blocked past
+ * {@code blocked-pass-exit}, exits with {@link ServerExitCode#CRASH} so the supervisor restarts the process. Once the
+ * context closes a blocked pass no longer exits: the world save of a higher phase runs as a pass that may take long.
  */
 @Slf4j
 @RequiredArgsConstructor
-public class PartitionRuntime implements SmartLifecycle {
+public class PartitionRuntime
+        implements SmartLifecycle, ApplicationListener<ContextClosedEvent>, ApplicationContextAware {
     /**
      * Starts after Boot's web server and graceful shutdown lifecycles and before the game port ({@code DEFAULT_PHASE});
      * stops after the game port closes and before the web server.
@@ -45,13 +51,14 @@ public class PartitionRuntime implements SmartLifecycle {
     private final Duration stopTimeout;
     private volatile LoopGroup group;
     private volatile Loop world;
+    private volatile ApplicationContext context;
 
     @Override
     public synchronized void start() {
         if (group != null) {
             return;
         }
-        final LoopGroup started = new LoopGroup(THREAD_PREFIX, registry, this::onThreadFailure);
+        final LoopGroup started = new LoopGroup(THREAD_PREFIX, registry, properties, this::onThreadFailure);
         try {
             final Loop created =
                     new Loop(WORLD, clock, seeds.getAsLong(), properties, registry, recorders.apply(WORLD));
@@ -91,6 +98,20 @@ public class PartitionRuntime implements SmartLifecycle {
     }
 
     @Override
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        context = applicationContext;
+    }
+
+    // Published before any lifecycle bean stops; a child context's close reaches this listener too and is ignored.
+    @Override
+    public void onApplicationEvent(ContextClosedEvent event) {
+        final LoopGroup current = group;
+        if (current != null && event.getApplicationContext() == context) {
+            current.disarmExit();
+        }
+    }
+
+    @Override
     public boolean isRunning() {
         return group != null;
     }
@@ -121,9 +142,8 @@ public class PartitionRuntime implements SmartLifecycle {
         }
     }
 
-    // The loop thread has already logged the failure; the world cannot go on without it.
     private void onThreadFailure(Thread thread, Throwable failure) {
-        log.error("Loop thread {} died, exiting with {}", thread.getName(), ServerExitCode.CRASH);
+        log.error("Loop thread {} cannot go on, exiting with {}", thread.getName(), ServerExitCode.CRASH);
         serverExit.exit(ServerExitCode.CRASH);
     }
 }

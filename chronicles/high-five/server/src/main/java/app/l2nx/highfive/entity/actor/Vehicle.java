@@ -36,13 +36,14 @@ import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.MovementTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -96,7 +97,7 @@ public abstract class Vehicle extends Creature {
 
     public void runEngine(int delay) {
         if (engine != null) {
-            ThreadPool.schedule(engine, delay);
+            WorldPartition.loop().schedule(engine, delay, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -167,23 +168,25 @@ public abstract class Vehicle extends Creature {
 
                         // Make sure vehicle is not stuck.
                         if (monitorTask == null) {
-                            monitorTask = ThreadPool.scheduleAtFixedRate(
-                                    () -> {
-                                        if (!isInDock() && (calculateDistance3D(monitorLocation) == 0)) {
-                                            if (currentPath != null) {
-                                                if (runState < currentPath.length) {
-                                                    runState = Math.max(0, runState - 1);
-                                                    moveToNextRoutePoint();
+                            monitorTask = WorldPartition.loop()
+                                    .scheduleAtFixedRate(
+                                            () -> {
+                                                if (!isInDock() && (calculateDistance3D(monitorLocation) == 0)) {
+                                                    if (currentPath != null) {
+                                                        if (runState < currentPath.length) {
+                                                            runState = Math.max(0, runState - 1);
+                                                            moveToNextRoutePoint();
+                                                        } else {
+                                                            broadcastInfo();
+                                                        }
+                                                    }
                                                 } else {
-                                                    broadcastInfo();
+                                                    monitorLocation.setXYZ(this);
                                                 }
-                                            }
-                                        } else {
-                                            monitorLocation.setXYZ(this);
-                                        }
-                                    },
-                                    1000,
-                                    1000);
+                                            },
+                                            1000,
+                                            1000,
+                                            TimeUnit.MILLISECONDS);
                         }
 
                         return true;

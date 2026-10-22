@@ -72,6 +72,7 @@ public class ServerConfig {
     public static boolean ACCEPT_ALTERNATE_ID;
     public static File DATAPACK_ROOT;
     public static File SCRIPT_ROOT;
+    public static boolean THREADS_FOR_LOADING;
     public static Pattern CHARNAME_TEMPLATE_PATTERN;
     public static Pattern PET_NAME_TEMPLATE_PATTERN;
     public static Pattern CLAN_NAME_TEMPLATE_PATTERN;
@@ -85,9 +86,6 @@ public class ServerConfig {
     public static int SERVER_LIST_TYPE;
     public static int SERVER_LIST_AGE;
     public static boolean SERVER_LIST_BRACKET;
-    public static boolean DEADLOCK_WATCHER;
-    public static int DEADLOCK_CHECK_INTERVAL;
-    public static boolean RESTART_ON_DEADLOCK;
     public static boolean SERVER_RESTART_SCHEDULE_ENABLED;
     public static boolean SERVER_RESTART_SCHEDULE_MESSAGE;
     public static int SERVER_RESTART_SCHEDULE_COUNTDOWN;
@@ -127,6 +125,8 @@ public class ServerConfig {
             log.warn("Error setting script root!", e);
             SCRIPT_ROOT = new File(".");
         }
+
+        THREADS_FOR_LOADING = config.getBoolean("ThreadsForLoading", false);
 
         Pattern charNamePattern;
         try {
@@ -170,9 +170,6 @@ public class ServerConfig {
                 getServerTypeId(config.getString("ServerListType", "Free").split(","));
         SERVER_LIST_AGE = config.getInt("ServerListAge", 0);
         SERVER_LIST_BRACKET = config.getBoolean("ServerListBrackets", false);
-        DEADLOCK_WATCHER = config.getBoolean("DeadlockWatcher", true);
-        DEADLOCK_CHECK_INTERVAL = config.getInt("DeadlockCheckInterval", 20);
-        RESTART_ON_DEADLOCK = config.getBoolean("RestartOnDeadlock", false);
         SERVER_RESTART_SCHEDULE_ENABLED = config.getBoolean("ServerRestartScheduleEnabled", false);
         SERVER_RESTART_SCHEDULE_MESSAGE = config.getBoolean("ServerRestartScheduleMessage", false);
         SERVER_RESTART_SCHEDULE_COUNTDOWN = config.getInt("ServerRestartScheduleCountdown", 600);

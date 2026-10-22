@@ -40,11 +40,11 @@ import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SSQInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.sevensigns.SevenSignsParticipantRepository;
 import app.l2nx.highfive.repository.sevensigns.SevenSignsStatusRepository;
 import app.l2nx.highfive.repository.sevensigns.model.SevenSignsParticipant;
 import app.l2nx.highfive.repository.sevensigns.model.SevenSignsStatus;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -186,7 +187,7 @@ public class SevenSigns {
         }
 
         // Schedule a time for the next period change.
-        ThreadPool.schedule(new SevenSignsPeriodChange(), milliToChange);
+        WorldPartition.loop().schedule(new SevenSignsPeriodChange(), milliToChange, TimeUnit.MILLISECONDS);
         log.info("Next period begins in {}", DurationFormatUtils.formatDurationWords(milliToChange, true, true));
     }
 
@@ -1372,7 +1373,7 @@ public class SevenSigns {
             setCalendarForNextPeriodChange();
 
             final SevenSignsPeriodChange sspc = new SevenSignsPeriodChange();
-            ThreadPool.schedule(sspc, getMilliToPeriodChange());
+            WorldPartition.loop().schedule(sspc, getMilliToPeriodChange(), TimeUnit.MILLISECONDS);
         }
     }
 

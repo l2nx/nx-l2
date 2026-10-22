@@ -35,17 +35,22 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.network.enums.MessageSenderType;
 import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.partition.BackgroundTasks;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.mail.CustomMailRepository;
 import app.l2nx.highfive.repository.mail.model.CustomMail;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 /**
+ * The next read is armed only after the world pass that sends the rows, or the same rows would be sent twice.
+ *
  * @author Mobius
  */
 @Slf4j
@@ -54,27 +59,66 @@ public class CustomMailManager {
     private static volatile CustomMailManager instance;
 
     private final CustomMailRepository customMailRepository;
+    private final MailManager mailManager;
 
-    public CustomMailManager(CustomMailRepository customMailRepository) {
+    public CustomMailManager(CustomMailRepository customMailRepository, MailManager mailManager) {
         this.customMailRepository = customMailRepository;
+        this.mailManager = mailManager;
         instance = this;
     }
 
     public void load() {
-        ThreadPool.scheduleAtFixedRate(
-                this::deliver,
-                CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY,
-                CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY);
+        pollLater();
 
         log.info("Enabled.");
     }
 
-    private void deliver() {
+    private void pollLater() {
         try {
-            for (CustomMail row : customMailRepository.findAll()) {
+            BackgroundTasks.schedule(
+                    this::poll, CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            log.debug("Not polling custom mail any more: the server is stopping.");
+        }
+    }
+
+    private void poll() {
+        final List<CustomMail> rows;
+        try {
+            rows = customMailRepository.findAll();
+        } catch (DataAccessException e) {
+            log.warn("Error reading from database: ", e);
+            pollLater();
+            return;
+        }
+
+        if (rows.isEmpty()) {
+            pollLater();
+            return;
+        }
+
+        try {
+            WorldPartition.offer(() -> deliver(rows));
+        } catch (RejectedExecutionException e) {
+            log.debug("Not delivering custom mail: the world has stopped.");
+        }
+    }
+
+    private void deliver(List<CustomMail> rows) {
+        try {
+            for (CustomMail row : rows) {
                 final int playerId = row.receiverId();
                 final Player player = World.getPlayer(playerId);
                 if ((player != null) && player.isOnline()) {
+                    // Delete before sending: a crash in between loses one mail instead of duplicating its items.
+                    // A row that could not be deleted waits for the next poll, or every poll would send it again.
+                    try {
+                        customMailRepository.delete(row.id());
+                    } catch (DataAccessException e) {
+                        log.warn("Error deleting entry from database: ", e);
+                        continue;
+                    }
+
                     // Create message.
                     final MailMessage msg =
                             new MailMessage(playerId, row.subject(), row.content(), MessageSenderType.PLAYER);
@@ -90,20 +134,13 @@ public class CustomMailManager {
                         }
                     }
 
-                    // Delete entry from database.
-                    try {
-                        customMailRepository.delete(row.id());
-                    } catch (DataAccessException e) {
-                        log.warn("Error deleting entry from database: ", e);
-                    }
-
                     // Send message.
-                    MailManager.getInstance().sendMessage(msg);
+                    mailManager.sendMessage(msg);
                     log.info("Message sent to {}.", player.getName());
                 }
             }
-        } catch (DataAccessException e) {
-            log.warn("Error reading from database: ", e);
+        } finally {
+            pollLater();
         }
     }
 

@@ -18,7 +18,8 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /**
- * Binds a {@link ManualGameClock} and a seeded generator for a test class and its {@code @Nested} classes. Users also
+ * Binds a {@link ManualGameClock} and a seeded generator for a test class and its {@code @Nested} classes, answering on
+ * any thread, on a loop too, so tests drive legacy code without a loop around it. Users also
  * declare {@code @Execution(SAME_THREAD)} and {@code @ResourceLock(LOCK)}: the bridge is static.
  */
 public final class ClockBridgeExtension implements BeforeAllCallback, AfterAllCallback, ParameterResolver {
@@ -29,6 +30,19 @@ public final class ClockBridgeExtension implements BeforeAllCallback, AfterAllCa
     private static final Namespace NAMESPACE = Namespace.create(ClockBridgeExtension.class);
     private static final String CLOCK = "clock";
     private static final String PREVIOUS = "previous";
+
+    /**
+     * Runs the body under the production binding, which answers game time and randomness on a loop thread only.
+     */
+    public static void runBoundToLoops(Runnable body) {
+        final ClockBridge.TimeSource previous =
+                ClockBridge.swap(new ClockBridge.LoopTimeSource(new ManualGameClock(WALL_START, ZoneOffset.UTC)));
+        try {
+            body.run();
+        } finally {
+            ClockBridge.swap(previous);
+        }
+    }
 
     @Override
     public void beforeAll(ExtensionContext context) {
@@ -42,7 +56,7 @@ public final class ClockBridgeExtension implements BeforeAllCallback, AfterAllCa
         final ThreadLocal<RandomGenerator> random =
                 ThreadLocal.withInitial(() -> RandomGeneratorFactory.of("L64X128MixRandom")
                         .create(SEED ^ Thread.currentThread().getName().hashCode()));
-        final ClockBridge.Binding previous = ClockBridge.swap(new ClockBridge.Binding(clock, random::get));
+        final ClockBridge.TimeSource previous = ClockBridge.swap(new ClockBridge.FixedTimeSource(clock, random::get));
 
         final ExtensionContext.Store store = context.getStore(NAMESPACE);
         store.put(CLOCK, clock);
@@ -56,7 +70,7 @@ public final class ClockBridgeExtension implements BeforeAllCallback, AfterAllCa
             return;
         }
 
-        final Optional<ClockBridge.Binding> previous =
+        final Optional<ClockBridge.TimeSource> previous =
                 context.getStore(NAMESPACE).get(PREVIOUS, Optional.class);
         ClockBridge.swap(previous.orElse(null));
     }

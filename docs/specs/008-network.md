@@ -57,8 +57,8 @@ The GS-link is configured by Spring Boot's gRPC properties (`spring.grpc.server.
 | `handshake-timeout`                    | 10 s           | time from accept to the protocol version (game) or `AuthGameGuard` (login)                                                |
 | `auth-timeout`                         | 60 s           | time from accept to a completed login or game authentication                                                              |
 | `inbound-queue-limit`                  | 256            | session queue capacity (§5)                                                                                               |
-| `packets-per-drain`                    | 16             | items one session drain run executes before E6 (§5)                                                                       |
-| `max-concurrent-drains`                | 32             | session drains running at once before E6 (§5)                                                                             |
+| `packets-per-drain`                    | 16             | items one session drain run executes before the session is `AUTHED` (§5)                                                  |
+| `max-concurrent-drains`                | 32             | session drains of sessions not yet `AUTHED` running at once (§5)                                                          |
 | `packets-per-second`                   | 200            | sustained inbound packets per session, at most 10^9 (Bucket4j's fastest refill); burst = `inbound-queue-limit`            |
 | `decode-error-limit.count` / `.window` | 10 / 60 s      | decode errors after authentication, and failed commands or packets, tolerated per session before the connection is closed |
 | `write-buffer-low` / `-high`           | 32 KB / 128 KB | Netty write watermarks                                                                                                    |
@@ -458,7 +458,9 @@ service.
 
 Run time of commands is `l2nx.session.command`, of legacy packets `l2nx.legacy.packet` (tags `type`, `outcome`,
 `exception`), timed by the session drain (`SessionMetrics`, [execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
-Items rejected for a missing game context are `l2nx.session.rejected` (tags `type`, `context`). `unauthenticated` is
+Items rejected for a missing game context are `l2nx.session.rejected` (tags `type`, `context`). The depth of a session
+queue after each enqueue is `l2nx.session.queue.depth`, a distribution summary without tags (one series per connection
+would not scale) with a percentile histogram bounded by the queue limit, so p99 and max come from Prometheus. `unauthenticated` is
 a game connection's packet read before authentication; `wrong-state` is the login protocol's packet out of its
 handshake step (§9).
 

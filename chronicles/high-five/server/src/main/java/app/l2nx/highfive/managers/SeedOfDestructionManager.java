@@ -27,8 +27,9 @@ import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Quest;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -109,12 +110,14 @@ public class SeedOfDestructionManager {
                     // change to Attack state because Defend statet is not implemented
                     setSoDState(1, true);
                 } else {
-                    ThreadPool.schedule(
-                            () -> {
-                                setSoDState(1, true);
-                                updateSodState();
-                            },
-                            GraciaSeedsConfig.SOD_STAGE_2_LENGTH - timePast);
+                    WorldPartition.loop()
+                            .schedule(
+                                    () -> {
+                                        setSoDState(1, true);
+                                        updateSodState();
+                                    },
+                                    GraciaSeedsConfig.SOD_STAGE_2_LENGTH - timePast,
+                                    TimeUnit.MILLISECONDS);
                 }
                 break;
             }

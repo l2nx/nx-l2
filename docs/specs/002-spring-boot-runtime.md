@@ -46,20 +46,27 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   stop would have no ordered counterpart. Not `ApplicationRunner`: it has no stop. No adapter class and no shared
   base class: `SmartLifecycle` is the shared contract.
 - Phase `SmartLifecycle.DEFAULT_PHASE`: Tomcat starts in an earlier phase, so the management endpoints answer
-  while the datapack loads (liveness `UP`, readiness `OUT_OF_SERVICE`). Boot sets readiness to
+  while the datapack loads (readiness `OUT_OF_SERVICE`; liveness `BROKEN` until the context has started, so a
+  liveness healthcheck needs a start period above the load time). Boot sets readiness to
   `ACCEPTING_TRAFFIC` on `ApplicationReadyEvent`, after the engine has started and opened its client port.
 - **A startup failure is an exception, never `System.exit`.** The exits in `LoginServer` (fatal init, bind
   failure), `GeoEngine` (geodata initialisation) and `ServerConfig` (subnet auto-configuration) throw instead.
   Spring calls `stop()` only on components that started, so a failing `start()` shuts down what it has already
-  started (the `ThreadPool` executors, listeners) before it rethrows; no non-daemon thread keeps a half-started
+  started (loop threads, listeners) before it rethrows; no non-daemon thread keeps a half-started
   process alive. Boot logs `Application run failed`, closes the context and the process exits with code 1.
+- From the E6 cutover `GameServer.start()` is split into the world load on the world loop and the port opening,
+  each a phase of its own ([spec 003](003-engine-core/wiring-layout.md#3-lifecycle-and-configuration)); the
+  `ThreadPool` executors are gone.
 
 ### Stop
 
 - The Mobius JVM shutdown hook is removed. SIGTERM reaches Spring's shutdown hook, which closes the context.
 - Close order, all standard: readiness `REFUSING_TRAFFIC` → engine `stop()` (players disconnected and saved,
   `saveData()`: Seven Signs, Olympiad, heroes, clans, manor, scripts, global variables; executors shut down) →
-  Tomcat → `DataSource`. `Shutdown` no longer closes the pool; Spring closes it after the engine.
+  Tomcat → `DataSource`. `Shutdown` no longer closes the pool; Spring closes it after the engine. From the E6
+  cutover the engine stop is split into phases (game port, world save on the world loop, partition runtime,
+  network: [spec 003](003-engine-core/wiring-layout.md#3-lifecycle-and-configuration)) and the executors are
+  gone.
 - The game server stops accepting clients first, so nobody logs in during the save; the network closes after the
   save, in a `finally`.
 - `stop()` is synchronous, so `spring.lifecycle.timeout-per-shutdown-phase` neither bounds nor extends it: the save
@@ -75,7 +82,9 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
 ### Countdown shutdown and restart
 
 - `//server_shutdown`, `//server_restart`, `ServerRestartManager`, `PrecautionaryRestartManager` and the deadlock
-  watcher keep the `Shutdown` countdown. At its end `Shutdown` calls `ServerExit.exit(ServerExitCode)`, so the
+  watcher keep the `Shutdown` countdown. From the E6 cutover the countdown runs as game-time timers of the world
+  loop, since its steps are delays that must not follow a step of the wall clock, and a loop watchdog replaces the deadlock watcher and `RestartOnDeadlock`
+  ([spec 003](003-engine-core/execution.md#71-work-routed-into-the-world-partition-e6)). At its end `Shutdown` calls `ServerExit.exit(ServerExitCode)`, so the
   shutdown actions run once, through `stop()`.
 - `LoginServer.shutdown()` calls the same in place of `Runtime.exit`.
 - **`ServerExit`** is a bean of `libs/boot` (auto-configuration `app.l2nx.boot.BootAutoConfiguration`), shared by both servers:
@@ -181,14 +190,14 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
   histograms for `jvm.gc.pause` and `hikaricp.connections.acquire`; common tag `application`
   (`${spring.application.name}`).
 - The login scheduler is a Spring `TaskScheduler`; Boot binds its executor metrics (`executor.*`).
-- The game `ThreadPool` executors and the network executors (I/O and packets) are bound with Micrometer's
-  `ExecutorServiceMetrics` (`executor.*` gauges, tag `name`). They are bound, not wrapped with
-  `ExecutorServiceMetrics.monitor`: the code uses them through the `ThreadPoolExecutor` API (`purge`, the queue),
-  which a wrapper would hide, so the task timers `executor.execution` and `executor.idle` are not published.
+- The game's background tasks run on Boot's auto-configured `TaskScheduler` and `applicationTaskExecutor`, whose
+  `executor.*` metrics Boot binds; the static data parse pool is wrapped with `ExecutorServiceMetrics.monitor`
+  (`name=l2nx-datapack-parse`) while it lives. The network executors (I/O and packets) are bound with
+  `ExecutorServiceMetrics` (`executor.*` gauges, tag `name`).
 - The login's blocking executor of virtual threads publishes `executor.*` with tag `name=l2nx-login-tasks`, timers
   included ([spec 008 §11](008-network.md#11-metrics)).
-- Game meters: `l2nx.players.online` (gauge); the engine loop meters `l2nx.engine.*`; the baseline of the legacy
-  execution `l2nx.legacy.task`, `l2nx.legacy.task.all`, `l2nx.legacy.task.lag`, `l2nx.legacy.packet`
+- Game meters: `l2nx.players.online` (gauge, published once per world pass); the engine loop meters `l2nx.engine.*`;
+  the run time of legacy packets `l2nx.legacy.packet`
   ([spec 003 execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)). New meters arrive with the
   dashboard or alert that needs them.
 

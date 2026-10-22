@@ -36,9 +36,9 @@ import app.l2nx.highfive.entity.actor.enums.npc.RaidBossStatus;
 import app.l2nx.highfive.entity.actor.instance.RaidBoss;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.boss.RaidBossStateRepository;
 import app.l2nx.highfive.repository.boss.model.RaidBossState;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -187,7 +188,10 @@ public class RaidBossSpawnManager {
                 final Calendar time = ClockBridge.calendar();
                 time.setTimeInMillis(respawnTime);
                 log.info("Updated {} respawn time to {}", boss.getName(), time.getTime());
-                schedules.put(boss.getId(), ThreadPool.schedule(new SpawnSchedule(boss.getId()), respawnDelay));
+                schedules.put(
+                        boss.getId(),
+                        WorldPartition.loop()
+                                .schedule(new SpawnSchedule(boss.getId()), respawnDelay, TimeUnit.MILLISECONDS));
                 updateDb();
             }
         } else {
@@ -232,7 +236,10 @@ public class RaidBossSpawnManager {
                 storedInfo.put(bossId, info);
             }
         } else {
-            schedules.put(bossId, ThreadPool.schedule(new SpawnSchedule(bossId), respawnTime - currentTime));
+            schedules.put(
+                    bossId,
+                    WorldPartition.loop()
+                            .schedule(new SpawnSchedule(bossId), respawnTime - currentTime, TimeUnit.MILLISECONDS));
         }
 
         spawns.put(bossId, spawnDat);

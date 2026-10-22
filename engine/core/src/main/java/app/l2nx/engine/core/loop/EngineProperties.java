@@ -18,6 +18,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param packetsPerPass items one ready input source gives per pass
  * @param overduePerPass timers one wheel runs per pass before the rest waits for the next pass
  * @param owedTicksPerPass ticks one late periodic entry catches up per pass
+ * @param blockedPassWarning a pass running longer than this gets the loop thread's stack logged, once per multiple of this duration
+ * @param blockedPassExit a pass running longer than this exits the process; {@code null} keeps a blocked loop running
  */
 @Builder(toBuilder = true)
 @ConfigurationProperties("l2nx.engine")
@@ -27,7 +29,9 @@ public record EngineProperties(
         @DefaultValue("8") int triggerDepth,
         @DefaultValue("16") int packetsPerPass,
         @DefaultValue("4096") int overduePerPass,
-        @DefaultValue("10") int owedTicksPerPass) {
+        @DefaultValue("10") int owedTicksPerPass,
+        @DefaultValue("2s") Duration blockedPassWarning,
+        Duration blockedPassExit) {
     public EngineProperties {
         requireMillis("pass-min", passMin);
         requireMillis("pass-budget", passBudget);
@@ -35,6 +39,14 @@ public record EngineProperties(
         requirePositive("packets-per-pass", packetsPerPass);
         requirePositive("overdue-per-pass", overduePerPass);
         requirePositive("owed-ticks-per-pass", owedTicksPerPass);
+        requireMillis("blocked-pass-warning", blockedPassWarning);
+        if (blockedPassExit != null) {
+            requireMillis("blocked-pass-exit", blockedPassExit);
+            if (blockedPassExit.compareTo(blockedPassWarning) <= 0) {
+                throw new IllegalArgumentException("l2nx.engine.blocked-pass-exit must be longer than "
+                        + "l2nx.engine.blocked-pass-warning (" + blockedPassWarning + "): " + blockedPassExit);
+            }
+        }
     }
 
     public static EngineProperties defaults() {

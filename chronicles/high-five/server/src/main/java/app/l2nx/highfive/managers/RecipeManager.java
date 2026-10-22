@@ -51,12 +51,13 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.RecipeShopItemInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SetupGauge;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 public class RecipeManager {
@@ -110,7 +111,7 @@ public class RecipeManager {
         if (maker.valid) {
             if (PlayerConfig.ALT_GAME_CREATION) {
                 activeMakers.put(manufacturer.getObjectId(), maker);
-                ThreadPool.schedule(maker, 100);
+                WorldPartition.loop().schedule(maker, 100, TimeUnit.MILLISECONDS);
             } else {
                 maker.run();
             }
@@ -154,7 +155,7 @@ public class RecipeManager {
         if (maker.valid) {
             if (PlayerConfig.ALT_GAME_CREATION) {
                 activeMakers.put(player.getObjectId(), maker);
-                ThreadPool.schedule(maker, 100);
+                WorldPartition.loop().schedule(maker, 100, TimeUnit.MILLISECONDS);
             } else {
                 maker.run();
             }
@@ -324,18 +325,12 @@ public class RecipeManager {
                     // FIXME: please fix this packet to show crafting animation (somebody)
                     player.broadcastSkillPacket(new MagicSkillUse(player, skillId, skillLevel, delay, 0), player);
                     player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
-                    ThreadPool.schedule(this, 100 + delay);
+                    WorldPartition.loop().schedule(this, 100 + delay, TimeUnit.MILLISECONDS);
                 } else {
-                    // For alt mode, sleep delay msec before finishing.
+                    // For alt mode, wait delay msec before finishing.
                     player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
-
-                    try {
-                        Thread.sleep(delay);
-                    } catch (Exception e) {
-                        // Ignore.
-                    } finally {
-                        finishCrafting();
-                    }
+                    // TODO: an abort during this delay does not cancel the craft (#82).
+                    WorldPartition.loop().schedule(this::finishCrafting, delay, TimeUnit.MILLISECONDS);
                 }
 
             } // For old craft mode just finish.
@@ -479,7 +474,7 @@ public class RecipeManager {
                         // rest (wait for HP)
                         if (PlayerConfig.ALT_GAME_CREATION && isWait) {
                             player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
-                            ThreadPool.schedule(this, 100 + delay);
+                            WorldPartition.loop().schedule(this, 100 + delay, TimeUnit.MILLISECONDS);
                         } else {
                             target.sendPacket(SystemMessageId.NOT_ENOUGH_HP);
                             abort();
@@ -494,7 +489,7 @@ public class RecipeManager {
                         // rest (wait for MP)
                         if (PlayerConfig.ALT_GAME_CREATION && isWait) {
                             player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
-                            ThreadPool.schedule(this, 100 + delay);
+                            WorldPartition.loop().schedule(this, 100 + delay, TimeUnit.MILLISECONDS);
                         } else {
                             target.sendPacket(SystemMessageId.NOT_ENOUGH_MP);
                             abort();

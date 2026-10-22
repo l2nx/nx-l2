@@ -5,8 +5,11 @@
 package app.l2nx.highfive.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
 
 import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.highfive.network.GameClient;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +23,38 @@ import org.junit.jupiter.params.provider.ValueSource;
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
 class FloodProtectorActionTest {
+    private final FloodProtectorSettings settings = new FloodProtectorSettings("UseItemFloodProtector");
+
+    @Nested
+    class Constructor {
+        @Test
+        void constructor_shouldNotReadGameTime_offLoop() {
+            ClockBridgeExtension.runBoundToLoops(() -> assertThatCode(
+                            () -> new FloodProtectorAction(mock(GameClient.class), settings))
+                    .doesNotThrowAnyException());
+        }
+    }
+
+    @Nested
+    class CanPerformAction {
+        @Test
+        void canPerformAction_shouldAllowTheFirstAction() {
+            settings.setProtectionInterval(10);
+            final FloodProtectorAction action = new FloodProtectorAction(mock(GameClient.class), settings);
+
+            assertThat(action.canPerformAction()).isTrue();
+        }
+
+        @Test
+        void canPerformAction_shouldRefuse_whenTheIntervalHasNotPassed() {
+            settings.setProtectionInterval(10);
+            final FloodProtectorAction action = new FloodProtectorAction(mock(GameClient.class), settings);
+            action.canPerformAction();
+
+            assertThat(action.canPerformAction()).isFalse();
+        }
+    }
+
     @Nested
     class PunishmentExpiration {
         @Test

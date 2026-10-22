@@ -215,6 +215,35 @@ public class ConfigReader {
     }
 
     /**
+     * @param config the configuration key
+     * @param defaultValue the default value if the key does not exist or is malformed
+     * @return the property value as an int
+     * @throws IllegalStateException if the value is zero or negative, so the server does not start with it
+     */
+    public int getPositiveInt(String config, int defaultValue) {
+        return (int) requirePositive(config, getInt(config, defaultValue));
+    }
+
+    /**
+     * @param config the configuration key
+     * @param defaultValue the default value if the key does not exist or is malformed
+     * @return the property value as a long
+     * @throws IllegalStateException if the value is zero or negative, so the server does not start with it
+     */
+    public long getPositiveLong(String config, long defaultValue) {
+        return requirePositive(config, getLong(config, defaultValue));
+    }
+
+    private long requirePositive(String config, long value) {
+        if (value <= 0) {
+            throw new IllegalStateException(
+                    "Config '" + config + "' in file '" + file.getName() + "' must be positive, was " + value);
+        }
+
+        return value;
+    }
+
+    /**
      * Retrieves the value associated with the specified key as a float.
      * @param config the configuration key
      * @param defaultValue the default value if the key does not exist or is malformed

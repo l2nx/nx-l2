@@ -24,10 +24,11 @@ package app.l2nx.highfive.taskmanagers;
 
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.entity.actor.Attackable;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -87,7 +88,8 @@ public class AttackableThinkTaskManager {
 
         final Set<Attackable> pool = ConcurrentHashMap.newKeySet(POOL_SIZE);
         pool.add(attackable);
-        ThreadPool.schedulePriorityTaskAtFixedRate(new AttackableThink(pool), TASK_DELAY, TASK_DELAY);
+        WorldPartition.loop()
+                .scheduleAtFixedRate(new AttackableThink(pool), TASK_DELAY, TASK_DELAY, TimeUnit.MILLISECONDS);
         POOLS.add(pool);
     }
 

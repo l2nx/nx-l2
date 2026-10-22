@@ -43,13 +43,15 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeCrest;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.BackgroundTasks;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.DDSConverter;
 import app.l2nx.highfive.util.MathUtil;
 import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,6 +73,7 @@ public class CaptchaManager {
     protected static Map<Integer, PlayerData> VALIDATION = new ConcurrentHashMap<>();
     protected static int WINDOW_DELAY = 3; // Delay used to generate new window if previous have been closed.
     private static int USED_ID = 0;
+    private static boolean rebuildingImages = false;
 
     public class PlayerData {
         public PlayerData() {
@@ -208,15 +211,44 @@ public class CaptchaManager {
 
         if (CaptchaManager.USED_ID == 998) {
             CaptchaManager.USED_ID = 0;
-            ThreadPool.schedule(() -> IMAGES = Captcha.getInstance().createImageList(), 100);
+            rebuildImages();
         }
 
         VALIDATION.put(player.getObjectId(), data);
 
-        final Future<?> newTask =
-                ThreadPool.schedule(new ReportCheckTask(player), CaptchaConfig.VALIDATION_TIME * 1000);
-        ThreadPool.schedule(new countdown(player, CaptchaConfig.VALIDATION_TIME), 0);
+        final Future<?> newTask = WorldPartition.loop()
+                .schedule(new ReportCheckTask(player), CaptchaConfig.VALIDATION_TIME * 1000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop().schedule(new countdown(player, CaptchaConfig.VALIDATION_TIME), 0, TimeUnit.MILLISECONDS);
         BEGIN_VALIDATION.put(player.getObjectId(), newTask);
+    }
+
+    // A thousand images take far longer than a world pass: they are drawn in the background and swapped in by a pass.
+    static void rebuildImages() {
+        if (rebuildingImages) {
+            return;
+        }
+
+        rebuildingImages = true;
+        try {
+            BackgroundTasks.execute(() -> {
+                final Map<Integer, ImageData> images;
+                try {
+                    images = Captcha.getInstance().createImageList();
+                } catch (RuntimeException e) {
+                    log.warn("Could not rebuild the captcha images, the current ones stay in use.", e);
+                    WorldPartition.offer(() -> rebuildingImages = false);
+                    return;
+                }
+
+                WorldPartition.offer(() -> {
+                    IMAGES = images;
+                    rebuildingImages = false;
+                });
+            });
+        } catch (RejectedExecutionException e) {
+            rebuildingImages = false;
+            log.debug("Not rebuilding the captcha images: the server is stopping.");
+        }
     }
 
     protected void banPunishment(Player player) {
@@ -305,7 +337,11 @@ public class CaptchaManager {
                 incrementPlayerJailCount(player);
 
                 // Send a generic message to the player about the increased punishment next time with a delay.
-                ThreadPool.schedule(() -> player.sendMessage("Warning: Your next jail time will be increased."), 2000);
+                WorldPartition.loop()
+                        .schedule(
+                                () -> player.sendMessage("Warning: Your next jail time will be increased."),
+                                2000,
+                                TimeUnit.MILLISECONDS);
             } else {
                 // If multiplier is disabled, use the initial jail time from CaptchaConfig.
                 jailTime = CaptchaConfig.JAIL_TIME;
@@ -433,7 +469,7 @@ public class CaptchaManager {
                 }
 
                 if ((time > 1) && VALIDATION.containsKey(player.getObjectId())) {
-                    ThreadPool.schedule(new countdown(player, time - 1), 1000);
+                    WorldPartition.loop().schedule(new countdown(player, time - 1), 1000, TimeUnit.MILLISECONDS);
                 }
             }
         }

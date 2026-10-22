@@ -36,6 +36,7 @@ import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterVariableRepository;
 import app.l2nx.highfive.repository.olympiad.OlympiadFightRepository;
 import app.l2nx.highfive.repository.olympiad.OlympiadNobleRepository;
@@ -44,7 +45,6 @@ import app.l2nx.highfive.repository.olympiad.model.OlympiadFight;
 import app.l2nx.highfive.repository.olympiad.model.OlympiadNoble;
 import app.l2nx.highfive.repository.olympiad.model.OlympiadStatus;
 import app.l2nx.highfive.repository.olympiad.model.RankedNoble;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -77,6 +78,8 @@ public class Olympiad extends ListenersContainer {
 
     public static final String OLYMPIAD_HTML_PATH = "data/html/olympiad/";
     public static final String UNCLAIMED_OLYMPIAD_PASSES_VAR = "UNCLAIMED_OLYMPIAD_POINTS";
+
+    private static final long BATTLE_END_POLL_MILLIS = 60000;
 
     private static final int[] HERO_IDS = {
         88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112,
@@ -188,7 +191,8 @@ public class Olympiad extends ListenersContainer {
             case 1: {
                 if (validationEnd > currentTime) {
                     loadNoblesRank();
-                    scheduledValdationTask = ThreadPool.schedule(new ValidationEndTask(), getMillisToValidationEnd());
+                    scheduledValdationTask = WorldPartition.loop()
+                            .schedule(new ValidationEndTask(), getMillisToValidationEnd(), TimeUnit.MILLISECONDS);
                 } else {
                     currentCycle++;
                     period = 0;
@@ -370,7 +374,8 @@ public class Olympiad extends ListenersContainer {
             scheduledOlympiadEnd.cancel(true);
         }
 
-        scheduledOlympiadEnd = ThreadPool.schedule(new OlympiadEndTask(HEROS_TO_BE), getMillisToOlympiadEnd());
+        scheduledOlympiadEnd = WorldPartition.loop()
+                .schedule(new OlympiadEndTask(HEROS_TO_BE), getMillisToOlympiadEnd(), TimeUnit.MILLISECONDS);
 
         updateCompStatus();
     }
@@ -408,7 +413,8 @@ public class Olympiad extends ListenersContainer {
             Olympiad.this.validationEnd = validationEnd.getTimeInMillis() + OlympiadConfig.OLYMPIAD_VPERIOD;
 
             loadNoblesRank();
-            scheduledValdationTask = ThreadPool.schedule(new ValidationEndTask(), getMillisToValidationEnd());
+            scheduledValdationTask = WorldPartition.loop()
+                    .schedule(new ValidationEndTask(), getMillisToValidationEnd(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -447,72 +453,85 @@ public class Olympiad extends ListenersContainer {
                 numMins);
         log.info("Olympiad System: Event starts/started: {}", compStart.getTime());
 
-        scheduledCompStart = ThreadPool.schedule(
-                () -> {
-                    if (isOlympiadEnd()) {
-                        return;
-                    }
+        scheduledCompStart = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if (isOlympiadEnd()) {
+                                return;
+                            }
 
-                    inCompPeriod = true;
+                            inCompPeriod = true;
 
-                    World.broadcastToAllOnlinePlayers(
-                            new SystemMessage(
-                                    SystemMessageId
-                                            .SHARPEN_YOUR_SWORDS_TIGHTEN_THE_STITCHING_IN_YOUR_ARMOR_AND_MAKE_HASTE_TO_A_GRAND_OLYMPIAD_MANAGER_BATTLES_IN_THE_GRAND_OLYMPIAD_GAMES_ARE_NOW_TAKING_PLACE));
-                    log.info("Olympiad System: Olympiad Games have started.");
-                    OLYMPIAD_LOG.info("Result,Player1,Player2,Player1 HP,Player2 HP,Player1 Damage,Player2"
-                            + " Damage,Points,Classed");
+                            World.broadcastToAllOnlinePlayers(
+                                    new SystemMessage(
+                                            SystemMessageId
+                                                    .SHARPEN_YOUR_SWORDS_TIGHTEN_THE_STITCHING_IN_YOUR_ARMOR_AND_MAKE_HASTE_TO_A_GRAND_OLYMPIAD_MANAGER_BATTLES_IN_THE_GRAND_OLYMPIAD_GAMES_ARE_NOW_TAKING_PLACE));
+                            log.info("Olympiad System: Olympiad Games have started.");
+                            OLYMPIAD_LOG.info("Result,Player1,Player2,Player1 HP,Player2 HP,Player1 Damage,Player2"
+                                    + " Damage,Points,Classed");
 
-                    gameManager = ThreadPool.scheduleAtFixedRate(OlympiadGameManager.getInstance(), 30000, 30000);
-                    if (OlympiadConfig.OLYMPIAD_ANNOUNCE_GAMES) {
-                        gameAnnouncer = ThreadPool.scheduleAtFixedRate(new OlympiadAnnouncer(), 30000, 500);
-                    }
+                            gameManager = WorldPartition.loop()
+                                    .scheduleAtFixedRate(
+                                            OlympiadGameManager.getInstance(), 30000, 30000, TimeUnit.MILLISECONDS);
+                            if (OlympiadConfig.OLYMPIAD_ANNOUNCE_GAMES) {
+                                gameAnnouncer = WorldPartition.loop()
+                                        .scheduleAtFixedRate(
+                                                new OlympiadAnnouncer(), 30000, 500, TimeUnit.MILLISECONDS);
+                            }
 
-                    final long regEnd = getMillisToCompEnd() - 600000;
-                    if (regEnd > 0) {
-                        ThreadPool.schedule(
-                                () -> World.broadcastToAllOnlinePlayers(new SystemMessage(
-                                        SystemMessageId.THE_GRAND_OLYMPIAD_REGISTRATION_PERIOD_HAS_ENDED)),
-                                regEnd);
-                    }
+                            final long regEnd = getMillisToCompEnd() - 600000;
+                            if (regEnd > 0) {
+                                WorldPartition.loop()
+                                        .schedule(
+                                                () -> World.broadcastToAllOnlinePlayers(new SystemMessage(
+                                                        SystemMessageId
+                                                                .THE_GRAND_OLYMPIAD_REGISTRATION_PERIOD_HAS_ENDED)),
+                                                regEnd,
+                                                TimeUnit.MILLISECONDS);
+                            }
 
-                    scheduledCompEnd = ThreadPool.schedule(
-                            () -> {
-                                if (isOlympiadEnd()) {
-                                    return;
-                                }
+                            scheduledCompEnd = WorldPartition.loop()
+                                    .schedule(this::endCompetition, getMillisToCompEnd(), TimeUnit.MILLISECONDS);
+                        },
+                        getMillisToCompBegin(),
+                        TimeUnit.MILLISECONDS);
+    }
 
-                                inCompPeriod = false;
-                                World.broadcastToAllOnlinePlayers(
-                                        new SystemMessage(
-                                                SystemMessageId
-                                                        .MUCH_CARNAGE_HAS_BEEN_LEFT_FOR_THE_CLEANUP_CREW_OF_THE_OLYMPIAD_STADIUM_BATTLES_IN_THE_GRAND_OLYMPIAD_GAMES_ARE_NOW_OVER));
-                                log.info("Olympiad System: Olympiad games have ended.");
+    private void endCompetition() {
+        if (isOlympiadEnd()) {
+            return;
+        }
 
-                                while (OlympiadGameManager.getInstance().isBattleStarted()) {
-                                    try {
-                                        Thread.sleep(60000);
-                                    } catch (Exception e) {
-                                    }
-                                }
+        inCompPeriod = false;
+        World.broadcastToAllOnlinePlayers(
+                new SystemMessage(
+                        SystemMessageId
+                                .MUCH_CARNAGE_HAS_BEEN_LEFT_FOR_THE_CLEANUP_CREW_OF_THE_OLYMPIAD_STADIUM_BATTLES_IN_THE_GRAND_OLYMPIAD_GAMES_ARE_NOW_OVER));
+        log.info("Olympiad System: Olympiad games have ended.");
+        closeCompetition();
+    }
 
-                                if (gameManager != null) {
-                                    gameManager.cancel(false);
-                                    gameManager = null;
-                                }
+    // Battles still running keep the game manager: it is polled each minute until they end.
+    private void closeCompetition() {
+        if (OlympiadGameManager.getInstance().isBattleStarted()) {
+            scheduledCompEnd = WorldPartition.loop()
+                    .schedule(this::closeCompetition, BATTLE_END_POLL_MILLIS, TimeUnit.MILLISECONDS);
+            return;
+        }
 
-                                if (gameAnnouncer != null) {
-                                    gameAnnouncer.cancel(false);
-                                    gameAnnouncer = null;
-                                }
+        if (gameManager != null) {
+            gameManager.cancel(false);
+            gameManager = null;
+        }
 
-                                saveOlympiadStatus();
+        if (gameAnnouncer != null) {
+            gameAnnouncer.cancel(false);
+            gameAnnouncer = null;
+        }
 
-                                init();
-                            },
-                            getMillisToCompEnd());
-                },
-                getMillisToCompBegin());
+        saveOlympiadStatus();
+
+        init();
     }
 
     public long getMillisToOlympiadEnd() {
@@ -524,7 +543,8 @@ public class Olympiad extends ListenersContainer {
             scheduledOlympiadEnd.cancel(true);
         }
 
-        scheduledOlympiadEnd = ThreadPool.schedule(new OlympiadEndTask(HEROS_TO_BE), 0);
+        scheduledOlympiadEnd =
+                WorldPartition.loop().schedule(new OlympiadEndTask(HEROS_TO_BE), 0, TimeUnit.MILLISECONDS);
     }
 
     protected long getMillisToValidationEnd() {
@@ -687,17 +707,19 @@ public class Olympiad extends ListenersContainer {
     }
 
     private void scheduleWeeklyChange() {
-        scheduledWeeklyTask = ThreadPool.scheduleAtFixedRate(
-                () -> {
-                    addWeeklyPoints();
-                    log.info("Olympiad System: Added weekly points to nobles");
-                    resetWeeklyMatches();
-                    log.info("Olympiad System: Reset weekly matches to nobles");
+        scheduledWeeklyTask = WorldPartition.loop()
+                .scheduleAtFixedRate(
+                        () -> {
+                            addWeeklyPoints();
+                            log.info("Olympiad System: Added weekly points to nobles");
+                            resetWeeklyMatches();
+                            log.info("Olympiad System: Reset weekly matches to nobles");
 
-                    nextWeeklyChange = ClockBridge.wallMillis() + OlympiadConfig.OLYMPIAD_WPERIOD;
-                },
-                getMillisToWeekChange(),
-                OlympiadConfig.OLYMPIAD_WPERIOD);
+                            nextWeeklyChange = ClockBridge.wallMillis() + OlympiadConfig.OLYMPIAD_WPERIOD;
+                        },
+                        getMillisToWeekChange(),
+                        OlympiadConfig.OLYMPIAD_WPERIOD,
+                        TimeUnit.MILLISECONDS);
     }
 
     protected void addWeeklyPoints() {

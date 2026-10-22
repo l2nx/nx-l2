@@ -42,7 +42,8 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -105,7 +106,9 @@ public class RequestRestartPoint extends ClientPacket {
                 && (player.getClan() != null)
                 && castle.getSiege().checkIsAttacker(player.getClan())) {
             // Schedule respawn delay for attacker.
-            ThreadPool.schedule(new DeathTask(player), castle.getSiege().getAttackerRespawnDelay());
+            WorldPartition.loop()
+                    .schedule(
+                            new DeathTask(player), castle.getSiege().getAttackerRespawnDelay(), TimeUnit.MILLISECONDS);
             if (castle.getSiege().getAttackerRespawnDelay() > 0) {
                 player.sendMessage("You will be re-spawned in "
                         + (castle.getSiege().getAttackerRespawnDelay() / 1000) + " seconds");

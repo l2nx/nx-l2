@@ -37,9 +37,9 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.social.BotReportRepository;
 import app.l2nx.highfive.repository.social.model.BotReport;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import lombok.AccessLevel;
@@ -395,9 +396,10 @@ public class BotReportTable {
                 calendar.add(Calendar.DAY_OF_YEAR, 1);
             }
 
-            ThreadPool.schedule(new ResetPointTask(), calendar.getTimeInMillis() - currentTime);
+            WorldPartition.loop()
+                    .schedule(new ResetPointTask(), calendar.getTimeInMillis() - currentTime, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            ThreadPool.schedule(new ResetPointTask(), 24 * 3600 * 1000);
+            WorldPartition.loop().schedule(new ResetPointTask(), 24 * 3600 * 1000, TimeUnit.MILLISECONDS);
             log.warn("Could not properly schedule bot report points reset task. Scheduled in 24 hours.", e);
         }
     }

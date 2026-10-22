@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
-import app.l2nx.highfive.GameServer;
+import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -80,7 +80,7 @@ public class NoRestartZone extends ZoneType {
         }
 
         if (((ClockBridge.wallMillis() - player.getLastAccess()) > restartTime)
-                && ((ClockBridge.gameMillis() - GameServer.getStartTime()) > restartAllowedTime)) {
+                && ((ClockBridge.gameMillis() - WorldLoader.getStartTime()) > restartAllowedTime)) {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
     }

@@ -41,15 +41,16 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.MonRaceInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.minigame.MonsterRaceRepository;
 import app.l2nx.highfive.repository.minigame.model.MonsterRaceResult;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -138,7 +139,7 @@ public class MonsterRaceManager {
             npcTemplates.add(i);
         }
 
-        ThreadPool.scheduleAtFixedRate(new Announcement(), 0, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(new Announcement(), 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     public static class HistoryInfo {

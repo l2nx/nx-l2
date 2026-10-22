@@ -112,9 +112,9 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PrivateStoreMsgSell
 import app.l2nx.highfive.network.protocol.p267.serverpackets.RecipeShopMsg;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerObjectInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,6 +123,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -1342,13 +1343,15 @@ public class Npc extends Creature {
     }
 
     public Npc scheduleDespawn(long delay) {
-        ThreadPool.schedule(
-                () -> {
-                    if (!decayed) {
-                        deleteMe();
-                    }
-                },
-                delay);
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if (!decayed) {
+                                deleteMe();
+                            }
+                        },
+                        delay,
+                        TimeUnit.MILLISECONDS);
         return this;
     }
 

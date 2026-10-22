@@ -26,8 +26,9 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.stats.Stat;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A damage zone
@@ -73,7 +74,7 @@ public class DamageZone extends ZoneType {
         } else if (name.equalsIgnoreCase("initialDelay")) {
             startTask = Integer.parseInt(value);
         } else if (name.equalsIgnoreCase("reuse")) {
-            reuseTask = Integer.parseInt(value);
+            reuseTask = parsePositiveParameter(name, value, reuseTask);
         } else {
             super.setParameter(name, value);
         }
@@ -98,7 +99,8 @@ public class DamageZone extends ZoneType {
             synchronized (this) {
                 task = this.task;
                 if (task == null) {
-                    this.task = task = ThreadPool.scheduleAtFixedRate(new ApplyDamage(), startTask, reuseTask);
+                    this.task = task = WorldPartition.loop()
+                            .scheduleAtFixedRate(new ApplyDamage(), startTask, reuseTask, TimeUnit.MILLISECONDS);
                 }
             }
         }

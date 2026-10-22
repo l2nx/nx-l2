@@ -33,7 +33,7 @@ import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +41,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Dispel By Slot Probability effect implementation.
@@ -131,34 +132,37 @@ public class DispelBySlotProbability extends AbstractEffect {
             return;
         }
 
-        ThreadPool.schedule(
-                () -> {
-                    if (!effected.isPlayer()
-                            || effected.isDead()
-                            || !effected.asPlayer().isOnline()) {
-                        return;
-                    }
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if (!effected.isPlayer()
+                                    || effected.isDead()
+                                    || !effected.asPlayer().isOnline()) {
+                                return;
+                            }
 
-                    for (BuffInfo oldInfo : canceled) {
-                        final Skill sk = oldInfo.getSkill();
-                        final int timeLeft = oldInfo.getTime();
-                        if ((sk == null) || (timeLeft <= 0)) {
-                            continue;
-                        }
+                            for (BuffInfo oldInfo : canceled) {
+                                final Skill sk = oldInfo.getSkill();
+                                final int timeLeft = oldInfo.getTime();
+                                if ((sk == null) || (timeLeft <= 0)) {
+                                    continue;
+                                }
 
-                        if (effected.getEffectList().getBuffInfoBySkillId(sk.getId()) != null) {
-                            continue;
-                        }
+                                if (effected.getEffectList().getBuffInfoBySkillId(sk.getId()) != null) {
+                                    continue;
+                                }
 
-                        sk.applyEffects(effected, effected);
+                                sk.applyEffects(effected, effected);
 
-                        final BuffInfo newInfo = effected.getEffectList().getBuffInfoBySkillId(sk.getId());
-                        if (newInfo != null) {
-                            newInfo.setAbnormalTime(timeLeft);
-                        }
-                    }
-                },
-                CancelReturnConfig.TIME_TO_RETURN);
+                                final BuffInfo newInfo =
+                                        effected.getEffectList().getBuffInfoBySkillId(sk.getId());
+                                if (newInfo != null) {
+                                    newInfo.setAbnormalTime(timeLeft);
+                                }
+                            }
+                        },
+                        CancelReturnConfig.TIME_TO_RETURN,
+                        TimeUnit.MILLISECONDS);
     }
 
     private void normalCancel(Creature effected) {

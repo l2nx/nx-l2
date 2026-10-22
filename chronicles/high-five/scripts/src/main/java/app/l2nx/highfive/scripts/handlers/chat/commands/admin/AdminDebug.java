@@ -31,7 +31,7 @@ import app.l2nx.highfive.handler.AdminCommandHandler;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExServerPrimitive;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.awt.Color;
 import java.util.List;
@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -200,34 +201,39 @@ public class AdminDebug implements IAdminCommandHandler {
                 PLAYER_DOOR_LOCATIONS.put(player, new Location(player));
                 PLAYER_DOOR_TASKS.put(
                         player,
-                        ThreadPool.scheduleAtFixedRate(
-                                () -> {
-                                    if (player.isOnline()) {
-                                        if (LocationUtil.calculateDistance(
-                                                        player, PLAYER_DOOR_LOCATIONS.get(player), false, false)
-                                                > 15) {
-                                            PLAYER_DOOR_LOCATIONS.put(player, new Location(player));
-                                            AdminCommandHandler.getInstance()
-                                                    .onCommand(player, "admin_showdoors", false);
-                                        }
-                                    } else {
-                                        final ScheduledFuture<?> existingTask = PLAYER_DOOR_TASKS.remove(player);
-                                        if (existingTask != null) {
-                                            existingTask.cancel(false);
-                                            PLAYER_DOOR_LOCATIONS.remove(player);
-                                        }
-                                    }
-                                },
-                                DEBUG_DOOR_DELAY,
-                                DEBUG_DOOR_DELAY));
+                        WorldPartition.loop()
+                                .scheduleAtFixedRate(
+                                        () -> {
+                                            if (player.isOnline()) {
+                                                if (LocationUtil.calculateDistance(
+                                                                player, PLAYER_DOOR_LOCATIONS.get(player), false, false)
+                                                        > 15) {
+                                                    PLAYER_DOOR_LOCATIONS.put(player, new Location(player));
+                                                    AdminCommandHandler.getInstance()
+                                                            .onCommand(player, "admin_showdoors", false);
+                                                }
+                                            } else {
+                                                final ScheduledFuture<?> existingTask =
+                                                        PLAYER_DOOR_TASKS.remove(player);
+                                                if (existingTask != null) {
+                                                    existingTask.cancel(false);
+                                                    PLAYER_DOOR_LOCATIONS.remove(player);
+                                                }
+                                            }
+                                        },
+                                        DEBUG_DOOR_DELAY,
+                                        DEBUG_DOOR_DELAY,
+                                        TimeUnit.MILLISECONDS));
             }
         } else if (task != null) {
             task.cancel(false);
             PLAYER_DOOR_TASKS.remove(player);
             PLAYER_DOOR_LOCATIONS.remove(player);
-            ThreadPool.schedule(
-                    () -> AdminCommandHandler.getInstance().onCommand(player, "admin_showdoors off", false),
-                    DEBUG_DOOR_DELAY + 100);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> AdminCommandHandler.getInstance().onCommand(player, "admin_showdoors off", false),
+                            DEBUG_DOOR_DELAY + 100,
+                            TimeUnit.MILLISECONDS);
         }
 
         player.sendSysMessage("Door debugging is " + (enabled ? "enabled." : "disabled."));
@@ -241,34 +247,42 @@ public class AdminDebug implements IAdminCommandHandler {
                 PLAYER_GEO_LOCATIONS.put(player, new Location(player));
                 PLAYER_GEO_TASKS.put(
                         player,
-                        ThreadPool.scheduleAtFixedRate(
-                                () -> {
-                                    if (player.isOnline()) {
-                                        if (!PLAYER_MOVE_PATHS.containsKey(player)
-                                                && (LocationUtil.calculateDistance(
-                                                                player, PLAYER_GEO_LOCATIONS.get(player), false, false)
-                                                        > 15)) {
-                                            PLAYER_GEO_LOCATIONS.put(player, new Location(player));
-                                            AdminCommandHandler.getInstance().onCommand(player, "admin_geogrid", false);
-                                        }
-                                    } else {
-                                        final ScheduledFuture<?> existingTask = PLAYER_GEO_TASKS.remove(player);
-                                        if (existingTask != null) {
-                                            existingTask.cancel(false);
-                                            PLAYER_GEO_LOCATIONS.remove(player);
-                                        }
-                                    }
-                                },
-                                DEBUG_GEO_DELAY,
-                                DEBUG_GEO_DELAY));
+                        WorldPartition.loop()
+                                .scheduleAtFixedRate(
+                                        () -> {
+                                            if (player.isOnline()) {
+                                                if (!PLAYER_MOVE_PATHS.containsKey(player)
+                                                        && (LocationUtil.calculateDistance(
+                                                                        player,
+                                                                        PLAYER_GEO_LOCATIONS.get(player),
+                                                                        false,
+                                                                        false)
+                                                                > 15)) {
+                                                    PLAYER_GEO_LOCATIONS.put(player, new Location(player));
+                                                    AdminCommandHandler.getInstance()
+                                                            .onCommand(player, "admin_geogrid", false);
+                                                }
+                                            } else {
+                                                final ScheduledFuture<?> existingTask = PLAYER_GEO_TASKS.remove(player);
+                                                if (existingTask != null) {
+                                                    existingTask.cancel(false);
+                                                    PLAYER_GEO_LOCATIONS.remove(player);
+                                                }
+                                            }
+                                        },
+                                        DEBUG_GEO_DELAY,
+                                        DEBUG_GEO_DELAY,
+                                        TimeUnit.MILLISECONDS));
             }
         } else if (task != null) {
             task.cancel(false);
             PLAYER_GEO_TASKS.remove(player);
             PLAYER_GEO_LOCATIONS.remove(player);
-            ThreadPool.schedule(
-                    () -> AdminCommandHandler.getInstance().onCommand(player, "admin_geogrid off", false),
-                    DEBUG_GEO_DELAY + 100);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> AdminCommandHandler.getInstance().onCommand(player, "admin_geogrid off", false),
+                            DEBUG_GEO_DELAY + 100,
+                            TimeUnit.MILLISECONDS);
         }
 
         player.sendSysMessage("Geodata debugging is " + (enabled ? "enabled." : "disabled."));
@@ -286,33 +300,36 @@ public class AdminDebug implements IAdminCommandHandler {
                 drawMoveLine(player);
                 PLAYER_MOVE_TASKS.put(
                         player,
-                        ThreadPool.scheduleAtFixedRate(
-                                () -> {
-                                    if (player.isOnline()) {
-                                        if (LocationUtil.calculateDistance(
-                                                        player, PLAYER_MOVE_LOCATIONS.get(player), false, false)
-                                                > 15) {
-                                            drawMoveLine(player);
-                                        } else if (PLAYER_MOVE_TO_LOCATIONS.containsKey(player)
-                                                || PLAYER_MOVE_PATHS.containsKey(player)) {
-                                            clearMoveLine(player);
-                                        }
-                                    } else {
-                                        final ScheduledFuture<?> existingTask = PLAYER_MOVE_TASKS.remove(player);
-                                        if (existingTask != null) {
-                                            existingTask.cancel(false);
-                                            PLAYER_MOVE_LOCATIONS.remove(player);
-                                        }
-                                    }
-                                },
-                                DEBUG_MOVE_DELAY,
-                                DEBUG_MOVE_DELAY));
+                        WorldPartition.loop()
+                                .scheduleAtFixedRate(
+                                        () -> {
+                                            if (player.isOnline()) {
+                                                if (LocationUtil.calculateDistance(
+                                                                player, PLAYER_MOVE_LOCATIONS.get(player), false, false)
+                                                        > 15) {
+                                                    drawMoveLine(player);
+                                                } else if (PLAYER_MOVE_TO_LOCATIONS.containsKey(player)
+                                                        || PLAYER_MOVE_PATHS.containsKey(player)) {
+                                                    clearMoveLine(player);
+                                                }
+                                            } else {
+                                                final ScheduledFuture<?> existingTask =
+                                                        PLAYER_MOVE_TASKS.remove(player);
+                                                if (existingTask != null) {
+                                                    existingTask.cancel(false);
+                                                    PLAYER_MOVE_LOCATIONS.remove(player);
+                                                }
+                                            }
+                                        },
+                                        DEBUG_MOVE_DELAY,
+                                        DEBUG_MOVE_DELAY,
+                                        TimeUnit.MILLISECONDS));
             }
         } else if (task != null) {
             task.cancel(false);
             PLAYER_MOVE_TASKS.remove(player);
             PLAYER_MOVE_LOCATIONS.remove(player);
-            ThreadPool.schedule(() -> clearMoveLine(player), DEBUG_GEO_DELAY + 100);
+            WorldPartition.loop().schedule(() -> clearMoveLine(player), DEBUG_GEO_DELAY + 100, TimeUnit.MILLISECONDS);
         }
 
         player.sendSysMessage("Movement debugging is " + (enabled ? "enabled." : "disabled."));

@@ -39,7 +39,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.AbnormalStatusUpdat
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExOlympiadSpelledInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySpelled;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShortBuffStatusUpdate;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1329,108 +1330,112 @@ public class EffectList {
         }
 
         if (updateEffectIconTask == null) {
-            updateEffectIconTask = ThreadPool.schedule(
-                    () -> {
-                        AbnormalStatusUpdate asu = null;
-                        PartySpelled ps = null;
-                        PartySpelled psSummon = null;
-                        ExOlympiadSpelledInfo os = null;
-                        boolean isSummon = false;
+            updateEffectIconTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                AbnormalStatusUpdate asu = null;
+                                PartySpelled ps = null;
+                                PartySpelled psSummon = null;
+                                ExOlympiadSpelledInfo os = null;
+                                boolean isSummon = false;
 
-                        if (owner.isPlayer()) {
-                            if (partyOnly) {
-                                partyOnly = false;
-                            } else {
-                                asu = new AbnormalStatusUpdate();
-                            }
-
-                            if (owner.isInParty()) {
-                                ps = new PartySpelled(owner);
-                            }
-
-                            final Player player = owner.asPlayer();
-                            if (player.isInOlympiadMode() && player.isOlympiadStart()) {
-                                os = new ExOlympiadSpelledInfo(player);
-                            }
-                        } else if (owner.isSummon()) {
-                            isSummon = true;
-                            ps = new PartySpelled(owner);
-                            psSummon = new PartySpelled(owner);
-                        }
-
-                        // Buffs.
-                        if (hasBuffs()) {
-                            for (BuffInfo info : buffs) {
-                                if (info.getSkill().isHealingPotionSkill()) {
-                                    shortBuffStatusUpdate(info);
-                                } else {
-                                    addIcon(info, asu, ps, psSummon, os, isSummon);
-                                }
-                            }
-                        }
-
-                        // Triggered buffs.
-                        if (hasTriggered()) {
-                            for (BuffInfo info : triggered) {
-                                addIcon(info, asu, ps, psSummon, os, isSummon);
-                            }
-                        }
-
-                        // Songs and dances.
-                        if (hasDances()) {
-                            for (BuffInfo info : dances) {
-                                addIcon(info, asu, ps, psSummon, os, isSummon);
-                            }
-                        }
-
-                        // Toggles.
-                        if (hasToggles()) {
-                            for (BuffInfo info : toggles) {
-                                addIcon(info, asu, ps, psSummon, os, isSummon);
-                            }
-                        }
-
-                        // Debuffs.
-                        if (hasDebuffs()) {
-                            for (BuffInfo info : debuffs) {
-                                addIcon(info, asu, ps, psSummon, os, isSummon);
-                            }
-                        }
-
-                        if (asu != null) {
-                            owner.sendPacket(asu);
-                        }
-
-                        if (ps != null) {
-                            if (owner.isSummon()) {
-                                final Player summonOwner = owner.asSummon().getOwner();
-                                if (summonOwner != null) {
-                                    if (summonOwner.isInParty()) {
-                                        summonOwner
-                                                .getParty()
-                                                .broadcastToPartyMembers(
-                                                        summonOwner, psSummon); // send to all member except summonOwner
-                                        summonOwner.sendPacket(ps); // now send to summonOwner
+                                if (owner.isPlayer()) {
+                                    if (partyOnly) {
+                                        partyOnly = false;
                                     } else {
-                                        summonOwner.sendPacket(ps);
+                                        asu = new AbnormalStatusUpdate();
+                                    }
+
+                                    if (owner.isInParty()) {
+                                        ps = new PartySpelled(owner);
+                                    }
+
+                                    final Player player = owner.asPlayer();
+                                    if (player.isInOlympiadMode() && player.isOlympiadStart()) {
+                                        os = new ExOlympiadSpelledInfo(player);
+                                    }
+                                } else if (owner.isSummon()) {
+                                    isSummon = true;
+                                    ps = new PartySpelled(owner);
+                                    psSummon = new PartySpelled(owner);
+                                }
+
+                                // Buffs.
+                                if (hasBuffs()) {
+                                    for (BuffInfo info : buffs) {
+                                        if (info.getSkill().isHealingPotionSkill()) {
+                                            shortBuffStatusUpdate(info);
+                                        } else {
+                                            addIcon(info, asu, ps, psSummon, os, isSummon);
+                                        }
                                     }
                                 }
-                            } else if (owner.isPlayer() && owner.isInParty()) {
-                                owner.getParty().broadcastPacket(ps);
-                            }
-                        }
 
-                        if (os != null) {
-                            final OlympiadGameTask game = OlympiadGameManager.getInstance()
-                                    .getOlympiadTask(owner.asPlayer().getOlympiadGameId());
-                            if ((game != null) && game.isBattleStarted()) {
-                                game.getZone().broadcastPacketToObservers(os);
-                            }
-                        }
+                                // Triggered buffs.
+                                if (hasTriggered()) {
+                                    for (BuffInfo info : triggered) {
+                                        addIcon(info, asu, ps, psSummon, os, isSummon);
+                                    }
+                                }
 
-                        updateEffectIconTask = null;
-                    },
-                    300);
+                                // Songs and dances.
+                                if (hasDances()) {
+                                    for (BuffInfo info : dances) {
+                                        addIcon(info, asu, ps, psSummon, os, isSummon);
+                                    }
+                                }
+
+                                // Toggles.
+                                if (hasToggles()) {
+                                    for (BuffInfo info : toggles) {
+                                        addIcon(info, asu, ps, psSummon, os, isSummon);
+                                    }
+                                }
+
+                                // Debuffs.
+                                if (hasDebuffs()) {
+                                    for (BuffInfo info : debuffs) {
+                                        addIcon(info, asu, ps, psSummon, os, isSummon);
+                                    }
+                                }
+
+                                if (asu != null) {
+                                    owner.sendPacket(asu);
+                                }
+
+                                if (ps != null) {
+                                    if (owner.isSummon()) {
+                                        final Player summonOwner =
+                                                owner.asSummon().getOwner();
+                                        if (summonOwner != null) {
+                                            if (summonOwner.isInParty()) {
+                                                summonOwner
+                                                        .getParty()
+                                                        .broadcastToPartyMembers(
+                                                                summonOwner,
+                                                                psSummon); // send to all member except summonOwner
+                                                summonOwner.sendPacket(ps); // now send to summonOwner
+                                            } else {
+                                                summonOwner.sendPacket(ps);
+                                            }
+                                        }
+                                    } else if (owner.isPlayer() && owner.isInParty()) {
+                                        owner.getParty().broadcastPacket(ps);
+                                    }
+                                }
+
+                                if (os != null) {
+                                    final OlympiadGameTask game = OlympiadGameManager.getInstance()
+                                            .getOlympiadTask(owner.asPlayer().getOlympiadGameId());
+                                    if ((game != null) && game.isBattleStarted()) {
+                                        game.getZone().broadcastPacketToObservers(os);
+                                    }
+                                }
+
+                                updateEffectIconTask = null;
+                            },
+                            300,
+                            TimeUnit.MILLISECONDS);
         }
     }
 

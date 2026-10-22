@@ -36,11 +36,12 @@ import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -259,7 +260,7 @@ public class Q00511_AwlUnderFoot extends Quest {
                 dungeon.getInstanceId(),
                 instanceId,
                 player.getName());
-        ThreadPool.schedule(new spawnRaid((FAUWorld) world), RAID_SPAWN_DELAY);
+        WorldPartition.loop().schedule(new spawnRaid((FAUWorld) world), RAID_SPAWN_DELAY, TimeUnit.MILLISECONDS);
 
         // teleport players
         if (player.getParty() == null) {
@@ -338,7 +339,7 @@ public class Q00511_AwlUnderFoot extends Quest {
                 instanceObj.removeNpcs();
             } else {
                 world.incStatus();
-                ThreadPool.schedule(new spawnRaid(world), RAID_SPAWN_DELAY);
+                WorldPartition.loop().schedule(new spawnRaid(world), RAID_SPAWN_DELAY, TimeUnit.MILLISECONDS);
             }
         }
     }

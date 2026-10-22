@@ -37,10 +37,10 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.GrandBoss;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.zone.type.BossZone;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.boss.GrandBossStateRepository;
 import app.l2nx.highfive.repository.boss.GrandBossZoneCharacterRepository;
 import app.l2nx.highfive.repository.boss.model.GrandBossState;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Date;
@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -108,7 +109,7 @@ public class GrandBossManager {
             log.warn("Could not load grand boss states: {}", e.getMessage(), e);
         }
 
-        ThreadPool.scheduleAtFixedRate(this::storeMe, 5 * 60 * 1000, 5 * 60 * 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this::storeMe, 5 * 60 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS);
     }
 
     /**

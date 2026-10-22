@@ -23,7 +23,8 @@ import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.entity.zone.type.OlympiadStadiumZone;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -90,7 +91,7 @@ public class OlympiadGameTask implements Runnable {
         this.game = game;
         state = OlympiadGameState.BEGIN;
         needAnnounce = false;
-        ThreadPool.execute(this);
+        WorldPartition.loop().execute(this);
     }
 
     @Override
@@ -220,7 +221,7 @@ public class OlympiadGameTask implements Runnable {
                 }
             }
 
-            ThreadPool.schedule(this, delay * 1000);
+            WorldPartition.loop().schedule(this, delay * 1000, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             switch (state) {
                 case GAME_STOPPED:
@@ -236,7 +237,7 @@ public class OlympiadGameTask implements Runnable {
 
             log.warn("Exception in {}, trying to port players back: {}", state, e.getMessage(), e);
             state = OlympiadGameState.GAME_STOPPED;
-            ThreadPool.schedule(this, 1000);
+            WorldPartition.loop().schedule(this, 1000, TimeUnit.MILLISECONDS);
         }
     }
 

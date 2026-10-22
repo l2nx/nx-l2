@@ -21,7 +21,7 @@ package app.l2nx.highfive.mechanics.script.timers;
 
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
@@ -78,8 +78,8 @@ public class TimerHolder<T> implements Runnable {
         this.cancelScript = cancelScript;
         this.postExecutor = postExecutor;
         task = isRepeating
-                ? ThreadPool.scheduleAtFixedRate(this, this.time, this.time)
-                : ThreadPool.schedule(this, this.time);
+                ? WorldPartition.loop().scheduleAtFixedRate(this, this.time, this.time, TimeUnit.MILLISECONDS)
+                : WorldPartition.loop().schedule(this, this.time, TimeUnit.MILLISECONDS);
 
         if (npc != null) {
             npc.addTimerHolder(this);

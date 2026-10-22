@@ -32,7 +32,7 @@ import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -374,7 +374,7 @@ public class OlympiadManager {
         for (List<Integer> team : registeredTeamsBased) {
             if ((team != null) && team.contains(objId)) {
                 registeredTeamsBased.remove(team);
-                ThreadPool.execute(new AnnounceUnregToTeam(team));
+                WorldPartition.loop().execute(new AnnounceUnregToTeam(team));
                 return true;
             }
         }
@@ -401,7 +401,7 @@ public class OlympiadManager {
         for (List<Integer> team : registeredTeamsBased) {
             if ((team != null) && team.contains(objId)) {
                 registeredTeamsBased.remove(team);
-                ThreadPool.execute(new AnnounceUnregToTeam(team));
+                WorldPartition.loop().execute(new AnnounceUnregToTeam(team));
                 return;
             }
         }

@@ -15,8 +15,11 @@ recorded in the spec with its reason, not a silent choice.
 - **Game code never reads the system clock or a global random generator.** Legacy code uses
   `app.l2nx.highfive.clock.ClockBridge` (game time vs wall-clock time per mechanic); an ArchUnit test in
   `chronicles/high-five/boot` enforces it. Design: [spec 003, execution](docs/specs/003-engine-core/execution.md).
-- **Game code never uses `java.util.Timer` / `TimerTask`:** delayed work goes through `ThreadPool`, because a timer
-  thread dies silently on the first exception (ArchUnit `ScheduledWorkRules`, same module).
+- **Game code starts no threads of its own:** game work runs on the world loop (`WorldPartition`), work without game
+  state goes to `BackgroundTasks`; no `Timer`, thread, executor, `*Async` future or parallel stream, since any other
+  thread is a second writer and a timer thread dies silently on the first exception. Nor does it block: no `sleep`,
+  `wait`, `join`, `park`, latch or future wait, since a blocked task freezes the whole world; a pause is a loop timer. The only exceptions are the
+  static data parse pool (`IXmlReader`) and the `partition` bridges (ArchUnit `ScheduledWorkRules`, same module).
 - **Chronicle slices keep one layout.** A migrated slice `app.l2nx.highfive.<slice>` has its API in the root and only
   the fixed subpackages, commands, handlers, view events and domain events are checked by their marker types
   (`Command`, `CommandHandler`, `ViewEvent`, `DomainEvent`), adapters live under `network/` and no slice depends on it;

@@ -153,6 +153,8 @@ class CommandDispatcherTest {
     }
 
     private Session session() {
+        final DrainScheduler scheduler = DrainScheduler.pool(
+                (drain, abandoned) -> drains.add(drain), SessionMetrics.noop().drainFailures());
         return new SessionFactory(
                         Session.Limits.builder()
                                 .queueLimit(16)
@@ -162,9 +164,8 @@ class CommandDispatcherTest {
                                 .failureLimit(10)
                                 .failureWindow(Duration.ofSeconds(60))
                                 .build(),
-                        DrainScheduler.pool(
-                                (drain, abandoned) -> drains.add(drain),
-                                SessionMetrics.noop().drainFailures()),
+                        scheduler,
+                        scheduler,
                         dispatcher,
                         SessionMetrics.noop())
                 .create(transport);

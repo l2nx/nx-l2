@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 import lombok.Builder;
 
 final class LoopMetrics implements PeriodicMetrics, AutoCloseable {
@@ -32,16 +33,19 @@ final class LoopMetrics implements PeriodicMetrics, AutoCloseable {
     private final Counter overBudget;
     private final Counter overdue;
     private final Counter triggerDepthExceeded;
+    private final Counter ownershipViolations;
     private final DistributionSummary messages;
     private final DistributionSummary input;
     private final DistributionSummary timers;
+    private final LongSupplier runningPassStart;
     // Written by the owner at the end of a pass; the gauge is read by the scrape thread.
     private volatile long liveTimers;
 
-    LoopMetrics(MeterRegistry registry, String loop, Inbox<?> inbox) {
+    LoopMetrics(MeterRegistry registry, String loop, Inbox<?> inbox, LongSupplier runningPassStart) {
         this.registry = registry;
         this.clock = registry.config().clock();
         this.loop = loop;
+        this.runningPassStart = runningPassStart;
         pass = add(Timer.builder("l2nx.engine.pass")
                 .tag(LOOP, loop)
                 .publishPercentiles(0.95, 0.99)
@@ -60,6 +64,7 @@ final class LoopMetrics implements PeriodicMetrics, AutoCloseable {
         overBudget = add(counter("l2nx.engine.pass.over.budget"));
         overdue = add(counter("l2nx.engine.timers.overdue"));
         triggerDepthExceeded = add(counter("l2nx.engine.trigger.depth.exceeded"));
+        ownershipViolations = add(counter("l2nx.engine.ownership.violations"));
         messages = add(items("message"));
         input = add(items("input"));
         timers = add(items("timer"));
@@ -68,6 +73,11 @@ final class LoopMetrics implements PeriodicMetrics, AutoCloseable {
                 .register(registry));
         add(Gauge.builder("l2nx.engine.timers", this, metrics -> metrics.liveTimers)
                 .tag(LOOP, loop)
+                .register(registry));
+        // The pass timer records a blocked pass only once it ends; this shows it while it runs.
+        add(Gauge.builder("l2nx.engine.pass.running", this, LoopMetrics::runningPassSeconds)
+                .tag(LOOP, loop)
+                .baseUnit("seconds")
                 .register(registry));
     }
 
@@ -102,6 +112,10 @@ final class LoopMetrics implements PeriodicMetrics, AutoCloseable {
         triggerDepthExceeded.increment();
     }
 
+    void ownershipViolation() {
+        ownershipViolations.increment();
+    }
+
     void failure(PassPhase phase) {
         failures[phase.ordinal()].increment();
     }
@@ -117,6 +131,11 @@ final class LoopMetrics implements PeriodicMetrics, AutoCloseable {
                         .tag(LOOP, loop)
                         .tag("system", name)
                         .register(registry)));
+    }
+
+    private double runningPassSeconds() {
+        final long start = runningPassStart.getAsLong();
+        return start == Loop.IDLE ? 0 : (clock.monotonicTime() - start) / 1_000_000_000.0;
     }
 
     static String millis(long nanos) {

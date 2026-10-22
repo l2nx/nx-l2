@@ -37,7 +37,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExOlympiadMatchEnd;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExOlympiadUserInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -183,7 +183,7 @@ public class OlympiadStadiumZone extends ZoneRespawn {
         if (player != null) {
             // only participants, observers and GMs allowed
             if (!player.isGM() && !player.isInOlympiadMode() && !player.inObserverMode()) {
-                ThreadPool.execute(new KickPlayer(player));
+                WorldPartition.loop().execute(new KickPlayer(player));
             } else {
                 // check for pet
                 if (player.hasPet()) {

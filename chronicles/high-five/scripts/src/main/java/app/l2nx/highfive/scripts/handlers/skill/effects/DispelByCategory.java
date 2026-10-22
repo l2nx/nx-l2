@@ -31,9 +31,10 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.stats.Formulas;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Dispel By Category effect implementation.
@@ -95,35 +96,38 @@ public class DispelByCategory extends AbstractEffect {
             effected.getEffectList().stopSkillEffects(SkillFinishType.REMOVED, info.getSkill());
         }
 
-        ThreadPool.schedule(
-                () -> {
-                    if (effected.isMonster()
-                            || effected.isDead()
-                            || !effected.asPlayer().isOnline()) {
-                        return;
-                    }
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if (effected.isMonster()
+                                    || effected.isDead()
+                                    || !effected.asPlayer().isOnline()) {
+                                return;
+                            }
 
-                    for (BuffInfo info : canceled) {
-                        final Skill sk = info.getSkill();
-                        final int timeLeft = info.getTime();
+                            for (BuffInfo info : canceled) {
+                                final Skill sk = info.getSkill();
+                                final int timeLeft = info.getTime();
 
-                        if ((sk == null) || (timeLeft <= 0)) {
-                            continue;
-                        }
+                                if ((sk == null) || (timeLeft <= 0)) {
+                                    continue;
+                                }
 
-                        if (effected.getEffectList().getBuffInfoBySkillId(sk.getId()) != null) {
-                            continue;
-                        }
+                                if (effected.getEffectList().getBuffInfoBySkillId(sk.getId()) != null) {
+                                    continue;
+                                }
 
-                        sk.applyEffects(effected, effected);
+                                sk.applyEffects(effected, effected);
 
-                        final BuffInfo newInfo = effected.getEffectList().getBuffInfoBySkillId(sk.getId());
-                        if (newInfo != null) {
-                            newInfo.setAbnormalTime(timeLeft);
-                        }
-                    }
-                },
-                CancelReturnConfig.TIME_TO_RETURN);
+                                final BuffInfo newInfo =
+                                        effected.getEffectList().getBuffInfoBySkillId(sk.getId());
+                                if (newInfo != null) {
+                                    newInfo.setAbnormalTime(timeLeft);
+                                }
+                            }
+                        },
+                        CancelReturnConfig.TIME_TO_RETURN,
+                        TimeUnit.MILLISECONDS);
     }
 
     private void normalCancel(Creature effector, Creature effected, Skill skill) {

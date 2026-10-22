@@ -54,11 +54,11 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.territory.TerritoryRegistrationRepository;
 import app.l2nx.highfive.repository.territory.TerritoryStateRepository;
 import app.l2nx.highfive.repository.territory.model.TerritoryRegistrantType;
 import app.l2nx.highfive.repository.territory.model.TerritoryRegistration;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -70,6 +70,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -276,13 +277,14 @@ public class TerritoryWarManager implements Siegable {
                 scheduledEndTWTask.cancel(false);
             }
 
-            scheduledEndTWTask = ThreadPool.schedule(new ScheduleEndTWTask(), 1000);
+            scheduledEndTWTask = WorldPartition.loop().schedule(new ScheduleEndTWTask(), 1000, TimeUnit.MILLISECONDS);
         } else {
             if (scheduledStartTWTask != null) {
                 scheduledStartTWTask.cancel(false);
             }
 
-            scheduledStartTWTask = ThreadPool.schedule(new ScheduleStartTWTask(), 1000);
+            scheduledStartTWTask =
+                    WorldPartition.loop().schedule(new ScheduleStartTWTask(), 1000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -1086,17 +1088,21 @@ public class TerritoryWarManager implements Siegable {
                 final long timeRemaining = twStart.getTimeInMillis() - ClockBridge.wallMillis();
                 if (timeRemaining > 7200000) {
                     registrationOver = false;
-                    scheduledStartTWTask = ThreadPool.schedule(
-                            new ScheduleStartTWTask(),
-                            timeRemaining - 7200000); // Prepare task for 2h before TW start to end registration
+                    scheduledStartTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartTWTask(),
+                                    timeRemaining - 7200000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 2h before TW start to end registration
                 } else if ((timeRemaining <= 7200000) && (timeRemaining > 1200000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_REQUEST_PERIOD_HAS_ENDED);
                     World.broadcastToAllOnlinePlayers(sm);
                     registrationOver = true;
-                    scheduledStartTWTask = ThreadPool.schedule(
-                            new ScheduleStartTWTask(),
-                            timeRemaining - 1200000); // Prepare task for 20 mins left before TW start.
+                    scheduledStartTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartTWTask(),
+                                    timeRemaining - 1200000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 20 mins left before TW start.
                 } else if ((timeRemaining <= 1200000) && (timeRemaining > 600000)) {
                     final SystemMessage sm = new SystemMessage(
                             SystemMessageId
@@ -1105,42 +1111,52 @@ public class TerritoryWarManager implements Siegable {
                     twChannelOpen = true;
                     registrationOver = true;
                     updatePlayerTWStateFlags(false);
-                    scheduledStartTWTask = ThreadPool.schedule(
-                            new ScheduleStartTWTask(),
-                            timeRemaining - 600000); // Prepare task for 10 mins left before TW start.
+                    scheduledStartTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartTWTask(),
+                                    timeRemaining - 600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 mins left before TW start.
                 } else if ((timeRemaining <= 600000) && (timeRemaining > 300000)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_BEGINS_IN_10_MINUTES);
                     World.broadcastToAllOnlinePlayers(sm);
                     twChannelOpen = true;
                     registrationOver = true;
                     updatePlayerTWStateFlags(false);
-                    scheduledStartTWTask = ThreadPool.schedule(
-                            new ScheduleStartTWTask(),
-                            timeRemaining - 300000); // Prepare task for 5 mins left before TW start.
+                    scheduledStartTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartTWTask(),
+                                    timeRemaining - 300000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 5 mins left before TW start.
                 } else if ((timeRemaining <= 300000) && (timeRemaining > 60000)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_BEGINS_IN_5_MINUTES);
                     World.broadcastToAllOnlinePlayers(sm);
                     twChannelOpen = true;
                     registrationOver = true;
                     updatePlayerTWStateFlags(false);
-                    scheduledStartTWTask = ThreadPool.schedule(
-                            new ScheduleStartTWTask(),
-                            timeRemaining - 60000); // Prepare task for 1 min left before TW start.
+                    scheduledStartTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartTWTask(),
+                                    timeRemaining - 60000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 1 min left before TW start.
                 } else if ((timeRemaining <= 60000) && (timeRemaining > 0)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_BEGINS_IN_1_MINUTE);
                     World.broadcastToAllOnlinePlayers(sm);
                     twChannelOpen = true;
                     registrationOver = true;
                     updatePlayerTWStateFlags(false);
-                    scheduledStartTWTask =
-                            ThreadPool.schedule(new ScheduleStartTWTask(), timeRemaining); // Prepare task for TW start.
+                    scheduledStartTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartTWTask(),
+                                    timeRemaining,
+                                    TimeUnit.MILLISECONDS); // Prepare task for TW start.
                 } else if ((timeRemaining + WARLENGTH) > 0) {
                     twChannelOpen = true;
                     registrationOver = true;
                     startTerritoryWar();
-                    scheduledEndTWTask = ThreadPool.schedule(new ScheduleEndTWTask(), 1000); // Prepare task for TW end.
-                    scheduledRewardOnlineTask =
-                            ThreadPool.scheduleAtFixedRate(new RewardOnlineParticipants(), 60000, 60000);
+                    scheduledEndTWTask = WorldPartition.loop()
+                            .schedule(new ScheduleEndTWTask(), 1000, TimeUnit.MILLISECONDS); // Prepare task for TW end.
+                    scheduledRewardOnlineTask = WorldPartition.loop()
+                            .scheduleAtFixedRate(new RewardOnlineParticipants(), 60000, 60000, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 log.error("", e);
@@ -1161,39 +1177,54 @@ public class TerritoryWarManager implements Siegable {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_WILL_END_IN_S1_HOUR_S);
                     sm.addInt(2);
                     announceToParticipants(sm, 0, 0);
-                    scheduledEndTWTask = ThreadPool.schedule(
-                            new ScheduleEndTWTask(), timeRemaining - 3600000); // Prepare task for 1 hr left.
+                    scheduledEndTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndTWTask(),
+                                    timeRemaining - 3600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 1 hr left.
                 } else if ((timeRemaining <= 3600000) && (timeRemaining > 600000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_WILL_END_IN_S1_MINUTE_S);
                     sm.addInt((int) (timeRemaining / 60000));
                     announceToParticipants(sm, 0, 0);
-                    scheduledEndTWTask = ThreadPool.schedule(
-                            new ScheduleEndTWTask(), timeRemaining - 600000); // Prepare task for 10 minute left.
+                    scheduledEndTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndTWTask(),
+                                    timeRemaining - 600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 minute left.
                 } else if ((timeRemaining <= 600000) && (timeRemaining > 300000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_WILL_END_IN_S1_MINUTE_S);
                     sm.addInt((int) (timeRemaining / 60000));
                     announceToParticipants(sm, 0, 0);
-                    scheduledEndTWTask = ThreadPool.schedule(
-                            new ScheduleEndTWTask(), timeRemaining - 300000); // Prepare task for 5 minute left.
+                    scheduledEndTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndTWTask(),
+                                    timeRemaining - 300000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 5 minute left.
                 } else if ((timeRemaining <= 300000) && (timeRemaining > 10000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_WILL_END_IN_S1_MINUTE_S);
                     sm.addInt((int) (timeRemaining / 60000));
                     announceToParticipants(sm, 0, 0);
-                    scheduledEndTWTask = ThreadPool.schedule(
-                            new ScheduleEndTWTask(), timeRemaining - 10000); // Prepare task for 10 seconds count down
+                    scheduledEndTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndTWTask(),
+                                    timeRemaining - 10000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 seconds count down
                 } else if ((timeRemaining <= 10000) && (timeRemaining > 0)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.S1_SECOND_S_TO_THE_END_OF_TERRITORY_WAR);
                     sm.addInt((int) (timeRemaining / 1000));
                     announceToParticipants(sm, 0, 0);
-                    scheduledEndTWTask = ThreadPool.schedule(
-                            new ScheduleEndTWTask(), timeRemaining); // Prepare task for second count down
+                    scheduledEndTWTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndTWTask(),
+                                    timeRemaining,
+                                    TimeUnit.MILLISECONDS); // Prepare task for second count down
                 } else {
                     endTerritoryWar();
                     // _scheduledStartTWTask = ThreadPoolManager.schedule(new ScheduleStartTWTask(), 1000);
-                    ThreadPool.schedule(new closeTerritoryChannelTask(), 600000);
+                    WorldPartition.loop().schedule(new closeTerritoryChannelTask(), 600000, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 log.error("", e);

@@ -37,15 +37,17 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchRecord;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchUserDie;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 public class UCArena {
     private static final long MINUTES_IN_MILISECONDS = 10 * 60000;
+    private static final int[] COUNTDOWN_SECONDS = {60, 30, 10, 5, 4, 3, 2, 1};
 
     @Getter
     private final int id;
@@ -130,7 +132,7 @@ public class UCArena {
 
     public void runNewTask(boolean isFullTime) {
         final long time = isFullTime ? MINUTES_IN_MILISECONDS : MINUTES_IN_MILISECONDS - 60000L;
-        taskFuture = ThreadPool.schedule(new UCRunningTask(this), time);
+        taskFuture = WorldPartition.loop().schedule(new UCRunningTask(this), time, TimeUnit.MILLISECONDS);
     }
 
     public void runTaskNow() {
@@ -139,7 +141,7 @@ public class UCArena {
             taskFuture = null;
         }
 
-        taskFuture = ThreadPool.schedule(new UCRunningTask(this), 0);
+        taskFuture = WorldPartition.loop().schedule(new UCRunningTask(this), 0, TimeUnit.MILLISECONDS);
     }
 
     public void generateWinner() {
@@ -204,61 +206,30 @@ public class UCArena {
 
     public void prepareStart() {
         battleNow = true;
-        broadcastToAll(new ExShowScreenMessage(
-                NpcStringId.MATCH_BEGINS_IN_S1_MINUTE_S_PLEASE_GATHER_AROUND_THE_ADMINISTRATOR, 2, 5000, "1"));
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
+        countdown(0);
+    }
+
+    // Each step is a loop timer kept in taskFuture, so stopping the arena cancels the countdown too.
+    private void countdown(int step) {
+        final int seconds = COUNTDOWN_SECONDS[step];
+        broadcastToAll(countdownMessage(seconds));
+        final int nextStep = step + 1;
+        final int nextSeconds = nextStep < COUNTDOWN_SECONDS.length ? COUNTDOWN_SECONDS[nextStep] : 0;
+        final Runnable next = nextSeconds > 0 ? () -> countdown(nextStep) : this::startIfReady;
+        taskFuture = WorldPartition.loop().schedule(next, (seconds - nextSeconds) * 1000L, TimeUnit.MILLISECONDS);
+    }
+
+    private static ExShowScreenMessage countdownMessage(int seconds) {
+        if (seconds == 60) {
+            return new ExShowScreenMessage(
+                    NpcStringId.MATCH_BEGINS_IN_S1_MINUTE_S_PLEASE_GATHER_AROUND_THE_ADMINISTRATOR, 2, 5000, "1");
         }
 
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 5000, "30"));
-        try {
-            Thread.sleep(20000);
-        } catch (InterruptedException e) {
-        }
+        final int showMillis = seconds >= 30 ? 5000 : seconds >= 10 ? 3000 : 1000;
+        return new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, showMillis, String.valueOf(seconds));
+    }
 
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 3000, "10"));
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-        }
-
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 1000, "5"));
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 1000, "4"));
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 1000, "3"));
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 1000, "2"));
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-
-        broadcastToAll(new ExShowScreenMessage(NpcStringId.S1_SECOND_S_REMAINING, 2, 1000, "1"));
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-
+    private void startIfReady() {
         boolean isValid = true;
         for (UCTeam team : teams) {
             if (team.getParty() == null) {

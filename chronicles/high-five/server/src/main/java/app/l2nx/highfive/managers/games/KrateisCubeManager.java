@@ -41,7 +41,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.ArrayList;
@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
@@ -319,7 +320,7 @@ public class KrateisCubeManager implements IXmlReader {
         }
 
         if (isActive) {
-            eventTask = ThreadPool.schedule(this::startEvent, 11000);
+            eventTask = WorldPartition.loop().schedule(this::startEvent, 11000, TimeUnit.MILLISECONDS);
             getManagerMessage(KrateiMsgType.STARTED);
         } else {
             recalcEventTime();
@@ -338,7 +339,7 @@ public class KrateisCubeManager implements IXmlReader {
             }
         }
 
-        periodTask = ThreadPool.schedule(this::recalcEventTime, 180000);
+        periodTask = WorldPartition.loop().schedule(this::recalcEventTime, 180000, TimeUnit.MILLISECONDS);
     }
 
     public void abortEvent() {
@@ -401,16 +402,28 @@ public class KrateisCubeManager implements IXmlReader {
 
         nextMatchTime = calendar.getTimeInMillis();
         final long lastTime = nextMatchTime - currentTime;
-        eventTask = ThreadPool.schedule(this::closeRegistration, lastTime);
+        eventTask = WorldPartition.loop().schedule(this::closeRegistration, lastTime, TimeUnit.MILLISECONDS);
         getManagerMessage(KrateiMsgType.INITIALIZED);
 
         final int time = (int) ((lastTime / 1000) / 60);
         if (time >= 5) {
-            msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_5), lastTime - 300000);
+            msgTask = WorldPartition.loop()
+                    .schedule(
+                            () -> getManagerMessage(KrateiMsgType.REGISTRATION_5),
+                            lastTime - 300000,
+                            TimeUnit.MILLISECONDS);
         } else if ((time >= 3) && (time < 5)) {
-            msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_3), lastTime - 180000);
+            msgTask = WorldPartition.loop()
+                    .schedule(
+                            () -> getManagerMessage(KrateiMsgType.REGISTRATION_3),
+                            lastTime - 180000,
+                            TimeUnit.MILLISECONDS);
         } else if ((time >= 1) && (time < 3)) {
-            msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_1), lastTime - 60000);
+            msgTask = WorldPartition.loop()
+                    .schedule(
+                            () -> getManagerMessage(KrateiMsgType.REGISTRATION_1),
+                            lastTime - 60000,
+                            TimeUnit.MILLISECONDS);
         }
 
         if (state != EventState.STARTED) {
@@ -429,7 +442,7 @@ public class KrateisCubeManager implements IXmlReader {
         registerTime = false;
         getManagerMessage(KrateiMsgType.PREPATING);
         state = EventState.PREPARING;
-        periodTask = ThreadPool.schedule(this::prepareEvent, 180000);
+        periodTask = WorldPartition.loop().schedule(this::prepareEvent, 180000, TimeUnit.MILLISECONDS);
     }
 
     private void getManagerMessage(KrateiMsgType state) {
@@ -447,7 +460,11 @@ public class KrateisCubeManager implements IXmlReader {
                         manager,
                         ChatType.NPC_SHOUT,
                         NpcStringId.THERE_ARE_5_MINUTES_REMAINING_TO_REGISTER_FOR_KRATEI_S_CUBE_MATCH));
-                msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_3), lastTime - 180000);
+                msgTask = WorldPartition.loop()
+                        .schedule(
+                                () -> getManagerMessage(KrateiMsgType.REGISTRATION_3),
+                                lastTime - 180000,
+                                TimeUnit.MILLISECONDS);
                 break;
             }
             case REGISTRATION_3: {
@@ -455,7 +472,11 @@ public class KrateisCubeManager implements IXmlReader {
                         manager,
                         ChatType.NPC_SHOUT,
                         NpcStringId.THERE_ARE_3_MINUTES_REMAINING_TO_REGISTER_FOR_KRATEI_S_CUBE_MATCH));
-                msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_1), lastTime - 60000);
+                msgTask = WorldPartition.loop()
+                        .schedule(
+                                () -> getManagerMessage(KrateiMsgType.REGISTRATION_1),
+                                lastTime - 60000,
+                                TimeUnit.MILLISECONDS);
                 break;
             }
             case REGISTRATION_1: {

@@ -50,14 +50,15 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegeStatus;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.siege.model.FlagWarAttacker;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -356,19 +357,21 @@ public class BanditStronghold extends ClanHallSiegeEngine {
                             doUnSpawns(data);
                         }
 
-                        ThreadPool.schedule(
-                                () -> {
-                                    for (int doorId : INNER_DOORS_TO_OPEN) {
-                                        hall.openCloseDoor(doorId, false);
-                                    }
+                        WorldPartition.loop()
+                                .schedule(
+                                        () -> {
+                                            for (int doorId : INNER_DOORS_TO_OPEN) {
+                                                hall.openCloseDoor(doorId, false);
+                                            }
 
-                                    for (Entry<Integer, ClanData> e : BanditStronghold.data.entrySet()) {
-                                        doSpawns(e.getKey(), e.getValue());
-                                    }
+                                            for (Entry<Integer, ClanData> e : BanditStronghold.data.entrySet()) {
+                                                doSpawns(e.getKey(), e.getValue());
+                                            }
 
-                                    hall.getSiegeZone().setActive(true);
-                                },
-                                300000);
+                                            hall.getSiegeZone().setActive(true);
+                                        },
+                                        300000,
+                                        TimeUnit.MILLISECONDS);
                     }
                 } else {
                     missionAccomplished = true;
@@ -397,7 +400,7 @@ public class BanditStronghold extends ClanHallSiegeEngine {
         World.broadcastToAllOnlinePlayers(msg);
         hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
 
-        siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
+        siegeTask = WorldPartition.loop().schedule(new SiegeStarts(), 3600000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -431,17 +434,19 @@ public class BanditStronghold extends ClanHallSiegeEngine {
             }
         }
 
-        ThreadPool.schedule(
-                () -> {
-                    for (int door : OUTTER_DOORS_TO_OPEN) {
-                        hall.openCloseDoor(door, false);
-                    }
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            for (int door : OUTTER_DOORS_TO_OPEN) {
+                                hall.openCloseDoor(door, false);
+                            }
 
-                    hall.getZone().banishNonSiegeParticipants();
+                            hall.getZone().banishNonSiegeParticipants();
 
-                    startSiege();
-                },
-                300000);
+                            startSiege();
+                        },
+                        300000,
+                        TimeUnit.MILLISECONDS);
     }
 
     @Override

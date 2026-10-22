@@ -70,7 +70,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExSendUIEvent;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.MapUtil;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
@@ -79,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
@@ -899,16 +900,22 @@ public class CtF extends Event {
                     enemyTeamFlag(player);
 
                     for (Player activeChar : getParticipantEnemyTeam(player)) {
-                        ThreadPool.schedule(
-                                () -> sendScreenMessage(
-                                        activeChar,
-                                        activeChar.getName() + " The enemy has entered your zone with the flag",
-                                        4),
-                                1000);
-                        ThreadPool.schedule(
-                                () -> sendScreenMessage(
-                                        activeChar, activeChar.getName() + " Your flag returned to your base!", 3),
-                                4000);
+                        WorldPartition.loop()
+                                .schedule(
+                                        () -> sendScreenMessage(
+                                                activeChar,
+                                                activeChar.getName() + " The enemy has entered your zone with the flag",
+                                                4),
+                                        1000,
+                                        TimeUnit.MILLISECONDS);
+                        WorldPartition.loop()
+                                .schedule(
+                                        () -> sendScreenMessage(
+                                                activeChar,
+                                                activeChar.getName() + " Your flag returned to your base!",
+                                                3),
+                                        4000,
+                                        TimeUnit.MILLISECONDS);
                     }
                 }
             }

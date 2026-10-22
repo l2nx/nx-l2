@@ -29,11 +29,12 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Monster;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 
 /**
@@ -165,7 +166,8 @@ public class MinionList {
                 ? master.isRaid() ? (int) NpcConfig.RAID_MINION_RESPAWN_TIMER : NO_RESPAWN
                 : respawnTime;
         if ((actualRespawnTime > NO_RESPAWN) && !master.isAlikeDead()) {
-            respawnTasks.add(ThreadPool.schedule(new MinionRespawnTask(minion), actualRespawnTime));
+            respawnTasks.add(WorldPartition.loop()
+                    .schedule(new MinionRespawnTask(minion), actualRespawnTime, TimeUnit.MILLISECONDS));
         }
     }
 

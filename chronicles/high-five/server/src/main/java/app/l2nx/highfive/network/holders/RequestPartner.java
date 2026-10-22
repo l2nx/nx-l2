@@ -23,7 +23,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 /**
@@ -107,7 +108,7 @@ public class RequestPartner {
     private void setOnRequestTimer(boolean isRequestor) {
         requestor = isRequestor;
         answerer = !isRequestor;
-        ThreadPool.schedule(this::clear, REQUEST_TIMEOUT * 1000);
+        WorldPartition.loop().schedule(this::clear, REQUEST_TIMEOUT * 1000, TimeUnit.MILLISECONDS);
     }
 
     /**

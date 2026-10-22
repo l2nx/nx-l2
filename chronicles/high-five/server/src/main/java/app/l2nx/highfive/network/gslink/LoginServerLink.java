@@ -43,6 +43,7 @@ import app.l2nx.highfive.login.command.LinkLost;
 import app.l2nx.highfive.login.command.PasswordChangeResult;
 import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.network.channel.RateLimitedLog;
 import app.l2nx.network.config.NetworkProperties;
 import com.google.protobuf.ByteString;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -448,10 +450,16 @@ public class LoginServerLink implements LoginPort, DisposableBean {
                                     .accepted(result.getAccepted())
                                     .build());
                 }
-                case KICK_ACCOUNT ->
-                    commands.getObject()
-                            .submit(new KickAccount(
-                                    UUID.fromString(message.getKickAccount().getAccountId())));
+                case KICK_ACCOUNT -> {
+                    final KickAccount kick = new KickAccount(
+                            UUID.fromString(message.getKickAccount().getAccountId()));
+                    // A kick without a session saves and removes a detached player, which only the world loop may do.
+                    try {
+                        WorldPartition.offer(() -> commands.getObject().submit(kick));
+                    } catch (RejectedExecutionException e) {
+                        log.warn("Dropped the kick of account {}: the world loop has stopped.", kick.accountId());
+                    }
+                }
                 case REPORT_CHARACTERS ->
                     commands.getObject()
                             .submit(new ReportCharacters(UUID.fromString(

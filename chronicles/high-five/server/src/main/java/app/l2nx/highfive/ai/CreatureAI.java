@@ -48,12 +48,13 @@ import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AutoAttackStop;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class manages AI of Creature.<br>
@@ -316,14 +317,16 @@ public class CreatureAI extends AbstractAI {
             }
 
             if (delay > 0) {
-                ThreadPool.schedule(
-                        () -> {
-                            if (actor.isAttackingNow()) {
-                                actor.abortAttack();
-                            }
-                            changeIntentionToCast(skill, target);
-                        },
-                        delay);
+                WorldPartition.loop()
+                        .schedule(
+                                () -> {
+                                    if (actor.isAttackingNow()) {
+                                        actor.abortAttack();
+                                    }
+                                    changeIntentionToCast(skill, target);
+                                },
+                                delay,
+                                TimeUnit.MILLISECONDS);
             } else {
                 changeIntentionToCast(skill, target);
             }

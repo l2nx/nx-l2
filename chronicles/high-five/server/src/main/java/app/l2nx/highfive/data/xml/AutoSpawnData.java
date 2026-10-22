@@ -42,7 +42,16 @@ public class AutoSpawnData implements IXmlReader {
                             groupNode,
                             "location",
                             locationNode -> locations.add(SpawnPoint.of(new StatSet(parseAttributes(locationNode)))));
-                    groups.add(AutoSpawnGroup.of(new StatSet(parseAttributes(groupNode)), locations));
+                    final AutoSpawnGroup group = AutoSpawnGroup.of(new StatSet(parseAttributes(groupNode)), locations);
+                    // A despawning group respawns at a fixed rate, and the world loop rejects a period of zero.
+                    if ((group.despawnDelaySeconds() > 0) && (group.respawnDelaySeconds() == 0)) {
+                        log.warn(
+                                "Skipping auto spawn group of NPC {}: respawnDelaySeconds is 0 while it despawns.",
+                                group.npcId());
+                        return;
+                    }
+
+                    groups.add(group);
                 }));
     }
 

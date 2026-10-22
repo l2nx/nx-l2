@@ -54,8 +54,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.RelationChanged;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SiegeInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.siege.model.CastleSiegeClan;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -65,6 +65,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -134,40 +135,51 @@ public class Siege implements Siegable {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HOUR_S_UNTIL_CASTLE_SIEGE_CONCLUSION);
                     sm.addInt(2);
                     announceToPlayer(sm, true);
-                    ThreadPool.schedule(
-                            new ScheduleEndSiegeTask(castleInst),
-                            timeRemaining - 3600000); // Prepare task for 1 hr left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndSiegeTask(castleInst),
+                                    timeRemaining - 3600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 1 hr left.
                 } else if ((timeRemaining <= 3600000) && (timeRemaining > 600000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.S1_MINUTE_S_UNTIL_CASTLE_SIEGE_CONCLUSION);
                     sm.addInt((int) timeRemaining / 60000);
                     announceToPlayer(sm, true);
-                    ThreadPool.schedule(
-                            new ScheduleEndSiegeTask(castleInst),
-                            timeRemaining - 600000); // Prepare task for 10 minute left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndSiegeTask(castleInst),
+                                    timeRemaining - 600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 minute left.
                 } else if ((timeRemaining <= 600000) && (timeRemaining > 300000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.S1_MINUTE_S_UNTIL_CASTLE_SIEGE_CONCLUSION);
                     sm.addInt((int) timeRemaining / 60000);
                     announceToPlayer(sm, true);
-                    ThreadPool.schedule(
-                            new ScheduleEndSiegeTask(castleInst),
-                            timeRemaining - 300000); // Prepare task for 5 minute left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndSiegeTask(castleInst),
+                                    timeRemaining - 300000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 5 minute left.
                 } else if ((timeRemaining <= 300000) && (timeRemaining > 10000)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.S1_MINUTE_S_UNTIL_CASTLE_SIEGE_CONCLUSION);
                     sm.addInt((int) timeRemaining / 60000);
                     announceToPlayer(sm, true);
-                    ThreadPool.schedule(
-                            new ScheduleEndSiegeTask(castleInst),
-                            timeRemaining - 10000); // Prepare task for 10 seconds count down.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndSiegeTask(castleInst),
+                                    timeRemaining - 10000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 seconds count down.
                 } else if ((timeRemaining <= 10000) && (timeRemaining > 0)) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.THIS_CASTLE_SIEGE_WILL_END_IN_S1_SECOND_S);
                     sm.addInt((int) timeRemaining / 1000);
                     announceToPlayer(sm, true);
-                    ThreadPool.schedule(
-                            new ScheduleEndSiegeTask(castleInst), timeRemaining); // Prepare task for second count down.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleEndSiegeTask(castleInst),
+                                    timeRemaining,
+                                    TimeUnit.MILLISECONDS); // Prepare task for second count down.
                 } else {
                     castleInst.getSiege().endSiege();
                 }
@@ -196,8 +208,11 @@ public class Siege implements Siegable {
                 if (!isTimeRegistrationOver()) {
                     final long regTimeRemaining = getTimeRegistrationOverDate().getTimeInMillis() - currentTime;
                     if (regTimeRemaining > 0) {
-                        scheduledStartSiegeTask =
-                                ThreadPool.schedule(new ScheduleStartSiegeTask(castleInst), regTimeRemaining);
+                        scheduledStartSiegeTask = WorldPartition.loop()
+                                .schedule(
+                                        new ScheduleStartSiegeTask(castleInst),
+                                        regTimeRemaining,
+                                        TimeUnit.MILLISECONDS);
                         return;
                     }
 
@@ -206,34 +221,47 @@ public class Siege implements Siegable {
 
                 final long timeRemaining = getSiegeDate().getTimeInMillis() - currentTime;
                 if (timeRemaining > 86400000) {
-                    scheduledStartSiegeTask = ThreadPool.schedule(
-                            new ScheduleStartSiegeTask(castleInst),
-                            timeRemaining - 86400000); // Prepare task for 24 before siege start to end registration.
+                    scheduledStartSiegeTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(castleInst),
+                                    timeRemaining - 86400000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 24 before siege start to end
+                    // registration.
                 } else if ((timeRemaining <= 86400000) && (timeRemaining > 13600000)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.THE_REGISTRATION_TERM_FOR_S1_HAS_ENDED);
                     sm.addCastleId(getCastle().getResidenceId());
                     World.broadcastToAllOnlinePlayers(sm);
                     registrationOver = true;
                     clearSiegeWaitingClan();
-                    scheduledStartSiegeTask = ThreadPool.schedule(
-                            new ScheduleStartSiegeTask(castleInst),
-                            timeRemaining - 13600000); // Prepare task for 1 hr left before siege start.
+                    scheduledStartSiegeTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(castleInst),
+                                    timeRemaining - 13600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 1 hr left before siege start.
                 } else if ((timeRemaining <= 13600000) && (timeRemaining > 600000)) {
-                    scheduledStartSiegeTask = ThreadPool.schedule(
-                            new ScheduleStartSiegeTask(castleInst),
-                            timeRemaining - 600000); // Prepare task for 10 minute left.
+                    scheduledStartSiegeTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(castleInst),
+                                    timeRemaining - 600000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 minute left.
                 } else if ((timeRemaining <= 600000) && (timeRemaining > 300000)) {
-                    scheduledStartSiegeTask = ThreadPool.schedule(
-                            new ScheduleStartSiegeTask(castleInst),
-                            timeRemaining - 300000); // Prepare task for 5 minute left.
+                    scheduledStartSiegeTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(castleInst),
+                                    timeRemaining - 300000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 5 minute left.
                 } else if ((timeRemaining <= 300000) && (timeRemaining > 10000)) {
-                    scheduledStartSiegeTask = ThreadPool.schedule(
-                            new ScheduleStartSiegeTask(castleInst),
-                            timeRemaining - 10000); // Prepare task for 10 seconds count down.
+                    scheduledStartSiegeTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(castleInst),
+                                    timeRemaining - 10000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 seconds count down.
                 } else if ((timeRemaining <= 10000) && (timeRemaining > 0)) {
-                    scheduledStartSiegeTask = ThreadPool.schedule(
-                            new ScheduleStartSiegeTask(castleInst),
-                            timeRemaining); // Prepare task for second count down.
+                    scheduledStartSiegeTask = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(castleInst),
+                                    timeRemaining,
+                                    TimeUnit.MILLISECONDS); // Prepare task for second count down.
                 } else {
                     castleInst.getSiege().startSiege();
                 }
@@ -487,7 +515,8 @@ public class Siege implements Siegable {
             // Schedule a task to prepare auto siege end.
             siegeEndDate = ClockBridge.calendar();
             siegeEndDate.add(Calendar.MINUTE, SiegeManager.getInstance().getSiegeLength());
-            ThreadPool.schedule(new ScheduleEndSiegeTask(castle), 1000); // Prepare auto end task.
+            WorldPartition.loop()
+                    .schedule(new ScheduleEndSiegeTask(castle), 1000, TimeUnit.MILLISECONDS); // Prepare auto end task.
 
             final SystemMessage sm = new SystemMessage(SystemMessageId.THE_S1_SIEGE_HAS_STARTED);
             sm.addCastleId(castle.getResidenceId());
@@ -914,7 +943,8 @@ public class Siege implements Siegable {
             scheduledStartSiegeTask.cancel(false);
         }
 
-        scheduledStartSiegeTask = ThreadPool.schedule(new ScheduleStartSiegeTask(getCastle()), 1000);
+        scheduledStartSiegeTask =
+                WorldPartition.loop().schedule(new ScheduleStartSiegeTask(getCastle()), 1000, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -1171,7 +1201,8 @@ public class Siege implements Siegable {
     public void saveSiegeDate() {
         if (scheduledStartSiegeTask != null) {
             scheduledStartSiegeTask.cancel(true);
-            scheduledStartSiegeTask = ThreadPool.schedule(new ScheduleStartSiegeTask(getCastle()), 1000);
+            scheduledStartSiegeTask = WorldPartition.loop()
+                    .schedule(new ScheduleStartSiegeTask(getCastle()), 1000, TimeUnit.MILLISECONDS);
         }
 
         CastleManager.getInstance()

@@ -68,7 +68,9 @@ public class FloodProtectorAction {
 
     // Protection State.
     private final AtomicInteger requestCount = new AtomicInteger(0);
-    private volatile int nextGameTick = GameTimeTaskManager.getInstance().getGameTicks();
+    // 0 lies before every game tick, so the first action passes. Not the current tick: the client and its protectors
+    // are created on a network thread, which has no game time.
+    private volatile int nextGameTick;
     private volatile boolean punishmentInProgress;
     private volatile boolean logged;
 

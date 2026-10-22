@@ -17,6 +17,15 @@ spring:
           keepalive:
             time: 15s
             timeout: 10s
+  # Background tasks: work with no game state. Platform threads, not spring.threads.virtual.enabled: Boot then builds a
+  # scheduler whose periodic runs may overlap.
+  task:
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: l2nx-background-
+    execution:
+      thread-name-prefix: l2nx-background-exec-
 
 server:
   port: 8777

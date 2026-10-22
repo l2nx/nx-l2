@@ -44,7 +44,8 @@ public final class Session implements InputSource {
     private final SpscAtomicArrayQueue<Input> queue;
     private final Bucket rate;
     private final Bucket failures;
-    private final DrainScheduler scheduler;
+    private final DrainScheduler connectedScheduler;
+    private final DrainScheduler authedScheduler;
     private final CommandDispatcher dispatcher;
     private final SessionMetrics metrics;
     private final SessionTransport transport;
@@ -55,6 +56,7 @@ public final class Session implements InputSource {
     // Transitions are rare; holding the lock across the notification keeps the transport's view in transition order.
     private final ReentrantLock transitions = new ReentrantLock();
     private volatile SessionState state = SessionState.CONNECTED;
+    private volatile DrainScheduler scheduler;
     private volatile Runnable onClosed = () -> {};
     private volatile Object attachment;
     private volatile ClientPort port = ClientPort.DETACHED;
@@ -84,7 +86,8 @@ public final class Session implements InputSource {
      */
     Session(
             Limits limits,
-            DrainScheduler scheduler,
+            DrainScheduler connectedScheduler,
+            DrainScheduler authedScheduler,
             CommandDispatcher dispatcher,
             SessionMetrics metrics,
             SessionTransport transport,
@@ -105,7 +108,9 @@ public final class Session implements InputSource {
                         .refillGreedy(limits.failureLimit(), limits.failureWindow()))
                 .withCustomTimePrecision(time)
                 .build();
-        this.scheduler = scheduler;
+        this.connectedScheduler = connectedScheduler;
+        this.authedScheduler = authedScheduler;
+        this.scheduler = connectedScheduler;
         this.dispatcher = dispatcher;
         this.metrics = metrics;
         this.transport = transport;
@@ -150,12 +155,13 @@ public final class Session implements InputSource {
         if ((queue.size() >= queueLimit) || !queue.offer(input)) {
             return false;
         }
+        metrics.queued(queue.size());
         signal();
         return true;
     }
 
     // Producer side of the InputSource protocol: the offer is a release store, so the fence orders it before the flag.
-    private void signal() {
+    void signal() {
         VarHandle.fullFence();
         if (trySignal()) {
             scheduler.schedule(this);
@@ -184,6 +190,9 @@ public final class Session implements InputSource {
                 throw new IllegalStateException("Session cannot move from " + previous + " to " + next);
             }
             state = next;
+            if (next == SessionState.AUTHED) {
+                scheduler = authedScheduler;
+            }
             transport.stateChanged(previous, next);
         } finally {
             transitions.unlock();
@@ -203,7 +212,7 @@ public final class Session implements InputSource {
         } finally {
             transitions.unlock();
         }
-        signal();
+        scheduler.scheduleClose(this);
     }
 
     public void onClosed(Runnable callback) {
@@ -270,7 +279,7 @@ public final class Session implements InputSource {
     }
 
     void drainOnPool(FailureHandler failureHandler) {
-        for (int ran = 0; ran < perDrain; ran++) {
+        for (int ran = 0; (ran < perDrain) && (scheduler == connectedScheduler); ran++) {
             final Message input;
             try {
                 input = poll();
@@ -356,7 +365,11 @@ public final class Session implements InputSource {
         }
     }
 
-    private void finishClose() {
+    Message closeMessage() {
+        return new Close(this);
+    }
+
+    void finishClose() {
         if (!closeHandled.compareAndSet(false, true)) {
             return;
         }
@@ -372,6 +385,18 @@ public final class Session implements InputSource {
                 transitions.unlock();
                 finished.run();
             }
+        }
+    }
+
+    private record Close(Session session) implements Message {
+        @Override
+        public void execute(Loop loop) {
+            session.finishClose();
+        }
+
+        @Override
+        public String toString() {
+            return "Close[session=" + session.id + "]";
         }
     }
 

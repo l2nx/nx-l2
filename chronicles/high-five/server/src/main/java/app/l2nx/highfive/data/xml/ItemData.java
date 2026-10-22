@@ -24,12 +24,10 @@ package app.l2nx.highfive.data.xml;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.config.ThreadConfig;
 import app.l2nx.highfive.entity.item.Armor;
 import app.l2nx.highfive.entity.item.EtcItem;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.Weapon;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.DocumentItem;
 import java.io.File;
 import java.util.ArrayList;
@@ -38,8 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +62,12 @@ public class ItemData {
         load();
     }
 
+    private static List<ItemTemplate> parseItems(File file) {
+        final DocumentItem document = new DocumentItem(file);
+        document.parse();
+        return document.getItemList();
+    }
+
     private void processDirectory(String dirName, List<File> list) {
         final File dir = new File(ServerConfig.DATAPACK_ROOT, dirName);
         if (!dir.exists()) {
@@ -84,41 +86,14 @@ public class ItemData {
     }
 
     private void load() {
-        final Collection<ItemTemplate> items = ConcurrentHashMap.newKeySet();
         int highestId = 0;
         armors.clear();
         etcItems.clear();
         weapons.clear();
 
-        // If multithreading is enabled, use a thread pool to parse files.
-        if (ThreadConfig.THREADS_FOR_LOADING) {
-            final Collection<ScheduledFuture<?>> tasks = ConcurrentHashMap.newKeySet();
-            for (File file : itemFiles) {
-                tasks.add(ThreadPool.schedule(
-                        () -> {
-                            final DocumentItem document = new DocumentItem(file);
-                            document.parse();
-                            items.addAll(document.getItemList());
-                        },
-                        0));
-            }
-
-            // Wait for all scheduled tasks to complete.
-            while (!tasks.isEmpty()) {
-                for (ScheduledFuture<?> task : tasks) {
-                    if ((task == null) || task.isDone() || task.isCancelled()) {
-                        tasks.remove(task);
-                    }
-                }
-            }
-        } else // Parse files sequentially if multithreading is not enabled.
-        {
-            for (File file : itemFiles) {
-                final DocumentItem document = new DocumentItem(file);
-                document.parse();
-                items.addAll(document.getItemList());
-            }
-        }
+        // In file order, so an item defined twice ends as the later file has it.
+        final List<ItemTemplate> items = new ArrayList<>();
+        IXmlReader.parseAll(itemFiles, ItemData::parseItems, (file, parsed) -> items.addAll(parsed));
 
         // Process each loaded item and organize them into their respective collections.
         for (ItemTemplate item : items) {

@@ -26,9 +26,10 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Chimeras AI.
@@ -78,7 +79,7 @@ public class Chimeras extends Script {
             final Location loc = getRandomEntry(LOCATIONS);
             if (!npc.isInsideRadius2D(loc, 200)) {
                 npc.getSpawn().setLocation(loc);
-                ThreadPool.schedule(new Teleport(npc, loc), 100);
+                WorldPartition.loop().schedule(new Teleport(npc, loc), 100, TimeUnit.MILLISECONDS);
             }
         }
     }

@@ -26,11 +26,12 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Fortress of the Dead clan hall siege script.
@@ -143,7 +144,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
         if ((hoursLeft < 0) || (hoursLeft > 6)) {
             cancelSiegeTask();
             final long scheduleTime = (24 - hoursLeft) * 10 * 60000;
-            siegeTask = ThreadPool.schedule(new SiegeStarts(), scheduleTime);
+            siegeTask = WorldPartition.loop().schedule(new SiegeStarts(), scheduleTime, TimeUnit.MILLISECONDS);
         } else {
             super.startSiege();
         }

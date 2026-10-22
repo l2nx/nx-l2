@@ -28,12 +28,13 @@ import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.actor.instance.Fence;
 import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.RandomAnimationTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 
@@ -198,13 +199,15 @@ public class WorldRegion {
             }
 
             // Then, set a timer to activate the neighbors.
-            neighborsTask = ThreadPool.schedule(
-                    () -> {
-                        for (int i = 0; i < surroundingRegions.length; i++) {
-                            surroundingRegions[i].setActive(true);
-                        }
-                    },
-                    1000 * GeneralConfig.GRID_NEIGHBOR_TURNON_TIME);
+            neighborsTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                for (int i = 0; i < surroundingRegions.length; i++) {
+                                    surroundingRegions[i].setActive(true);
+                                }
+                            },
+                            1000 * GeneralConfig.GRID_NEIGHBOR_TURNON_TIME,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -221,16 +224,18 @@ public class WorldRegion {
 
             // Start a timer to "suggest" a deactivate to self and neighbors.
             // Suggest means: first check if a neighbor has Players in it. If not, deactivate.
-            neighborsTask = ThreadPool.schedule(
-                    () -> {
-                        for (int i = 0; i < surroundingRegions.length; i++) {
-                            final WorldRegion worldRegion = surroundingRegions[i];
-                            if (worldRegion.areNeighborsEmpty()) {
-                                worldRegion.setActive(false);
-                            }
-                        }
-                    },
-                    1000 * GeneralConfig.GRID_NEIGHBOR_TURNOFF_TIME);
+            neighborsTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                for (int i = 0; i < surroundingRegions.length; i++) {
+                                    final WorldRegion worldRegion = surroundingRegions[i];
+                                    if (worldRegion.areNeighborsEmpty()) {
+                                        worldRegion.setActive(false);
+                                    }
+                                }
+                            },
+                            1000 * GeneralConfig.GRID_NEIGHBOR_TURNOFF_TIME,
+                            TimeUnit.MILLISECONDS);
         }
     }
 

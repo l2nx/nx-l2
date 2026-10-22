@@ -14,27 +14,61 @@ import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
 import app.l2nx.boot.integration.BootSmokeTest;
 import app.l2nx.database.PostgresDatabase;
+import app.l2nx.engine.core.partition.PartitionRuntime;
+import app.l2nx.engine.core.session.SessionFactory;
+import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.highfive.GameServer;
 import app.l2nx.highfive.Shutdown;
+import app.l2nx.highfive.WorldLoader;
+import app.l2nx.highfive.WorldShutdown;
 import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.login.ListingAttribute;
+import app.l2nx.highfive.login.LoginPort;
+import app.l2nx.highfive.login.SessionKey;
+import app.l2nx.highfive.login.command.AuthenticationResult;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.GameProtocolProperties;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
 import app.l2nx.highfive.network.protocol.p267.P267Adapter;
+import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.crypt.GameXorCipher;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.availability.AvailabilityChangeEvent;
+import org.springframework.boot.availability.AvailabilityState;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.Lifecycle;
+import org.springframework.context.SmartLifecycle;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.JsonNode;
@@ -48,8 +82,14 @@ import tools.jackson.databind.json.JsonMapper;
             // Port 1 refuses at once, so the GS-link only retries in the background; 9014 may be another session's.
             "spring.grpc.client.channel.login.target=static://127.0.0.1:1"
         })
+// Imported explicitly: the nested test classes would not detect a configuration nested in the outer one.
+@Import(HighFiveApplicationTest.LifecycleOrder.class)
 class HighFiveApplicationTest extends BootSmokeTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final byte CHARACTER_SELECTION_INFO = 0x09;
+    private static final byte[] XOR_KEY_TAIL = {
+        (byte) 0xC8, (byte) 0x27, (byte) 0x93, (byte) 0x01, (byte) 0xA1, (byte) 0x6C, (byte) 0x31, (byte) 0x97
+    };
 
     static {
         storeWorldState();
@@ -103,6 +143,26 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @Test
+        void start_shouldLoadTheWorldOnItsLoop_beforeThePortOpens() {
+            final List<String> actual = LifecycleOrder.EVENTS.stream()
+                    .takeWhile(event -> !event.startsWith("ready"))
+                    .toList();
+
+            assertThat(actual)
+                    .containsExactly("load on l2nx-loop-world", "world loaded, port closed", "LivenessState CORRECT");
+        }
+
+        @Test
+        void readiness_shouldAcceptTraffic_afterTheApplicationIsReady() {
+            final List<String> actual = LifecycleOrder.EVENTS.stream()
+                    .dropWhile(event -> !event.startsWith("ready"))
+                    .limit(2)
+                    .toList();
+
+            assertThat(actual).containsExactly("ready, port open", "ReadinessState ACCEPTING_TRAFFIC");
+        }
+
+        @Test
         void worldLoop_shouldRunOnItsOwnThread_whenStarted() {
             final boolean actual = Thread.getAllStackTraces().keySet().stream()
                     .anyMatch(thread -> thread.isAlive() && thread.getName().equals("l2nx-loop-world"));
@@ -149,7 +209,7 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"l2nx-scheduled", "l2nx-instant", "taskScheduler"})
+        @ValueSource(strings = {"taskScheduler", "applicationTaskExecutor"})
         void prometheus_shouldExposeExecutorMetrics(String executor) throws Exception {
             final HttpResponse<String> actual = get("/actuator/prometheus");
 
@@ -184,36 +244,11 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @Test
-        void prometheus_shouldExposeNoWorldPasses_whenIdle() throws Exception {
-            final HttpResponse<String> actual = get("/actuator/prometheus");
-
-            assertThat(actual.statusCode()).isEqualTo(200);
-            assertThat(actual.body())
-                    .containsPattern("(?m)^l2nx_engine_pass_seconds_count\\{[^}]*loop=\"world\"[^}]*\\} 0(\\.0)?$");
-        }
-
-        @Test
-        void prometheus_shouldExposeLegacyTaskMetrics() throws Exception {
+        void prometheus_shouldCountWorldPasses_whenLegacyTimersRun() {
             await().atMost(Duration.ofSeconds(30))
                     .untilAsserted(() -> assertThat(get("/actuator/prometheus").body())
-                            .containsPattern("l2nx_legacy_task_seconds_count\\{[^}]*code_namespace=\""
-                                    + "app\\.l2nx\\.highfive\\.taskmanagers\\.ItemLifeTimeTaskManager\""
-                                    + "[^}]*exception=\"none\"[^}]*outcome=\"SUCCESS\"[^}]*pool=\"l2nx-scheduled\""
-                                    + "[^}]*\\} [1-9]"));
-
-            final String body = get("/actuator/prometheus").body();
-            assertThat(body)
-                    .containsPattern("l2nx_legacy_task_all_seconds_bucket\\{")
-                    .doesNotContainPattern("l2nx_legacy_task_all_seconds_bucket\\{[^}]*pool=")
-                    .containsPattern("l2nx_legacy_task_lag_seconds_bucket\\{[^}]*pool=\"l2nx-scheduled\"")
-                    .doesNotContainPattern("l2nx_legacy_task_seconds_bucket\\{")
-                    .doesNotContain("$$Lambda")
-                    .doesNotContainPattern("code_namespace=\"[^\"]*\\$");
-            assertThat(body.lines()
-                            .filter(line -> line.startsWith("l2nx_legacy_task_all_seconds_bucket{"))
-                            .count())
-                    .as("buckets of the all-tasks histogram")
-                    .isBetween(2L, 120L);
+                            .containsPattern(
+                                    "(?m)^l2nx_engine_pass_seconds_count\\{[^}]*loop=\"world\"[^}]*\\} [1-9]"));
         }
     }
 
@@ -231,15 +266,267 @@ class HighFiveApplicationTest extends BootSmokeTest {
     @Nested
     @Order(4)
     class Stop {
-        @Test
-        void stop_shouldRunShutdownActionsWithoutExit() {
-            context.stop();
+        @Autowired
+        NetworkProperties networkProperties;
 
+        @Autowired
+        SessionFactory sessionFactory;
+
+        @Test
+        void stop_shouldStopPortWorldRuntimeAndNetworkInOrder_withinTheShutdownTimeout_whenASessionIsAuthenticated()
+                throws Exception {
+            try (Socket client = authenticatedClient("stoptest")) {
+                final int eventsBeforeStop = LifecycleOrder.EVENTS.size();
+                final long start = System.nanoTime();
+
+                context.stop();
+
+                assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(networkProperties.shutdownTimeout());
+                assertThat(sessionFactory.openSessions()).isZero();
+                assertStoppedInOrder(eventsBeforeStop);
+            }
+        }
+
+        private void assertStoppedInOrder(int eventsBeforeStop) {
+            assertThat(LifecycleOrder.EVENTS.subList(eventsBeforeStop, LifecycleOrder.EVENTS.size()))
+                    .containsExactly(
+                            "port stopped, world running",
+                            "world shutdown on l2nx-loop-world",
+                            "world stopped, runtime running",
+                            "runtime stopped, network running");
             assertThat(gameServer.isRunning()).isFalse();
-            await().atMost(Duration.ofSeconds(30))
-                    .until(() -> Thread.getAllStackTraces().keySet().stream()
-                            .noneMatch(thread -> thread.getName().startsWith("l2nx ScheduledThread")));
             verifyNoInteractions(serverExit);
+        }
+
+        private Socket authenticatedClient(String login) throws IOException {
+            final Socket socket = connect(ServerConfig.PORT_GAME);
+            try {
+                socket.setSoTimeout(10_000);
+                final OutputStream out = socket.getOutputStream();
+                final DataInputStream in = new DataInputStream(socket.getInputStream());
+                out.write(new byte[] {7, 0, 0x0E, 0x11, 0x01, 0, 0});
+                final byte[] keyPacket = readFrame(in);
+                assertThat(keyPacket[0]).isEqualTo((byte) 0x2E);
+                final byte[] key = new byte[16];
+                System.arraycopy(keyPacket, 2, key, 0, 8);
+                System.arraycopy(XOR_KEY_TAIL, 0, key, 8, 8);
+                final GameXorCipher outbound = new GameXorCipher();
+                outbound.setKey(key);
+                final GameXorCipher inbound = new GameXorCipher();
+                inbound.setKey(key);
+
+                out.write(encryptedFrame(outbound, authLogin(login)));
+
+                byte[] frame;
+                do {
+                    frame = readFrame(in);
+                    inbound.decrypt(Unpooled.wrappedBuffer(frame), 0, frame.length);
+                } while (frame[0] != CHARACTER_SELECTION_INFO);
+                return socket;
+            } catch (IOException | RuntimeException | Error e) {
+                socket.close();
+                throw e;
+            }
+        }
+
+        private static byte[] authLogin(String login) {
+            final ByteBuf body = Unpooled.buffer();
+            body.writeByte(0x2B);
+            for (char c : login.toCharArray()) {
+                body.writeShortLE(c);
+            }
+            body.writeShortLE(0);
+            body.writeIntLE(2).writeIntLE(1).writeIntLE(3).writeIntLE(4);
+            return ByteBufUtil.getBytes(body);
+        }
+
+        private static byte[] encryptedFrame(GameXorCipher cipher, byte[] body) {
+            final ByteBuf frame = Unpooled.buffer(body.length + 2);
+            frame.writeShortLE(body.length + 2);
+            frame.writeBytes(body);
+            cipher.encrypt(frame, 2, body.length);
+            return ByteBufUtil.getBytes(frame);
+        }
+
+        private static byte[] readFrame(DataInputStream in) throws IOException {
+            final int length = in.readUnsignedByte() | (in.readUnsignedByte() << 8);
+            final byte[] body = new byte[length - 2];
+            in.readFully(body);
+            return body;
+        }
+    }
+
+    /**
+     * Probes look the beans up when they run: a bean they depended on would start before them.
+     */
+    @TestConfiguration(proxyBeanMethods = false)
+    static class LifecycleOrder {
+        static final List<String> EVENTS = new CopyOnWriteArrayList<>();
+
+        @Bean
+        @Primary
+        WorldLoader recordingWorldLoader(ServerExit serverExit) {
+            return new WorldLoader(serverExit) {
+                @Override
+                public void load() {
+                    super.load();
+                    EVENTS.add("load on " + Thread.currentThread().getName());
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        WorldShutdown recordingWorldShutdown() {
+            return new WorldShutdown() {
+                @Override
+                public void run() {
+                    EVENTS.add("world shutdown on " + Thread.currentThread().getName());
+                    super.run();
+                }
+            };
+        }
+
+        @Bean
+        SmartLifecycle betweenWorldAndPort(ApplicationContext context) {
+            return new Probe(
+                    SmartLifecycle.DEFAULT_PHASE - 1,
+                    () -> state(world(context), "world loaded", "world not loaded") + ", "
+                            + (listening() ? "port open" : "port closed"),
+                    () -> (listening() ? "port open" : "port stopped") + ", "
+                            + state(world(context), "world running", "world stopped"));
+        }
+
+        @Bean
+        SmartLifecycle betweenRuntimeAndWorld(ApplicationContext context) {
+            return new Probe(
+                    PartitionRuntime.PHASE + 1,
+                    () -> null,
+                    () -> state(world(context), "world running", "world stopped") + ", "
+                            + state(context.getBean(PartitionRuntime.class), "runtime running", "runtime stopped"));
+        }
+
+        @Bean
+        SmartLifecycle betweenNetworkAndRuntime(ApplicationContext context) {
+            return new Probe(
+                    PartitionRuntime.PHASE - 1,
+                    () -> null,
+                    () -> state(context.getBean(PartitionRuntime.class), "runtime running", "runtime stopped") + ", "
+                            + state(context.getBean(GameServer.class), "network running", "network stopped"));
+        }
+
+        @Bean
+        @Primary
+        LoginPort acceptingLoginPort(ObjectProvider<CommandDispatcher> commands) {
+            return new LoginPort() {
+                @Override
+                public boolean authenticate(UUID requestId, String login, SessionKey key) {
+                    commands.getObject()
+                            .submit(AuthenticationResult.builder()
+                                    .requestId(requestId)
+                                    .accountId(UUID.nameUUIDFromBytes(login.getBytes(StandardCharsets.UTF_8)))
+                                    .accepted(true)
+                                    .build());
+                    return true;
+                }
+
+                @Override
+                public void accountsEntered(List<UUID> accountIds) {}
+
+                @Override
+                public void accountLeft(UUID accountId) {}
+
+                @Override
+                public void changeAccessLevel(UUID accountId, int level) {}
+
+                @Override
+                public void reportRoute(UUID accountId, List<String> route) {}
+
+                @Override
+                public void requestTempBan(UUID accountId, String ip, Duration duration) {}
+
+                @Override
+                public boolean changePassword(
+                        UUID requestId, UUID accountId, String characterName, String oldPassword, String newPassword) {
+                    return false;
+                }
+
+                @Override
+                public void reportCharacters(UUID accountId, int count, List<Instant> deleteTimes) {}
+
+                @Override
+                public void publishListing(Map<ListingAttribute, Integer> attributes) {}
+            };
+        }
+
+        @Bean
+        ApplicationListener<ApplicationReadyEvent> readyRecorder() {
+            return event -> EVENTS.add("ready, " + (listening() ? "port open" : "port closed"));
+        }
+
+        @Bean
+        ApplicationListener<AvailabilityChangeEvent<?>> availabilityRecorder() {
+            return event -> {
+                final AvailabilityState state = event.getState();
+                EVENTS.add(state.getClass().getSimpleName() + " " + state);
+            };
+        }
+
+        private static Lifecycle world(ApplicationContext context) {
+            return context.getBean("worldLifecycle", Lifecycle.class);
+        }
+
+        private static String state(Lifecycle lifecycle, String running, String stopped) {
+            return lifecycle.isRunning() ? running : stopped;
+        }
+
+        private static boolean listening() {
+            try (Socket socket = connect(ServerConfig.PORT_GAME)) {
+                return socket.isConnected();
+            } catch (IOException e) {
+                return false;
+            }
+        }
+    }
+
+    private static final class Probe implements SmartLifecycle {
+        private final int phase;
+        private final Supplier<String> onStart;
+        private final Supplier<String> onStop;
+        private volatile boolean running;
+
+        Probe(int phase, Supplier<String> onStart, Supplier<String> onStop) {
+            this.phase = phase;
+            this.onStart = onStart;
+            this.onStop = onStop;
+        }
+
+        @Override
+        public void start() {
+            record(onStart.get());
+            running = true;
+        }
+
+        @Override
+        public void stop() {
+            record(onStop.get());
+            running = false;
+        }
+
+        @Override
+        public boolean isRunning() {
+            return running;
+        }
+
+        @Override
+        public int getPhase() {
+            return phase;
+        }
+
+        private static void record(String event) {
+            if (event != null) {
+                LifecycleOrder.EVENTS.add(event);
+            }
         }
     }
 

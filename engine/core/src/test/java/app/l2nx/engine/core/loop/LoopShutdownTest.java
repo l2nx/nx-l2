@@ -15,6 +15,14 @@ import app.l2nx.engine.core.loop.timer.TimerSpec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -155,6 +163,53 @@ class LoopShutdownTest {
             assertThat(log).containsExactly("save");
             assertThat(runs[0]).isLessThanOrEqualTo(3 * Loop.SHUTDOWN_DRAIN_PASSES);
             assertThat(loop.offer(l -> {})).isFalse();
+        }
+
+        @Test
+        void shutdown_shouldCancelPendingTasksAndReleaseTheirWaiters() throws Exception {
+            final ScheduledFuture<Void> armed = loop.schedule(() -> log.add("armed"), 1, TimeUnit.SECONDS);
+            final ScheduledFuture<Void> fixedRate =
+                    loop.scheduleAtFixedRate(() -> log.add("fixed rate"), 1, 1, TimeUnit.SECONDS);
+            loop.runPass(T0);
+            final ScheduledFuture<Void> applied = loop.schedule(() -> log.add("applied"), 1, TimeUnit.SECONDS);
+            loop.addShutdownHook(l -> l.schedule(() -> log.add("from hook"), 1, TimeUnit.SECONDS));
+            final ExecutorService waiter = Executors.newVirtualThreadPerTaskExecutor();
+            try {
+                final Future<Void> waiting = waiter.submit(() -> armed.get());
+
+                loop.shutdown();
+
+                assertThatThrownBy(() -> waiting.get(5, TimeUnit.SECONDS))
+                        .isInstanceOf(ExecutionException.class)
+                        .hasCauseInstanceOf(CancellationException.class);
+            } finally {
+                waiter.shutdownNow();
+            }
+            assertThat(List.of(armed, fixedRate, applied)).allSatisfy(future -> {
+                assertThat(future.isCancelled()).isTrue();
+                assertThatThrownBy(future::get).isInstanceOf(CancellationException.class);
+            });
+            assertThat(log).isEmpty();
+        }
+
+        @Test
+        void shutdown_shouldCancelATask_whenTheDrainBoundLeavesItsArmMessage() {
+            final List<ScheduledFuture<Void>> futures = new ArrayList<>();
+            loop.offer(new Message() {
+                @Override
+                public void execute(Loop l) {
+                    // Off the loop, so the task arrives as a message behind this one and the last is never drained.
+                    futures.add(CompletableFuture.supplyAsync(() -> l.schedule(() -> {}, 1, TimeUnit.SECONDS))
+                            .join());
+                    l.offer(this);
+                }
+            });
+
+            loop.shutdown();
+
+            assertThat(futures)
+                    .isNotEmpty()
+                    .allSatisfy(future -> assertThat(future.isCancelled()).isTrue());
         }
     }
 

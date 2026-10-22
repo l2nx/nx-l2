@@ -40,9 +40,10 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -409,7 +410,7 @@ public class AutoUseTaskManager {
 
         final Set<Player> pool = ConcurrentHashMap.newKeySet(POOL_SIZE);
         pool.add(player);
-        ThreadPool.schedulePriorityTaskAtFixedRate(new AutoUse(pool), TASK_DELAY, TASK_DELAY);
+        WorldPartition.loop().scheduleAtFixedRate(new AutoUse(pool), TASK_DELAY, TASK_DELAY, TimeUnit.MILLISECONDS);
         POOLS.add(pool);
     }
 

@@ -27,16 +27,17 @@ import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemsOnGroundManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class ItemsAutoDestroyTaskManager implements Runnable {
     private static final Set<Item> ITEMS = ConcurrentHashMap.newKeySet();
 
     protected ItemsAutoDestroyTaskManager() {
-        ThreadPool.scheduleAtFixedRate(this, 5000, 5000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 5000, 5000, TimeUnit.MILLISECONDS);
     }
 
     @Override

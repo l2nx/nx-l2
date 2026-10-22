@@ -31,8 +31,10 @@ import app.l2nx.highfive.entity.actor.instance.GrandBoss;
 import app.l2nx.highfive.entity.actor.instance.RaidBoss;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.BackgroundTasks;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.TimeUnit;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.MBeanServer;
@@ -51,37 +53,48 @@ public class PrecautionaryRestartManager {
     private static boolean restarting = false;
 
     protected PrecautionaryRestartManager() {
-        ThreadPool.scheduleAtFixedRate(
-                () -> {
-                    if (restarting) {
-                        return;
-                    }
-
-                    if (ServerConfig.PRECAUTIONARY_RESTART_CPU
-                            && (getCpuLoad(SYSTEM_CPU_LOAD_VAR) > ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE)) {
-                        if (serverBizzy()) {
-                            return;
-                        }
-
-                        log.info("CPU usage over {}%.", ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE);
-                        log.info("Server is using {}%.", getCpuLoad(PROCESS_CPU_LOAD_VAR));
-                        World.broadcastToAllOnlinePlayers("Server will restart in 10 minutes.", false);
-                        Shutdown.getInstance().startShutdown(null, 600, true);
-                    }
-
-                    if (ServerConfig.PRECAUTIONARY_RESTART_MEMORY
-                            && (getProcessRamLoad() > ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE)) {
-                        if (serverBizzy()) {
-                            return;
-                        }
-
-                        log.info("Memory usage over {}%.", ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE);
-                        World.broadcastToAllOnlinePlayers("Server will restart in 10 minutes.", false);
-                        Shutdown.getInstance().startShutdown(null, 600, true);
-                    }
-                },
+        BackgroundTasks.scheduleWithFixedDelay(
+                this::measure,
                 ServerConfig.PRECAUTIONARY_RESTART_DELAY,
-                ServerConfig.PRECAUTIONARY_RESTART_DELAY);
+                ServerConfig.PRECAUTIONARY_RESTART_DELAY,
+                TimeUnit.MILLISECONDS);
+    }
+
+    // Background: reads the JVM and the OS only; the restart decision looks at the world in a world pass.
+    private void measure() {
+        if (ServerConfig.PRECAUTIONARY_RESTART_CPU) {
+            final double cpuLoad = getCpuLoad(SYSTEM_CPU_LOAD_VAR);
+            if (cpuLoad > ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE) {
+                final double processLoad = getCpuLoad(PROCESS_CPU_LOAD_VAR);
+                WorldPartition.offer(() -> {
+                    if (canRestart()) {
+                        log.info("CPU usage over {}%.", ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE);
+                        log.info("Server is using {}%.", processLoad);
+                        restart();
+                    }
+                });
+                return;
+            }
+        }
+
+        if (ServerConfig.PRECAUTIONARY_RESTART_MEMORY
+                && (getProcessRamLoad() > ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE)) {
+            WorldPartition.offer(() -> {
+                if (canRestart()) {
+                    log.info("Memory usage over {}%.", ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE);
+                    restart();
+                }
+            });
+        }
+    }
+
+    private boolean canRestart() {
+        return !restarting && !(ServerConfig.PRECAUTIONARY_RESTART_CHECKS && serverBizzy());
+    }
+
+    private static void restart() {
+        World.broadcastToAllOnlinePlayers("Server will restart in 10 minutes.", false);
+        Shutdown.getInstance().startShutdown(null, 600, true);
     }
 
     private static double getCpuLoad(String var) {

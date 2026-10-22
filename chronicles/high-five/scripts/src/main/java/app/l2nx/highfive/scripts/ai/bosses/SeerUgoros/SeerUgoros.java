@@ -35,10 +35,11 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00288_HandleWithCare.Q00288_HandleWithCare;
 import app.l2nx.highfive.scripts.quests.Q00423_TakeYourBestShot.Q00423_TakeYourBestShot;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author RobikBobik
@@ -134,7 +135,8 @@ public class SeerUgoros extends Script {
                         thinkTask.cancel(true);
                     }
 
-                    thinkTask = ThreadPool.scheduleAtFixedRate(new ThinkTask(), 1000, 3000);
+                    thinkTask = WorldPartition.loop()
+                            .scheduleAtFixedRate(new ThinkTask(), 1000, 3000, TimeUnit.MILLISECONDS);
                 }
                 break;
             }
@@ -236,7 +238,7 @@ public class SeerUgoros extends Script {
             }
 
             // Re-setup task to re-think attack again
-            thinkTask = ThreadPool.scheduleAtFixedRate(new ThinkTask(), 500, 3000);
+            thinkTask = WorldPartition.loop().scheduleAtFixedRate(new ThinkTask(), 500, 3000, TimeUnit.MILLISECONDS);
         }
 
         npc.doDie(attacker);

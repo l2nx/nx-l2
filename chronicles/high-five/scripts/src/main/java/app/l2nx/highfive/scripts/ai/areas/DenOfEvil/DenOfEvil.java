@@ -30,9 +30,10 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripting.annotations.Disabled;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -127,7 +128,7 @@ public class DenOfEvil extends Script {
         zone.addSkill(skillId, skillLevel + 1);
         if (skillLevel == 3) // 3+1=4
         {
-            ThreadPool.schedule(new KashaDestruction(zone), 2 * 60 * 1000);
+            WorldPartition.loop().schedule(new KashaDestruction(zone), 2 * 60 * 1000, TimeUnit.MILLISECONDS);
             zone.broadcastPacket(
                     new SystemMessage(SystemMessageId.KASHA_S_EYE_PITCHES_AND_TOSSES_LIKE_IT_S_ABOUT_TO_EXPLODE));
         } else if (skillLevel == 2) {
@@ -139,7 +140,7 @@ public class DenOfEvil extends Script {
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
-        ThreadPool.schedule(new RespawnNewEye(npc.getLocation()), 15000);
+        WorldPartition.loop().schedule(new RespawnNewEye(npc.getLocation()), 15000, TimeUnit.MILLISECONDS);
         final EffectZone zone = ZoneManager.getInstance().getZone(npc, EffectZone.class);
         if (zone == null) {
             log.warn(
@@ -203,7 +204,8 @@ public class DenOfEvil extends Script {
                             // respawn eye
                             final Npc npc = creature.asNpc();
                             if (ArrayUtil.contains(EYE_IDS, npc.getId())) {
-                                ThreadPool.schedule(new RespawnNewEye(npc.getLocation()), 15000);
+                                WorldPartition.loop()
+                                        .schedule(new RespawnNewEye(npc.getLocation()), 15000, TimeUnit.MILLISECONDS);
                             }
                         }
                     }

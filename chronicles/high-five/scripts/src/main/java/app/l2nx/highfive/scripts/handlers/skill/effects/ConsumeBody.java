@@ -28,9 +28,10 @@ import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.EffectScope;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Consume Body effect implementation.
@@ -54,9 +55,11 @@ public class ConsumeBody extends AbstractEffect {
 
         if (skill.hasEffects(EffectScope.START)) {
             DecayTaskManager.getInstance().cancel(effected);
-            ThreadPool.schedule(
-                    () -> effected.onDecay(),
-                    Formulas.calcAtkSpd(effector, skill, skill.getHitTime() + skill.getCoolTime()));
+            WorldPartition.loop()
+                    .schedule(
+                            () -> effected.onDecay(),
+                            Formulas.calcAtkSpd(effector, skill, skill.getHitTime() + skill.getCoolTime()),
+                            TimeUnit.MILLISECONDS);
         } else {
             effected.asNpc().endDecayTask();
         }

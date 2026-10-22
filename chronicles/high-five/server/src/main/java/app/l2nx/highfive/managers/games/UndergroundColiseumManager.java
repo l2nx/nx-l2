@@ -40,9 +40,9 @@ import app.l2nx.highfive.mechanics.undergroundColiseum.UCBestTeam;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCPoint;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCReward;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.world.UndergroundColiseumBestTeamRepository;
 import app.l2nx.highfive.repository.world.model.UndergroundColiseumBestTeam;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -99,7 +100,7 @@ public class UndergroundColiseumManager implements IXmlReader {
             switchStatus(true);
         } else {
             final long nextTime = periodStartTime - curerntTime;
-            regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
+            regTask = WorldPartition.loop().schedule(new UCRegistrationTask(true), nextTime, TimeUnit.MILLISECONDS);
             log.info("Starts at {}", DateFormatUtils.format(periodStartTime, "dd/MM/yyyy HH:mm:ss"));
         }
 
@@ -288,12 +289,12 @@ public class UndergroundColiseumManager implements IXmlReader {
         setStarted(isStart);
         if (isStart) {
             final long nextTime = periodEndTime - ClockBridge.wallMillis();
-            regTask = ThreadPool.schedule(new UCRegistrationTask(false), nextTime);
+            regTask = WorldPartition.loop().schedule(new UCRegistrationTask(false), nextTime, TimeUnit.MILLISECONDS);
             log.info("Ends at {}", DateFormatUtils.format(periodEndTime, "dd/MM/yyyy HH:mm:ss"));
         } else {
             generateNewDate();
             final long nextTime = periodStartTime - ClockBridge.wallMillis();
-            regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
+            regTask = WorldPartition.loop().schedule(new UCRegistrationTask(true), nextTime, TimeUnit.MILLISECONDS);
             log.info("Starts at {}", DateFormatUtils.format(periodStartTime, "dd/MM/yyyy HH:mm:ss"));
         }
     }

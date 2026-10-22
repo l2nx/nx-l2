@@ -22,8 +22,9 @@ package app.l2nx.highfive.entity.zone.type;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 /**
@@ -54,7 +55,7 @@ public class ResidenceHallTeleportZone extends ResidenceTeleportZone {
 
     public synchronized void checkTeleportTask() {
         if ((teleTask == null) || teleTask.isDone()) {
-            teleTask = ThreadPool.schedule(new TeleportTask(), 30000);
+            teleTask = WorldPartition.loop().schedule(new TeleportTask(), 30000, TimeUnit.MILLISECONDS);
         }
     }
 

@@ -29,7 +29,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 public class ValidatePosition extends ClientPacket {
     private int x;
@@ -106,7 +107,7 @@ public class ValidatePosition extends ClientPacket {
         // Check out of sync.
         if (player.calculateDistance3D(x, y, z) > player.getStat().getMoveSpeed()) {
             if (player.isBlinkActive()) {
-                ThreadPool.schedule(() -> player.setBlinkActive(false), 100);
+                WorldPartition.loop().schedule(() -> player.setBlinkActive(false), 100, TimeUnit.MILLISECONDS);
             } else {
                 player.setXYZ(x, y, realZ > z ? GeoEngine.getInstance().getHeight(x, y, realZ) : z);
             }

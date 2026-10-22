@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import lombok.Getter;
 import org.agrona.DeadlineTimerWheel;
 
@@ -104,8 +105,37 @@ public final class TimerWheel {
         return entry;
     }
 
+    /**
+     * An entry already collected for a run or behind the cursor stays; its handler's {@code isCurrent} drops it.
+     */
+    public boolean cancel(TimerEntry entry) {
+        if (entry.timerId != TimerEntry.NO_TIMER) {
+            final long timerId = entry.timerId;
+            wheel.cancelTimer(timerId);
+            armed.remove(timerId);
+            release(spokeOfTimer(timerId));
+            entry.timerId = TimerEntry.NO_TIMER;
+            return true;
+        }
+        if (entry.turn != TimerEntry.NO_TURN) {
+            buckets.get(entry.turn).remove(entry);
+            aheadCount--;
+            return true;
+        }
+        return false;
+    }
+
     public long size() {
         return wheel.timerCount() + behind.size() + aheadCount + due.size();
+    }
+
+    public void forEach(Consumer<TimerEntry> action) {
+        armed.values().forEach(action);
+        behind.forEach(action);
+        due.forEach(action);
+        for (Bucket bucket : buckets.values()) {
+            bucket.entries.forEach(action);
+        }
     }
 
     /** The earliest time a run can fire something; {@link Long#MAX_VALUE} when no entry is armed. */
@@ -267,6 +297,7 @@ public final class TimerWheel {
     private boolean collect(TimeUnit timeUnit, long now, long timerId) {
         final TimerEntry entry = armed.remove(timerId);
         release(spokeOfTimer(timerId));
+        entry.timerId = TimerEntry.NO_TIMER;
         take(entry);
         return true;
     }
@@ -303,19 +334,15 @@ public final class TimerWheel {
                 timers.remove();
                 wheel.cancelTimer(timerId);
                 release(spokeOfTimer(timerId));
+                entry.timerId = TimerEntry.NO_TIMER;
                 late.add(entry);
             }
         }
         boolean emptied = false;
         for (Bucket bucket : buckets.values()) {
-            final int before = late.size();
-            bucket.entries.removeIf(entry -> entry.dueAt > entry.deadline && late.add(entry));
-            if (late.size() != before) {
-                aheadCount -= late.size() - before;
-                bucket.firstDueAt = Long.MAX_VALUE;
-                for (int i = 0, n = bucket.entries.size(); i < n; i++) {
-                    bucket.firstDueAt = Math.min(bucket.firstDueAt, bucket.entries.get(i).dueAt);
-                }
+            final int taken = bucket.takeLate(late);
+            if (taken != 0) {
+                aheadCount -= taken;
                 emptied |= bucket.entries.isEmpty();
             }
         }
@@ -347,6 +374,7 @@ public final class TimerWheel {
         final long timerId = wheel.scheduleTimer(entry.dueAt);
         armed.put(timerId, entry);
         occupy(spokeOfTimer(timerId));
+        entry.timerId = timerId;
     }
 
     private void advanceTo(long tick) {
@@ -363,20 +391,22 @@ public final class TimerWheel {
             buckets.put(turn, bucket);
             occupiedTurns.enqueue(turn);
         }
-        bucket.entries.add(entry);
-        bucket.firstDueAt = Math.min(bucket.firstDueAt, entry.dueAt);
+        bucket.add(entry, turn);
         aheadCount++;
     }
 
     // The cursor never passes a turn with a bucket: it winds at most to a bucket's first due time.
     private void enterTurn() {
+        dropEmptyHead();
         if (occupiedTurns.isEmpty() || occupiedTurns.firstLong() != turnOf(cursorTick())) {
             return;
         }
         final Bucket bucket = buckets.remove(occupiedTurns.dequeueLong());
         final ArrayList<TimerEntry> entries = bucket.entries;
         for (int i = 0, n = entries.size(); i < n; i++) {
-            armWheel(entries.get(i));
+            final TimerEntry entry = entries.get(i);
+            Bucket.detach(entry);
+            armWheel(entry);
         }
         aheadCount -= entries.size();
         entries.clear();
@@ -385,7 +415,18 @@ public final class TimerWheel {
     }
 
     private long firstDueAtAhead() {
+        dropEmptyHead();
         return occupiedTurns.isEmpty() ? Long.MAX_VALUE : buckets.get(occupiedTurns.firstLong()).firstDueAt;
+    }
+
+    // A bucket emptied by cancels stays in the turn heap, which has no removal; it is dropped when it reaches the head.
+    private void dropEmptyHead() {
+        while (!occupiedTurns.isEmpty()
+                && buckets.get(occupiedTurns.firstLong()).entries.isEmpty()) {
+            final Bucket empty = buckets.remove(occupiedTurns.dequeueLong());
+            empty.firstDueAt = Long.MAX_VALUE;
+            spareBucket = empty;
+        }
     }
 
     private static long firstDueAt(PriorityQueue<TimerEntry> entries) {
@@ -461,5 +502,56 @@ public final class TimerWheel {
     private static final class Bucket {
         private final ArrayList<TimerEntry> entries = new ArrayList<>();
         private long firstDueAt = Long.MAX_VALUE;
+
+        private void add(TimerEntry entry, long turn) {
+            entry.turn = turn;
+            entry.slot = entries.size();
+            entries.add(entry);
+            firstDueAt = Math.min(firstDueAt, entry.dueAt);
+        }
+
+        private void remove(TimerEntry entry) {
+            final TimerEntry last = entries.removeLast();
+            if (last != entry) {
+                entries.set(entry.slot, last);
+                last.slot = entry.slot;
+            }
+            detach(entry);
+            if (entry.dueAt == firstDueAt) {
+                updateFirstDueAt();
+            }
+        }
+
+        private int takeLate(ArrayList<TimerEntry> late) {
+            final int size = entries.size();
+            int kept = 0;
+            for (int i = 0; i < size; i++) {
+                final TimerEntry entry = entries.get(i);
+                if (entry.dueAt > entry.deadline) {
+                    detach(entry);
+                    late.add(entry);
+                } else {
+                    entry.slot = kept;
+                    entries.set(kept++, entry);
+                }
+            }
+            if (kept != size) {
+                entries.subList(kept, size).clear();
+                updateFirstDueAt();
+            }
+            return size - kept;
+        }
+
+        private void updateFirstDueAt() {
+            firstDueAt = Long.MAX_VALUE;
+            for (int i = 0, n = entries.size(); i < n; i++) {
+                firstDueAt = Math.min(firstDueAt, entries.get(i).dueAt);
+            }
+        }
+
+        private static void detach(TimerEntry entry) {
+            entry.turn = TimerEntry.NO_TURN;
+            entry.slot = TimerEntry.NO_SLOT;
+        }
     }
 }

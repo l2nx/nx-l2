@@ -26,7 +26,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -140,7 +141,7 @@ public class BoatRunePrimeval implements Runnable {
                                     ARRIVED_AT_PRIMEVAL,
                                     ARRIVED_AT_PRIMEVAL_2,
                                     PRIMEVAL_SOUND);
-                    ThreadPool.schedule(this, 180000);
+                    WorldPartition.loop().schedule(this, 180000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 2: {
@@ -161,7 +162,7 @@ public class BoatRunePrimeval implements Runnable {
                             shoutCount = 0;
                         }
 
-                        ThreadPool.schedule(this, 5000);
+                        WorldPartition.loop().schedule(this, 5000, TimeUnit.MILLISECONDS);
                         return;
                     }
 
@@ -173,7 +174,7 @@ public class BoatRunePrimeval implements Runnable {
                     BoatManager.getInstance()
                             .broadcastPackets(
                                     RUNE_DOCK[0], PRIMEVAL_DOCK, ARRIVED_AT_RUNE, ARRIVED_AT_RUNE_2, RUNE_SOUND);
-                    ThreadPool.schedule(this, 180000);
+                    WorldPartition.loop().schedule(this, 180000, TimeUnit.MILLISECONDS);
                     break;
                 }
             }

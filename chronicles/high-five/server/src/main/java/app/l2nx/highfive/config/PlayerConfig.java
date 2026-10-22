@@ -328,10 +328,7 @@ public class PlayerConfig {
         SUMMON_STORE_SKILL_COOLTIME = config.getBoolean("SummonStoreSkillCooltime", true);
         ALT_GAME_SHIELD_BLOCKS = config.getBoolean("AltShieldBlocks", false);
         ALT_PERFECT_SHLD_BLOCK = config.getInt("AltPerfectShieldBlockRate", 10);
-        EFFECT_TICK_RATIO = config.getLong("EffectTickRatio", 666);
-        if (EFFECT_TICK_RATIO <= 0) {
-            throw new IllegalStateException("EffectTickRatio must be positive, was " + EFFECT_TICK_RATIO);
-        }
+        EFFECT_TICK_RATIO = config.getPositiveLong("EffectTickRatio", 666);
 
         FAKE_DEATH_UNTARGET = config.getBoolean("FakeDeathUntarget", false);
         FAKE_DEATH_DAMAGE_STAND = config.getBoolean("FakeDeathDamageStand", true);
@@ -461,9 +458,9 @@ public class PlayerConfig {
         ALT_GAME_KARMA_PLAYER_CAN_USE_WAREHOUSE = config.getBoolean("AltKarmaPlayerCanUseWareHouse", true);
         FAME_SYSTEM_ENABLED = config.getBoolean("EnableFameSystem", true);
         MAX_PERSONAL_FAME_POINTS = config.getInt("MaxPersonalFamePoints", 100000);
-        FORTRESS_ZONE_FAME_TASK_FREQUENCY = config.getInt("FortressZoneFameTaskFrequency", 300);
+        FORTRESS_ZONE_FAME_TASK_FREQUENCY = config.getPositiveInt("FortressZoneFameTaskFrequency", 300);
         FORTRESS_ZONE_FAME_AQUIRE_POINTS = config.getInt("FortressZoneFameAquirePoints", 31);
-        CASTLE_ZONE_FAME_TASK_FREQUENCY = config.getInt("CastleZoneFameTaskFrequency", 300);
+        CASTLE_ZONE_FAME_TASK_FREQUENCY = config.getPositiveInt("CastleZoneFameTaskFrequency", 300);
         CASTLE_ZONE_FAME_AQUIRE_POINTS = config.getInt("CastleZoneFameAquirePoints", 125);
         FAME_FOR_DEAD_PLAYERS = config.getBoolean("FameForDeadPlayers", true);
         IS_CRAFTING_ENABLED = config.getBoolean("CraftingEnabled", true);

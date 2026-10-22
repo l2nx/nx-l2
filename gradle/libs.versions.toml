@@ -4,6 +4,7 @@ archunit = "1.5.1"
 assertj = "3.27.7"
 bucket4j = "8.21.0"
 classgraph = "6.0.0"
+datasource-proxy = "1.11.1"
 disruptor = "4.0.0"
 fastutil = "8.5.19"
 gradle-git-properties = "4.0.1"
@@ -33,6 +34,7 @@ assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 bucket4j-core = { module = "com.bucket4j:bucket4j_jdk17-core", version.ref = "bucket4j" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3" }
+datasource-proxy = { module = "net.ttddyy:datasource-proxy", version.ref = "datasource-proxy" }
 disruptor = { module = "com.lmax:disruptor", version.ref = "disruptor" }
 fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "fastutil" }
 jctools-core = { module = "org.jctools:jctools-core", version.ref = "jctools" }

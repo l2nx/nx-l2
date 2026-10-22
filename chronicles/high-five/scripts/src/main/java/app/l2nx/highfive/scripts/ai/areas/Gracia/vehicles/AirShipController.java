@@ -42,8 +42,9 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -262,9 +263,9 @@ public abstract class AirShipController extends Script {
                     playMovie(dockedShip.getPassengers(), movie);
                 }
 
-                ThreadPool.schedule(decayTask, 1000);
+                WorldPartition.loop().schedule(decayTask, 1000, TimeUnit.MILLISECONDS);
             } else {
-                departSchedule = ThreadPool.schedule(departTask, DEPART_INTERVAL);
+                departSchedule = WorldPartition.loop().schedule(departTask, DEPART_INTERVAL, TimeUnit.MILLISECONDS);
             }
         }
     }

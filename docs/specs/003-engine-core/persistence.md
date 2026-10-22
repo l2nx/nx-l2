@@ -81,7 +81,8 @@ Everything that is not a value transfer: position, experience, HP and MP, effect
 - **Change capture lags by the window.** The adapter's change capture reads the database, so the platform sees
   write-behind state up to one window late; value operations reach it at commit through the outbox (§5).
 - **No JDBC on a partition thread.** A synchronous query on a loop thread is a defect and is reported by metrics and a
-  warning.
+  warning. TODO: the legacy JDBC runs on the world loop from the E6 cutover until write-behind moves it off
+  ([#69](https://github.com/l2nx/nx-l2/issues/69), [execution.md §7.1](execution.md#71-work-routed-into-the-world-partition-e6)).
 
 ## 5. Outbox
 

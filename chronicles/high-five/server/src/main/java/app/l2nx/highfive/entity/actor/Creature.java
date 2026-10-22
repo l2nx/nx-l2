@@ -159,11 +159,11 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StopMove;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.TeleportToLocation;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.CreatureSeeTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.MovementTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -174,6 +174,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.StampedLock;
 import java.util.random.RandomGenerator;
 import lombok.Getter;
@@ -835,7 +836,7 @@ public abstract class Creature extends WorldObject {
 
                 mpConsume = (int) calcStat(Stat.BOW_MP_CONSUME_RATE, mpConsume, null, null);
                 if (status.getCurrentMp() < mpConsume) {
-                    ThreadPool.schedule(() -> getAI().notifyActionReadyToAct(), 1000);
+                    WorldPartition.loop().schedule(() -> getAI().notifyActionReadyToAct(), 1000, TimeUnit.MILLISECONDS);
                     sendPacket(SystemMessageId.NOT_ENOUGH_MP);
                     sendPacket(ActionFailed.STATIC_PACKET);
                     return false;
@@ -848,7 +849,7 @@ public abstract class Creature extends WorldObject {
                 bowAttackEndTime = (5 * GameTimeTaskManager.TICKS_PER_SECOND)
                         + GameTimeTaskManager.getInstance().getGameTicks();
             } else {
-                ThreadPool.schedule(() -> getAI().notifyActionReadyToAct(), 1000);
+                WorldPartition.loop().schedule(() -> getAI().notifyActionReadyToAct(), 1000, TimeUnit.MILLISECONDS);
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
             }
@@ -1099,7 +1100,8 @@ public abstract class Creature extends WorldObject {
                 broadcastPacket(attack);
             }
 
-            ThreadPool.schedule(() -> getAI().notifyActionReadyToAct(), timeAtk + reuse);
+            WorldPartition.loop()
+                    .schedule(() -> getAI().notifyActionReadyToAct(), timeAtk + reuse, TimeUnit.MILLISECONDS);
         } finally {
             attackLock.unlockWrite(stamp);
         }
@@ -1133,7 +1135,11 @@ public abstract class Creature extends WorldObject {
             sendPacket(new SetupGauge(getObjectId(), SetupGauge.RED, sAtk + reuse));
         }
 
-        ThreadPool.schedule(new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), true), sAtk);
+        WorldPartition.loop()
+                .schedule(
+                        new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), true),
+                        sAtk,
+                        TimeUnit.MILLISECONDS);
 
         final int gameTime = GameTimeTaskManager.getInstance().getGameTicks();
         bowAttackEndTime = gameTime + ((sAtk + reuse) / GameTimeTaskManager.MILLIS_IN_TICK);
@@ -1173,7 +1179,11 @@ public abstract class Creature extends WorldObject {
             sendPacket(new SetupGauge(getObjectId(), SetupGauge.RED, sAtk + reuse));
         }
 
-        ThreadPool.schedule(new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), true), sAtk);
+        WorldPartition.loop()
+                .schedule(
+                        new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), true),
+                        sAtk,
+                        TimeUnit.MILLISECONDS);
 
         final int gameTime = GameTimeTaskManager.getInstance().getGameTicks();
         bowAttackEndTime = gameTime + ((sAtk + reuse) / GameTimeTaskManager.MILLIS_IN_TICK);
@@ -1217,10 +1227,17 @@ public abstract class Creature extends WorldObject {
             damage2 /= 2;
         }
 
-        ThreadPool.schedule(
-                new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), true), sAtk / 2);
+        WorldPartition.loop()
+                .schedule(
+                        new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), true),
+                        sAtk / 2,
+                        TimeUnit.MILLISECONDS);
 
-        ThreadPool.schedule(new HitTask(this, target, damage2, crit2, miss2, shld2, attack.hasSoulshot(), false), sAtk);
+        WorldPartition.loop()
+                .schedule(
+                        new HitTask(this, target, damage2, crit2, miss2, shld2, attack.hasSoulshot(), false),
+                        sAtk,
+                        TimeUnit.MILLISECONDS);
 
         attack.addHit(target, damage1, miss1, crit1, shld1);
         attack.addHit(target, damage2, miss2, crit2, shld2);
@@ -1303,8 +1320,11 @@ public abstract class Creature extends WorldObject {
             }
         }
 
-        ThreadPool.schedule(
-                new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), rechargeShots), sAtk);
+        WorldPartition.loop()
+                .schedule(
+                        new HitTask(this, target, damage1, crit1, miss1, shld1, attack.hasSoulshot(), rechargeShots),
+                        sAtk,
+                        TimeUnit.MILLISECONDS);
 
         attack.addHit(target, damage1, miss1, crit1, shld1);
 
@@ -1516,7 +1536,8 @@ public abstract class Creature extends WorldObject {
         }
 
         if (castingSimultaneouslyNow && simultaneously) {
-            ThreadPool.schedule(() -> beginCast(skill, simultaneously, target, targets), 100);
+            WorldPartition.loop()
+                    .schedule(() -> beginCast(skill, simultaneously, target, targets), 100, TimeUnit.MILLISECONDS);
             return;
         }
 
@@ -1669,7 +1690,7 @@ public abstract class Creature extends WorldObject {
                 }
 
                 // 400 ms early for client animation (party buffs especially).
-                skillCast2 = ThreadPool.schedule(mut, Math.max(0, skillTime - 400));
+                skillCast2 = WorldPartition.loop().schedule(mut, Math.max(0, skillTime - 400), TimeUnit.MILLISECONDS);
             } else {
                 final Future<?> future = skillCast;
                 if (future != null) {
@@ -1677,7 +1698,7 @@ public abstract class Creature extends WorldObject {
                     skillCast = null;
                 }
 
-                skillCast = ThreadPool.schedule(mut, Math.max(0, skillTime - 400));
+                skillCast = WorldPartition.loop().schedule(mut, Math.max(0, skillTime - 400), TimeUnit.MILLISECONDS);
             }
         } else {
             mut.setSkillTime(0);
@@ -3371,7 +3392,7 @@ public abstract class Creature extends WorldObject {
         MovementTaskManager.getInstance().registerMovingObject(this);
 
         if ((ticksToMove * GameTimeTaskManager.MILLIS_IN_TICK) > 3000) {
-            ThreadPool.schedule(() -> getAI().notifyActionArrivedRevalidate(), 2000);
+            WorldPartition.loop().schedule(() -> getAI().notifyActionArrivedRevalidate(), 2000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -3429,7 +3450,7 @@ public abstract class Creature extends WorldObject {
         MovementTaskManager.getInstance().registerMovingObject(this);
 
         if ((ticksToMove * GameTimeTaskManager.MILLIS_IN_TICK) > 3000) {
-            ThreadPool.schedule(() -> getAI().notifyActionArrivedRevalidate(), 2000);
+            WorldPartition.loop().schedule(() -> getAI().notifyActionArrivedRevalidate(), 2000, TimeUnit.MILLISECONDS);
         }
 
         broadcastMoveToLocation(true);
@@ -3969,7 +3990,7 @@ public abstract class Creature extends WorldObject {
         if (mut.getSkillTime() == 0) {
             onMagicHitTimer(mut);
         } else {
-            skillCast = ThreadPool.schedule(mut, 400);
+            skillCast = WorldPartition.loop().schedule(mut, 400, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -4058,9 +4079,9 @@ public abstract class Creature extends WorldObject {
             onMagicFinalizer(mut);
         } else {
             if (mut.isSimultaneous()) {
-                skillCast2 = ThreadPool.schedule(mut, 0);
+                skillCast2 = WorldPartition.loop().schedule(mut, 0, TimeUnit.MILLISECONDS);
             } else {
-                skillCast = ThreadPool.schedule(mut, 0);
+                skillCast = WorldPartition.loop().schedule(mut, 0, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -4098,19 +4119,21 @@ public abstract class Creature extends WorldObject {
                 if (isPlayer()) {
                     final SkillUseHolder currSkill = asPlayer().getCurrentSkill();
                     if ((currSkill == null) || !currSkill.isShiftPressed()) {
-                        ThreadPool.schedule(
-                                () -> {
-                                    if (!isDisabled() && !isAttackingOrCastingNow()) {
-                                        getAI().setIntentionAttack(target);
-                                    }
-                                },
-                                333); // Wait for skill land animation.
+                        WorldPartition.loop()
+                                .schedule(
+                                        () -> {
+                                            if (!isDisabled() && !isAttackingOrCastingNow()) {
+                                                getAI().setIntentionAttack(target);
+                                            }
+                                        },
+                                        333,
+                                        TimeUnit.MILLISECONDS); // Wait for skill land animation.
                     }
                 } else {
                     getAI().setIntentionAttack(target);
                 }
             } else if (isPlayer()) {
-                ThreadPool.schedule(() -> completeMagicFinalizer(skill, target), 333);
+                WorldPartition.loop().schedule(() -> completeMagicFinalizer(skill, target), 333, TimeUnit.MILLISECONDS);
                 return;
             }
         }
@@ -4134,8 +4157,12 @@ public abstract class Creature extends WorldObject {
             if (queuedSkill != null) {
                 player.setQueuedSkill(null, false, false);
 
-                ThreadPool.execute(new QueuedMagicUseTask(
-                        player, queuedSkill.getSkill(), queuedSkill.isCtrlPressed(), queuedSkill.isShiftPressed()));
+                WorldPartition.loop()
+                        .execute(new QueuedMagicUseTask(
+                                player,
+                                queuedSkill.getSkill(),
+                                queuedSkill.isCtrlPressed(),
+                                queuedSkill.isShiftPressed()));
             }
         }
 

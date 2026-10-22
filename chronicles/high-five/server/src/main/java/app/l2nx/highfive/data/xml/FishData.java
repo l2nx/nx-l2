@@ -74,6 +74,14 @@ public class FishData implements IXmlReader {
                         }
 
                         final Fish fish = new Fish(set);
+                        if (fish.getGutsCheckTime() <= 0) {
+                            log.warn(
+                                    "Skipping fish {} with a non-positive gutsCheckTime: {}",
+                                    fish.getFishId(),
+                                    fish.getGutsCheckTime());
+                            continue;
+                        }
+
                         switch (fish.getFishGrade()) {
                             case 0: {
                                 fishEasy.put(fish.getFishId(), fish);

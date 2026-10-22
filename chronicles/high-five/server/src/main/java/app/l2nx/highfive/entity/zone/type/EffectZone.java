@@ -28,11 +28,12 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.EtcStatusUpdate;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,7 +77,7 @@ public class EffectZone extends ZoneType {
                 break;
             }
             case "reuse": {
-                reuse = Integer.parseInt(value);
+                reuse = parsePositiveParameter(name, value, reuse);
                 break;
             }
             case "bypassSkillConditions": {
@@ -131,7 +132,8 @@ public class EffectZone extends ZoneType {
                 synchronized (this) {
                     task = this.task;
                     if (task == null) {
-                        this.task = task = ThreadPool.scheduleAtFixedRate(new ApplySkill(), initialDelay, reuse);
+                        this.task = task = WorldPartition.loop()
+                                .scheduleAtFixedRate(new ApplySkill(), initialDelay, reuse, TimeUnit.MILLISECONDS);
                     }
                 }
             }

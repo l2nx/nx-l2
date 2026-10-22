@@ -40,8 +40,9 @@ flow inside a partition, and how state shared by several partitions is owned. Pa
 - **Synchronous typed dispatch inside a partition.** The Mobius event system (89 event types, script listeners)
   stays as the mechanism and runs on the partition thread. An event object is built only if its type has a
   listener (the existing `hasListener` guards), so idle event types cost nothing.
-- **No asynchronous events in process.** `notifyEventAsync` and `notifyEventAsyncDelayed` go away: a delayed
-  reaction is a timer deadline, a reaction in another partition or service is a message.
+- **No asynchronous events in process.** `notifyEventAsync` and `notifyEventAsyncDelayed` go away (E7; from the E6
+  cutover until then they run as the loop's `execute` and `schedule`): a delayed reaction is a timer deadline, a
+  reaction in another partition or service is a message.
 - **Side effects are deferred to one place.** Death, drop, rewards, experience, karma, packets to third parties are
   queued during a pass and executed in the side-effect phase ([execution.md §2](execution.md#2-pass-phases)) in a
   fixed order. Systems stay free of each other's consequences, and the order is deterministic.
@@ -72,7 +73,7 @@ State that spans partitions has its own single writer:
 
 ## 6. Entity transfer
 
-Moving an entity between partitions (entering an instance, an olympiad match, leaving them):
+Moving an entity between partitions (entering a reflection, an olympiad match, leaving them):
 
 1. the source partition detaches the entity at a pass boundary: removes it from its registry, visibility and timer
    wheel (timer entries lapse by generation), and serializes nothing: the object moves as is;

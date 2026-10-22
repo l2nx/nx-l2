@@ -197,7 +197,7 @@ The `gate` command compares the reports of a scenario with its baseline:
   cores, the cpuset of each service, JVM version), and the gate fails when a report's environment differs from the
   baseline's. The gate is relative to a baseline taken on the same machine; criteria 1 and 2 are absolute because the
   engine measures them itself.
-- E6 lands on main after `load-crowd-pvp` passes the gate.
+- E6 is accepted when `load-crowd-pvp` passes the gate; its cutover landed on main before the gate, on the owner's decision.
 
 ## 9. Tests and trust
 

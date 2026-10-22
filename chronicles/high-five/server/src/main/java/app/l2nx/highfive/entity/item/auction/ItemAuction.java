@@ -34,8 +34,8 @@ import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -311,7 +311,7 @@ public class ItemAuction {
     }
 
     public void broadcastToAllBidders(ServerPacket packet) {
-        ThreadPool.execute(() -> broadcastToAllBiddersInternal(packet));
+        WorldPartition.loop().execute(() -> broadcastToAllBiddersInternal(packet));
     }
 
     public void broadcastToAllBiddersInternal(ServerPacket packet) {

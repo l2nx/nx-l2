@@ -38,11 +38,12 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StopMove;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -144,8 +145,12 @@ public class TamedBeast extends FeedableBeast {
                 durationCheckTask.cancel(true);
             }
 
-            durationCheckTask = ThreadPool.scheduleAtFixedRate(
-                    new CheckDuration(this), DURATION_CHECK_INTERVAL, DURATION_CHECK_INTERVAL);
+            durationCheckTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new CheckDuration(this),
+                            DURATION_CHECK_INTERVAL,
+                            DURATION_CHECK_INTERVAL,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -197,11 +202,11 @@ public class TamedBeast extends FeedableBeast {
 
         int delay = 100;
         for (Skill skill : beastSkills) {
-            ThreadPool.schedule(new buffCast(skill), delay);
+            WorldPartition.loop().schedule(new buffCast(skill), delay, TimeUnit.MILLISECONDS);
             delay += (100 + skill.getHitTime());
         }
 
-        ThreadPool.schedule(new buffCast(null), delay);
+        WorldPartition.loop().schedule(new buffCast(null), delay, TimeUnit.MILLISECONDS);
     }
 
     private class buffCast implements Runnable {
@@ -248,8 +253,12 @@ public class TamedBeast extends FeedableBeast {
                     buffTask.cancel(true);
                 }
 
-                buffTask = ThreadPool.scheduleAtFixedRate(
-                        new CheckOwnerBuffs(this, totalBuffsAvailable), BUFF_INTERVAL, BUFF_INTERVAL);
+                buffTask = WorldPartition.loop()
+                        .scheduleAtFixedRate(
+                                new CheckOwnerBuffs(this, totalBuffsAvailable),
+                                BUFF_INTERVAL,
+                                BUFF_INTERVAL,
+                                TimeUnit.MILLISECONDS);
             }
         } else {
             deleteMe(); // despawn if no owner

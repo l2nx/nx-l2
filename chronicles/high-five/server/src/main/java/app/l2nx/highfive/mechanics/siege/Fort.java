@@ -58,10 +58,10 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.residence.model.FortDoorUpgrade;
 import app.l2nx.highfive.repository.residence.model.FortState;
 import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -171,9 +171,9 @@ public class Fort extends AbstractResidence {
 
             final long currentTime = ClockBridge.wallMillis();
             if (endTime > currentTime) {
-                ThreadPool.schedule(new FunctionTask(cwh), endTime - currentTime);
+                WorldPartition.loop().schedule(new FunctionTask(cwh), endTime - currentTime, TimeUnit.MILLISECONDS);
             } else {
-                ThreadPool.schedule(new FunctionTask(cwh), 0);
+                WorldPartition.loop().schedule(new FunctionTask(cwh), 0, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -199,7 +199,7 @@ public class Fort extends AbstractResidence {
                                     .destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, fee, null, null);
                         }
 
-                        ThreadPool.schedule(new FunctionTask(true), rate);
+                        WorldPartition.loop().schedule(new FunctionTask(true), rate, TimeUnit.MILLISECONDS);
                     } else {
                         removeFunction(type);
                     }
@@ -256,7 +256,7 @@ public class Fort extends AbstractResidence {
     }
 
     public void endOfSiege(Clan clan) {
-        ThreadPool.execute(new endFortressSiege(this, clan));
+        WorldPartition.loop().execute(new endFortressSiege(this, clan));
     }
 
     /**
@@ -512,26 +512,32 @@ public class Fort extends AbstractResidence {
             setOwnerClan(clan);
             final int runCount = getOwnedTime() / (FeatureConfig.FS_UPDATE_FRQ * 60);
             long initial = ClockBridge.wallMillis() - lastOwnedTime.getTimeInMillis();
-            while (initial > (FeatureConfig.FS_UPDATE_FRQ * 60000)) {
-                initial -= FeatureConfig.FS_UPDATE_FRQ * 60000;
+            while (initial > TimeUnit.MINUTES.toMillis(FeatureConfig.FS_UPDATE_FRQ)) {
+                initial -= TimeUnit.MINUTES.toMillis(FeatureConfig.FS_UPDATE_FRQ);
             }
 
-            initial = (FeatureConfig.FS_UPDATE_FRQ * 60000) - initial;
+            initial = TimeUnit.MINUTES.toMillis(FeatureConfig.FS_UPDATE_FRQ) - initial;
             if ((FeatureConfig.FS_MAX_OWN_TIME <= 0) || (getOwnedTime() < (FeatureConfig.FS_MAX_OWN_TIME * 3600))) {
-                fortUpdater[0] = ThreadPool.scheduleAtFixedRate(
-                        new FortUpdater(this, clan, runCount, FortUpdaterType.PERIODIC_UPDATE),
-                        initial,
-                        FeatureConfig.FS_UPDATE_FRQ * 60000); // Schedule owner tasks to start running.
+                fortUpdater[0] = WorldPartition.loop()
+                        .scheduleAtFixedRate(
+                                new FortUpdater(this, clan, runCount, FortUpdaterType.PERIODIC_UPDATE),
+                                initial,
+                                TimeUnit.MINUTES.toMillis(FeatureConfig.FS_UPDATE_FRQ),
+                                TimeUnit.MILLISECONDS); // Schedule owner tasks to start running.
                 if (FeatureConfig.FS_MAX_OWN_TIME > 0) {
-                    fortUpdater[1] = ThreadPool.scheduleAtFixedRate(
-                            new FortUpdater(this, clan, runCount, FortUpdaterType.MAX_OWN_TIME),
-                            3600000,
-                            3600000); // Schedule owner tasks to remove owener.
+                    fortUpdater[1] = WorldPartition.loop()
+                            .scheduleAtFixedRate(
+                                    new FortUpdater(this, clan, runCount, FortUpdaterType.MAX_OWN_TIME),
+                                    3600000,
+                                    3600000,
+                                    TimeUnit.MILLISECONDS); // Schedule owner tasks to remove owener.
                 }
             } else {
-                fortUpdater[1] = ThreadPool.schedule(
-                        new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
-                        60000); // Schedule owner tasks to remove owner.
+                fortUpdater[1] = WorldPartition.loop()
+                        .schedule(
+                                new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
+                                60000,
+                                TimeUnit.MILLISECONDS); // Schedule owner tasks to remove owner.
             }
         } else {
             setOwnerClan(null);
@@ -695,15 +701,19 @@ public class Fort extends AbstractResidence {
                 fortUpdater[1].cancel(false);
             }
 
-            fortUpdater[0] = ThreadPool.scheduleAtFixedRate(
-                    new FortUpdater(this, clan, 0, FortUpdaterType.PERIODIC_UPDATE),
-                    FeatureConfig.FS_UPDATE_FRQ * 60000,
-                    FeatureConfig.FS_UPDATE_FRQ * 60000); // Schedule owner tasks to start running.
+            fortUpdater[0] = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new FortUpdater(this, clan, 0, FortUpdaterType.PERIODIC_UPDATE),
+                            TimeUnit.MINUTES.toMillis(FeatureConfig.FS_UPDATE_FRQ),
+                            TimeUnit.MINUTES.toMillis(FeatureConfig.FS_UPDATE_FRQ),
+                            TimeUnit.MILLISECONDS); // Schedule owner tasks to start running.
             if (FeatureConfig.FS_MAX_OWN_TIME > 0) {
-                fortUpdater[1] = ThreadPool.scheduleAtFixedRate(
-                        new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
-                        3600000,
-                        3600000); // Schedule owner tasks to remove owener.
+                fortUpdater[1] = WorldPartition.loop()
+                        .scheduleAtFixedRate(
+                                new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
+                                3600000,
+                                3600000,
+                                TimeUnit.MILLISECONDS); // Schedule owner tasks to remove owener.
             }
         } else {
             if (fortUpdater[0] != null) {

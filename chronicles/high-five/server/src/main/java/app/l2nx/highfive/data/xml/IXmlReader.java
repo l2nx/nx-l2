@@ -22,17 +22,26 @@
  */
 package app.l2nx.highfive.data.xml;
 
-import app.l2nx.highfive.config.ThreadConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import java.io.File;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -41,6 +50,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 /**
@@ -51,6 +62,8 @@ public interface IXmlReader {
 
     static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
     static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
+
+    String PARSE_POOL = "l2nx-datapack-parse";
 
     /**
      * Loads or reloads the data. It is recommended to clear the data storage (either a list or a map) before loading.
@@ -70,10 +83,14 @@ public interface IXmlReader {
      * @param file the XML file to parse.
      */
     default void parseFile(File file) {
+        readDocument(file).ifPresent(document -> applyDocument(document, file));
+    }
+
+    private Optional<Document> readDocument(File file) {
         if (!isValidXmlFile(file)) {
             LoggerFactory.getLogger(getClass())
                     .warn("Cannot parse {}: file does not exist or is not valid.", file.getName());
-            return;
+            return Optional.empty();
         }
 
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -83,7 +100,8 @@ public interface IXmlReader {
         try {
             factory.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
             final DocumentBuilder builder = factory.newDocumentBuilder();
-            parseDocument(builder.parse(file), file);
+            builder.setEntityResolver(IXmlReader::resolveLocalEntity);
+            return Optional.of(builder.parse(file));
         } catch (SAXParseException e) {
             LoggerFactory.getLogger(getClass())
                     .warn(
@@ -92,6 +110,25 @@ public interface IXmlReader {
                             e.getLineNumber(),
                             e.getColumnNumber(),
                             e);
+        } catch (Exception e) {
+            LoggerFactory.getLogger(getClass()).warn("Error parsing {}", file.getName(), e);
+        }
+        return Optional.empty();
+    }
+
+    // Without an own resolver every schema reference goes through the JDK built-in catalog, one instance per JVM that
+    // is not thread-safe: two concurrent parses can fail one of them (ArrayIndexOutOfBoundsException in
+    // CatalogImpl.markAsSearched), and the reader then loads nothing from that file.
+    private static InputSource resolveLocalEntity(String publicId, String systemId) throws SAXException {
+        if ((systemId == null) || !systemId.startsWith("file:")) {
+            throw new SAXException("A datapack file may reference only local files, not " + systemId);
+        }
+        return new InputSource(systemId);
+    }
+
+    private void applyDocument(Document document, File file) {
+        try {
+            parseDocument(document, file);
         } catch (Exception e) {
             LoggerFactory.getLogger(getClass()).warn("Error parsing {}", file.getName(), e);
         }
@@ -123,58 +160,119 @@ public interface IXmlReader {
      * @return {@code false} if the directory is not found, {@code true} otherwise.
      */
     default boolean parseDirectory(File directory, boolean recursive) {
+        return parseDirectory(directory, recursive, loadingThreads());
+    }
+
+    /**
+     * Loads all XML files from the specified directory and parses each file.
+     * @param directory the directory to scan for XML files.
+     * @param recursive if {@code true}, parses files in all subdirectories.
+     * @param threads the number of threads that parse the XML; {@code 1} parses on the calling thread.
+     * @return {@code false} if the directory is not found, {@code true} otherwise.
+     */
+    default boolean parseDirectory(File directory, boolean recursive, int threads) {
         if (!directory.exists()) {
             LoggerFactory.getLogger(getClass()).warn("Directory not found: {}", directory.getAbsolutePath());
             return false;
         }
 
-        // If multithreading is enabled, use a thread pool to parse files.
-        if (ThreadConfig.THREADS_FOR_LOADING) {
-            final ScheduledExecutorService executorService =
-                    Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
-            final List<Future<?>> tasks = new ArrayList<>();
+        final List<File> files = new ArrayList<>();
+        collectXmlFiles(directory, recursive, files);
+        // Only the XML parse runs on the pool: parseDocument touches world state, so it runs here, in file order.
+        parseAll(
+                files,
+                threads,
+                this::readDocument,
+                (file, document) -> document.ifPresent(read -> applyDocument(read, file)));
+        return true;
+    }
 
-            final File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (recursive && file.isDirectory()) {
-                        parseDirectory(file, true);
-                    } else if (isValidXmlFile(file)) {
-                        tasks.add(executorService.schedule(() -> parseFile(file), 0, TimeUnit.MILLISECONDS));
-                    }
-                }
-            }
+    private static int loadingThreads() {
+        return ServerConfig.THREADS_FOR_LOADING ? Runtime.getRuntime().availableProcessors() : 1;
+    }
 
-            for (Future<?> task : tasks) {
-                try {
-                    task.get();
-                } catch (Exception e) {
-                    LoggerFactory.getLogger(getClass()).warn("Failed to parse file: {}", e.getMessage());
-                }
-            }
-
-            executorService.shutdown();
-            try {
-                executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LoggerFactory.getLogger(getClass()).warn("Parsing process was interrupted: {}", e.getMessage());
-            }
-        } else // Parse files sequentially if multithreading is not enabled.
-        {
-            final File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (recursive && file.isDirectory()) {
-                        parseDirectory(file, true);
-                    } else if (isValidXmlFile(file)) {
-                        parseFile(file);
-                    }
-                }
-            }
+    private void collectXmlFiles(File directory, boolean recursive, List<File> files) {
+        final File[] entries = directory.listFiles();
+        if (entries == null) {
+            return;
         }
 
-        return true;
+        for (File entry : entries) {
+            if (recursive && entry.isDirectory()) {
+                collectXmlFiles(entry, true, files);
+            } else if (isValidXmlFile(entry)) {
+                files.add(entry);
+            }
+        }
+    }
+
+    static <S, R> void parseAll(
+            List<S> sources, Function<? super S, ? extends R> parser, BiConsumer<? super S, ? super R> consumer) {
+        parseAll(sources, loadingThreads(), parser, consumer);
+    }
+
+    static <S, R> void parseAll(
+            List<S> sources,
+            int threads,
+            Function<? super S, ? extends R> parser,
+            BiConsumer<? super S, ? super R> consumer) {
+        if (threads > 1) {
+            parseInParallel(sources, threads, parser, consumer);
+        } else {
+            for (S source : sources) {
+                consumer.accept(source, parser.apply(source));
+            }
+        }
+    }
+
+    static <S, R> void parseInParallel(
+            List<S> sources,
+            int threads,
+            Function<? super S, ? extends R> parser,
+            BiConsumer<? super S, ? super R> consumer) {
+        if (sources.isEmpty()) {
+            return;
+        }
+
+        final int poolSize = Math.min(sources.size(), threads);
+        final ExecutorService pool = Executors.newFixedThreadPool(
+                poolSize, Thread.ofPlatform().name(PARSE_POOL + "-", 1).factory());
+        final MeterRegistry registry = Metrics.globalRegistry;
+        try (ExecutorService monitored = ExecutorServiceMetrics.monitor(registry, pool, PARSE_POOL)) {
+            final Iterator<S> pending = sources.iterator();
+            final ArrayDeque<Map.Entry<S, Future<R>>> ahead = new ArrayDeque<>();
+            while (pending.hasNext() || !ahead.isEmpty()) {
+                while (pending.hasNext() && (ahead.size() < (2 * poolSize))) {
+                    final S source = pending.next();
+                    ahead.add(Map.entry(source, monitored.<R>submit(() -> parser.apply(source))));
+                }
+
+                final Map.Entry<S, Future<R>> next = ahead.remove();
+                consumer.accept(next.getKey(), next.getValue().get());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while parsing the datapack", e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException failure) {
+                throw failure;
+            }
+            if (e.getCause() instanceof Error failure) {
+                throw failure;
+            }
+            throw new IllegalStateException(e.getCause());
+        } finally {
+            removePoolMeters(registry);
+        }
+    }
+
+    // A fresh pool per parse: gauges of a closed pool stay registered and block the next pool's registration.
+    private static void removePoolMeters(MeterRegistry registry) {
+        for (Meter meter : List.copyOf(registry.getMeters())) {
+            if (PARSE_POOL.equals(meter.getId().getTag("name"))) {
+                registry.remove(meter);
+            }
+        }
     }
 
     /**
@@ -541,7 +639,8 @@ public interface IXmlReader {
         } catch (IllegalArgumentException e) {
             LoggerFactory.getLogger(getClass())
                     .warn(
-                            "Invalid value for node: {}, specified value: {} should be an enum of type \"{}\". Using default value: {}",
+                            "Invalid value for node: {}, specified value: {} should be an enum of type \"{}\". Using"
+                                    + " default value: {}",
                             node.getNodeName(),
                             node.getNodeValue(),
                             enumClass.getSimpleName(),

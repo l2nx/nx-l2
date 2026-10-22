@@ -33,8 +33,9 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SetupGauge;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Unstuck user command.
@@ -111,7 +112,8 @@ public class Unstuck implements IUserCommandHandler {
         // End SoE Animation section
 
         // continue execution later
-        player.setSkillCast(ThreadPool.schedule(new EscapeFinalizer(player), unstuckTimer));
+        player.setSkillCast(
+                WorldPartition.loop().schedule(new EscapeFinalizer(player), unstuckTimer, TimeUnit.MILLISECONDS));
         return true;
     }
 

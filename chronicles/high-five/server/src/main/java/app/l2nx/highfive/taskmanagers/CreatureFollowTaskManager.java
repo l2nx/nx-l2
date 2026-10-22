@@ -27,10 +27,11 @@ import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -42,8 +43,8 @@ public class CreatureFollowTaskManager {
     protected static boolean workingAttack = false;
 
     protected CreatureFollowTaskManager() {
-        ThreadPool.schedulePriorityTaskAtFixedRate(new CreatureFollowNormalTask(), 1000, 1000);
-        ThreadPool.schedulePriorityTaskAtFixedRate(new CreatureFollowAttackTask(), 500, 500);
+        WorldPartition.loop().scheduleAtFixedRate(new CreatureFollowNormalTask(), 1000, 1000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop().scheduleAtFixedRate(new CreatureFollowAttackTask(), 500, 500, TimeUnit.MILLISECONDS);
     }
 
     protected class CreatureFollowNormalTask implements Runnable {

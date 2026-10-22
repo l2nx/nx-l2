@@ -35,9 +35,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,14 +59,18 @@ public class Decoy extends Creature {
         this.owner = owner;
         setXYZInvisible(owner.getX(), owner.getY(), owner.getZ());
         setInvul(false);
-        decoyLifeTask = ThreadPool.schedule(() -> unSummon(owner), totalLifeTime);
+        decoyLifeTask = WorldPartition.loop().schedule(() -> unSummon(owner), totalLifeTime, TimeUnit.MILLISECONDS);
         if (aggressive) {
             final int hateSpamSkillId = 5272;
             final int skilllevel = Math.min(
                     getTemplate().getDisplayId() - 13070,
                     SkillData.getInstance().getMaxLevel(hateSpamSkillId));
-            hateSpam = ThreadPool.scheduleAtFixedRate(
-                    new HateSpam(this, SkillData.getInstance().getSkill(hateSpamSkillId, skilllevel)), 2000, 5000);
+            hateSpam = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new HateSpam(this, SkillData.getInstance().getSkill(hateSpamSkillId, skilllevel)),
+                            2000,
+                            5000,
+                            TimeUnit.MILLISECONDS);
         }
     }
 

@@ -27,10 +27,11 @@
 package app.l2nx.highfive.mechanics.variables;
 
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -92,12 +93,14 @@ public class PlayerVariables extends AbstractVariables {
         if (ASYNC_SAVE_ENABLED && !scheduledSave.get()) {
             scheduledSave.set(true);
 
-            ThreadPool.schedule(
-                    () -> {
-                        scheduledSave.set(false);
-                        saveNow();
-                    },
-                    SAVE_INTERVAL);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                scheduledSave.set(false);
+                                saveNow();
+                            },
+                            SAVE_INTERVAL,
+                            TimeUnit.MILLISECONDS);
             return true;
         }
 
@@ -112,14 +115,6 @@ public class PlayerVariables extends AbstractVariables {
         if (!hasChanges()) {
             return false;
         }
-
-        // FIXME: May store after server shutdown.
-        // If async is enabled, offload to ThreadPool.
-        // if (ASYNC_SAVE_ENABLED)
-        // {
-        // ThreadPool.execute(this::saveNowSync);
-        // return true;
-        // }
 
         return saveNowSync();
     }

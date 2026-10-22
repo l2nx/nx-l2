@@ -44,13 +44,14 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00697_DefendTheHallOfErosion.Q00697_DefendTheHallOfErosion;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -339,128 +340,146 @@ public class HeartInfinityDefence extends Script {
             }
 
             ((HIDWorld) world).startTime = ClockBridge.gameMillis();
-            ((HIDWorld) world).finishTask = ThreadPool.schedule(new FinishTask((HIDWorld) world), 30 * 60000);
-            ((HIDWorld) world).timerTask =
-                    ThreadPool.scheduleAtFixedRate(new TimerTask((HIDWorld) world), 298 * 1000, 5 * 60 * 1000);
+            ((HIDWorld) world).finishTask =
+                    WorldPartition.loop().schedule(new FinishTask((HIDWorld) world), 30 * 60000, TimeUnit.MILLISECONDS);
+            ((HIDWorld) world).timerTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new TimerTask((HIDWorld) world), 298 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS);
             conquestBegins((HIDWorld) world);
         }
     }
 
     private void conquestBegins(HIDWorld world) {
-        ThreadPool.schedule(
-                () -> {
-                    broadCastPacket(
-                            world,
-                            new ExShowScreenMessage(
-                                    NpcStringId
-                                            .YOU_CAN_HEAR_THE_UNDEAD_OF_EKIMUS_RUSHING_TOWARD_YOU_S1_S2_IT_HAS_NOW_BEGUN,
-                                    2,
-                                    8000));
-                    for (int[] spawn1 : ROOMS_MOBS) {
-                        for (int i1 = 0; i1 < spawn1[6]; i1++) {
-                            final Npc npc1 = addSpawn(
-                                    spawn1[0],
-                                    spawn1[1],
-                                    spawn1[2],
-                                    spawn1[3],
-                                    spawn1[4],
-                                    false,
-                                    0,
-                                    false,
-                                    world.getInstanceId());
-                            npc1.getSpawn().setRespawnDelay(spawn1[5]);
-                            npc1.getSpawn().setAmount(1);
-                            if (spawn1[5] > 0) {
-                                npc1.getSpawn().startRespawn();
-                            } else {
-                                npc1.getSpawn().stopRespawn();
-                            }
-                        }
-                    }
-
-                    for (int[] spawn2 : ROOMS_TUMORS) {
-                        for (int i2 = 0; i2 < spawn2[6]; i2++) {
-                            final Npc npc2 = addSpawn(
-                                    spawn2[0],
-                                    spawn2[1],
-                                    spawn2[2],
-                                    spawn2[3],
-                                    spawn2[4],
-                                    false,
-                                    0,
-                                    false,
-                                    world.getInstanceId());
-                            world.deadTumors.add(npc2);
-                        }
-                    }
-
-                    InstanceManager.getInstance()
-                            .getInstance(world.getInstanceId())
-                            .getDoor(14240102)
-                            .openMe();
-                    preawakenedEchmus =
-                            addSpawn(29161, -179534, 208510, -15496, 16342, false, 0, false, world.getInstanceId());
-
-                    ThreadPool.schedule(
-                            () -> {
-                                if (!conquestEnded && !world.deadTumors.isEmpty()) {
-                                    for (Npc npc : world.deadTumors) {
-                                        if (npc != null) {
-                                            spawnCoffin(npc, world);
-                                        }
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            broadCastPacket(
+                                    world,
+                                    new ExShowScreenMessage(
+                                            NpcStringId
+                                                    .YOU_CAN_HEAR_THE_UNDEAD_OF_EKIMUS_RUSHING_TOWARD_YOU_S1_S2_IT_HAS_NOW_BEGUN,
+                                            2,
+                                            8000));
+                            for (int[] spawn1 : ROOMS_MOBS) {
+                                for (int i1 = 0; i1 < spawn1[6]; i1++) {
+                                    final Npc npc1 = addSpawn(
+                                            spawn1[0],
+                                            spawn1[1],
+                                            spawn1[2],
+                                            spawn1[3],
+                                            spawn1[4],
+                                            false,
+                                            0,
+                                            false,
+                                            world.getInstanceId());
+                                    npc1.getSpawn().setRespawnDelay(spawn1[5]);
+                                    npc1.getSpawn().setAmount(1);
+                                    if (spawn1[5] > 0) {
+                                        npc1.getSpawn().startRespawn();
+                                    } else {
+                                        npc1.getSpawn().stopRespawn();
                                     }
                                 }
-                            },
-                            60000);
+                            }
 
-                    ThreadPool.schedule(
-                            () -> {
-                                if (!conquestEnded) {
-                                    if (!world.deadTumors.isEmpty()) {
-                                        for (Npc npc3 : world.deadTumors) {
-                                            if (npc3 != null) {
-                                                npc3.deleteMe();
-                                            }
-                                        }
+                            for (int[] spawn2 : ROOMS_TUMORS) {
+                                for (int i2 = 0; i2 < spawn2[6]; i2++) {
+                                    final Npc npc2 = addSpawn(
+                                            spawn2[0],
+                                            spawn2[1],
+                                            spawn2[2],
+                                            spawn2[3],
+                                            spawn2[4],
+                                            false,
+                                            0,
+                                            false,
+                                            world.getInstanceId());
+                                    world.deadTumors.add(npc2);
+                                }
+                            }
 
-                                        world.deadTumors.clear();
-                                    }
+                            InstanceManager.getInstance()
+                                    .getInstance(world.getInstanceId())
+                                    .getDoor(14240102)
+                                    .openMe();
+                            preawakenedEchmus = addSpawn(
+                                    29161, -179534, 208510, -15496, 16342, false, 0, false, world.getInstanceId());
 
-                                    for (int[] spawn : ROOMS_ALIVE_TUMORS) {
-                                        for (int i = 0; i < spawn[6]; i++) {
-                                            final Npc npc4 = addSpawn(
-                                                    spawn[0],
-                                                    spawn[1],
-                                                    spawn[2],
-                                                    spawn[3],
-                                                    spawn[4],
+                            WorldPartition.loop()
+                                    .schedule(
+                                            () -> {
+                                                if (!conquestEnded && !world.deadTumors.isEmpty()) {
+                                                    for (Npc npc : world.deadTumors) {
+                                                        if (npc != null) {
+                                                            spawnCoffin(npc, world);
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            60000,
+                                            TimeUnit.MILLISECONDS);
+
+                            WorldPartition.loop()
+                                    .schedule(
+                                            () -> {
+                                                if (!conquestEnded) {
+                                                    if (!world.deadTumors.isEmpty()) {
+                                                        for (Npc npc3 : world.deadTumors) {
+                                                            if (npc3 != null) {
+                                                                npc3.deleteMe();
+                                                            }
+                                                        }
+
+                                                        world.deadTumors.clear();
+                                                    }
+
+                                                    for (int[] spawn : ROOMS_ALIVE_TUMORS) {
+                                                        for (int i = 0; i < spawn[6]; i++) {
+                                                            final Npc npc4 = addSpawn(
+                                                                    spawn[0],
+                                                                    spawn[1],
+                                                                    spawn[2],
+                                                                    spawn[3],
+                                                                    spawn[4],
+                                                                    false,
+                                                                    0,
+                                                                    false,
+                                                                    world.getInstanceId());
+                                                            npc4.setCurrentHp(npc4.getMaxHp() * .5);
+                                                            world.deadTumors.add(npc4);
+                                                        }
+                                                    }
+
+                                                    broadCastPacket(
+                                                            world,
+                                                            new ExShowScreenMessage(
+                                                                    NpcStringId
+                                                                            .THE_TUMOR_INSIDE_S1_HAS_COMPLETELY_REVIVED_NEKIMUS_STARTED_TO_REGAIN_HIS_ENERGY_AND_IS_DESPERATELY_LOOKING_FOR_HIS_PREY,
+                                                                    2,
+                                                                    8000));
+                                                }
+                                            },
+                                            tumorRespawnTime,
+                                            TimeUnit.MILLISECONDS);
+
+                            world.wagonSpawnTask = WorldPartition.loop()
+                                    .scheduleAtFixedRate(
+                                            () -> addSpawn(
+                                                    SOULWAGON,
+                                                    -179544,
+                                                    207400,
+                                                    -15496,
+                                                    0,
                                                     false,
                                                     0,
                                                     false,
-                                                    world.getInstanceId());
-                                            npc4.setCurrentHp(npc4.getMaxHp() * .5);
-                                            world.deadTumors.add(npc4);
-                                        }
-                                    }
-
-                                    broadCastPacket(
-                                            world,
-                                            new ExShowScreenMessage(
-                                                    NpcStringId
-                                                            .THE_TUMOR_INSIDE_S1_HAS_COMPLETELY_REVIVED_NEKIMUS_STARTED_TO_REGAIN_HIS_ENERGY_AND_IS_DESPERATELY_LOOKING_FOR_HIS_PREY,
-                                                    2,
-                                                    8000));
-                                }
-                            },
-                            tumorRespawnTime);
-
-                    world.wagonSpawnTask = ThreadPool.scheduleAtFixedRate(
-                            () -> addSpawn(
-                                    SOULWAGON, -179544, 207400, -15496, 0, false, 0, false, world.getInstanceId()),
-                            1000,
-                            wagonRespawnTime);
-                },
-                20000);
+                                                    world.getInstanceId()),
+                                            1000,
+                                            wagonRespawnTime,
+                                            TimeUnit.MILLISECONDS);
+                        },
+                        20000,
+                        TimeUnit.MILLISECONDS);
     }
 
     void spawnCoffin(Npc npc, HIDWorld world) {
@@ -587,22 +606,24 @@ public class HeartInfinityDefence extends Script {
                                 2,
                                 8000));
 
-                ThreadPool.schedule(
-                        () -> {
-                            world.deadTumor.deleteMe();
-                            final Npc alivetumor = addSpawn(ALIVETUMOR, loc, world.getInstanceId());
-                            alivetumor.setCurrentHp(alivetumor.getMaxHp() * .25);
-                            world.npcList.add(alivetumor);
-                            wagonRespawnTime -= 10000;
-                            broadCastPacket(
-                                    world,
-                                    new ExShowScreenMessage(
-                                            NpcStringId
-                                                    .THE_TUMOR_INSIDE_S1_HAS_COMPLETELY_REVIVED_NEKIMUS_STARTED_TO_REGAIN_HIS_ENERGY_AND_IS_DESPERATELY_LOOKING_FOR_HIS_PREY,
-                                            2,
-                                            8000));
-                        },
-                        tumorRespawnTime);
+                WorldPartition.loop()
+                        .schedule(
+                                () -> {
+                                    world.deadTumor.deleteMe();
+                                    final Npc alivetumor = addSpawn(ALIVETUMOR, loc, world.getInstanceId());
+                                    alivetumor.setCurrentHp(alivetumor.getMaxHp() * .25);
+                                    world.npcList.add(alivetumor);
+                                    wagonRespawnTime -= 10000;
+                                    broadCastPacket(
+                                            world,
+                                            new ExShowScreenMessage(
+                                                    NpcStringId
+                                                            .THE_TUMOR_INSIDE_S1_HAS_COMPLETELY_REVIVED_NEKIMUS_STARTED_TO_REGAIN_HIS_ENERGY_AND_IS_DESPERATELY_LOOKING_FOR_HIS_PREY,
+                                                    2,
+                                                    8000));
+                                },
+                                tumorRespawnTime,
+                                TimeUnit.MILLISECONDS);
             }
 
             if (npc.getId() == 18711) {

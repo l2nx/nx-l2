@@ -27,8 +27,9 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.handler.IPunishmentHandler;
 import app.l2nx.highfive.handler.PunishmentHandler;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -120,7 +121,8 @@ public class PunishmentTask implements Runnable {
         onStart();
         if (expirationTime > 0) // Has expiration?
         {
-            task = ThreadPool.schedule(this, expirationTime - ClockBridge.wallMillis());
+            task = WorldPartition.loop()
+                    .schedule(this, expirationTime - ClockBridge.wallMillis(), TimeUnit.MILLISECONDS);
         }
     }
 

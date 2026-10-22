@@ -32,12 +32,13 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameAddPlayer
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameChangeTeam;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameRemovePlayer;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class manage the player add/remove, team change and event arena status,<br>
@@ -85,7 +86,7 @@ public class HandysBlockCheckerManager {
                 holder.checkAndShuffle();
             }
 
-            ThreadPool.execute(holder.getEvent().new StartEvent());
+            WorldPartition.loop().execute(holder.getEvent().new StartEvent());
         } else {
             arenaVotes.put(arena, newVotes);
         }
@@ -332,7 +333,7 @@ public class HandysBlockCheckerManager {
     }
 
     private void schedulePenaltyRemoval(int objectId) {
-        ThreadPool.schedule(() -> removePenalty(objectId), 10000);
+        WorldPartition.loop().schedule(() -> removePenalty(objectId), 10000, TimeUnit.MILLISECONDS);
     }
 
     /**

@@ -92,7 +92,7 @@ public class OlympiadConfig {
         OLYMPIAD_MAX_BUFFS = config.getInt("OlympiadMaxBuffs", 5);
         OLYMPIAD_CPERIOD = config.getLong("OlympiadCPeriod", 21600000);
         OLYMPIAD_BATTLE = config.getLong("OlympiadBattle", 300000);
-        OLYMPIAD_WPERIOD = config.getLong("OlympiadWPeriod", 604800000);
+        OLYMPIAD_WPERIOD = config.getPositiveLong("OlympiadWPeriod", 604800000);
         OLYMPIAD_VPERIOD = config.getLong("OlympiadVPeriod", 86400000);
         OLYMPIAD_START_POINTS = config.getInt("OlympiadStartPoints", 10);
         OLYMPIAD_WEEKLY_POINTS = config.getInt("OlympiadWeeklyPoints", 10);

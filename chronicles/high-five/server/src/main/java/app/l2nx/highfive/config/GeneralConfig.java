@@ -306,7 +306,7 @@ public class GeneralConfig {
         ALT_MANOR_APPROVE_MIN = config.getInt("AltManorApproveMin", 30);
         ALT_MANOR_MAINTENANCE_MIN = config.getInt("AltManorMaintenanceMin", 6);
         ALT_MANOR_SAVE_ALL_ACTIONS = config.getBoolean("AltManorSaveAllActions", false);
-        ALT_MANOR_SAVE_PERIOD_RATE = config.getInt("AltManorSavePeriodRate", 2);
+        ALT_MANOR_SAVE_PERIOD_RATE = config.getPositiveInt("AltManorSavePeriodRate", 2);
         ALT_LOTTERY_PRIZE = config.getLong("AltLotteryPrize", 50000);
         ALT_LOTTERY_TICKET_PRICE = config.getLong("AltLotteryTicketPrice", 2000);
         ALT_LOTTERY_5_NUMBER_RATE = config.getFloat("AltLottery5NumberRate", 0.6f);

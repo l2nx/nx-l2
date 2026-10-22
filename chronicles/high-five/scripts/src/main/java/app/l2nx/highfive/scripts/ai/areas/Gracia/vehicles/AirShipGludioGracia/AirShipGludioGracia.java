@@ -31,7 +31,8 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -211,7 +212,7 @@ public class AirShipGludioGracia extends Script implements Runnable {
                 case 1: {
                     // _ship.teleToLocation(-167874, 256731, -509, 41035, false);
                     ship.setOustLoc(OUST_GRACIA);
-                    ThreadPool.schedule(this, 5000);
+                    WorldPartition.loop().schedule(this, 5000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 2: {
@@ -224,7 +225,7 @@ public class AirShipGludioGracia extends Script implements Runnable {
                                     .THE_REGULARLY_SCHEDULED_AIRSHIP_HAS_ARRIVED_IT_WILL_DEPART_FOR_THE_ADEN_CONTINENT_IN_1_MINUTE);
                     ship.setInDock(GRACIA_DOCK_ID);
                     ship.oustPlayers();
-                    ThreadPool.schedule(this, 60000);
+                    WorldPartition.loop().schedule(this, 60000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 4: {
@@ -237,7 +238,7 @@ public class AirShipGludioGracia extends Script implements Runnable {
                 case 5: {
                     // _ship.teleToLocation(-157261, 255664, 221, 64781, false);
                     ship.setOustLoc(OUST_GLUDIO);
-                    ThreadPool.schedule(this, 5000);
+                    WorldPartition.loop().schedule(this, 5000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 6: {
@@ -250,7 +251,7 @@ public class AirShipGludioGracia extends Script implements Runnable {
                                     .THE_REGULARLY_SCHEDULED_AIRSHIP_HAS_ARRIVED_IT_WILL_DEPART_FOR_THE_GRACIA_CONTINENT_IN_1_MINUTE);
                     ship.setInDock(GLUDIO_DOCK_ID);
                     ship.oustPlayers();
-                    ThreadPool.schedule(this, 60000);
+                    WorldPartition.loop().schedule(this, 60000, TimeUnit.MILLISECONDS);
                     break;
                 }
             }

@@ -46,7 +46,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
@@ -85,8 +86,11 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         hall = CHSiegeManager.getInstance().getSiegableHall(hallId);
         hall.setSiege(this);
 
-        siegeTask =
-                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - ClockBridge.wallMillis() - 3600000);
+        siegeTask = WorldPartition.loop()
+                .schedule(
+                        new PrepareOwner(),
+                        hall.getNextSiegeTime() - ClockBridge.wallMillis() - 3600000,
+                        TimeUnit.MILLISECONDS);
         log.info(
                 "{} siege scheduled for {}.",
                 hall.getName(),
@@ -235,7 +239,7 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         World.broadcastToAllOnlinePlayers(msg);
         hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
 
-        siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
+        siegeTask = WorldPartition.loop().schedule(new SiegeStarts(), 3600000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -245,8 +249,8 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
             onSiegeEnds();
             attackers.clear();
             hall.updateNextSiege();
-            siegeTask =
-                    ThreadPool.schedule(new PrepareOwner(), hall.getSiegeDate().getTimeInMillis());
+            siegeTask = WorldPartition.loop()
+                    .schedule(new PrepareOwner(), hall.getSiegeDate().getTimeInMillis(), TimeUnit.MILLISECONDS);
             hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
             final SystemMessage sm =
                     new SystemMessage(SystemMessageId.THE_SIEGE_OF_S1_HAS_BEEN_CANCELED_DUE_TO_LACK_OF_INTEREST);
@@ -276,7 +280,7 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
 
         hall.updateSiegeStatus(SiegeStatus.RUNNING);
         onSiegeStarts();
-        siegeTask = ThreadPool.schedule(new SiegeEnds(), hall.getSiegeLength());
+        siegeTask = WorldPartition.loop().schedule(new SiegeEnds(), hall.getSiegeLength(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -329,8 +333,11 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
 
         onSiegeEnds();
 
-        siegeTask =
-                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - ClockBridge.wallMillis() - 3600000);
+        siegeTask = WorldPartition.loop()
+                .schedule(
+                        new PrepareOwner(),
+                        hall.getNextSiegeTime() - ClockBridge.wallMillis() - 3600000,
+                        TimeUnit.MILLISECONDS);
         log.info(
                 "Siege of {} scheduled for {}.",
                 hall.getName(),
@@ -342,7 +349,8 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
     @Override
     public void updateSiege() {
         cancelSiegeTask();
-        siegeTask = ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - 3600000);
+        siegeTask = WorldPartition.loop()
+                .schedule(new PrepareOwner(), hall.getNextSiegeTime() - 3600000, TimeUnit.MILLISECONDS);
         log.info(
                 "{} siege scheduled for {}.",
                 hall.getName(),

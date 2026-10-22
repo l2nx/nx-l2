@@ -51,11 +51,11 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.sevensigns.SevenSignsFestivalScoreRepository;
 import app.l2nx.highfive.repository.sevensigns.SevenSignsStatusRepository;
 import app.l2nx.highfive.repository.sevensigns.model.SevenSignsFestivalScore;
 import app.l2nx.highfive.repository.sevensigns.model.SevenSignsStatus;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -93,8 +94,10 @@ public class SevenSignsFestival {
      * The monster swarm time is the time before the monsters swarm to the center of the arena, after they are spawned.<br>
      * The chest spawn time is for when the bonus festival chests spawn, usually towards the end of the festival.
      */
-    public static final long FESTIVAL_SIGNUP_TIME =
-            FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - FeatureConfig.ALT_FESTIVAL_LENGTH - 60000;
+    // Read from the config on use: a constant would freeze whatever the config held when the class first loaded.
+    public static long festivalSignupTime() {
+        return FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - FeatureConfig.ALT_FESTIVAL_LENGTH - 60000;
+    }
 
     // Key Constants \\
     private static final int FESTIVAL_MAX_OFFSET_X = 230;
@@ -688,7 +691,6 @@ public class SevenSignsFestival {
 
     protected List<Integer> accumulatedBonuses = new ArrayList<>(); // The total bonus available (in Ancient Adena)
 
-    boolean noPartyRegister;
     private Npc dawnChatGuide;
     private Npc duskChatGuide;
 
@@ -845,9 +847,14 @@ public class SevenSignsFestival {
         // Start the Festival Manager for the first time after the server has started
         // at the specified time, then invoke it automatically after every cycle.
         managerInstance = new FestivalManager();
-        setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_MANAGER_START + FESTIVAL_SIGNUP_TIME);
-        managerScheduledTask = ThreadPool.scheduleAtFixedRate(
-                managerInstance, FeatureConfig.ALT_FESTIVAL_MANAGER_START, FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH);
+        setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_MANAGER_START + festivalSignupTime());
+        managerScheduledTask = WorldPartition.loop()
+                .scheduleAtFixedRate(
+                        managerInstance,
+                        FeatureConfig.ALT_FESTIVAL_MANAGER_START,
+                        FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH,
+                        TimeUnit.MILLISECONDS);
+        managerInstance.ticks = managerScheduledTask;
 
         log.info(
                 "The first Festival of Darkness cycle begins in {} minute(s).",
@@ -1468,197 +1475,234 @@ public class SevenSignsFestival {
 
             // Set the next start timers.
             setNextCycleStart();
-            setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - FESTIVAL_SIGNUP_TIME);
+            setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - festivalSignupTime());
         }
 
+        // A tick that comes while a cycle still runs starts the next cycle once it ends, one cycle per tick, as the
+        // executor before the world loop ran a late fixed-rate task.
+        private int lateTicks;
+        private boolean cycleRunning;
+        private long elapsedTime;
+        private ScheduledFuture<?> ticks;
+
         @Override
-        public synchronized void run() {
+        public void run() {
+            if (cycleRunning) {
+                lateTicks++;
+                return;
+            }
+
+            stage(this::startCycle);
+        }
+
+        private void startCycle() {
+            // The manager shouldn't be running if Seal Validation is in effect.
+            if (SevenSigns.getInstance().isSealValidationPeriod()) {
+                return;
+            }
+
+            // If the next period is due to start before the end of this
+            // festival cycle, then don't run it.
+            if (SevenSigns.getInstance().getMilliToPeriodChange() < FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH) {
+                return;
+            } else if (getMinsToNextFestival() == 2) {
+                sendMessageToAll(NpcStringId.THE_MAIN_EVENT_WILL_START_IN_2_MINUTES_PLEASE_REGISTER_NOW);
+            }
+
+            cycleRunning = true;
+
+            // Stand by until the allowed signup period has elapsed.
+            next(this::closeSignup, festivalSignupTime());
+        }
+
+        private void closeSignup() {
+            // Clear past participants, they can no longer register their score if not done so already.
+            dawnPreviousParticipants.clear();
+            duskPreviousParticipants.clear();
+
+            // Get rid of random monsters that avoided deletion after last festival
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.unspawnMobs();
+            }
+
+            awaitParticipants();
+        }
+
+        // Start only if participants signed up
+        private void awaitParticipants() {
+            if (duskFestivalParticipants.isEmpty() && dawnFestivalParticipants.isEmpty()) {
+                setNextCycleStart();
+                setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - festivalSignupTime());
+                next(this::retrySignup, FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - festivalSignupTime());
+                return;
+            }
+
+            initiate();
+        }
+
+        private void retrySignup() {
             try {
-                // The manager shouldn't be running if Seal Validation is in effect.
-                if (SevenSigns.getInstance().isSealValidationPeriod()) {
-                    return;
-                }
-
-                // If the next period is due to start before the end of this
-                // festival cycle, then don't run it.
-                if (SevenSigns.getInstance().getMilliToPeriodChange() < FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH) {
-                    return;
-                } else if (getMinsToNextFestival() == 2) {
-                    sendMessageToAll(NpcStringId.THE_MAIN_EVENT_WILL_START_IN_2_MINUTES_PLEASE_REGISTER_NOW);
-                }
-
-                // Stand by until the allowed signup period has elapsed.
-                try {
-                    wait(FESTIVAL_SIGNUP_TIME);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                // Clear past participants, they can no longer register their score if not done so already.
-                dawnPreviousParticipants.clear();
-                duskPreviousParticipants.clear();
-
-                // Get rid of random monsters that avoided deletion after last festival
                 for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.unspawnMobs();
-                }
-
-                // Start only if participants signed up
-                noPartyRegister = true;
-
-                while (noPartyRegister) {
-                    if ((duskFestivalParticipants.isEmpty() && dawnFestivalParticipants.isEmpty())) {
-                        try {
-                            setNextCycleStart();
-                            setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - FESTIVAL_SIGNUP_TIME);
-                            wait(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH - FESTIVAL_SIGNUP_TIME);
-                            for (DarknessFestival festivalInst : festivalInstances.values()) {
-                                if (!festivalInst.npcInsts.isEmpty()) {
-                                    festivalInst.unspawnMobs();
-                                }
-                            }
-                        } catch (Exception e) {
-                            // Ignore.
-                        }
-                    } else {
-                        noPartyRegister = false;
+                    if (!festivalInst.npcInsts.isEmpty()) {
+                        festivalInst.unspawnMobs();
                     }
                 }
-
-                /* INITIATION */
-                // Set the festival timer to 0, as it is just beginning.
-                long elapsedTime = 0;
-
-                // Create the instances for the festivals in both Oracles,
-                // but only if they have participants signed up for them.
-                for (int i = 0; i < FESTIVAL_COUNT; i++) {
-                    if (duskFestivalParticipants.get(i) != null) {
-                        festivalInstances.put(10 + i, new DarknessFestival(SevenSigns.CABAL_DUSK, i));
-                    }
-
-                    if (dawnFestivalParticipants.get(i) != null) {
-                        festivalInstances.put(20 + i, new DarknessFestival(SevenSigns.CABAL_DAWN, i));
-                    }
-                }
-
-                // Prevent future signups while festival is in progress.
-                festivalInitialized = true;
-                setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH);
-                sendMessageToAll(NpcStringId.THE_MAIN_EVENT_IS_NOW_STARTING);
-
-                // Stand by for a short length of time before starting the festival.
-                try {
-                    wait(FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                elapsedTime = FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN;
-
-                // Participants can now opt to increase the challenge, if desired.
-                festivalInProgress = true;
-
-                /* PROPOGATION */
-                // Sequentially set all festivals to begin, spawn the Festival Witch and notify participants.
-                for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.festivalStart();
-                    festivalInst.sendMessageToParticipants(NpcStringId.THE_MAIN_EVENT_IS_NOW_STARTING);
-                }
-
-                // After a short time period, move all idle spawns to the center of the arena.
-                try {
-                    wait(FeatureConfig.ALT_FESTIVAL_FIRST_SWARM - FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                elapsedTime += FeatureConfig.ALT_FESTIVAL_FIRST_SWARM - FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN;
-                for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.moveMonstersToCenter();
-                }
-
-                // Stand by until the time comes for the second spawn.
-                try {
-                    wait(FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN - FeatureConfig.ALT_FESTIVAL_FIRST_SWARM);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                // Spawn an extra set of monsters (archers) on the free platforms with
-                // a faster respawn when killed.
-                for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.spawnFestivalMonsters(FESTIVAL_DEFAULT_RESPAWN / 2, 2);
-
-                    final long end =
-                            (FeatureConfig.ALT_FESTIVAL_LENGTH - FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN) / 60000;
-                    if (end == 2) {
-                        festivalInst.sendMessageToParticipants(
-                                NpcStringId.THE_FESTIVAL_OF_DARKNESS_WILL_END_IN_TWO_MINUTES);
-                    } else {
-                        festivalInst.sendMessageToParticipants(
-                                "The Festival of Darkness will end in " + end + " minute(s).");
-                    }
-                }
-
-                elapsedTime += FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN - FeatureConfig.ALT_FESTIVAL_FIRST_SWARM;
-
-                // After another short time period, again move all idle spawns to the center of the arena.
-                try {
-                    wait(FeatureConfig.ALT_FESTIVAL_SECOND_SWARM - FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.moveMonstersToCenter();
-                }
-
-                elapsedTime += FeatureConfig.ALT_FESTIVAL_SECOND_SWARM - FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN;
-
-                // Stand by until the time comes for the chests to be spawned.
-                try {
-                    wait(FeatureConfig.ALT_FESTIVAL_CHEST_SPAWN - FeatureConfig.ALT_FESTIVAL_SECOND_SWARM);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                // Spawn the festival chests, which enable the team to gain greater rewards
-                // for each chest they kill.
-                for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.spawnFestivalMonsters(FESTIVAL_DEFAULT_RESPAWN, 3);
-                    festivalInst.sendMessageToParticipants(
-                            "The chests have spawned! Be quick, the festival will end soon."); // FIXME What is the
-                    // correct npcString?
-                }
-
-                elapsedTime += FeatureConfig.ALT_FESTIVAL_CHEST_SPAWN - FeatureConfig.ALT_FESTIVAL_SECOND_SWARM;
-
-                // Stand by and wait until it's time to end the festival.
-                try {
-                    wait(FeatureConfig.ALT_FESTIVAL_LENGTH - elapsedTime);
-                } catch (Exception e) {
-                    // Ignore.
-                }
-
-                // Participants can no longer opt to increase the challenge, as the festival will soon close.
-                festivalInProgress = false;
-
-                /* TERMINATION */
-                // Sequentially begin the ending sequence for all running festivals.
-                for (DarknessFestival festivalInst : festivalInstances.values()) {
-                    festivalInst.festivalEnd();
-                }
-
-                // Clear the participants list for the next round of signups.
-                dawnFestivalParticipants.clear();
-                duskFestivalParticipants.clear();
-
-                // Allow signups for the next festival cycle.
-                festivalInitialized = false;
-                sendMessageToAll(NpcStringId.THAT_WILL_DO_I_LL_MOVE_YOU_TO_THE_OUTSIDE_SOON);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
+                // A failed cleanup never ended the wait for participants.
                 log.warn(e.getMessage());
             }
+
+            awaitParticipants();
+        }
+
+        private void initiate() {
+            /* INITIATION */
+            // Set the festival timer to 0, as it is just beginning.
+            elapsedTime = 0;
+
+            // Create the instances for the festivals in both Oracles,
+            // but only if they have participants signed up for them.
+            for (int i = 0; i < FESTIVAL_COUNT; i++) {
+                if (duskFestivalParticipants.get(i) != null) {
+                    festivalInstances.put(10 + i, new DarknessFestival(SevenSigns.CABAL_DUSK, i));
+                }
+
+                if (dawnFestivalParticipants.get(i) != null) {
+                    festivalInstances.put(20 + i, new DarknessFestival(SevenSigns.CABAL_DAWN, i));
+                }
+            }
+
+            // Prevent future signups while festival is in progress.
+            festivalInitialized = true;
+            setNextFestivalStart(FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH);
+            sendMessageToAll(NpcStringId.THE_MAIN_EVENT_IS_NOW_STARTING);
+
+            // Stand by for a short length of time before starting the festival.
+            next(this::firstSpawn, FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN);
+        }
+
+        private void firstSpawn() {
+            elapsedTime = FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN;
+
+            // Participants can now opt to increase the challenge, if desired.
+            festivalInProgress = true;
+
+            /* PROPOGATION */
+            // Sequentially set all festivals to begin, spawn the Festival Witch and notify participants.
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.festivalStart();
+                festivalInst.sendMessageToParticipants(NpcStringId.THE_MAIN_EVENT_IS_NOW_STARTING);
+            }
+
+            // After a short time period, move all idle spawns to the center of the arena.
+            next(this::firstSwarm, FeatureConfig.ALT_FESTIVAL_FIRST_SWARM - FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN);
+        }
+
+        private void firstSwarm() {
+            elapsedTime += FeatureConfig.ALT_FESTIVAL_FIRST_SWARM - FeatureConfig.ALT_FESTIVAL_FIRST_SPAWN;
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.moveMonstersToCenter();
+            }
+
+            // Stand by until the time comes for the second spawn.
+            next(this::secondSpawn, FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN - FeatureConfig.ALT_FESTIVAL_FIRST_SWARM);
+        }
+
+        private void secondSpawn() {
+            // Spawn an extra set of monsters (archers) on the free platforms with
+            // a faster respawn when killed.
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.spawnFestivalMonsters(FESTIVAL_DEFAULT_RESPAWN / 2, 2);
+
+                final long end = (FeatureConfig.ALT_FESTIVAL_LENGTH - FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN) / 60000;
+                if (end == 2) {
+                    festivalInst.sendMessageToParticipants(
+                            NpcStringId.THE_FESTIVAL_OF_DARKNESS_WILL_END_IN_TWO_MINUTES);
+                } else {
+                    festivalInst.sendMessageToParticipants(
+                            "The Festival of Darkness will end in " + end + " minute(s).");
+                }
+            }
+
+            elapsedTime += FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN - FeatureConfig.ALT_FESTIVAL_FIRST_SWARM;
+
+            // After another short time period, again move all idle spawns to the center of the arena.
+            next(this::secondSwarm, FeatureConfig.ALT_FESTIVAL_SECOND_SWARM - FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN);
+        }
+
+        private void secondSwarm() {
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.moveMonstersToCenter();
+            }
+
+            elapsedTime += FeatureConfig.ALT_FESTIVAL_SECOND_SWARM - FeatureConfig.ALT_FESTIVAL_SECOND_SPAWN;
+
+            // Stand by until the time comes for the chests to be spawned.
+            next(this::chestSpawn, FeatureConfig.ALT_FESTIVAL_CHEST_SPAWN - FeatureConfig.ALT_FESTIVAL_SECOND_SWARM);
+        }
+
+        private void chestSpawn() {
+            // Spawn the festival chests, which enable the team to gain greater rewards
+            // for each chest they kill.
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.spawnFestivalMonsters(FESTIVAL_DEFAULT_RESPAWN, 3);
+                festivalInst.sendMessageToParticipants(
+                        "The chests have spawned! Be quick, the festival will end soon."); // FIXME What is the
+                // correct npcString?
+            }
+
+            elapsedTime += FeatureConfig.ALT_FESTIVAL_CHEST_SPAWN - FeatureConfig.ALT_FESTIVAL_SECOND_SWARM;
+
+            // Stand by and wait until it's time to end the festival.
+            next(this::end, FeatureConfig.ALT_FESTIVAL_LENGTH - elapsedTime);
+        }
+
+        private void end() {
+            // Participants can no longer opt to increase the challenge, as the festival will soon close.
+            festivalInProgress = false;
+
+            /* TERMINATION */
+            // Sequentially begin the ending sequence for all running festivals.
+            for (DarknessFestival festivalInst : festivalInstances.values()) {
+                festivalInst.festivalEnd();
+            }
+
+            // Clear the participants list for the next round of signups.
+            dawnFestivalParticipants.clear();
+            duskFestivalParticipants.clear();
+
+            // Allow signups for the next festival cycle.
+            festivalInitialized = false;
+            sendMessageToAll(NpcStringId.THAT_WILL_DO_I_LL_MOVE_YOU_TO_THE_OUTSIDE_SOON);
+            endCycle();
+        }
+
+        private void next(Runnable stage, long delayMillis) {
+            WorldPartition.loop().schedule(() -> stage(stage), delayMillis, TimeUnit.MILLISECONDS);
+        }
+
+        private void stage(Runnable stage) {
+            try {
+                stage.run();
+            } catch (Exception e) {
+                log.warn(e.getMessage());
+                endCycle();
+            }
+        }
+
+        private void endCycle() {
+            cycleRunning = false;
+            if (lateTicks == 0) {
+                return;
+            }
+
+            if ((ticks != null) && ticks.isCancelled()) {
+                lateTicks = 0;
+                return;
+            }
+
+            lateTicks--;
+            stage(this::startCycle);
         }
 
         /**

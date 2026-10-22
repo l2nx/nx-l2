@@ -395,8 +395,8 @@ app.l2nx.highfive.entity.zone.type.WaterZone references app.l2nx.highfive.networ
 app.l2nx.highfive.handler.AdminCommandHandler references app.l2nx.highfive.network.protocol.p267.serverpackets.ConfirmDlg
 app.l2nx.highfive.handler.AdminCommandHandler references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.login.LoginService references app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail
-app.l2nx.highfive.login.command.AuthenticationResultHandler references app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo
 app.l2nx.highfive.login.command.KickAccountHandler references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
+app.l2nx.highfive.login.command.ListCharactersHandler references app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo
 app.l2nx.highfive.managers.AirShipManager references app.l2nx.highfive.network.protocol.p267.serverpackets.ExAirShipTeleportList
 app.l2nx.highfive.managers.BoatManager references app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket
 app.l2nx.highfive.managers.CHSiegeManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage

@@ -120,11 +120,12 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SkillCoolTime;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.UserInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -636,88 +637,95 @@ public class EnterWorld extends ClientPacket {
 
         // Delayed HWID checks.
         if (ServerConfig.HARDWARE_INFO_ENABLED) {
-            ThreadPool.schedule(
-                    () -> {
-                        // Generate trace string.
-                        final StringBuilder sb = new StringBuilder();
-                        for (int[] i : tracert) {
-                            for (int j : i) {
-                                sb.append(j);
-                                sb.append('.');
-                            }
-                        }
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                // Generate trace string.
+                                final StringBuilder sb = new StringBuilder();
+                                for (int[] i : tracert) {
+                                    for (int j : i) {
+                                        sb.append(j);
+                                        sb.append('.');
+                                    }
+                                }
 
-                        final String trace = sb.toString();
+                                final String trace = sb.toString();
 
-                        // Whether a hardware info packet was received during this session, before any fallback.
-                        final ClientHardwareInfoHolder freshHwInfo = client.getHardwareInfo();
+                                // Whether a hardware info packet was received during this session, before any fallback.
+                                final ClientHardwareInfoHolder freshHwInfo = client.getHardwareInfo();
 
-                        // Get hardware info from client.
-                        ClientHardwareInfoHolder hwInfo = freshHwInfo;
-                        if (hwInfo != null) {
-                            hwInfo.store(player);
-                            TRACE_HWINFO.put(trace, hwInfo);
-                        } else {
-                            // Get hardware info from stored tracert map.
-                            hwInfo = TRACE_HWINFO.get(trace);
-                            if (hwInfo != null) {
-                                hwInfo.store(player);
-                                client.setHardwareInfo(hwInfo);
-                            }
-                            // Get hardware info from account variables.
-                            else {
-                                final String storedInfo =
-                                        player.getAccountVariables().getString(AccountVariables.HWID, "");
-                                if (!storedInfo.isEmpty()) {
-                                    try {
-                                        hwInfo = new ClientHardwareInfoHolder(storedInfo);
-                                        TRACE_HWINFO.put(trace, hwInfo);
+                                // Get hardware info from client.
+                                ClientHardwareInfoHolder hwInfo = freshHwInfo;
+                                if (hwInfo != null) {
+                                    hwInfo.store(player);
+                                    TRACE_HWINFO.put(trace, hwInfo);
+                                } else {
+                                    // Get hardware info from stored tracert map.
+                                    hwInfo = TRACE_HWINFO.get(trace);
+                                    if (hwInfo != null) {
+                                        hwInfo.store(player);
                                         client.setHardwareInfo(hwInfo);
-                                    } catch (Exception e) {
-                                        // Malformed or legacy stored hardware info; treat as missing.
-                                        log.warn(
-                                                "Could not parse stored hardware info for account {}: {}",
-                                                player.getAccountName(),
-                                                e.getMessage());
+                                    }
+                                    // Get hardware info from account variables.
+                                    else {
+                                        final String storedInfo =
+                                                player.getAccountVariables().getString(AccountVariables.HWID, "");
+                                        if (!storedInfo.isEmpty()) {
+                                            try {
+                                                hwInfo = new ClientHardwareInfoHolder(storedInfo);
+                                                TRACE_HWINFO.put(trace, hwInfo);
+                                                client.setHardwareInfo(hwInfo);
+                                            } catch (Exception e) {
+                                                // Malformed or legacy stored hardware info; treat as missing.
+                                                log.warn(
+                                                        "Could not parse stored hardware info for account {}: {}",
+                                                        player.getAccountName(),
+                                                        e.getMessage());
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                        }
 
-                        // Banned?
-                        if ((hwInfo != null)
-                                && PunishmentManager.getInstance()
-                                        .hasPunishment(
-                                                hwInfo.getMacAddress(), PunishmentAffect.HWID, PunishmentType.BAN)) {
-                            Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-                            return;
-                        }
+                                // Banned?
+                                if ((hwInfo != null)
+                                        && PunishmentManager.getInstance()
+                                                .hasPunishment(
+                                                        hwInfo.getMacAddress(),
+                                                        PunishmentAffect.HWID,
+                                                        PunishmentType.BAN)) {
+                                    Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
+                                    return;
+                                }
 
-                        // Kick if HWID is missing. When RequireFreshHWID is enabled a packet must be received during
-                        // this session; otherwise a previously stored value is accepted.
-                        if (ServerConfig.KICK_MISSING_HWID
-                                && (ServerConfig.REQUIRE_FRESH_HWID ? (freshHwInfo == null) : (hwInfo == null))) {
-                            Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-                        }
-                        // Check max players per HWID.
-                        else if (ServerConfig.MAX_PLAYERS_PER_HWID > 0) {
-                            int count = 0;
-                            for (Player plr : World.getPlayers()) {
-                                if (plr.isOnlineInt() == 1) {
-                                    final ClientHardwareInfoHolder hwi =
-                                            plr.getClient().getHardwareInfo();
-                                    if ((hwi != null) && hwi.equals(hwInfo)) {
-                                        count++;
+                                // Kick if HWID is missing. When RequireFreshHWID is enabled a packet must be received
+                                // during
+                                // this session; otherwise a previously stored value is accepted.
+                                if (ServerConfig.KICK_MISSING_HWID
+                                        && (ServerConfig.REQUIRE_FRESH_HWID
+                                                ? (freshHwInfo == null)
+                                                : (hwInfo == null))) {
+                                    Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
+                                }
+                                // Check max players per HWID.
+                                else if (ServerConfig.MAX_PLAYERS_PER_HWID > 0) {
+                                    int count = 0;
+                                    for (Player plr : World.getPlayers()) {
+                                        if (plr.isOnlineInt() == 1) {
+                                            final ClientHardwareInfoHolder hwi =
+                                                    plr.getClient().getHardwareInfo();
+                                            if ((hwi != null) && hwi.equals(hwInfo)) {
+                                                count++;
+                                            }
+                                        }
+                                    }
+
+                                    if (count > ServerConfig.MAX_PLAYERS_PER_HWID) {
+                                        Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
                                     }
                                 }
-                            }
-
-                            if (count > ServerConfig.MAX_PLAYERS_PER_HWID) {
-                                Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-                            }
-                        }
-                    },
-                    ServerConfig.HWID_CHECK_DELAY);
+                            },
+                            ServerConfig.HWID_CHECK_DELAY,
+                            TimeUnit.MILLISECONDS);
         }
 
         // Check if the player is a Dark Elf and has the Shadow Sense skill.

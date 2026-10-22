@@ -33,12 +33,13 @@ import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -171,10 +172,12 @@ public class BuffInfo {
                         effect,
                         new EffectTaskInfo(
                                 effectTask,
-                                ThreadPool.scheduleAtFixedRate(
-                                        effectTask,
-                                        timing.firstTickDelay(ClockBridge.gameMillis(), tickPeriod),
-                                        tickPeriod)));
+                                WorldPartition.loop()
+                                        .scheduleAtFixedRate(
+                                                effectTask,
+                                                timing.firstTickDelay(ClockBridge.gameMillis(), tickPeriod),
+                                                tickPeriod,
+                                                TimeUnit.MILLISECONDS)));
             }
 
             effected.addStatFuncs(effect.getStatFuncs(effector, effected, skill));

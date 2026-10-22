@@ -41,7 +41,7 @@ import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.handler.IParseBoardHandler;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.RadarControl;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShowMiniMap;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author yksdtc
@@ -304,12 +305,15 @@ public class DropSearchBoard implements IParseBoardHandler {
                     player.sendMessage("Cannot find any spawn. Maybe dropped by a boss or instance monster.");
                 } else {
                     player.sendPacket(new ShowMiniMap(-1));
-                    ThreadPool.schedule(
-                            () -> {
-                                player.getRadar().addMarker(spawn.getX(), spawn.getY(), spawn.getZ());
-                                player.sendPacket(new RadarControl(0, 2, spawn.getX(), spawn.getY(), spawn.getZ()));
-                            },
-                            500);
+                    WorldPartition.loop()
+                            .schedule(
+                                    () -> {
+                                        player.getRadar().addMarker(spawn.getX(), spawn.getY(), spawn.getZ());
+                                        player.sendPacket(
+                                                new RadarControl(0, 2, spawn.getX(), spawn.getY(), spawn.getZ()));
+                                    },
+                                    500,
+                                    TimeUnit.MILLISECONDS);
                 }
                 break;
             }

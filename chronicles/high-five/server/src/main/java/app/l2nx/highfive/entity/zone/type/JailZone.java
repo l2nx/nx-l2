@@ -27,7 +27,8 @@ import app.l2nx.highfive.entity.actor.tasks.player.TeleportTask;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A jail zone
@@ -71,7 +72,7 @@ public class JailZone extends ZoneType {
 
             if (player.isJailed()) {
                 // When a player wants to exit jail even if he is still jailed, teleport him back to jail.
-                ThreadPool.schedule(new TeleportTask(player, JAIL_IN_LOC), 2000);
+                WorldPartition.loop().schedule(new TeleportTask(player, JAIL_IN_LOC), 2000, TimeUnit.MILLISECONDS);
                 creature.sendMessage(
                         "You cannot cheat your way out of here. You must wait until your jail time is over.");
             }

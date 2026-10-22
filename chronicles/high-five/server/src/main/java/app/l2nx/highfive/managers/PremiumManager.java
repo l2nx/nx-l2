@@ -36,10 +36,10 @@ import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogout;
 import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.account.AccountPremiumRepository;
 import app.l2nx.highfive.repository.character.CharacterPremiumRepository;
 import app.l2nx.highfive.repository.character.CharacterRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +109,9 @@ public class PremiumManager {
     }
 
     private void startExpireTask(Player player, long delay) {
-        expireTasks.put(player.getObjectId(), ThreadPool.schedule(() -> player.setPremiumStatus(false), delay));
+        expireTasks.put(
+                player.getObjectId(),
+                WorldPartition.loop().schedule(() -> player.setPremiumStatus(false), delay, TimeUnit.MILLISECONDS));
     }
 
     private void stopExpireTask(Player player) {

@@ -46,8 +46,9 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.Earthquake;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExRedSky;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -305,7 +306,11 @@ public class CursedWeapon {
         if (player.isTransformed() || player.isInStance()) {
             player.stopTransformation(true);
 
-            ThreadPool.schedule(() -> TransformData.getInstance().transformPlayer(transformationId, player), 500);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> TransformData.getInstance().transformPlayer(transformationId, player),
+                            500,
+                            TimeUnit.MILLISECONDS);
         } else {
             TransformData.getInstance().transformPlayer(transformationId, player);
         }
@@ -324,7 +329,9 @@ public class CursedWeapon {
         if ((endTime - ClockBridge.wallMillis()) <= 0) {
             endOfLife();
         } else {
-            removeTask = ThreadPool.scheduleAtFixedRate(new RemoveTask(), durationLost * 12000, durationLost * 12000);
+            removeTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new RemoveTask(), durationLost * 12000, durationLost * 12000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -335,7 +342,9 @@ public class CursedWeapon {
 
             // Start the Life Task.
             endTime = ClockBridge.wallMillis() + (duration * 60000);
-            removeTask = ThreadPool.scheduleAtFixedRate(new RemoveTask(), durationLost * 12000, durationLost * 12000);
+            removeTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new RemoveTask(), durationLost * 12000, durationLost * 12000, TimeUnit.MILLISECONDS);
             return true;
         }
 
@@ -393,7 +402,11 @@ public class CursedWeapon {
         // Refresh player stats
         this.player.broadcastUserInfo();
 
-        ThreadPool.schedule(() -> this.player.broadcastPacket(new SocialAction(this.player.getObjectId(), 17)), 300);
+        WorldPartition.loop()
+                .schedule(
+                        () -> this.player.broadcastPacket(new SocialAction(this.player.getObjectId(), 17)),
+                        300,
+                        TimeUnit.MILLISECONDS);
 
         sm = new SystemMessage(SystemMessageId.THE_OWNER_OF_S2_HAS_APPEARED_IN_THE_S1_REGION);
         sm.addZoneName(this.player.getX(), this.player.getY(), this.player.getZ()); // Region Name

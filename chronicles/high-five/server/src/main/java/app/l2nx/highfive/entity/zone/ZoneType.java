@@ -177,6 +177,20 @@ public abstract class ZoneType extends ListenersContainer {
     }
 
     /**
+     * Parses a parameter the world loop requires positive, such as a recurring task period.
+     * @return the parsed value, or {@code current} when it is zero or negative
+     */
+    protected int parsePositiveParameter(String name, String value, int current) {
+        final int parsed = Integer.parseInt(value);
+        if (parsed <= 0) {
+            log.warn("Zone {}: parameter {} must be positive, was {}; keeping {}.", id, name, parsed, current);
+            return current;
+        }
+
+        return parsed;
+    }
+
+    /**
      * @param creature the player to verify.
      * @return {@code true} if the given character is affected by this zone, {@code false} otherwise.
      */

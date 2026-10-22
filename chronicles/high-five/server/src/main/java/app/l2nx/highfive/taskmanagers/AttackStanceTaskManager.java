@@ -24,11 +24,12 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AutoAttackStop;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,7 +45,7 @@ public class AttackStanceTaskManager implements Runnable {
     private static boolean working = false;
 
     protected AttackStanceTaskManager() {
-        ThreadPool.schedulePriorityTaskAtFixedRate(this, 0, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

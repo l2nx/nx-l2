@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.taskmanagers.BuyListTaskManager;
 import java.lang.reflect.Field;
 import java.time.Duration;
@@ -20,9 +21,10 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-@ExtendWith(ClockBridgeExtension.class)
+@ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock(WorldLoopExtension.LOCK)
 class ProductTest {
 
     /** The singleton manager keeps scheduled restocks in static state; clear them so no test sees another's. */

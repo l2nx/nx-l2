@@ -30,8 +30,9 @@ import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.geoengine.pathfinding.PathFinding;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class SummonAI extends PlayableAI implements Runnable {
     private static final int AVOID_RADIUS = 70;
@@ -324,7 +325,7 @@ public class SummonAI extends PlayableAI implements Runnable {
 
     private void startAvoidTask() {
         if (avoidTask == null) {
-            avoidTask = ThreadPool.scheduleAtFixedRate(this, 100, 100);
+            avoidTask = WorldPartition.loop().scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
         }
     }
 

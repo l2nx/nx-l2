@@ -5,8 +5,10 @@
 package app.l2nx.highfive.managers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
@@ -18,6 +20,7 @@ import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.clan.ClanNoticeRepository;
 import app.l2nx.highfive.repository.clan.ClanRankPrivilegeRepository;
@@ -40,11 +43,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock(WorldLoopExtension.LOCK)
 class ItemManagerTest {
     private static final int EVENT_ITEM = 20_000_001;
 
@@ -82,7 +89,7 @@ class ItemManagerTest {
             final Item token = item();
             warehouse.addItem(ItemProcessType.NONE, token, null, null);
 
-            manager.destroyItemsOfTemplate(EVENT_ITEM);
+            WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
             assertThat(warehouse.getItems()).doesNotContain(token);
             assertThat(token.getCount()).isZero();
@@ -95,7 +102,7 @@ class ItemManagerTest {
         void destroyItemsOfTemplate_shouldKeepRowOfLoadedItem_whenNoContainerHoldsIt() {
             final Item inTransit = item();
 
-            manager.destroyItemsOfTemplate(EVENT_ITEM);
+            WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
             assertThat(World.findObject(inTransit.getObjectId())).isSameAs(inTransit);
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(inTransit.getObjectId()));
@@ -106,11 +113,22 @@ class ItemManagerTest {
             final Item dropped = item();
             dropped.setSpawned(true);
 
-            manager.destroyItemsOfTemplate(EVENT_ITEM);
+            WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
             assertThat(dropped.isSpawned()).isFalse();
             assertThat(World.findObject(dropped.getObjectId())).isNull();
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
+        }
+
+        @Test
+        void destroyItemsOfTemplate_shouldThrowAndKeepRows_whenCalledOffTheWorldLoop() {
+            final Item token = item();
+
+            assertThatThrownBy(() -> manager.destroyItemsOfTemplate(EVENT_ITEM))
+                    .isInstanceOf(IllegalStateException.class);
+
+            assertThat(World.findObject(token.getObjectId())).isSameAs(token);
+            verifyNoInteractions(items);
         }
     }
 

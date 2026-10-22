@@ -20,7 +20,8 @@
 package app.l2nx.highfive.entity.actor.tasks.npc.trap;
 
 import app.l2nx.highfive.entity.actor.instance.Trap;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Trap trigger task.
@@ -37,7 +38,8 @@ public class TrapTriggerTask implements Runnable {
     public void run() {
         try {
             trap.doCast(trap.getSkill());
-            ThreadPool.schedule(new TrapUnsummonTask(trap), trap.getSkill().getHitTime() + 300);
+            WorldPartition.loop()
+                    .schedule(new TrapUnsummonTask(trap), trap.getSkill().getHitTime() + 300, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             trap.unSummon();
         }

@@ -72,8 +72,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -82,6 +82,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.Setter;
@@ -266,7 +267,9 @@ public class Attackable extends Npc {
                         if (firstCommandChannelAttacked != null) {
                             commandChannelTimer = new CommandChannelTimer(this);
                             commandChannelLastAttack = ClockBridge.gameMillis();
-                            ThreadPool.schedule(commandChannelTimer, 10000); // check for last attack
+                            WorldPartition.loop()
+                                    .schedule(
+                                            commandChannelTimer, 10000, TimeUnit.MILLISECONDS); // check for last attack
                             firstCommandChannelAttacked.broadcastPacket(new CreatureSay(
                                     null, ChatType.PARTYROOM_ALL, "", "You have looting rights!")); // TODO: retail msg
                         }

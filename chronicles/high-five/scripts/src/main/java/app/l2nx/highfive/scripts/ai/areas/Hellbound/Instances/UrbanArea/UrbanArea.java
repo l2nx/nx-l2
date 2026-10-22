@@ -37,10 +37,11 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Urban Area instance zone.
@@ -137,7 +138,7 @@ public class UrbanArea extends InstanceScript {
                         final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                         inst.setDuration(5 * 60000);
                         inst.setEmptyDestroyTime(0);
-                        ThreadPool.schedule(new ExitInstance(party, world), 285000);
+                        WorldPartition.loop().schedule(new ExitInstance(party, world), 285000, TimeUnit.MILLISECONDS);
                         htmltext = "32343-02d.htm";
                     }
                 } else {
@@ -183,7 +184,9 @@ public class UrbanArea extends InstanceScript {
                             activeAmaskariCall.cancel(true);
                         }
 
-                        world.setParameter("activeAmaskariCall", ThreadPool.schedule(new CallAmaskari(npc), 25000));
+                        world.setParameter(
+                                "activeAmaskariCall",
+                                WorldPartition.loop().schedule(new CallAmaskari(npc), 25000, TimeUnit.MILLISECONDS));
                     }
                 }
             }
@@ -223,7 +226,9 @@ public class UrbanArea extends InstanceScript {
                     activeAmaskariCall.cancel(true);
                 }
 
-                world.setParameter("activeAmaskariCall", ThreadPool.schedule(new CallAmaskari(npc), 25000));
+                world.setParameter(
+                        "activeAmaskariCall",
+                        WorldPartition.loop().schedule(new CallAmaskari(npc), 25000, TimeUnit.MILLISECONDS));
             }
         }
     }
@@ -271,7 +276,9 @@ public class UrbanArea extends InstanceScript {
                     activeAmaskariCall.cancel(true);
                 }
 
-                world.setParameter("activeAmaskariCall", ThreadPool.schedule(new CallAmaskari(npc), 25000));
+                world.setParameter(
+                        "activeAmaskariCall",
+                        WorldPartition.loop().schedule(new CallAmaskari(npc), 25000, TimeUnit.MILLISECONDS));
             }
         }
     }

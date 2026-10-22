@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,6 +98,22 @@ class SessionAutoConfigurationTest {
                     assertThat(session.offer(session.input(new Ping()))).isTrue();
 
                     assertThat(PINGED.await(5, TimeUnit.SECONDS)).isTrue();
+                });
+    }
+
+    @Test
+    void sessionFactory_shouldDrainAuthedSessionsWithTheNamedScheduler_whenTheContextProvidesIt() {
+        final List<Session> scheduled = new CopyOnWriteArrayList<>();
+        runner.withBean("ping", SessionCommandHandler.class, SessionAutoConfigurationTest::pingHandler)
+                .withBean(SessionAutoConfiguration.AUTHED_DRAIN_SCHEDULER, DrainScheduler.class, () -> scheduled::add)
+                .run(context -> {
+                    final Session session =
+                            context.getBean(SessionFactory.class).create(new FakeTransport());
+                    session.setState(SessionState.AUTHED);
+
+                    session.offer(session.input(new Ping()));
+
+                    assertThat(scheduled).containsExactly(session);
                 });
     }
 

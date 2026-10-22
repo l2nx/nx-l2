@@ -22,9 +22,10 @@ package app.l2nx.highfive.scripts.ai.others;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Manages spawn of NPCs having several random spawn points.
@@ -83,7 +84,7 @@ public class RandomSpawn extends Script {
         final Location loc = getRandomEntry(spawnlist);
         if (!npc.isInsideRadius2D(loc, 200)) {
             npc.getSpawn().setLocation(loc);
-            ThreadPool.schedule(new Teleport(npc, loc), 100);
+            WorldPartition.loop().schedule(new Teleport(npc, loc), 100, TimeUnit.MILLISECONDS);
         }
     }
 

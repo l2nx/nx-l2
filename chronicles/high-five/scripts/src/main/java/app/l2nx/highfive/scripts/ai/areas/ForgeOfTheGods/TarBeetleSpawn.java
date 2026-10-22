@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.geoengine.GeoEngine;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.PolygonTerritory;
 import java.io.File;
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
@@ -57,8 +58,12 @@ public class TarBeetleSpawn implements IXmlReader {
     public void load() {
         parseDatapackFile("data/scripts/ai/areas/ForgeOfTheGods/tar_beetle.xml");
         if (!zones.isEmpty()) {
-            spawnTask = ThreadPool.scheduleAtFixedRate(() -> zones.forEach(SpawnZone::refreshSpawn), 1000, 60000);
-            shotTask = ThreadPool.scheduleAtFixedRate(() -> zones.forEach(SpawnZone::refreshShots), 300000, 300000);
+            spawnTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            () -> zones.forEach(SpawnZone::refreshSpawn), 1000, 60000, TimeUnit.MILLISECONDS);
+            shotTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            () -> zones.forEach(SpawnZone::refreshShots), 300000, 300000, TimeUnit.MILLISECONDS);
         }
     }
 

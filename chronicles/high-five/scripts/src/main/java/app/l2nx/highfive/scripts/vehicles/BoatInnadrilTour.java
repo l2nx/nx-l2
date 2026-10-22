@@ -26,7 +26,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -132,44 +133,44 @@ public class BoatInnadrilTour implements Runnable {
             switch (cycle) {
                 case 0: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, LEAVE_INNADRIL5);
-                    ThreadPool.schedule(this, 240000);
+                    WorldPartition.loop().schedule(this, 240000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 1: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, LEAVE_INNADRIL1);
-                    ThreadPool.schedule(this, 40000);
+                    WorldPartition.loop().schedule(this, 40000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 2: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, LEAVE_INNADRIL0);
-                    ThreadPool.schedule(this, 20000);
+                    WorldPartition.loop().schedule(this, 20000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 3: {
                     BoatManager.getInstance().broadcastPackets(DOCK, DOCK, LEAVING_INNADRIL, INNADRIL_SOUND);
                     boat.payForRide(0, 1, 107092, 219098, -3952);
                     boat.executePath(TOUR);
-                    ThreadPool.schedule(this, 650000);
+                    WorldPartition.loop().schedule(this, 650000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 4: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, ARRIVAL20);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 5: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, ARRIVAL15);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 6: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, ARRIVAL10);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 7: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, ARRIVAL5);
-                    ThreadPool.schedule(this, 240000);
+                    WorldPartition.loop().schedule(this, 240000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 8: {
@@ -178,7 +179,7 @@ public class BoatInnadrilTour implements Runnable {
                 }
                 case 9: {
                     BoatManager.getInstance().broadcastPackets(DOCK, DOCK, ARRIVED_AT_INNADRIL, INNADRIL_SOUND);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
             }

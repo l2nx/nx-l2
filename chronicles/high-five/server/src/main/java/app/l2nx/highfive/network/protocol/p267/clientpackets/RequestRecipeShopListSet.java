@@ -56,7 +56,7 @@ public class RequestRecipeShopListSet extends ClientPacket {
         for (int i = 0; i < count; i++) {
             final int id = readInt();
             final long cost = readLong();
-            if (cost < 0) {
+            if ((cost < 0) || (RecipeData.getInstance().getRecipeList(id) == null)) {
                 items = null;
                 return;
             }

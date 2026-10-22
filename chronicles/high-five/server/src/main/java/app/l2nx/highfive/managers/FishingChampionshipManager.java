@@ -35,12 +35,13 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.world.FishingChampionshipRepository;
 import app.l2nx.highfive.repository.world.model.FishingChampionshipEntry;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -92,7 +93,8 @@ public class FishingChampionshipManager {
             enddate = ClockBridge.wallMillis();
             new finishChamp().run();
         } else {
-            ThreadPool.schedule(new finishChamp(), enddate - ClockBridge.wallMillis());
+            WorldPartition.loop()
+                    .schedule(new finishChamp(), enddate - ClockBridge.wallMillis(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -282,7 +284,7 @@ public class FishingChampionshipManager {
             pl.sendPacket(html);
 
             refreshResult();
-            ThreadPool.schedule(new needRefresh(), 60000);
+            WorldPartition.loop().schedule(new needRefresh(), 60000, TimeUnit.MILLISECONDS);
             return;
         }
 
@@ -425,7 +427,8 @@ public class FishingChampionshipManager {
             shutdown();
 
             log.info("FishingChampionshipManager : new event period start.");
-            ThreadPool.schedule(new finishChamp(), enddate - ClockBridge.wallMillis());
+            WorldPartition.loop()
+                    .schedule(new finishChamp(), enddate - ClockBridge.wallMillis(), TimeUnit.MILLISECONDS);
         }
     }
 

@@ -35,11 +35,12 @@ import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Collection;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class manages AI of Attackable.
@@ -170,7 +171,7 @@ public class FortSiegeGuardAI extends CreatureAI implements Runnable {
 
     private void startAITask() {
         if (aiTask == null) {
-            aiTask = ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
+            aiTask = WorldPartition.loop().scheduleAtFixedRate(this, 1000, 1000, TimeUnit.MILLISECONDS);
         }
     }
 

@@ -46,6 +46,7 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.item.OnItemCreate;
 import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
@@ -54,7 +55,6 @@ import app.l2nx.highfive.repository.item.model.ItemElemental;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.repository.item.model.LotteryTicket;
 import app.l2nx.highfive.repository.item.model.PaperdollItem;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.GMAudit;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -144,14 +145,17 @@ public class ItemManager {
                 final Attackable raid = (Attackable) reference;
                 if ((raid.getFirstCommandChannelAttacked() != null) && !PlayerConfig.AUTO_LOOT_RAIDS) {
                     item.setOwnerId(raid.getFirstCommandChannelAttacked().getLeaderObjectId());
-                    itemLootShedule =
-                            ThreadPool.schedule(new ResetOwner(item), PlayerConfig.LOOT_RAIDS_PRIVILEGE_INTERVAL);
+                    itemLootShedule = WorldPartition.loop()
+                            .schedule(
+                                    new ResetOwner(item),
+                                    PlayerConfig.LOOT_RAIDS_PRIVILEGE_INTERVAL,
+                                    TimeUnit.MILLISECONDS);
                     item.setItemLootShedule(itemLootShedule);
                 }
             } else if (!PlayerConfig.AUTO_LOOT
                     || ((reference instanceof EventMonster) && ((EventMonster) reference).eventDropOnGround())) {
                 item.setOwnerId(actor.getObjectId());
-                itemLootShedule = ThreadPool.schedule(new ResetOwner(item), 15000);
+                itemLootShedule = WorldPartition.loop().schedule(new ResetOwner(item), 15000, TimeUnit.MILLISECONDS);
                 item.setItemLootShedule(itemLootShedule);
             }
         }
@@ -365,7 +369,11 @@ public class ItemManager {
         return itemRepository.deleteByOwner(ownerId, itemId);
     }
 
+    /**
+     * Rows of unloaded items are deleted after the scan; only the single writer stops a container loading them meanwhile.
+     */
     public void destroyItemsOfTemplate(int itemId) {
+        WorldPartition.checkOwner();
         for (Item item : loadedItems(itemId)) {
             if (!destroyQuietly(item)) {
                 log.warn(

@@ -47,12 +47,13 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -401,7 +402,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                         // Destroy instance after 5 minutes
                         inst.setDuration(5 * 60000);
                         inst.setEmptyDestroyTime(0);
-                        ThreadPool.schedule(new completeDungeon(world, player), 1500);
+                        WorldPartition.loop().schedule(new completeDungeon(world, player), 1500, TimeUnit.MILLISECONDS);
                     }
                 }
             }
@@ -535,7 +536,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
         final int instanceId = world.getInstanceId();
         dungeon.setReEnterTime(ClockBridge.wallMillis() + REENTER_INTERVAL);
         InstanceManager.getInstance().addWorld(world);
-        ThreadPool.schedule(new spawnNpcs((CAUWorld) world), INITIAL_SPAWN_DELAY);
+        WorldPartition.loop().schedule(new spawnNpcs((CAUWorld) world), INITIAL_SPAWN_DELAY, TimeUnit.MILLISECONDS);
         if (DEBUG) {
             log.info(
                     "Castle HopeWithinTheDarkness started {} Instance: {} created by player: {}",
@@ -579,17 +580,20 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                     instance.spawnGroup("victims");
                     instance.spawnGroup("bosses_1");
 
-                    ThreadPool.schedule(new spawnNpcs(world), WAVE_SPAWN_DELAY);
-                    ThreadPool.schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY);
+                    WorldPartition.loop().schedule(new spawnNpcs(world), WAVE_SPAWN_DELAY, TimeUnit.MILLISECONDS);
+                    WorldPartition.loop()
+                            .schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY, TimeUnit.MILLISECONDS);
                 } else if (world.getStatus() == 1) {
                     instance.spawnGroup("bosses_2");
 
-                    ThreadPool.schedule(new spawnNpcs(world), WAVE_SPAWN_DELAY);
-                    ThreadPool.schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY);
+                    WorldPartition.loop().schedule(new spawnNpcs(world), WAVE_SPAWN_DELAY, TimeUnit.MILLISECONDS);
+                    WorldPartition.loop()
+                            .schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY, TimeUnit.MILLISECONDS);
                 } else if (world.getStatus() == 2) {
                     instance.spawnGroup("bosses_3");
 
-                    ThreadPool.schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY);
+                    WorldPartition.loop()
+                            .schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 log.warn("Castle HopeWithinTheDarkness NPC Spawn error", e);

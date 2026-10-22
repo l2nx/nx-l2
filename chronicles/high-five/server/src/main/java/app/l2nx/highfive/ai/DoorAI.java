@@ -30,7 +30,7 @@ import app.l2nx.highfive.entity.actor.instance.Defender;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author mkizub, Mobius
@@ -81,11 +81,12 @@ public class DoorAI extends CreatureAI {
             return;
         }
 
-        ThreadPool.execute(() -> World.forEachVisibleObject(actor.asDoor(), Defender.class, guard -> {
-            if (actor.isInsideRadius3D(guard, guard.getTemplate().getClanHelpRange())) {
-                guard.getAI().notifyActionAggression(attackerCreature, 15);
-            }
-        }));
+        WorldPartition.loop()
+                .execute(() -> World.forEachVisibleObject(actor.asDoor(), Defender.class, guard -> {
+                    if (actor.isInsideRadius3D(guard, guard.getTemplate().getClanHelpRange())) {
+                        guard.getAI().notifyActionAggression(attackerCreature, 15);
+                    }
+                }));
     }
 
     @Override

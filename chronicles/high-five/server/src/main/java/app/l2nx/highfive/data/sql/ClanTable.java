@@ -61,6 +61,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdat
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowMemberListAll;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowMemberListUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.clan.ClanNoticeRepository;
@@ -78,13 +79,13 @@ import app.l2nx.highfive.repository.clan.model.RankPrivilege;
 import app.l2nx.highfive.repository.clan.model.SubPledgeRow;
 import app.l2nx.highfive.repository.clan.model.WarOpponent;
 import app.l2nx.highfive.repository.residence.CastleStateRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -149,7 +150,8 @@ public class ClanTable {
         allianceCheck();
         restoreClanWars();
 
-        ThreadPool.scheduleAtFixedRate(this::updateClanRanks, 1000, 1200000); // 20 minutes.
+        WorldPartition.loop()
+                .scheduleAtFixedRate(this::updateClanRanks, 1000, 1200000, TimeUnit.MILLISECONDS); // 20 minutes.
     }
 
     /**
@@ -350,17 +352,19 @@ public class ClanTable {
     }
 
     public void scheduleRemoveClan(int clanId) {
-        ThreadPool.schedule(
-                () -> {
-                    if (getClan(clanId) == null) {
-                        return;
-                    }
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if (getClan(clanId) == null) {
+                                return;
+                            }
 
-                    if (getClan(clanId).getDissolvingExpiryTime() != 0) {
-                        destroyClan(clanId);
-                    }
-                },
-                Math.max(getClan(clanId).getDissolvingExpiryTime() - ClockBridge.wallMillis(), 300000));
+                            if (getClan(clanId).getDissolvingExpiryTime() != 0) {
+                                destroyClan(clanId);
+                            }
+                        },
+                        Math.max(getClan(clanId).getDissolvingExpiryTime() - ClockBridge.wallMillis(), 300000),
+                        TimeUnit.MILLISECONDS);
     }
 
     public boolean isAllyExists(String allyName) {

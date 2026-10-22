@@ -32,8 +32,9 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.AccessLevel;
 import lombok.Setter;
 
@@ -145,7 +146,7 @@ public class FortCommander extends Defender {
 
                         broadcastPacket(ns);
                         setCanTalk(false);
-                        ThreadPool.schedule(new ScheduleTalkTask(), 10000);
+                        WorldPartition.loop().schedule(new ScheduleTalkTask(), 10000, TimeUnit.MILLISECONDS);
                     }
                 }
             }

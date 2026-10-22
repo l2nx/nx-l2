@@ -5,111 +5,152 @@
 package app.l2nx.highfive;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import app.l2nx.boot.ServerExit;
+import app.l2nx.engine.core.partition.PartitionRuntime;
 import app.l2nx.engine.core.session.SessionFactory;
-import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.transport.NetworkEventLoops;
+import app.l2nx.network.transport.TransportResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.time.Duration;
-import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.mockito.InOrder;
-import org.springframework.context.support.GenericApplicationContext;
 
-// The engine keeps static state (config, thread pools, singletons), so nothing here may run concurrently.
-@Execution(ExecutionMode.SAME_THREAD)
-@ExtendWith(ClockBridgeExtension.class)
-@ResourceLock(ClockBridgeExtension.LOCK)
+// The port comes from the static ServerConfig, which a concurrent world load would overwrite.
+@Isolated
 class GameServerTest {
-    private static final long THREAD_EXIT_TIMEOUT_MS = 10_000;
+    private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(3);
+    private static final int CONNECT_TIMEOUT_MS = 2_000;
+
+    private final LoginServerLink link = mock(LoginServerLink.class);
+    private final LoginService loginService = mock(LoginService.class);
+    private final SessionFactory sessionFactory = mock(SessionFactory.class);
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    private final NetworkProperties properties = NetworkProperties.defaults().toBuilder()
+            .shutdownTimeout(SHUTDOWN_TIMEOUT)
+            .build();
+
+    private GameServer server(NetworkEventLoops eventLoops) {
+        return new GameServer(
+                link,
+                loginService,
+                eventLoops,
+                properties,
+                new NetworkMetrics(registry),
+                sessionFactory,
+                mock(GameProtocolRegistry.class));
+    }
 
     @Nested
-    class Start {
+    class Phase {
         @Test
-        void start_shouldStopEngineThreads_whenStartFails() throws Exception {
-            final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-            final GameServer server = new GameServer(
-                    new ServerExit(new GenericApplicationContext()),
-                    registry,
-                    mock(LoginServerLink.class),
-                    mock(LoginService.class),
-                    mock(NetworkEventLoops.class),
-                    NetworkProperties.defaults(),
-                    new NetworkMetrics(registry),
-                    mock(SessionFactory.class),
-                    mock(GameProtocolRegistry.class));
+        void getPhase_shouldStopAfterThePartitionRuntime() {
+            final int actual = server(mock(NetworkEventLoops.class)).getPhase();
 
-            assertThatThrownBy(server::start)
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("before the Spring context created it");
+            assertThat(actual).isLessThan(PartitionRuntime.PHASE);
+        }
+    }
 
-            assertThat(server.isRunning()).isFalse();
-            assertThat(registry.find("l2nx.legacy.task.all").timer())
-                    .as("thread pool started")
-                    .isNotNull();
-            assertThat(registry.find("executor.pool.size")
-                            .tag("name", "l2nx-scheduled")
-                            .gauge())
-                    .as("thread pool meters unbound on abort")
-                    .isNull();
-            assertThat(registry.find("l2nx.legacy.task.lag")
-                            .tag("pool", "l2nx-scheduled")
-                            .timer())
-                    .as("legacy task lag")
-                    .isNotNull();
-            assertThat(registry.find("l2nx.legacy.task")
-                            .tag("code.namespace", "app.l2nx.highfive.threads.ThreadPool")
-                            .timer())
-                    .as("purge task measured")
-                    .isNotNull();
-            final List<Thread> engineThreads = Thread.getAllStackTraces().keySet().stream()
-                    .filter(thread -> thread.getName().startsWith("l2nx ")
-                            || thread.getName().equals("GameTimeTaskManager"))
-                    .toList();
-            for (Thread thread : engineThreads) {
-                thread.join(THREAD_EXIT_TIMEOUT_MS);
+    @Nested
+    class Port {
+        private NetworkEventLoops eventLoops;
+        private int previousPort;
+        private int port;
+
+        @BeforeEach
+        void bindTheLoops() throws IOException {
+            eventLoops = new NetworkEventLoops(properties, TransportResolver.nativeAvailability());
+            previousPort = ServerConfig.PORT_GAME;
+            port = freePort();
+            ServerConfig.PORT_GAME = port;
+        }
+
+        @AfterEach
+        void closeTheLoops() {
+            ServerConfig.PORT_GAME = previousPort;
+            eventLoops.close();
+        }
+
+        @Test
+        void openPort_shouldListenAndStartTheLink() throws IOException {
+            final GameServer server = server(eventLoops);
+
+            server.openPort();
+
+            try (Socket socket = connect(port)) {
+                assertThat(socket.isConnected()).isTrue();
             }
-            assertThat(engineThreads).as("engine threads").noneMatch(Thread::isAlive);
+            verify(link).start();
+            server.stop();
+        }
+
+        @Test
+        void openPort_shouldReleaseThePort_whenTheLinkFailsToStart() throws IOException {
+            doThrow(new IllegalStateException("thrown by the test")).when(link).start();
+            final GameServer server = server(eventLoops);
+
+            assertThatIllegalStateException().isThrownBy(server::openPort).withMessage("thrown by the test");
+
+            try (ServerSocket rebound = new ServerSocket(port)) {
+                assertThat(rebound.isBound()).isTrue();
+            }
+        }
+
+        @Test
+        void stopPort_shouldRefuseNewConnections_whenOpen() {
+            final GameServer server = server(eventLoops);
+            server.openPort();
+
+            server.stopPort();
+
+            assertThat(canConnect(port)).isFalse();
+            server.stop();
+        }
+    }
+
+    @Nested
+    class Stop {
+        private final GameServer server = server(mock(NetworkEventLoops.class));
+
+        @Test
+        void stop_shouldLeaveTheLoginServer_whenThePortNeverOpened() {
+            when(sessionFactory.awaitClosed(SHUTDOWN_TIMEOUT)).thenReturn(true);
+            server.start();
+
+            server.stop();
+
+            final InOrder order = inOrder(sessionFactory, loginService, link);
+            order.verify(sessionFactory).awaitClosed(SHUTDOWN_TIMEOUT);
+            order.verify(loginService).logoutAll();
+            order.verify(link).shutdown();
+            assertThat(server.isRunning()).isFalse();
         }
     }
 
     @Nested
     class LeaveLoginServer {
-        private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(3);
-
-        private final LoginServerLink link = mock(LoginServerLink.class);
-        private final LoginService loginService = mock(LoginService.class);
-        private final SessionFactory sessionFactory = mock(SessionFactory.class);
-        private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        private final GameServer server = new GameServer(
-                new ServerExit(new GenericApplicationContext()),
-                registry,
-                link,
-                loginService,
-                mock(NetworkEventLoops.class),
-                NetworkProperties.defaults().toBuilder()
-                        .shutdownTimeout(SHUTDOWN_TIMEOUT)
-                        .build(),
-                new NetworkMetrics(registry),
-                sessionFactory,
-                mock(GameProtocolRegistry.class));
+        private final GameServer server = server(mock(NetworkEventLoops.class));
 
         @Test
         void leaveLoginServer_shouldLogOutAndShutTheLinkDown_afterEverySessionClosed() {
@@ -145,6 +186,33 @@ class GameServerTest {
             server.leaveLoginServer();
 
             verify(link).shutdown();
+        }
+    }
+
+    private static int freePort() throws IOException {
+        try (ServerSocket probe = new ServerSocket(0)) {
+            return probe.getLocalPort();
+        }
+    }
+
+    private static Socket connect(int port) throws IOException {
+        final Socket socket = new Socket();
+        try {
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), CONNECT_TIMEOUT_MS);
+        } catch (IOException e) {
+            socket.close();
+            throw e;
+        }
+        return socket;
+    }
+
+    private static boolean canConnect(int port) {
+        try (Socket socket = connect(port)) {
+            return socket.isConnected();
+        } catch (ConnectException e) {
+            return false;
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

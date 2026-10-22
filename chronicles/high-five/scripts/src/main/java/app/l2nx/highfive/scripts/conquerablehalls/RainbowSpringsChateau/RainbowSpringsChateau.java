@@ -53,7 +53,7 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.time.Instant;
@@ -63,6 +63,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -699,18 +700,20 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
                 cancelSiegeTask();
                 endSiege();
 
-                ThreadPool.schedule(
-                        () -> {
-                            for (int id : playersOnArena) {
-                                final Player pl = World.getPlayer(id);
-                                if (pl != null) {
-                                    pl.teleToLocation(TeleportWhereType.TOWN);
-                                }
-                            }
+                WorldPartition.loop()
+                        .schedule(
+                                () -> {
+                                    for (int id : playersOnArena) {
+                                        final Player pl = World.getPlayer(id);
+                                        if (pl != null) {
+                                            pl.teleToLocation(TeleportWhereType.TOWN);
+                                        }
+                                    }
 
-                            playersOnArena = new ArrayList<>();
-                        },
-                        120 * 1000);
+                                    playersOnArena = new ArrayList<>();
+                                },
+                                120 * 1000,
+                                TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -756,7 +759,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
         msg.addString(ClanHallTable.getInstance().getClanHallById(hall.getId()).getName());
         World.broadcastToAllOnlinePlayers(msg);
         hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
-        siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
+        siegeTask = WorldPartition.loop().schedule(new SiegeStarts(), 3600000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -808,7 +811,8 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
                     yetis[i] = addSpawn(
                             YETIS[i], YETIS_SPAWN[i][0], YETIS_SPAWN[i][1], YETIS_SPAWN[i][2], 0, false, 0, false);
                     yetis[i].setHeading(1);
-                    task = ThreadPool.scheduleAtFixedRate(new GenerateTask(yetis[i]), 10000, 300000);
+                    task = WorldPartition.loop()
+                            .scheduleAtFixedRate(new GenerateTask(yetis[i]), 10000, 300000, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     log.warn("Problem with spawnYetis: {}", e.getMessage());
                 }
@@ -830,7 +834,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
             }
         }
 
-        chesttask = ThreadPool.scheduleAtFixedRate(new ChestsSpawn(), 5000, 5000);
+        chesttask = WorldPartition.loop().scheduleAtFixedRate(new ChestsSpawn(), 5000, 5000, TimeUnit.MILLISECONDS);
     }
 
     protected void unSpawnYetis() {

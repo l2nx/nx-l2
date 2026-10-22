@@ -42,12 +42,13 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameEnd;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameExtendedChangePoints;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.RelationChanged;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -231,7 +232,7 @@ public class BlockCheckerManager {
                 }
 
                 abnormalEnd = true;
-                ThreadPool.execute(new EndEvent());
+                WorldPartition.loop().execute(new EndEvent());
             }
         } catch (Exception e) {
             log.error("Could not end Block Checker event at {}", arena, e);
@@ -342,7 +343,7 @@ public class BlockCheckerManager {
             started = true;
 
             // Spawn the blocks
-            ThreadPool.execute(new SpawnRound(16, 1));
+            WorldPartition.loop().execute(new SpawnRound(16, 1));
 
             // Start up player parameters.
             setUpPlayers();
@@ -373,17 +374,17 @@ public class BlockCheckerManager {
             switch (round) {
                 case 1: // Schedule second spawn round
                 {
-                    task = ThreadPool.schedule(new SpawnRound(20, 2), 60000);
+                    task = WorldPartition.loop().schedule(new SpawnRound(20, 2), 60000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 2: // Schedule third spawn round
                 {
-                    task = ThreadPool.schedule(new SpawnRound(14, 3), 60000);
+                    task = WorldPartition.loop().schedule(new SpawnRound(14, 3), 60000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 3: // Schedule Event End Count Down
                 {
-                    task = ThreadPool.schedule(new EndEvent(), 180000);
+                    task = WorldPartition.loop().schedule(new EndEvent(), 180000, TimeUnit.MILLISECONDS);
                     break;
                 }
             }
@@ -433,7 +434,7 @@ public class BlockCheckerManager {
                     girlSpawn.init();
 
                     // Schedule his deletion after 9 secs of spawn.
-                    ThreadPool.schedule(new CarryingGirlUnspawn(girlSpawn), 9000);
+                    WorldPartition.loop().schedule(new CarryingGirlUnspawn(girlSpawn), 9000, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     log.warn("Could not Spawn Block Checker NPCs! Wrong instance type at npc table?");
                     log.warn("{}", e.getMessage());

@@ -26,7 +26,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -187,18 +188,18 @@ public class BoatTalkingGludin implements Runnable {
             switch (cycle) {
                 case 0: {
                     BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GLUDIN_DOCK[0], LEAVE_TALKING5);
-                    ThreadPool.schedule(this, 240000);
+                    WorldPartition.loop().schedule(this, 240000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 1: {
                     BoatManager.getInstance()
                             .broadcastPackets(TALKING_DOCK[0], GLUDIN_DOCK[0], LEAVE_TALKING1, LEAVE_TALKING1_2);
-                    ThreadPool.schedule(this, 40000);
+                    WorldPartition.loop().schedule(this, 40000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 2: {
                     BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GLUDIN_DOCK[0], LEAVE_TALKING0);
-                    ThreadPool.schedule(this, 20000);
+                    WorldPartition.loop().schedule(this, 20000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 3: {
@@ -207,17 +208,17 @@ public class BoatTalkingGludin implements Runnable {
                     boat.broadcastPacket(TALKING_SOUND);
                     boat.payForRide(1074, 1, -96777, 258970, -3623);
                     boat.executePath(TALKING_TO_GLUDIN);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 4: {
                     BoatManager.getInstance().broadcastPacket(GLUDIN_DOCK[0], TALKING_DOCK[0], ARRIVAL_GLUDIN10);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 5: {
                     BoatManager.getInstance().broadcastPacket(GLUDIN_DOCK[0], TALKING_DOCK[0], ARRIVAL_GLUDIN5);
-                    ThreadPool.schedule(this, 240000);
+                    WorldPartition.loop().schedule(this, 240000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 6: {
@@ -235,7 +236,7 @@ public class BoatTalkingGludin implements Runnable {
                             shoutCount = 0;
                         }
 
-                        ThreadPool.schedule(this, 5000);
+                        WorldPartition.loop().schedule(this, 5000, TimeUnit.MILLISECONDS);
                         return;
                     }
 
@@ -247,23 +248,23 @@ public class BoatTalkingGludin implements Runnable {
                     BoatManager.getInstance()
                             .broadcastPackets(GLUDIN_DOCK[0], TALKING_DOCK[0], ARRIVED_AT_GLUDIN, ARRIVED_AT_GLUDIN_2);
                     boat.broadcastPacket(GLUDIN_SOUND);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 9: {
                     BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GLUDIN_DOCK[0], LEAVE_GLUDIN5);
-                    ThreadPool.schedule(this, 240000);
+                    WorldPartition.loop().schedule(this, 240000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 10: {
                     BoatManager.getInstance()
                             .broadcastPackets(TALKING_DOCK[0], GLUDIN_DOCK[0], LEAVE_GLUDIN1, LEAVE_TALKING1_2);
-                    ThreadPool.schedule(this, 40000);
+                    WorldPartition.loop().schedule(this, 40000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 11: {
                     BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GLUDIN_DOCK[0], LEAVE_GLUDIN0);
-                    ThreadPool.schedule(this, 20000);
+                    WorldPartition.loop().schedule(this, 20000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 12: {
@@ -272,17 +273,17 @@ public class BoatTalkingGludin implements Runnable {
                     boat.broadcastPacket(GLUDIN_SOUND);
                     boat.payForRide(1075, 1, -90015, 150422, -3610);
                     boat.executePath(GLUDIN_TO_TALKING);
-                    ThreadPool.schedule(this, 150000);
+                    WorldPartition.loop().schedule(this, 150000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 13: {
                     BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GLUDIN_DOCK[0], ARRIVAL_TALKING10);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 14: {
                     BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GLUDIN_DOCK[0], ARRIVAL_TALKING5);
-                    ThreadPool.schedule(this, 240000);
+                    WorldPartition.loop().schedule(this, 240000, TimeUnit.MILLISECONDS);
                     break;
                 }
                 case 15: {
@@ -300,7 +301,7 @@ public class BoatTalkingGludin implements Runnable {
                             shoutCount = 0;
                         }
 
-                        ThreadPool.schedule(this, 5000);
+                        WorldPartition.loop().schedule(this, 5000, TimeUnit.MILLISECONDS);
                         return;
                     }
 
@@ -313,7 +314,7 @@ public class BoatTalkingGludin implements Runnable {
                             .broadcastPackets(
                                     TALKING_DOCK[0], GLUDIN_DOCK[0], ARRIVED_AT_TALKING, ARRIVED_AT_TALKING_2);
                     boat.broadcastPacket(TALKING_SOUND);
-                    ThreadPool.schedule(this, 300000);
+                    WorldPartition.loop().schedule(this, 300000, TimeUnit.MILLISECONDS);
                     break;
                 }
             }

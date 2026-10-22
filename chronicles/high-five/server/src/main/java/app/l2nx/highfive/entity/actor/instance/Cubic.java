@@ -47,9 +47,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -152,7 +153,8 @@ public class Cubic {
 
         final int duration =
                 cubicDuration > 0 ? cubicDuration : template != null ? template.getDuration() : cubicDuration;
-        disappearTask = ThreadPool.schedule(new CubicDisappear(this), duration * 1000);
+        disappearTask =
+                WorldPartition.loop().schedule(new CubicDisappear(this), duration * 1000, TimeUnit.MILLISECONDS);
         if ((template != null) && (template.getTargetType() == CubicTargetType.HEAL)) {
             doAction();
         }
@@ -166,10 +168,12 @@ public class Cubic {
             synchronized (this) {
                 if (actionTask == null) {
                     if (template.getTargetType() == CubicTargetType.HEAL) {
-                        actionTask = ThreadPool.scheduleAtFixedRate(new CubicHeal(this), 0, cubicDelay);
+                        actionTask = WorldPartition.loop()
+                                .scheduleAtFixedRate(new CubicHeal(this), 0, cubicDelay, TimeUnit.MILLISECONDS);
                     } else {
-                        actionTask =
-                                ThreadPool.scheduleAtFixedRate(new CubicAction(this, cubicSkillChance), 0, cubicDelay);
+                        actionTask = WorldPartition.loop()
+                                .scheduleAtFixedRate(
+                                        new CubicAction(this, cubicSkillChance), 0, cubicDelay, TimeUnit.MILLISECONDS);
                     }
                 }
             }

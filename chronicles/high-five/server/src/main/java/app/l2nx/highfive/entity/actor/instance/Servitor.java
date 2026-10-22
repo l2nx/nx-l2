@@ -43,12 +43,13 @@ import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SetSummonRemainTime;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.pet.model.SummonEffectRow;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +96,7 @@ public class Servitor extends Summon implements Runnable {
     public void onSpawn() {
         super.onSpawn();
         if (summonLifeTask == null) {
-            summonLifeTask = ThreadPool.scheduleAtFixedRate(this, 0, 5000);
+            summonLifeTask = WorldPartition.loop().scheduleAtFixedRate(this, 0, 5000, TimeUnit.MILLISECONDS);
         }
     }
 

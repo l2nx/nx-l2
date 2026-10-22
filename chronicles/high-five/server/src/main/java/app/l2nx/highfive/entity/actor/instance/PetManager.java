@@ -46,7 +46,8 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 public class PetManager extends Merchant {
@@ -272,9 +273,9 @@ public class PetManager extends Merchant {
         petSummon.startFeed();
         item.setEnchantLevel(petSummon.getLevel());
 
-        ThreadPool.schedule(new EvolveFinalizer(player, petSummon), 900);
+        WorldPartition.loop().schedule(new EvolveFinalizer(player, petSummon), 900, TimeUnit.MILLISECONDS);
         if (petSummon.getCurrentFed() <= 0) {
-            ThreadPool.schedule(new EvolveFeedWait(player, petSummon), 60000);
+            WorldPartition.loop().schedule(new EvolveFeedWait(player, petSummon), 60000, TimeUnit.MILLISECONDS);
         } else {
             petSummon.startFeed();
         }
@@ -357,9 +358,9 @@ public class PetManager extends Merchant {
 
         World.removeObject(removedItem);
 
-        ThreadPool.schedule(new EvolveFinalizer(player, petSummon), 900);
+        WorldPartition.loop().schedule(new EvolveFinalizer(player, petSummon), 900, TimeUnit.MILLISECONDS);
         if (petSummon.getCurrentFed() <= 0) {
-            ThreadPool.schedule(new EvolveFeedWait(player, petSummon), 60000);
+            WorldPartition.loop().schedule(new EvolveFeedWait(player, petSummon), 60000, TimeUnit.MILLISECONDS);
         } else {
             petSummon.startFeed();
         }

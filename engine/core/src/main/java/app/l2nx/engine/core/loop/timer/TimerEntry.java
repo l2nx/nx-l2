@@ -10,6 +10,10 @@ import lombok.ToString;
 
 @ToString(onlyExplicitlyIncluded = true)
 public final class TimerEntry {
+    static final long NO_TIMER = -1;
+    static final long NO_TURN = Long.MIN_VALUE;
+    static final int NO_SLOT = -1;
+
     @Getter
     @ToString.Include
     private final TimerSpec spec;
@@ -32,6 +36,10 @@ public final class TimerEntry {
 
     // Ticks this periodic entry has run in the current pass.
     int owed;
+
+    long timerId = NO_TIMER;
+    long turn = NO_TURN;
+    int slot = NO_SLOT;
 
     TimerEntry(TimerSpec spec, long sequence, long insertion, long deadline, long dueAt) {
         this.spec = spec;

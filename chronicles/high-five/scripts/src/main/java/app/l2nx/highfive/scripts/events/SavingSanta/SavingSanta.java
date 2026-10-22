@@ -45,13 +45,14 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.MathUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Christmas Event: Saving Santa<br>
@@ -262,7 +263,7 @@ public class SavingSanta extends LongTimeEvent {
                             pl.addItem(ItemProcessType.REWARD, BR_XMAS_PRESENT_NORMAL, 1, pl, true);
                         }
 
-                        ThreadPool.schedule(new SledAnimation(holidaySled), 7000);
+                        WorldPartition.loop().schedule(new SledAnimation(holidaySled), 7000, TimeUnit.MILLISECONDS);
                         npc.decayMe();
                         santaFree = true;
                         break;

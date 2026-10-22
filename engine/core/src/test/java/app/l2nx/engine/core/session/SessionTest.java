@@ -7,7 +7,11 @@ package app.l2nx.engine.core.session;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import app.l2nx.engine.core.clock.ManualGameClock;
+import app.l2nx.engine.core.loop.EngineProperties;
+import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.Message;
+import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.session.command.CoalescableCommand;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
@@ -23,8 +27,11 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.github.bucket4j.TimeMeter;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -77,7 +85,9 @@ class SessionTest {
     private final AtomicLong nanos = new AtomicLong();
     private final FakeTransport transport = new FakeTransport();
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-    private final SessionMetrics metrics = new SessionMetrics(registry);
+    private final SessionMetrics metrics = new SessionMetrics(registry, 256);
+    private final DrainScheduler pool =
+            DrainScheduler.pool((drain, abandoned) -> drains.add(drain), metrics.drainFailures());
     private final TimeMeter time = new TimeMeter() {
         @Override
         public long currentTimeNanos() {
@@ -133,9 +143,12 @@ class SessionTest {
                 done.countDown();
             });
             try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
+                final DrainScheduler scheduler =
+                        DrainScheduler.pool((drain, abandoned) -> pool.execute(drain), metrics.drainFailures());
                 final Session session = new Session(
                         limits(4_096, 16, 1_000_000, 4_096),
-                        DrainScheduler.pool((drain, abandoned) -> pool.execute(drain), metrics.drainFailures()),
+                        scheduler,
+                        scheduler,
                         dispatcher(List.of(slow)),
                         metrics,
                         transport,
@@ -378,6 +391,80 @@ class SessionTest {
     }
 
     @Nested
+    class AuthedDrain {
+        private final ManualGameClock clock =
+                new ManualGameClock(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC);
+        private final Loop world = new Loop(
+                "world", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry(), PassRecorder.NOOP);
+        private final Session session = session(limits(256, 16, 200, 256), DrainScheduler.loop(() -> world));
+
+        @Test
+        void setState_shouldSendTheNextSignalToTheLoop_whenAuthed() {
+            final AtomicReference<Loop> ranIn = new AtomicReference<>();
+            session.offer(session.input(new Step(1)));
+            runDrains();
+
+            session.setState(SessionState.AUTHED);
+            session.offer(session.input((Runnable) () -> ranIn.set(Loop.current())));
+
+            assertThat(drains).as("no drain on the pool").isEmpty();
+            assertThat(ranIn.get()).isNull();
+            runPass();
+            assertThat(log).containsExactly("step 1");
+            assertThat(ranIn.get()).isSameAs(world);
+        }
+
+        @Test
+        void drain_shouldHandTheRestOfTheQueueToTheLoop_whenAnItemAuthenticates() {
+            session.offer(session.input((Runnable) () -> session.setState(SessionState.AUTHED)));
+            session.offer(session.input(new Step(2)));
+
+            runDrains();
+
+            assertThat(log).as("nothing after the switch runs on the pool").isEmpty();
+            runPass();
+            assertThat(log).containsExactly("step 2");
+            assertThat(session.hasInput()).isFalse();
+            assertThat(session.trySignal()).as("the pass cleared the signal").isTrue();
+            session.clearSignal();
+        }
+
+        @Test
+        void pass_shouldRunAtMostPacketsPerPass_fromAnAuthedSession() {
+            session.setState(SessionState.AUTHED);
+            for (int i = 1; i <= 20; i++) {
+                session.offer(session.input(new Step(i)));
+            }
+
+            runPass();
+            assertThat(log).hasSize(EngineProperties.defaults().packetsPerPass());
+            runPass();
+            assertThat(log).hasSize(20);
+        }
+
+        @Test
+        void close_shouldRunOnClosedInAPass_whenAuthed() {
+            final AtomicReference<Loop> closedIn = new AtomicReference<>();
+            session.onClosed(() -> closedIn.set(Loop.current()));
+            session.setState(SessionState.AUTHED);
+            session.offer(session.input(new Step(1)));
+
+            session.close();
+
+            assertThat(session.state()).isEqualTo(SessionState.CLOSING);
+            runPass();
+            assertThat(closedIn.get()).isSameAs(world);
+            assertThat(log).as("queued input is discarded").isEmpty();
+            assertThat(session.state()).isEqualTo(SessionState.DISCONNECTED);
+            assertThat(session.hasInput()).isFalse();
+        }
+
+        private void runPass() {
+            world.runPass(world.getPassTime());
+        }
+    }
+
+    @Nested
     class AsInputSource {
         @Test
         void poll_shouldHandOutItemsInOrderWithoutRunningThem() {
@@ -427,9 +514,12 @@ class SessionTest {
             logs.start();
             sessionLog.addAppender(logs);
             try {
+                final DrainScheduler scheduler =
+                        DrainScheduler.pool((drain, abandoned) -> abandoned.run(), metrics.drainFailures());
                 final Session session = new Session(
                         limits(256, 16, 200, 256),
-                        DrainScheduler.pool((drain, abandoned) -> abandoned.run(), metrics.drainFailures()),
+                        scheduler,
+                        scheduler,
                         dispatcher(List.of(steps(command -> log.add("step " + command.value())))),
                         metrics,
                         transport,
@@ -536,6 +626,22 @@ class SessionTest {
         }
 
         @Test
+        void offer_shouldRecordTheQueueDepth_afterEachEnqueue() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            for (int i = 1; i <= 3; i++) {
+                session.offer(session.input(new Step(i)));
+            }
+
+            final DistributionSummary actual =
+                    registry.get(SessionMetrics.QUEUE_DEPTH).summary();
+            assertThat(actual.count()).isEqualTo(3);
+            assertThat(actual.totalAmount()).isEqualTo(1 + 2 + 3);
+            assertThat(actual.max()).isEqualTo(3);
+            assertThat(actual.getId().getTags()).isEmpty();
+        }
+
+        @Test
         void limits_shouldFollowTheNetworkProperties() {
             assertThat(Session.Limits.of(NetworkProperties.defaults()))
                     .isEqualTo(Session.Limits.builder()
@@ -561,6 +667,10 @@ class SessionTest {
     }
 
     private Session session(Session.Limits limits) {
+        return session(limits, pool);
+    }
+
+    private Session session(Session.Limits limits, DrainScheduler authedScheduler) {
         final SessionCommandHandler<Move> moves = new SessionCommandHandler<>() {
             @Override
             public void handle(Session session, Move command) {
@@ -569,7 +679,8 @@ class SessionTest {
         };
         return new Session(
                 limits,
-                DrainScheduler.pool((drain, abandoned) -> drains.add(drain), metrics.drainFailures()),
+                pool,
+                authedScheduler,
                 dispatcher(List.of(steps(command -> log.add("step " + command.value())), moves)),
                 metrics,
                 transport,

@@ -42,13 +42,14 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.auction.model.ClanHallAuctionRow;
 import app.l2nx.highfive.repository.auction.model.ClanHallBid;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -205,7 +206,7 @@ public class ClanHallAuction {
             taskDelay = endDate - currentTime;
         }
 
-        endTask = ThreadPool.schedule(new AutoEndTask(), taskDelay);
+        endTask = WorldPartition.loop().schedule(new AutoEndTask(), taskDelay, TimeUnit.MILLISECONDS);
     }
 
     /** Save Auction Data End */
@@ -404,7 +405,7 @@ public class ClanHallAuction {
             ClanHallTable.getInstance().setOwner(id, clan);
         } else {
             /** Task waiting ClanHallManager is loaded every 3s */
-            endTask = ThreadPool.schedule(new AutoEndTask(), 3000);
+            endTask = WorldPartition.loop().schedule(new AutoEndTask(), 3000, TimeUnit.MILLISECONDS);
         }
     }
 

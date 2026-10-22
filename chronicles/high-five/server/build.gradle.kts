@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.bucket4j.core)
     implementation(libs.classgraph)
     implementation(libs.commons.lang3)
+    implementation(libs.datasource.proxy)
     implementation(libs.lib.recur)
     implementation(libs.micrometer.core)
     implementation(libs.spring.modulith.api)

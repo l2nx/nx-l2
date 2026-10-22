@@ -35,7 +35,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExNevitAdventEffect;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExNevitAdventPointInfoPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExNevitAdventTimeChange;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -140,7 +140,7 @@ public class Nevit {
         if (adventTask == null) {
             synchronized (this) {
                 if ((adventTask == null) && (getAdventTime() < PlayerConfig.NEVIT_ADVENT_TIME)) {
-                    adventTask = ThreadPool.schedule(new AdventTask(), 30000);
+                    adventTask = WorldPartition.loop().schedule(new AdventTask(), 30000, TimeUnit.MILLISECONDS);
                     player.sendPacket(new ExNevitAdventTimeChange(getAdventTime(), false));
                 }
             }
@@ -191,7 +191,7 @@ public class Nevit {
                     SystemMessageId
                             .THE_ANGEL_NEVIT_HAS_BLESSED_YOU_FROM_ABOVE_YOU_ARE_IMBUED_WITH_FULL_VITALITY_AS_WELL_AS_A_VITALITY_REPLENISHING_EFFECT_AND_SHOULD_YOU_DIE_YOU_WILL_NOT_LOSE_EXP);
             player.startAbnormalVisualEffect(true, AbnormalVisualEffect.NAVIT_ADVENT);
-            nevitEffectTask = ThreadPool.schedule(new NevitEffectEnd(), time * 1000);
+            nevitEffectTask = WorldPartition.loop().schedule(new NevitEffectEnd(), time * 1000, TimeUnit.MILLISECONDS);
         }
     }
 

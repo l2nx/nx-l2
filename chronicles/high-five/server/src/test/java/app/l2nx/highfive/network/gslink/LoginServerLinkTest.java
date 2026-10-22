@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.gslink.GsLinkProperties;
@@ -25,6 +26,7 @@ import app.l2nx.highfive.login.command.LinkLost;
 import app.l2nx.highfive.login.command.PasswordChangeResult;
 import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.network.config.NetworkProperties;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -48,7 +50,9 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +61,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -66,6 +71,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 // ServerConfig is static and read by other tests of the module.
 @Isolated
+@ExtendWith(WorldLoopExtension.class)
 class LoginServerLinkTest {
     private static final byte[] HEX_ID = {1, 2, 3};
     private static final UUID FIRST = UUID.fromString("0192f0a0-0000-7000-8000-000000000011");
@@ -78,6 +84,7 @@ class LoginServerLinkTest {
 
     private final FakeLoginServer loginServer = new FakeLoginServer();
     private final List<Object> commands = new CopyOnWriteArrayList<>();
+    private final Map<Object, Optional<Loop>> submittedOn = new ConcurrentHashMap<>();
     private final CommandDispatcher dispatcher = mock(CommandDispatcher.class);
     private final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     private final Logger linkLog = (Logger) LoggerFactory.getLogger(LoginServerLink.class);
@@ -134,10 +141,11 @@ class LoginServerLinkTest {
         scheduler.initialize();
         doAnswer(invocation -> {
                     final Command command = invocation.getArgument(0);
-                    if ((command instanceof KickAccount kick)
-                            && kick.accountId().equals(FAILING)) {
-                        throw new IllegalStateException("The kick handler failed.");
+                    if ((command instanceof ReportCharacters report)
+                            && report.accountId().equals(FAILING)) {
+                        throw new IllegalStateException("The report handler failed.");
                     }
+                    submittedOn.put(command, Optional.ofNullable(Loop.current()));
                     commands.add(command);
                     return null;
                 })
@@ -253,7 +261,9 @@ class LoginServerLinkTest {
                             .build());
 
             awaitCommands(6);
+            assertThat(commands).contains(new KickAccount(FIRST));
             assertThat(commands)
+                    .filteredOn(command -> !(command instanceof KickAccount))
                     .containsExactly(
                             RegistrationResult.builder()
                                     .serverId(1)
@@ -269,12 +279,35 @@ class LoginServerLinkTest {
                                     .requestId(REQUEST)
                                     .accepted(false)
                                     .build(),
-                            new KickAccount(FIRST),
                             new ReportCharacters(SECOND),
                             PasswordChangeResult.builder()
                                     .requestId(SECOND)
                                     .message("You have successfully changed your password!")
                                     .build());
+        }
+
+        @Test
+        void onNext_shouldSubmitAKickInAWorldPass_andOtherMessagesOnTheLinkThread(Loop world) throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
+
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FIRST.toString()))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setReportCharacters(
+                                    GsLinkProto.ReportCharacters.newBuilder().setAccountId(SECOND.toString()))
+                            .build());
+
+            awaitCommands(2);
+            assertThat(submittedOn)
+                    .containsEntry(new KickAccount(FIRST), Optional.of(world))
+                    .containsEntry(new ReportCharacters(SECOND), Optional.empty());
         }
 
         @Test
@@ -286,7 +319,8 @@ class LoginServerLinkTest {
             connection
                     .responses()
                     .send(LoginServerMessage.newBuilder()
-                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FAILING.toString()))
+                            .setReportCharacters(
+                                    GsLinkProto.ReportCharacters.newBuilder().setAccountId(FAILING.toString()))
                             .build());
             connection
                     .responses()
@@ -526,7 +560,11 @@ class LoginServerLinkTest {
     }
 
     private void awaitCommands(int count) throws InterruptedException {
-        for (int i = 0; (i < 50) && (commands.size() < count); i++) {
+        for (int i = 0; i < 50; i++) {
+            WorldLoopExtension.passAfter(Duration.ZERO);
+            if (commands.size() >= count) {
+                return;
+            }
             Thread.sleep(100);
         }
     }

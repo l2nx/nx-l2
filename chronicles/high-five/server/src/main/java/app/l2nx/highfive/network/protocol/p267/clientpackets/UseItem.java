@@ -55,7 +55,8 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExUseSharedGroupItem;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -325,7 +326,11 @@ public class UseItem extends ClientPacket {
                 final long currentTime = ClockBridge.gameMillis();
                 final long attackEndTime = player.getAttackEndTime();
                 if (attackEndTime > currentTime) {
-                    ThreadPool.schedule(() -> player.useEquippableItem(item, false), attackEndTime - currentTime);
+                    WorldPartition.loop()
+                            .schedule(
+                                    () -> player.useEquippableItem(item, false),
+                                    attackEndTime - currentTime,
+                                    TimeUnit.MILLISECONDS);
                 } else {
                     player.useEquippableItem(item, true);
                 }

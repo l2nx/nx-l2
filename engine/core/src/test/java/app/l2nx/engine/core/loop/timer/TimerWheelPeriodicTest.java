@@ -130,5 +130,41 @@ class TimerWheelPeriodicTest {
             assertThat(actual).hasSize(16).endsWith("TICK@140", "TICK@150", "END@150");
             assertThat(wheel.size()).isZero();
         }
+
+        @Test
+        void cancel_shouldNotHoldTheEndBack_whenThePeriodicEntryStillOwesTicks() {
+            final List<String> actual = new ArrayList<>();
+            final boolean[] tickCancelled = {false};
+            final TimerHandler effect = new TimerHandler() {
+                @Override
+                public boolean isCurrent(Loop loop, TimerEntry entry) {
+                    return entry.getSpec().kind() != TimerKind.TICK || !tickCancelled[0];
+                }
+
+                @Override
+                public void onTimer(Loop loop, TimerEntry entry) {
+                    actual.add(entry.getSpec().kind() + "@" + entry.getDeadline());
+                }
+            };
+            final long sequence = wheel.nextSequence();
+            final TimerEntry tick = wheel.schedule(
+                    10,
+                    TimerSpec.builder()
+                            .handler(effect)
+                            .kind(TimerKind.TICK)
+                            .period(10)
+                            .build(),
+                    sequence);
+            wheel.schedule(
+                    150, TimerSpec.builder().handler(effect).kind(TimerKind.END).build(), sequence);
+            run(200);
+
+            tickCancelled[0] = true;
+            wheel.cancel(tick);
+
+            assertThat(run(205)).isEqualTo(1);
+            assertThat(actual).hasSize(11).endsWith("TICK@100", "END@150");
+            assertThat(wheel.size()).isZero();
+        }
     }
 }

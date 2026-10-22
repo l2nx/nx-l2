@@ -32,9 +32,10 @@ import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.network.enums.MessageSenderType;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.mail.model.MailRow;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -175,9 +176,11 @@ public class MailMessage {
         attachments = msg.getAttachments();
         msg.removeAttachments();
         attachments.setNewMessageId(id);
-        unloadTask = ThreadPool.schedule(
-                new AttachmentsUnloadTask(this),
-                UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
+        unloadTask = WorldPartition.loop()
+                .schedule(
+                        new AttachmentsUnloadTask(this),
+                        UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL),
+                        TimeUnit.MILLISECONDS);
     }
 
     public MailRow toRow() {
@@ -275,9 +278,11 @@ public class MailMessage {
         if (attachments == null) {
             attachments = new Mail(senderId, id);
             attachments.restore();
-            unloadTask = ThreadPool.schedule(
-                    new AttachmentsUnloadTask(this),
-                    UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
+            unloadTask = WorldPartition.loop()
+                    .schedule(
+                            new AttachmentsUnloadTask(this),
+                            UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL),
+                            TimeUnit.MILLISECONDS);
         }
 
         return attachments;
@@ -322,9 +327,11 @@ public class MailMessage {
 
         attachments = new Mail(senderId, id);
         hasAttachments = true;
-        unloadTask = ThreadPool.schedule(
-                new AttachmentsUnloadTask(this),
-                UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
+        unloadTask = WorldPartition.loop()
+                .schedule(
+                        new AttachmentsUnloadTask(this),
+                        UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL),
+                        TimeUnit.MILLISECONDS);
         return attachments;
     }
 

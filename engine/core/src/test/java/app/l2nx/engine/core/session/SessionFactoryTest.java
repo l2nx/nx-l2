@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 class SessionFactoryTest {
     private final ExecutorService drains = Executors.newVirtualThreadPerTaskExecutor();
     private final SessionMetrics metrics = SessionMetrics.noop();
+    private final DrainScheduler scheduler =
+            DrainScheduler.pool((drain, abandoned) -> drains.execute(drain), metrics.drainFailures());
     private final SessionFactory factory = new SessionFactory(
             Session.Limits.builder()
                     .queueLimit(16)
@@ -36,7 +38,8 @@ class SessionFactoryTest {
                     .failureLimit(10)
                     .failureWindow(Duration.ofSeconds(60))
                     .build(),
-            DrainScheduler.pool((drain, abandoned) -> drains.execute(drain), metrics.drainFailures()),
+            scheduler,
+            scheduler,
             new CommandDispatcher(
                     new CommandRegistry(List.of()),
                     address -> Optional.empty(),

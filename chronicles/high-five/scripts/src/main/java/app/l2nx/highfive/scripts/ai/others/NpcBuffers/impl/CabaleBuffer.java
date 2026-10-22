@@ -29,7 +29,8 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Preacher of Doom and Orator of Revelations AI
@@ -70,8 +71,8 @@ public class CabaleBuffer extends Script {
 
     @Override
     public void onSpawn(Npc npc) {
-        ThreadPool.schedule(new CabaleAI(npc), 3000);
-        ThreadPool.schedule(new Talk(npc), 60000);
+        WorldPartition.loop().schedule(new CabaleAI(npc), 3000, TimeUnit.MILLISECONDS);
+        WorldPartition.loop().schedule(new Talk(npc), 60000, TimeUnit.MILLISECONDS);
     }
 
     protected class Talk implements Runnable {
@@ -90,7 +91,7 @@ public class CabaleBuffer extends Script {
                 }
 
                 broadcastSay(npc, getRandomEntry(messages), null, -1);
-                ThreadPool.schedule(this, 60000);
+                WorldPartition.loop().schedule(this, 60000, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -189,7 +190,7 @@ public class CabaleBuffer extends Script {
                 }
             }
 
-            ThreadPool.schedule(this, 3000);
+            WorldPartition.loop().schedule(this, 3000, TimeUnit.MILLISECONDS);
         }
 
         /**

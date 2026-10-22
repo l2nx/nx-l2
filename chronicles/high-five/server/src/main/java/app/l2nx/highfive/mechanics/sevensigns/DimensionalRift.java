@@ -33,12 +33,13 @@ import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.Earthquake;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 
 /**
@@ -141,26 +142,40 @@ public class DimensionalRift {
 
         if (reasonTP) {
             final long jumpTime = calcTimeToNextJump();
-            teleporterTask = ThreadPool.schedule(teleport, jumpTime); // Teleporter task, 8-10 minutes
+            teleporterTask = WorldPartition.loop()
+                    .schedule(teleport, jumpTime, TimeUnit.MILLISECONDS); // Teleporter task, 8-10 minutes
 
-            earthQuakeTask = ThreadPool.schedule(
-                    () -> {
-                        for (Player p : party.getMembers()) {
-                            if (!revivedAtWaitingRoom.contains(p)) {
-                                p.sendPacket(new Earthquake(p.getX(), p.getY(), p.getZ(), 65, 9));
-                            }
-                        }
-                    },
-                    jumpTime - 7000);
+            earthQuakeTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                for (Player p : party.getMembers()) {
+                                    if (!revivedAtWaitingRoom.contains(p)) {
+                                        p.sendPacket(new Earthquake(p.getX(), p.getY(), p.getZ(), 65, 9));
+                                    }
+                                }
+                            },
+                            jumpTime - 7000,
+                            TimeUnit.MILLISECONDS);
         } else {
-            teleporterTask = ThreadPool.schedule(teleport, FIVE_SECONDS); // incorrect party member invited.
+            teleporterTask = WorldPartition.loop()
+                    .schedule(teleport, FIVE_SECONDS, TimeUnit.MILLISECONDS); // incorrect party member invited.
         }
     }
 
     public void createSpawnTimer(byte room) {
         cancel(spawnTask);
-        spawnTask = ThreadPool.schedule(
-                () -> DimensionalRiftManager.getInstance().getRoom(type, room).spawn(), GeneralConfig.RIFT_SPAWN_DELAY);
+        spawnTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            // A jump that teleported nobody leaves the rift between rooms.
+                            final DimensionalRiftRoom target =
+                                    DimensionalRiftManager.getInstance().getRoom(type, room);
+                            if (target != null) {
+                                target.spawn();
+                            }
+                        },
+                        GeneralConfig.RIFT_SPAWN_DELAY,
+                        TimeUnit.MILLISECONDS);
     }
 
     /** A task already running is left to finish. */
@@ -301,10 +316,11 @@ public class DimensionalRift {
 
         cancelScheduledWork();
 
-        DimensionalRiftManager.getInstance()
-                .getRoom(type, currentRoom)
-                .unspawn()
-                .setPartyInside(false);
+        // Between a jump and the next room assignment the rift holds no room (currentRoom is -1).
+        final DimensionalRiftRoom room = DimensionalRiftManager.getInstance().getRoom(type, currentRoom);
+        if (room != null) {
+            room.unspawn().setPartyInside(false);
+        }
     }
 
     private long calcTimeToNextJump() {

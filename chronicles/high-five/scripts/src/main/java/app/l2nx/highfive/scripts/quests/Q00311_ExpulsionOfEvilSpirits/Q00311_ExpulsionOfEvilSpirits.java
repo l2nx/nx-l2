@@ -34,10 +34,11 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 
 /**
@@ -118,7 +119,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                 altar.setInvul(true);
                 GlobalVariablesManager.getInstance().set("VarangkaRespawn", 0);
                 if (LocationUtil.checkIfInRange(1200, npc, player, true)) {
-                    ThreadPool.schedule(new zoneCheck(player), 1000);
+                    WorldPartition.loop().schedule(new zoneCheck(player), 1000, TimeUnit.MILLISECONDS);
                 }
             }
 
@@ -323,14 +324,14 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                 }
             }
         } else if (!hasQuestItems(player, PROTECTION_SOULS_PENDANT)) {
-            ThreadPool.schedule(new zoneCheck(player), 1000);
+            WorldPartition.loop().schedule(new zoneCheck(player), 1000, TimeUnit.MILLISECONDS);
         }
     }
 
     @Override
     public void onEnterZone(Creature creature, ZoneType zone) {
         if (creature.isPlayer()) {
-            ThreadPool.schedule(new zoneCheck(creature.asPlayer()), 1000);
+            WorldPartition.loop().schedule(new zoneCheck(creature.asPlayer()), 1000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -350,10 +351,10 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                 final QuestState qs = player.getQuestState(Q00311_ExpulsionOfEvilSpirits.class.getSimpleName());
                 if (qs == null) {
                     castDebuff(player);
-                    ThreadPool.schedule(new zoneCheck(player), 3000);
+                    WorldPartition.loop().schedule(new zoneCheck(player), 3000, TimeUnit.MILLISECONDS);
                 } else if (!hasQuestItems(player, PROTECTION_SOULS_PENDANT)) {
                     castDebuff(player);
-                    ThreadPool.schedule(new zoneCheck(player), 3000);
+                    WorldPartition.loop().schedule(new zoneCheck(player), 3000, TimeUnit.MILLISECONDS);
                 }
             }
         }

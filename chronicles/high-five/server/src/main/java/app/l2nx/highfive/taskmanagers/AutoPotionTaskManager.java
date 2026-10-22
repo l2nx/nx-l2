@@ -26,9 +26,10 @@ import app.l2nx.highfive.config.custom.AutoPotionsConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.ItemHandler;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius, Gigi
@@ -38,7 +39,7 @@ public class AutoPotionTaskManager implements Runnable {
     private static boolean working = false;
 
     protected AutoPotionTaskManager() {
-        ThreadPool.schedulePriorityTaskAtFixedRate(this, 0, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

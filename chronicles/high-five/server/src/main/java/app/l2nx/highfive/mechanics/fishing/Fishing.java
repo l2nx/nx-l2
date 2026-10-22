@@ -34,8 +34,9 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExFishingHpRegen;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExFishingStartCombat;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class Fishing implements Runnable {
     private Player fisher;
@@ -102,7 +103,7 @@ public class Fishing implements Runnable {
         this.fisher.sendPacket(SystemMessageId.YOU_VE_GOT_A_BITE);
 
         if (fishAiTask == null) {
-            fishAiTask = ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
+            fishAiTask = WorldPartition.loop().scheduleAtFixedRate(this, 1000, 1000, TimeUnit.MILLISECONDS);
         }
     }
 

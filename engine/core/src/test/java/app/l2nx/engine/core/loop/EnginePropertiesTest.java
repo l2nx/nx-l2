@@ -32,7 +32,19 @@ class EnginePropertiesTest {
                     rejected("l2nx.engine.trigger-depth", "0", builder -> builder.triggerDepth(0)),
                     rejected("l2nx.engine.pass-min", "500ns", builder -> builder.passMin(Duration.ofNanos(500))),
                     rejected("l2nx.engine.pass-min", "1500us", builder -> builder.passMin(Duration.ofNanos(1_500_000))),
-                    rejected("l2nx.engine.pass-budget", "0", builder -> builder.passBudget(Duration.ZERO)));
+                    rejected("l2nx.engine.pass-budget", "0", builder -> builder.passBudget(Duration.ZERO)),
+                    rejected(
+                            "l2nx.engine.blocked-pass-warning",
+                            "0",
+                            builder -> builder.blockedPassWarning(Duration.ZERO)),
+                    rejected(
+                            "l2nx.engine.blocked-pass-exit",
+                            "2s",
+                            builder -> builder.blockedPassExit(Duration.ofSeconds(2))),
+                    rejected(
+                            "l2nx.engine.blocked-pass-exit",
+                            "1500us",
+                            builder -> builder.blockedPassExit(Duration.ofNanos(1_500_000))));
         }
 
         private static Arguments rejected(String key, String value, UnaryOperator<EnginePropertiesBuilder> change) {

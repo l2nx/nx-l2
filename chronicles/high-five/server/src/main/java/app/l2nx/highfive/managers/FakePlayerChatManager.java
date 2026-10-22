@@ -34,11 +34,12 @@ import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
@@ -87,15 +88,19 @@ public class FakePlayerChatManager implements IXmlReader {
     }
 
     public void manageChat(Player player, String fpcName, String message) {
-        ThreadPool.schedule(
-                () -> manageResponce(player, fpcName, message),
-                ClockBridge.random().nextInt(MIN_DELAY, MAX_DELAY + 1));
+        WorldPartition.loop()
+                .schedule(
+                        () -> manageResponce(player, fpcName, message),
+                        ClockBridge.random().nextInt(MIN_DELAY, MAX_DELAY + 1),
+                        TimeUnit.MILLISECONDS);
     }
 
     public void manageChat(Player player, String fpcName, String message, int minDelay, int maxDelay) {
-        ThreadPool.schedule(
-                () -> manageResponce(player, fpcName, message),
-                minDelay < maxDelay ? ClockBridge.random().nextInt(minDelay, maxDelay + 1) : minDelay);
+        WorldPartition.loop()
+                .schedule(
+                        () -> manageResponce(player, fpcName, message),
+                        minDelay < maxDelay ? ClockBridge.random().nextInt(minDelay, maxDelay + 1) : minDelay,
+                        TimeUnit.MILLISECONDS);
     }
 
     private void manageResponce(Player player, String fpcName, String message) {

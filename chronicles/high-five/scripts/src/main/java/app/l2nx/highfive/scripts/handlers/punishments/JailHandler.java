@@ -46,8 +46,9 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
 /**
@@ -192,7 +193,7 @@ public class JailHandler implements IPunishmentHandler {
             OlympiadManager.getInstance().removeDisconnectedCompetitor(player);
         }
 
-        ThreadPool.schedule(new TeleportTask(player, JailZone.getLocationIn()), 2000);
+        WorldPartition.loop().schedule(new TeleportTask(player, JailZone.getLocationIn()), 2000, TimeUnit.MILLISECONDS);
 
         // Show jail reason HTML message.
         final NpcHtmlMessage msg = new NpcHtmlMessage();
@@ -228,7 +229,8 @@ public class JailHandler implements IPunishmentHandler {
      * @param player
      */
     private void removeFromPlayer(Player player) {
-        ThreadPool.schedule(new TeleportTask(player, JailZone.getLocationOut()), 2000);
+        WorldPartition.loop()
+                .schedule(new TeleportTask(player, JailZone.getLocationOut()), 2000, TimeUnit.MILLISECONDS);
 
         // Open a Html message to inform the player.
         final NpcHtmlMessage msg = new NpcHtmlMessage();

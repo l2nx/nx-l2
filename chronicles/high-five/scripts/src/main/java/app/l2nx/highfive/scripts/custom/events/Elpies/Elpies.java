@@ -28,11 +28,12 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.EventMonster;
 import app.l2nx.highfive.mechanics.script.Event;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -120,12 +121,14 @@ public class Elpies extends Event {
         World.broadcastToAllOnlinePlayers("Elpy invasion in " + randomLoc.getName());
         World.broadcastToAllOnlinePlayers("Help us exterminate them!");
         World.broadcastToAllOnlinePlayers("You have " + EVENT_DURATION_MINUTES + " minutes!");
-        eventTask = ThreadPool.schedule(
-                () -> {
-                    World.broadcastToAllOnlinePlayers("Time is up!");
-                    eventStop();
-                },
-                despawnDelay);
+        eventTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            World.broadcastToAllOnlinePlayers("Time is up!");
+                            eventStop();
+                        },
+                        despawnDelay,
+                        TimeUnit.MILLISECONDS);
         return true;
     }
 

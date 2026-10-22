@@ -33,11 +33,12 @@ import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -47,7 +48,7 @@ public class MessageDeletionTaskManager implements Runnable {
     private static boolean working = false;
 
     protected MessageDeletionTaskManager() {
-        ThreadPool.scheduleAtFixedRate(this, 10000, 10000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 10000, 10000, TimeUnit.MILLISECONDS);
     }
 
     @Override

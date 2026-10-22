@@ -24,18 +24,15 @@ package app.l2nx.highfive.data.xml;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.config.ThreadConfig;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.util.DocumentBase;
 import app.l2nx.highfive.util.DocumentSkill;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -49,7 +46,6 @@ public class SkillData {
     private final Map<Integer, Integer> maxSkillLevels = new ConcurrentHashMap<>();
     private final Set<Integer> enchantable = ConcurrentHashMap.newKeySet();
     private final List<File> skillFiles = new ArrayList<>();
-    private static int count = 0;
 
     protected SkillData() {
         processDirectory("data/stats/skills", skillFiles);
@@ -116,46 +112,21 @@ public class SkillData {
     }
 
     public void loadAllSkills(Map<Integer, Skill> allSkills) {
-        if (ThreadConfig.THREADS_FOR_LOADING) {
-            final Collection<ScheduledFuture<?>> jobs = ConcurrentHashMap.newKeySet();
-            for (File file : skillFiles) {
-                jobs.add(ThreadPool.schedule(
-                        () -> {
-                            final List<Skill> skills = loadSkills(file);
-                            if (skills == null) {
-                                return;
-                            }
-
-                            for (Skill skill : skills) {
-                                allSkills.put(SkillData.getSkillHashCode(skill), skill);
-                                count++;
-                            }
-                        },
-                        0));
-            }
-
-            while (!jobs.isEmpty()) {
-                for (ScheduledFuture<?> job : jobs) {
-                    if ((job == null) || job.isDone() || job.isCancelled()) {
-                        jobs.remove(job);
-                    }
-                }
-            }
-        } else {
-            for (File file : skillFiles) {
-                final List<Skill> skills = loadSkills(file);
-                if (skills == null) {
-                    return;
-                }
-
-                for (Skill skill : skills) {
-                    allSkills.put(SkillData.getSkillHashCode(skill), skill);
-                    count++;
-                }
-            }
+        // In file order, so a skill defined twice ends as the later file has it.
+        final List<Skill> loaded = new ArrayList<>();
+        IXmlReader.parseAll(
+                skillFiles,
+                DocumentBase::read,
+                (file, document) -> document.ifPresent(read -> {
+                    final DocumentSkill skills = new DocumentSkill(file);
+                    skills.parse(read);
+                    loaded.addAll(skills.getSkills());
+                }));
+        for (Skill skill : loaded) {
+            allSkills.put(SkillData.getSkillHashCode(skill), skill);
         }
 
-        log.info("Loaded {} Skill templates from XML files.", count);
+        log.info("Loaded {} Skill templates from XML files.", loaded.size());
     }
 
     public void reload() {

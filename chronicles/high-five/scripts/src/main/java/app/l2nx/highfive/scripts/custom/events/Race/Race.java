@@ -33,11 +33,12 @@ import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -155,7 +156,7 @@ public class Race extends Event {
                 + " min before Race Start...");
 
         // Schedule Event end
-        eventTask = ThreadPool.schedule(this::StartRace, REGISTER_TIME * 60 * 1000);
+        eventTask = WorldPartition.loop().schedule(this::StartRace, REGISTER_TIME * 60 * 1000, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -199,7 +200,7 @@ public class Race extends Event {
         }
 
         // Schedule timeup for Race.
-        eventTask = ThreadPool.schedule(this::timeUp, RACE_TIME * 60 * 1000);
+        eventTask = WorldPartition.loop().schedule(this::timeUp, RACE_TIME * 60 * 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

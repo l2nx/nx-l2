@@ -26,8 +26,9 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.TamedBeast;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author UnAfraid
@@ -101,7 +102,7 @@ public class NpcBufferAI implements Runnable {
             }
         }
 
-        ThreadPool.schedule(this, skillData.getDelay());
+        WorldPartition.loop().schedule(this, skillData.getDelay(), TimeUnit.MILLISECONDS);
     }
 
     /**

@@ -44,13 +44,14 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00696_ConquerTheHallOfErosion.Q00696_ConquerTheHallOfErosion;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -497,8 +498,10 @@ public class HallOfErosionAttack extends Script {
                 npc.deleteMe();
                 world.deadTumor = addSpawn(TUMOR_DEAD, loc, world.getInstanceId());
                 world.deadTumors.add(world.deadTumor);
-                ThreadPool.schedule(new TumorRevival(world.deadTumor, world), tumorRespawnTime);
-                ThreadPool.schedule(new RegenerationCoffinSpawn(world.deadTumor, world), 20000);
+                WorldPartition.loop()
+                        .schedule(new TumorRevival(world.deadTumor, world), tumorRespawnTime, TimeUnit.MILLISECONDS);
+                WorldPartition.loop()
+                        .schedule(new RegenerationCoffinSpawn(world.deadTumor, world), 20000, TimeUnit.MILLISECONDS);
                 if (world.tumorCount >= 1) {
                     broadCastPacket(
                             world,

@@ -35,7 +35,7 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveNodeArrived;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -304,8 +305,9 @@ public class WalkingManager implements IXmlReader {
 
                     final ScheduledFuture<?> task = repeatMoveTasks.get(npc);
                     if ((task == null) || task.isCancelled() || task.isDone()) {
-                        final ScheduledFuture<?> newTask =
-                                ThreadPool.scheduleAtFixedRate(() -> startMoving(npc, routeName), 10000, 10000);
+                        final ScheduledFuture<?> newTask = WorldPartition.loop()
+                                .scheduleAtFixedRate(
+                                        () -> startMoving(npc, routeName), 10000, 10000, TimeUnit.MILLISECONDS);
                         repeatMoveTasks.put(npc, newTask);
                         walk.setWalkCheckTask(newTask); // Start walk check task, for resuming walk after fight.
                     }
@@ -315,7 +317,10 @@ public class WalkingManager implements IXmlReader {
                 } else {
                     final ScheduledFuture<?> task = startMoveTasks.get(npc);
                     if ((task == null) || task.isCancelled() || task.isDone()) {
-                        startMoveTasks.put(npc, ThreadPool.schedule(() -> startMoving(npc, routeName), 10000));
+                        startMoveTasks.put(
+                                npc,
+                                WorldPartition.loop()
+                                        .schedule(() -> startMoving(npc, routeName), 10000, TimeUnit.MILLISECONDS));
                     }
                 }
             } else // Walk was stopped due to some reason (arrived to node, script action, fight or something else),
@@ -449,7 +454,11 @@ public class WalkingManager implements IXmlReader {
 
         final ScheduledFuture<?> task = arriveTasks.get(npc);
         if ((task == null) || task.isCancelled() || task.isDone()) {
-            arriveTasks.put(npc, ThreadPool.schedule(new ArrivedTask(npc, walk), 100 + (node.getDelay() * 1000)));
+            arriveTasks.put(
+                    npc,
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ArrivedTask(npc, walk), 100 + (node.getDelay() * 1000), TimeUnit.MILLISECONDS));
         }
     }
 

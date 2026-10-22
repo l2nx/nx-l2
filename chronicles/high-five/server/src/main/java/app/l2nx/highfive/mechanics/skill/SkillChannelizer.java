@@ -26,11 +26,12 @@ import app.l2nx.highfive.entity.item.enums.ShotType;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillLaunched;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,10 +75,12 @@ public class SkillChannelizer implements Runnable {
         this.skill = skill;
         final long tickInterval = skill.getChannelingTickInterval();
         if (tickInterval > 0) {
-            task = ThreadPool.scheduleAtFixedRate(this, skill.getChannelingTickInitialDelay(), tickInterval);
+            task = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            this, skill.getChannelingTickInitialDelay(), tickInterval, TimeUnit.MILLISECONDS);
         } else {
-            // A skill without a tick interval channels once, a period of zero would be rejected by the pool.
-            task = ThreadPool.schedule(this, skill.getChannelingTickInitialDelay());
+            // A skill without a tick interval channels once, the world loop rejects a period of zero.
+            task = WorldPartition.loop().schedule(this, skill.getChannelingTickInitialDelay(), TimeUnit.MILLISECONDS);
         }
     }
 

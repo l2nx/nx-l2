@@ -23,10 +23,11 @@
 package app.l2nx.highfive.taskmanagers;
 
 import app.l2nx.highfive.entity.actor.Creature;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -100,7 +101,9 @@ public class MovementTaskManager {
 
             final Set<Creature> pool = ConcurrentHashMap.newKeySet(POOL_SIZE_PLAYER);
             pool.add(creature);
-            ThreadPool.schedulePriorityTaskAtFixedRate(new Movement(pool), TASK_DELAY_PLAYER, TASK_DELAY_PLAYER);
+            WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new Movement(pool), TASK_DELAY_PLAYER, TASK_DELAY_PLAYER, TimeUnit.MILLISECONDS);
             POOLS_PLAYER.add(pool);
         } else {
             for (Set<Creature> pool : POOLS_CREATURE) {
@@ -118,7 +121,9 @@ public class MovementTaskManager {
 
             final Set<Creature> pool = ConcurrentHashMap.newKeySet(POOL_SIZE_CREATURE);
             pool.add(creature);
-            ThreadPool.scheduleAtFixedRate(new Movement(pool), TASK_DELAY_CREATURE, TASK_DELAY_CREATURE);
+            WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new Movement(pool), TASK_DELAY_CREATURE, TASK_DELAY_CREATURE, TimeUnit.MILLISECONDS);
             POOLS_CREATURE.add(pool);
         }
     }

@@ -18,6 +18,7 @@ import app.l2nx.engine.core.identity.WireHandleAllocator;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.network.enums.MessageSenderType;
 import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
@@ -40,9 +41,10 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@ExtendWith(ClockBridgeExtension.class)
+@ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock(WorldLoopExtension.LOCK)
 class MailManagerTest {
     private final IdentityRegistry registry =
             new IdentityRegistry(new WireHandleAllocator(Clock.systemUTC(), Duration.ofMinutes(5)));

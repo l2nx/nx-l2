@@ -43,9 +43,10 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -407,20 +408,27 @@ public class SiegeGuards extends Script {
 
         // Start task for unknown residences.
         RESIDENCE_GUARD_MAP[0] = new CopyOnWriteArrayList<>();
-        ThreadPool.scheduleAtFixedRate(new AggroCheckTask(0), 0, 3000);
+        WorldPartition.loop().scheduleAtFixedRate(new AggroCheckTask(0), 0, 3000, TimeUnit.MILLISECONDS);
 
         // Start tasks for castles.
         for (Castle castle : CastleManager.getInstance().getCastles()) {
             final int residenceId = castle.getResidenceId();
             RESIDENCE_GUARD_MAP[residenceId] = new CopyOnWriteArrayList<>();
-            ThreadPool.scheduleAtFixedRate(new AggroCheckTask(residenceId), residenceId * 100, 3000);
+            WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new AggroCheckTask(residenceId), residenceId * 100, 3000, TimeUnit.MILLISECONDS);
         }
 
         // Start tasks for fortresses.
         for (Fort fort : FortManager.getInstance().getForts()) {
             final int residenceId = fort.getResidenceId();
             RESIDENCE_GUARD_MAP[residenceId] = new CopyOnWriteArrayList<>();
-            ThreadPool.scheduleAtFixedRate(new AggroCheckTask(residenceId), 900 + ((residenceId - 100) * 100), 3000);
+            WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new AggroCheckTask(residenceId),
+                            900 + ((residenceId - 100) * 100),
+                            3000,
+                            TimeUnit.MILLISECONDS);
         }
     }
 

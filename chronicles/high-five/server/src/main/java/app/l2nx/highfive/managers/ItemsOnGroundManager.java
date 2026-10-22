@@ -32,14 +32,15 @@ import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.GroundItemRepository;
 import app.l2nx.highfive.repository.item.model.GroundItem;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
@@ -76,8 +77,12 @@ public class ItemsOnGroundManager implements Runnable {
         }
 
         if (GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL > 0) {
-            ThreadPool.scheduleAtFixedRate(
-                    this, GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL, GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL);
+            WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            this,
+                            GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL,
+                            GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL,
+                            TimeUnit.MILLISECONDS);
         }
 
         // Add items to world.

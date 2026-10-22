@@ -81,4 +81,4 @@ when they receive the change.
 ## 11. Effect handlers
 
 The effect handler API stays: `onStart`, `onActionTime` (one tick), `onExit`, called on the partition thread. The
-handlers in `scripts` change only where they schedule their own tasks on `ThreadPool`; those become deadlines.
+handlers in `scripts` change only where they schedule their own tasks on the loop (`schedule`, from the E6 cutover); those become deadlines.

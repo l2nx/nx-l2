@@ -70,7 +70,7 @@ public class PremiumSystemConfig {
         PC_CAFE_ENABLED = config.getBoolean("PcCafeEnabled", false);
         PC_CAFE_ONLY_PREMIUM = config.getBoolean("PcCafeOnlyPremium", false);
         PC_CAFE_RETAIL_LIKE = config.getBoolean("PcCafeRetailLike", true);
-        PC_CAFE_REWARD_TIME = config.getInt("PcCafeRewardTime", 300000);
+        PC_CAFE_REWARD_TIME = config.getPositiveInt("PcCafeRewardTime", 300000);
         PC_CAFE_MAX_POINTS = config.getInt("MaxPcCafePoints", 200000);
         if (PC_CAFE_MAX_POINTS < 0) {
             PC_CAFE_MAX_POINTS = 0;

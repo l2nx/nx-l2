@@ -29,11 +29,12 @@ import app.l2nx.highfive.config.custom.OfflinePlayConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -43,7 +44,7 @@ public class DecayTaskManager implements Runnable {
     private static boolean working = false;
 
     protected DecayTaskManager() {
-        ThreadPool.scheduleAtFixedRate(this, 0, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

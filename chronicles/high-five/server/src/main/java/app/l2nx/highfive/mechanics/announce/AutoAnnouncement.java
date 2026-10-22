@@ -24,9 +24,10 @@
 package app.l2nx.highfive.mechanics.announce;
 
 import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.world.model.AnnouncementRow;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -95,7 +96,7 @@ public class AutoAnnouncement extends Announcement implements Runnable {
         }
 
         currentState = repeat;
-        task = ThreadPool.schedule(this, initial);
+        task = WorldPartition.loop().schedule(this, initial, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -112,6 +113,6 @@ public class AutoAnnouncement extends Announcement implements Runnable {
             currentState--;
         }
 
-        task = ThreadPool.schedule(this, delay);
+        task = WorldPartition.loop().schedule(this, delay, TimeUnit.MILLISECONDS);
     }
 }

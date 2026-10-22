@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
-import app.l2nx.highfive.GameServer;
+import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -130,7 +130,7 @@ public class BossZone extends ZoneType {
                 // with legal entries, do nothing.
                 if (expirationTime == null) // legal null expirationTime entries
                 {
-                    if (GameServer.getStartTime() > (ClockBridge.gameMillis() - timeInvade)) {
+                    if (WorldLoader.getStartTime() > (ClockBridge.gameMillis() - timeInvade)) {
                         return;
                     }
                 } else {

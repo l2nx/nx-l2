@@ -46,13 +46,14 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -331,12 +332,14 @@ public class HeartInfinityAttack extends Script {
         }
 
         conquestBegun = true;
-        ThreadPool.schedule(
-                () -> {
-                    playMovie(world, Movie.SC_ECHMUS_OPENING);
-                    ThreadPool.schedule(() -> conquestBegins(world), 62500);
-                },
-                20000);
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            playMovie(world, Movie.SC_ECHMUS_OPENING);
+                            WorldPartition.loop().schedule(() -> conquestBegins(world), 62500, TimeUnit.MILLISECONDS);
+                        },
+                        20000,
+                        TimeUnit.MILLISECONDS);
     }
 
     protected void conquestBegins(HIAWorld world) {
@@ -392,7 +395,8 @@ public class HeartInfinityAttack extends Script {
         world.hounds.add(addSpawn(HOUND, -179224, 209624, -15504, 16384, false, 0, false, world.getInstanceId()));
         world.hounds.add(addSpawn(HOUND, -179880, 209464, -15504, 16384, false, 0, false, world.getInstanceId()));
         world.startTime = ClockBridge.gameMillis();
-        world.timerTask = ThreadPool.scheduleAtFixedRate(new TimerTask(world), 298 * 1000, 5 * 60 * 1000);
+        world.timerTask = WorldPartition.loop()
+                .scheduleAtFixedRate(new TimerTask(world), 298 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -559,8 +563,10 @@ public class HeartInfinityAttack extends Script {
                 npc.deleteMe();
                 world.deadTumor = addSpawn(DEADTUMOR, loc, world.getInstanceId());
                 world.deadTumors.add(world.deadTumor);
-                ThreadPool.schedule(new TumorRevival(world.deadTumor, world), tumorRespawnTime);
-                ThreadPool.schedule(new RegenerationCoffinSpawn(world.deadTumor, world), 20000);
+                WorldPartition.loop()
+                        .schedule(new TumorRevival(world.deadTumor, world), tumorRespawnTime, TimeUnit.MILLISECONDS);
+                WorldPartition.loop()
+                        .schedule(new RegenerationCoffinSpawn(world.deadTumor, world), 20000, TimeUnit.MILLISECONDS);
                 if (world.tumorCount < 1) {
                     houndBlocked = true;
                     for (Npc hound : world.hounds) {
@@ -793,15 +799,17 @@ public class HeartInfinityAttack extends Script {
             }
         }
 
-        ThreadPool.schedule(
-                () -> broadCastPacket(
-                        world,
-                        new ExShowScreenMessage(
-                                NpcStringId
-                                        .EKIMUS_HAS_SENSED_ABNORMAL_ACTIVITY_NTHE_ADVANCING_PARTY_IS_FORCEFULLY_EXPELLED,
-                                2,
-                                8000)),
-                10000);
+        WorldPartition.loop()
+                .schedule(
+                        () -> broadCastPacket(
+                                world,
+                                new ExShowScreenMessage(
+                                        NpcStringId
+                                                .EKIMUS_HAS_SENSED_ABNORMAL_ACTIVITY_NTHE_ADVANCING_PARTY_IS_FORCEFULLY_EXPELLED,
+                                        2,
+                                        8000)),
+                        10000,
+                        TimeUnit.MILLISECONDS);
     }
 
     protected void conquestConclusion(HIAWorld world) {

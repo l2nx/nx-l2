@@ -36,7 +36,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -406,7 +407,7 @@ public class TowerOfNaia extends Script {
             if (party != null) {
                 removeForeigners(npcId, party);
                 startRoom(npcId);
-                ThreadPool.schedule(new StopRoomTask(npcId), 300000);
+                WorldPartition.loop().schedule(new StopRoomTask(npcId), 300000, TimeUnit.MILLISECONDS);
             } else {
                 player.sendPacket(SystemMessageId.YOU_MUST_BE_IN_A_PARTY_IN_ORDER_TO_OPERATE_THE_MACHINE);
             }
@@ -638,9 +639,11 @@ public class TowerOfNaia extends Script {
         if (respawnTime <= ClockBridge.wallMillis()) {
             addSpawn(MUTATED_ELPY, -45474, 247450, -13994, 49152, false, 0, false);
         } else {
-            ThreadPool.schedule(
-                    () -> addSpawn(MUTATED_ELPY, -45474, 247450, -13994, 49152, false, 0, false),
-                    respawnTime - ClockBridge.wallMillis());
+            WorldPartition.loop()
+                    .schedule(
+                            () -> addSpawn(MUTATED_ELPY, -45474, 247450, -13994, 49152, false, 0, false),
+                            respawnTime - ClockBridge.wallMillis(),
+                            TimeUnit.MILLISECONDS);
         }
     }
 

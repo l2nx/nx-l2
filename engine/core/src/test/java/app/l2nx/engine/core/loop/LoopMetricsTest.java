@@ -7,16 +7,20 @@ package app.l2nx.engine.core.loop;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.loop.inbox.Inbox;
+import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.distribution.ValueAtPercentile;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class LoopMetricsTest {
-    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    private final MockClock clock = new MockClock();
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, clock);
     private final Inbox<String> inbox = new Inbox<>();
-    private final LoopMetrics metrics = new LoopMetrics(registry, "world", inbox);
+    private long runningPassStart = Loop.IDLE;
+    private final LoopMetrics metrics = new LoopMetrics(registry, "world", inbox, () -> runningPassStart);
 
     @Nested
     class Pass {
@@ -75,6 +79,44 @@ class LoopMetricsTest {
                             .gauge()
                             .value())
                     .isEqualTo(2.0);
+        }
+    }
+
+    @Nested
+    class RunningPass {
+        @Test
+        void runningPass_shouldBeZero_whenNoPassRuns() {
+            clock.add(5, TimeUnit.SECONDS);
+
+            assertThat(runningPassSeconds()).isZero();
+        }
+
+        @Test
+        void runningPass_shouldGrowWithThePass_whileThePassRuns() {
+            runningPassStart = clock.monotonicTime();
+
+            clock.add(1500, TimeUnit.MILLISECONDS);
+            assertThat(runningPassSeconds()).isEqualTo(1.5);
+
+            clock.add(30, TimeUnit.SECONDS);
+            assertThat(runningPassSeconds()).isEqualTo(31.5);
+        }
+
+        @Test
+        void runningPass_shouldDropToZero_whenThePassEnds() {
+            runningPassStart = clock.monotonicTime();
+            clock.add(2, TimeUnit.SECONDS);
+
+            runningPassStart = Loop.IDLE;
+
+            assertThat(runningPassSeconds()).isZero();
+        }
+
+        private double runningPassSeconds() {
+            return registry.get("l2nx.engine.pass.running")
+                    .tag("loop", "world")
+                    .gauge()
+                    .value();
         }
     }
 

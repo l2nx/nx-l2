@@ -308,7 +308,7 @@ public class FeatureConfig {
         FS_EXPREG_FEE_RATIO = config.getLong("FortressExpRegenerationFunctionFeeRatio", 86400000);
         FS_EXPREG1_FEE = config.getInt("FortressExpRegenerationFeeLvl1", 9000);
         FS_EXPREG2_FEE = config.getInt("FortressExpRegenerationFeeLvl2", 10000);
-        FS_UPDATE_FRQ = config.getInt("FortressPeriodicUpdateFrequency", 360);
+        FS_UPDATE_FRQ = config.getPositiveInt("FortressPeriodicUpdateFrequency", 360);
         FS_BLOOD_OATH_COUNT = config.getInt("FortressBloodOathCount", 1);
         FS_MAX_SUPPLY_LEVEL = config.getInt("FortressMaxSupplyLevel", 6);
         FS_FEE_FOR_CASTLE = config.getInt("FortressFeeForCastle", 25000);
@@ -322,7 +322,7 @@ public class FeatureConfig {
         ALT_MAXIMUM_PLAYER_CONTRIB = config.getInt("AltMaxPlayerContrib", 1000000);
         ALT_FESTIVAL_MANAGER_START = config.getLong("AltFestivalManagerStart", 120000);
         ALT_FESTIVAL_LENGTH = config.getLong("AltFestivalLength", 1080000);
-        ALT_FESTIVAL_CYCLE_LENGTH = config.getLong("AltFestivalCycleLength", 2280000);
+        ALT_FESTIVAL_CYCLE_LENGTH = config.getPositiveLong("AltFestivalCycleLength", 2280000);
         ALT_FESTIVAL_FIRST_SPAWN = config.getLong("AltFestivalFirstSpawn", 120000);
         ALT_FESTIVAL_FIRST_SWARM = config.getLong("AltFestivalFirstSwarm", 300000);
         ALT_FESTIVAL_SECOND_SPAWN = config.getLong("AltFestivalSecondSpawn", 540000);

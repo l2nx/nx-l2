@@ -25,8 +25,10 @@ package app.l2nx.highfive.network;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,16 +145,30 @@ public class Disconnection {
             return;
         }
 
+        if (!WorldPartition.loop().inLoop()) {
+            log.warn("{} was not saved on disconnection: the world loop has stopped.", player);
+            return;
+        }
+
         if (player.canLogout()) {
             storeAndDelete();
         } else {
-            ThreadPool.schedule(
-                    () -> {
-                        if (player.isOnline()) {
-                            storeAndDelete();
-                        }
-                    },
-                    AttackStanceTaskManager.COMBAT_TIME);
+            try {
+                WorldPartition.loop()
+                        .schedule(
+                                () -> {
+                                    if (player.isOnline()) {
+                                        storeAndDelete();
+                                    }
+                                },
+                                AttackStanceTaskManager.COMBAT_TIME,
+                                TimeUnit.MILLISECONDS);
+            } catch (RejectedExecutionException e) {
+                // The world loop has stopped, so no other writer is left and nobody waits for the combat delay.
+                if (player.isOnline()) {
+                    storeAndDelete();
+                }
+            }
         }
     }
 }

@@ -334,6 +334,121 @@ class TimerWheelTest {
     }
 
     @Nested
+    class Cancel {
+        @Test
+        void cancel_shouldRemoveEntryFromWheel_whenArmedInCurrentTurn() {
+            final TimerEntry entry = wheel.schedule(10, handler.spec(1, TimerKind.ACTION));
+
+            final boolean actual = wheel.cancel(entry);
+
+            assertThat(actual).isTrue();
+            assertThat(wheel.size()).isZero();
+            assertThat(wheel.nextDueAt()).isEqualTo(Long.MAX_VALUE);
+        }
+
+        @Test
+        void cancel_shouldRemoveEntryFromWheel_whenItsTurnHasBegun() {
+            final TimerEntry entry = wheel.schedule(5_000, handler.spec(1, TimerKind.ACTION));
+            run(4_500);
+
+            assertThat(wheel.cancel(entry)).isTrue();
+
+            assertThat(wheel.size()).isZero();
+            assertThat(run(5_000)).isZero();
+        }
+
+        @Test
+        void cancel_shouldRemoveEntryFromBucket_whenArmedInLaterTurn() {
+            final TimerEntry far = wheel.schedule(60_000, handler.spec(1, TimerKind.ACTION));
+            wheel.schedule(120_000, handler.spec(2, TimerKind.ACTION));
+
+            assertThat(wheel.cancel(far)).isTrue();
+
+            assertThat(wheel.size()).isEqualTo(1);
+            assertThat(wheel.nextDueAt()).isEqualTo(120_000);
+            assertThat(run(120_000)).isEqualTo(1);
+            assertThat(handler.fired).containsExactly("2:ACTION@120000");
+        }
+
+        @Test
+        void cancel_shouldMoveNextDueAtToTheNextEntryOfTheTurn_whenItsFirstEntryIsCancelled() {
+            final TimerEntry first = wheel.schedule(5_200, handler.spec(1, TimerKind.ACTION));
+            wheel.schedule(5_900, handler.spec(2, TimerKind.ACTION));
+
+            wheel.cancel(first);
+
+            assertThat(wheel.nextDueAt()).isEqualTo(5_900);
+        }
+
+        @Test
+        void cancel_shouldFireTheRestOfTheTurnInOrder_whenTheMiddleEntryOfItsBucketIsCancelled() {
+            wheel.schedule(5_900, handler.spec(1, TimerKind.ACTION));
+            final TimerEntry middle = wheel.schedule(5_600, handler.spec(2, TimerKind.ACTION));
+            wheel.schedule(5_200, handler.spec(3, TimerKind.ACTION));
+
+            assertThat(wheel.cancel(middle)).isTrue();
+
+            assertThat(wheel.size()).isEqualTo(2);
+            assertThat(run(6_000)).isEqualTo(2);
+            assertThat(handler.fired).containsExactly("3:ACTION@5200", "1:ACTION@5900");
+        }
+
+        @Test
+        void cancel_shouldRemoveTheEntryMovedIntoACancelledSlot() {
+            final TimerEntry first = wheel.schedule(5_900, handler.spec(1, TimerKind.ACTION));
+            final TimerEntry moved = wheel.schedule(5_200, handler.spec(2, TimerKind.ACTION));
+
+            wheel.cancel(first);
+
+            assertThat(wheel.cancel(moved)).isTrue();
+            assertThat(wheel.size()).isZero();
+            assertThat(run(6_000)).isZero();
+        }
+
+        @Test
+        void cancel_shouldRemoveABucketEntry_whenASetBackTookTheLateEntriesBeforeIt() {
+            run(TimerWheel.TICKS_PER_WHEEL - 1);
+            wheel.schedule(50, handler.spec(1, TimerKind.ACTION));
+            final TimerEntry cancelled = wheel.schedule(1_500, handler.spec(2, TimerKind.ACTION));
+            wheel.schedule(1_600, handler.spec(3, TimerKind.ACTION));
+            wheel.passStarted(400);
+
+            assertThat(wheel.cancel(cancelled)).isTrue();
+
+            assertThat(run(400)).isEqualTo(1);
+            assertThat(wheel.nextDueAt()).isEqualTo(1_600);
+            assertThat(run(1_600)).isEqualTo(1);
+            assertThat(handler.fired).containsExactly("1:ACTION@50", "3:ACTION@1600");
+        }
+
+        @Test
+        void cancel_shouldNotLeakEntries_whenRearmedAndCancelledRepeatedly() {
+            for (int i = 0; i < 10_000; i++) {
+                wheel.cancel(wheel.schedule(1_800_000, handler.spec(1, TimerKind.ACTION)));
+            }
+
+            assertThat(wheel.size()).isZero();
+            assertThat(wheel.nextDueAt()).isEqualTo(Long.MAX_VALUE);
+        }
+
+        @Test
+        void cancel_shouldReturnFalse_whenEntryAlreadyFired() {
+            final TimerEntry entry = wheel.schedule(1, handler.spec(1, TimerKind.ACTION));
+            run(1);
+
+            assertThat(wheel.cancel(entry)).isFalse();
+        }
+
+        @Test
+        void cancel_shouldReturnFalse_whenEntryAlreadyCancelled() {
+            final TimerEntry entry = wheel.schedule(10, handler.spec(1, TimerKind.ACTION));
+            wheel.cancel(entry);
+
+            assertThat(wheel.cancel(entry)).isFalse();
+        }
+    }
+
+    @Nested
     class PassStarted {
         @ParameterizedTest(name = "deadline {0} after a set back to 400 is due at {1}")
         @CsvSource({"300, 400", "400, 400", "450, 450"})

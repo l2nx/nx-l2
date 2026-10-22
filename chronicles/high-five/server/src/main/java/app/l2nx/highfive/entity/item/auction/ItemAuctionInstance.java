@@ -40,9 +40,9 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionRow;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -278,20 +278,26 @@ public class ItemAuctionInstance {
 
         if ((currentAuction != null) && (currentAuction.getAuctionState() != ItemAuctionState.FINISHED)) {
             if (currentAuction.getAuctionState() == ItemAuctionState.STARTED) {
-                setStateTask(ThreadPool.schedule(
-                        new ScheduleAuctionTask(currentAuction),
-                        Math.max(currentAuction.getEndingTime() - ClockBridge.wallMillis(), 0)));
+                setStateTask(WorldPartition.loop()
+                        .schedule(
+                                new ScheduleAuctionTask(currentAuction),
+                                Math.max(currentAuction.getEndingTime() - ClockBridge.wallMillis(), 0),
+                                TimeUnit.MILLISECONDS));
             } else {
-                setStateTask(ThreadPool.schedule(
-                        new ScheduleAuctionTask(currentAuction),
-                        Math.max(currentAuction.getStartingTime() - ClockBridge.wallMillis(), 0)));
+                setStateTask(WorldPartition.loop()
+                        .schedule(
+                                new ScheduleAuctionTask(currentAuction),
+                                Math.max(currentAuction.getStartingTime() - ClockBridge.wallMillis(), 0),
+                                TimeUnit.MILLISECONDS));
             }
 
             log.info("Schedule current auction {} for instance {}", currentAuction.getAuctionId(), instanceId);
         } else {
-            setStateTask(ThreadPool.schedule(
-                    new ScheduleAuctionTask(nextAuction),
-                    Math.max(nextAuction.getStartingTime() - ClockBridge.wallMillis(), 0)));
+            setStateTask(WorldPartition.loop()
+                    .schedule(
+                            new ScheduleAuctionTask(nextAuction),
+                            Math.max(nextAuction.getStartingTime() - ClockBridge.wallMillis(), 0),
+                            TimeUnit.MILLISECONDS));
             log.info(
                     "Schedule next auction {} on {} for instance {}",
                     nextAuction.getAuctionId(),
@@ -361,8 +367,11 @@ public class ItemAuctionInstance {
                         case EXTEND_BY_5_MIN: {
                             if (auction.getScheduledAuctionEndingExtendState() == ItemAuctionExtendState.INITIAL) {
                                 auction.setScheduledAuctionEndingExtendState(ItemAuctionExtendState.EXTEND_BY_5_MIN);
-                                setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
+                                setStateTask(WorldPartition.loop()
+                                        .schedule(
+                                                this,
+                                                Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0),
+                                                TimeUnit.MILLISECONDS));
                                 return;
                             }
                             break;
@@ -371,8 +380,11 @@ public class ItemAuctionInstance {
                             if (auction.getScheduledAuctionEndingExtendState()
                                     != ItemAuctionExtendState.EXTEND_BY_3_MIN) {
                                 auction.setScheduledAuctionEndingExtendState(ItemAuctionExtendState.EXTEND_BY_3_MIN);
-                                setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
+                                setStateTask(WorldPartition.loop()
+                                        .schedule(
+                                                this,
+                                                Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0),
+                                                TimeUnit.MILLISECONDS));
                                 return;
                             }
                             break;
@@ -382,8 +394,11 @@ public class ItemAuctionInstance {
                                     != ItemAuctionExtendState.EXTEND_BY_CONFIG_PHASE_B) {
                                 auction.setScheduledAuctionEndingExtendState(
                                         ItemAuctionExtendState.EXTEND_BY_CONFIG_PHASE_B);
-                                setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
+                                setStateTask(WorldPartition.loop()
+                                        .schedule(
+                                                this,
+                                                Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0),
+                                                TimeUnit.MILLISECONDS));
                                 return;
                             }
                             break;
@@ -393,8 +408,11 @@ public class ItemAuctionInstance {
                                     != ItemAuctionExtendState.EXTEND_BY_CONFIG_PHASE_A) {
                                 auction.setScheduledAuctionEndingExtendState(
                                         ItemAuctionExtendState.EXTEND_BY_CONFIG_PHASE_A);
-                                setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
+                                setStateTask(WorldPartition.loop()
+                                        .schedule(
+                                                this,
+                                                Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0),
+                                                TimeUnit.MILLISECONDS));
                                 return;
                             }
                         }

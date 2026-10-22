@@ -53,8 +53,8 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySmallWindowDel
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySmallWindowDeleteAll;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -66,6 +66,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -343,18 +344,20 @@ public class Party extends AbstractPlayerGroup {
         }
 
         if (positionBroadcastTask == null) {
-            positionBroadcastTask = ThreadPool.scheduleAtFixedRate(
-                    () -> {
-                        if (positionPacket == null) {
-                            positionPacket = new PartyMemberPosition(this);
-                        } else {
-                            positionPacket.reuse(this);
-                        }
+            positionBroadcastTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            () -> {
+                                if (positionPacket == null) {
+                                    positionPacket = new PartyMemberPosition(this);
+                                } else {
+                                    positionPacket.reuse(this);
+                                }
 
-                        broadcastPacket(positionPacket);
-                    },
-                    PARTY_POSITION_BROADCAST_INTERVAL.toMillis() / 2,
-                    PARTY_POSITION_BROADCAST_INTERVAL.toMillis());
+                                broadcastPacket(positionPacket);
+                            },
+                            PARTY_POSITION_BROADCAST_INTERVAL.toMillis() / 2,
+                            PARTY_POSITION_BROADCAST_INTERVAL.toMillis(),
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -931,8 +934,11 @@ public class Party extends AbstractPlayerGroup {
 
         changeRequestDistributionType = partyDistributionType;
         changeDistributionTypeAnswers = new HashSet<>();
-        changeDistributionTypeRequestTask =
-                ThreadPool.schedule(() -> finishLootRequest(false), PARTY_DISTRIBUTION_TYPE_REQUEST_TIMEOUT.toMillis());
+        changeDistributionTypeRequestTask = WorldPartition.loop()
+                .schedule(
+                        () -> finishLootRequest(false),
+                        PARTY_DISTRIBUTION_TYPE_REQUEST_TIMEOUT.toMillis(),
+                        TimeUnit.MILLISECONDS);
         broadcastToPartyMembers(
                 getLeader(), new ExAskModifyPartyLooting(getLeader().getName(), partyDistributionType));
 

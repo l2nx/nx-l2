@@ -33,7 +33,7 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.IdManager;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -243,8 +243,10 @@ public class AutoSpawnHandler {
         if (isActive) {
             final AutoSpawner rs = new AutoSpawner(objectId);
             spawnTask = spawnInst.despawnDelay > 0
-                    ? ThreadPool.scheduleAtFixedRate(rs, spawnInst.initialDelay, spawnInst.respawnDelay)
-                    : ThreadPool.schedule(rs, spawnInst.initialDelay);
+                    ? WorldPartition.loop()
+                            .scheduleAtFixedRate(
+                                    rs, spawnInst.initialDelay, spawnInst.respawnDelay, TimeUnit.MILLISECONDS)
+                    : WorldPartition.loop().schedule(rs, spawnInst.initialDelay, TimeUnit.MILLISECONDS);
             runningSpawns.put(objectId, spawnTask);
         } else {
             final AutoDespawner rd = new AutoDespawner(objectId);
@@ -253,7 +255,7 @@ public class AutoSpawnHandler {
                 spawnTask.cancel(false);
             }
 
-            ThreadPool.schedule(rd, 0);
+            WorldPartition.loop().schedule(rd, 0, TimeUnit.MILLISECONDS);
         }
 
         spawnInst.setSpawnActive(isActive);
@@ -444,7 +446,11 @@ public class AutoSpawnHandler {
 
                 // If there is no despawn time, do not create a despawn task.
                 if (spawnInst.getDespawnDelay() > 0) {
-                    ThreadPool.schedule(new AutoDespawner(objectId), spawnInst.getDespawnDelay() - 1000);
+                    WorldPartition.loop()
+                            .schedule(
+                                    new AutoDespawner(objectId),
+                                    spawnInst.getDespawnDelay() - 1000,
+                                    TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 log.warn(

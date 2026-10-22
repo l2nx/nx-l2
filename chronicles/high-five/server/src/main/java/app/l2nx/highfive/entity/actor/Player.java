@@ -345,6 +345,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.TradeOtherDone;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.TradeStart;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.UserInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterHenna;
 import app.l2nx.highfive.repository.character.model.CharacterItemReuse;
 import app.l2nx.highfive.repository.character.model.CharacterPremiumItem;
@@ -367,7 +368,6 @@ import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
 import app.l2nx.highfive.taskmanagers.PlayerAutoSaveTaskManager;
 import app.l2nx.highfive.taskmanagers.PvpFlagTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -2399,12 +2399,14 @@ public class Player extends Playable {
         } finally {
             changingClass = false;
 
-            ThreadPool.schedule(
-                    () -> {
-                        getInventory().applyItemSkills();
-                        sendSkillList();
-                    },
-                    100);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                getInventory().applyItemSkills();
+                                sendSkillList();
+                            },
+                            100,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -2757,7 +2759,7 @@ public class Player extends Playable {
         broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_SITTING));
 
         // Schedule a sit down task to wait for the animation to finish.
-        ThreadPool.schedule(new SitDownTask(this), 2500);
+        WorldPartition.loop().schedule(new SitDownTask(this), 2500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -2777,7 +2779,7 @@ public class Player extends Playable {
             broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_STANDING));
 
             // Schedule a stand up task to wait for the animation to finish.
-            ThreadPool.schedule(new StandUpTask(this), 2500);
+            WorldPartition.loop().schedule(new StandUpTask(this), 2500, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -3765,42 +3767,45 @@ public class Player extends Playable {
     @Override
     public void broadcastStatusUpdate() {
         if (broadcastStatusUpdateTask == null) {
-            broadcastStatusUpdateTask = ThreadPool.schedule(
-                    () -> {
-                        final StatusUpdate su = new StatusUpdate(this);
-                        su.addAttribute(StatusUpdate.MAX_HP, getMaxHp());
-                        su.addAttribute(StatusUpdate.CUR_HP, (int) getCurrentHp());
-                        su.addAttribute(StatusUpdate.MAX_MP, getMaxMp());
-                        su.addAttribute(StatusUpdate.CUR_MP, (int) getCurrentMp());
-                        su.addAttribute(StatusUpdate.MAX_CP, getMaxCp());
-                        su.addAttribute(StatusUpdate.CUR_CP, (int) getCurrentCp());
-                        sendPacket(su);
+            broadcastStatusUpdateTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                final StatusUpdate su = new StatusUpdate(this);
+                                su.addAttribute(StatusUpdate.MAX_HP, getMaxHp());
+                                su.addAttribute(StatusUpdate.CUR_HP, (int) getCurrentHp());
+                                su.addAttribute(StatusUpdate.MAX_MP, getMaxMp());
+                                su.addAttribute(StatusUpdate.CUR_MP, (int) getCurrentMp());
+                                su.addAttribute(StatusUpdate.MAX_CP, getMaxCp());
+                                su.addAttribute(StatusUpdate.CUR_CP, (int) getCurrentCp());
+                                sendPacket(su);
 
-                        final boolean needCpUpdate = needCpUpdate();
-                        final boolean needHpUpdate = needHpUpdate();
-                        final Party party = getParty();
+                                final boolean needCpUpdate = needCpUpdate();
+                                final boolean needHpUpdate = needHpUpdate();
+                                final Party party = getParty();
 
-                        // Check if a party is in progress and party window update is useful.
-                        if ((party != null) && (needCpUpdate || needHpUpdate || needMpUpdate())) {
-                            party.broadcastToPartyMembers(this, new PartySmallWindowUpdate(this));
-                        }
+                                // Check if a party is in progress and party window update is useful.
+                                if ((party != null) && (needCpUpdate || needHpUpdate || needMpUpdate())) {
+                                    party.broadcastToPartyMembers(this, new PartySmallWindowUpdate(this));
+                                }
 
-                        if (inOlympiadMode && olympiadStart && (needCpUpdate || needHpUpdate)) {
-                            final OlympiadGameTask game =
-                                    OlympiadGameManager.getInstance().getOlympiadTask(getOlympiadGameId());
-                            if ((game != null) && game.isBattleStarted()) {
-                                game.getZone().broadcastStatusUpdate(this);
-                            }
-                        }
+                                if (inOlympiadMode && olympiadStart && (needCpUpdate || needHpUpdate)) {
+                                    final OlympiadGameTask game =
+                                            OlympiadGameManager.getInstance().getOlympiadTask(getOlympiadGameId());
+                                    if ((game != null) && game.isBattleStarted()) {
+                                        game.getZone().broadcastStatusUpdate(this);
+                                    }
+                                }
 
-                        // In duel MP updated only with CP or HP.
-                        if (inDuel && (needCpUpdate || needHpUpdate)) {
-                            DuelManager.getInstance().broadcastToOppositTeam(this, new ExDuelUpdateUserInfo(this));
-                        }
+                                // In duel MP updated only with CP or HP.
+                                if (inDuel && (needCpUpdate || needHpUpdate)) {
+                                    DuelManager.getInstance()
+                                            .broadcastToOppositTeam(this, new ExDuelUpdateUserInfo(this));
+                                }
 
-                        broadcastStatusUpdateTask = null;
-                    },
-                    50);
+                                broadcastStatusUpdateTask = null;
+                            },
+                            50,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -3829,47 +3834,51 @@ public class Player extends Playable {
         }
 
         if (broadcastCharInfoTask == null) {
-            broadcastCharInfoTask = ThreadPool.schedule(
-                    () -> {
-                        final CharInfo charInfo = new CharInfo(this, false);
-                        charInfo.sendInBroadcast();
-                        try {
-                            World.forEachVisibleObject(this, Player.class, player -> {
-                                if (isVisibleFor(player)) {
-                                    if (isInvisible() && isGM()) {
-                                        player.sendPacket(new CharInfo(this, true));
-                                    } else {
-                                        player.sendPacket(charInfo);
-                                    }
+            broadcastCharInfoTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                final CharInfo charInfo = new CharInfo(this, false);
+                                charInfo.sendInBroadcast();
+                                try {
+                                    World.forEachVisibleObject(this, Player.class, player -> {
+                                        if (isVisibleFor(player)) {
+                                            if (isInvisible() && isGM()) {
+                                                player.sendPacket(new CharInfo(this, true));
+                                            } else {
+                                                player.sendPacket(charInfo);
+                                            }
 
-                                    player.sendPacket(new ExBrExtraUserInfo(this));
+                                            player.sendPacket(new ExBrExtraUserInfo(this));
 
-                                    // Update relation.
-                                    final int relation = getRelation(player);
-                                    final boolean isAutoAttackable = isAutoAttackable(player);
-                                    final RelationCache oldrelation =
-                                            getKnownRelations().get(player.getObjectId());
-                                    if ((oldrelation == null)
-                                            || (oldrelation.relation() != relation)
-                                            || (oldrelation.autoAttackable() != isAutoAttackable)) {
-                                        player.sendPacket(new RelationChanged(this, relation, isAutoAttackable));
-                                        if (hasSummon()) {
-                                            player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
+                                            // Update relation.
+                                            final int relation = getRelation(player);
+                                            final boolean isAutoAttackable = isAutoAttackable(player);
+                                            final RelationCache oldrelation =
+                                                    getKnownRelations().get(player.getObjectId());
+                                            if ((oldrelation == null)
+                                                    || (oldrelation.relation() != relation)
+                                                    || (oldrelation.autoAttackable() != isAutoAttackable)) {
+                                                player.sendPacket(
+                                                        new RelationChanged(this, relation, isAutoAttackable));
+                                                if (hasSummon()) {
+                                                    player.sendPacket(
+                                                            new RelationChanged(summon, relation, isAutoAttackable));
+                                                }
+
+                                                getKnownRelations()
+                                                        .put(
+                                                                player.getObjectId(),
+                                                                new RelationCache(relation, isAutoAttackable));
+                                            }
                                         }
-
-                                        getKnownRelations()
-                                                .put(
-                                                        player.getObjectId(),
-                                                        new RelationCache(relation, isAutoAttackable));
-                                    }
+                                    });
+                                } finally {
+                                    charInfo.releaseBroadcast();
                                 }
-                            });
-                        } finally {
-                            charInfo.releaseBroadcast();
-                        }
-                        broadcastCharInfoTask = null;
-                    },
-                    100);
+                                broadcastCharInfoTask = null;
+                            },
+                            100,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -5805,13 +5814,15 @@ public class Player extends Playable {
                 return false;
             }
         } else {
-            ThreadPool.schedule(
-                    () -> {
-                        if (isInWater()) {
-                            broadcastUserInfo();
-                        }
-                    },
-                    1500);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                if (isInWater()) {
+                                    broadcastUserInfo();
+                                }
+                            },
+                            1500,
+                            TimeUnit.MILLISECONDS);
         }
 
         final boolean wasFlying = isFlying();
@@ -5934,18 +5945,21 @@ public class Player extends Playable {
      */
     public void updateAndBroadcastStatus() {
         if (updateAndBroadcastStatusTask == null) {
-            updateAndBroadcastStatusTask = ThreadPool.schedule(
-                    () -> {
-                        refreshOverloaded();
-                        refreshExpertisePenalty();
+            updateAndBroadcastStatusTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                refreshOverloaded();
+                                refreshExpertisePenalty();
 
-                        // Send a Server->Client packet UserInfo to this Player and CharInfo to all known players
-                        // (broadcast).
-                        broadcastUserInfo();
+                                // Send a Server->Client packet UserInfo to this Player and CharInfo to all known
+                                // players
+                                // (broadcast).
+                                broadcastUserInfo();
 
-                        updateAndBroadcastStatusTask = null;
-                    },
-                    50);
+                                updateAndBroadcastStatusTask = null;
+                            },
+                            50,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -8041,7 +8055,7 @@ public class Player extends Playable {
     public void setInventoryBlockingStatus(boolean value) {
         inventoryDisabled = value;
         if (value) {
-            ThreadPool.schedule(new InventoryEnableTask(this), 1500);
+            WorldPartition.loop().schedule(new InventoryEnableTask(this), 1500, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -8603,84 +8617,91 @@ public class Player extends Playable {
 
     public synchronized void sendSkillList() {
         if (skillListTask == null) {
-            skillListTask = ThreadPool.schedule(
-                    () -> {
-                        boolean isDisabled = false;
-                        final SkillList skillList = new SkillList();
-                        for (Skill skill : getAllSkills()) {
-                            if ((skill == null)
-                                    || ((transformation != null) && !skill.isPassive())
-                                    || (hasTransformSkill(skill.getId()) && skill.isPassive())) {
-                                continue;
-                            }
+            skillListTask = WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                boolean isDisabled = false;
+                                final SkillList skillList = new SkillList();
+                                for (Skill skill : getAllSkills()) {
+                                    if ((skill == null)
+                                            || ((transformation != null) && !skill.isPassive())
+                                            || (hasTransformSkill(skill.getId()) && skill.isPassive())) {
+                                        continue;
+                                    }
 
-                            if (clan != null) {
-                                isDisabled = skill.isClanSkill() && (clan.getReputationScore() < 0);
-                            }
+                                    if (clan != null) {
+                                        isDisabled = skill.isClanSkill() && (clan.getReputationScore() < 0);
+                                    }
 
-                            boolean isEnchantable = SkillData.getInstance().isEnchantable(skill.getId());
-                            if (isEnchantable) {
-                                final EnchantSkillLearn esl = EnchantSkillGroupsData.getInstance()
-                                        .getSkillEnchantmentBySkillId(skill.getId());
-                                if ((esl == null) || (skill.getLevel() < esl.getBaseLevel())) {
-                                    isEnchantable = false;
+                                    boolean isEnchantable =
+                                            SkillData.getInstance().isEnchantable(skill.getId());
+                                    if (isEnchantable) {
+                                        final EnchantSkillLearn esl = EnchantSkillGroupsData.getInstance()
+                                                .getSkillEnchantmentBySkillId(skill.getId());
+                                        if ((esl == null) || (skill.getLevel() < esl.getBaseLevel())) {
+                                            isEnchantable = false;
+                                        }
+                                    }
+
+                                    skillList.addSkill(
+                                            skill.getDisplayId(),
+                                            skill.getDisplayLevel(),
+                                            skill.isPassive(),
+                                            isDisabled,
+                                            isEnchantable);
                                 }
-                            }
 
-                            skillList.addSkill(
-                                    skill.getDisplayId(),
-                                    skill.getDisplayLevel(),
-                                    skill.isPassive(),
-                                    isDisabled,
-                                    isEnchantable);
-                        }
+                                if (transformation != null) {
+                                    final Map<Integer, Integer> ts = new TreeMap<>();
+                                    for (SkillHolder holder :
+                                            transformation.getTemplate(this).getSkills()) {
+                                        ts.putIfAbsent(holder.getSkillId(), holder.getSkillLevel());
+                                        if (ts.get(holder.getSkillId()) < holder.getSkillLevel()) {
+                                            ts.put(holder.getSkillId(), holder.getSkillLevel());
+                                        }
+                                    }
 
-                        if (transformation != null) {
-                            final Map<Integer, Integer> ts = new TreeMap<>();
-                            for (SkillHolder holder :
-                                    transformation.getTemplate(this).getSkills()) {
-                                ts.putIfAbsent(holder.getSkillId(), holder.getSkillLevel());
-                                if (ts.get(holder.getSkillId()) < holder.getSkillLevel()) {
-                                    ts.put(holder.getSkillId(), holder.getSkillLevel());
-                                }
-                            }
+                                    for (AdditionalSkillHolder holder :
+                                            transformation.getTemplate(this).getAdditionalSkills()) {
+                                        if (getLevel() >= holder.getMinLevel()) {
+                                            ts.putIfAbsent(holder.getSkillId(), holder.getSkillLevel());
+                                            if (ts.get(holder.getSkillId()) < holder.getSkillLevel()) {
+                                                ts.put(holder.getSkillId(), holder.getSkillLevel());
+                                            }
+                                        }
+                                    }
 
-                            for (AdditionalSkillHolder holder :
-                                    transformation.getTemplate(this).getAdditionalSkills()) {
-                                if (getLevel() >= holder.getMinLevel()) {
-                                    ts.putIfAbsent(holder.getSkillId(), holder.getSkillLevel());
-                                    if (ts.get(holder.getSkillId()) < holder.getSkillLevel()) {
-                                        ts.put(holder.getSkillId(), holder.getSkillLevel());
+                                    // Add collection skills.
+                                    if (transformation.isFlying()) {
+                                        for (SkillLearn skill : SkillTreeData.getInstance()
+                                                .getCollectSkillTree()
+                                                .values()) {
+                                            if ((getKnownSkill(skill.getSkillId()) != null)
+                                                    && (!ts.containsKey(skill.getSkillId())
+                                                            || (ts.get(skill.getSkillId()) < skill.getSkillLevel()))) {
+                                                ts.put(skill.getSkillId(), skill.getSkillLevel());
+                                            }
+                                        }
+                                    }
+
+                                    for (Entry<Integer, Integer> transformSkill : ts.entrySet()) {
+                                        final Skill sk = SkillData.getInstance()
+                                                .getSkill(transformSkill.getKey(), transformSkill.getValue());
+                                        addTransformSkill(sk);
+                                        skillList.addSkill(
+                                                transformSkill.getKey(),
+                                                transformSkill.getValue(),
+                                                false,
+                                                false,
+                                                false);
                                     }
                                 }
-                            }
 
-                            // Add collection skills.
-                            if (transformation.isFlying()) {
-                                for (SkillLearn skill : SkillTreeData.getInstance()
-                                        .getCollectSkillTree()
-                                        .values()) {
-                                    if ((getKnownSkill(skill.getSkillId()) != null)
-                                            && (!ts.containsKey(skill.getSkillId())
-                                                    || (ts.get(skill.getSkillId()) < skill.getSkillLevel()))) {
-                                        ts.put(skill.getSkillId(), skill.getSkillLevel());
-                                    }
-                                }
-                            }
-
-                            for (Entry<Integer, Integer> transformSkill : ts.entrySet()) {
-                                final Skill sk = SkillData.getInstance()
-                                        .getSkill(transformSkill.getKey(), transformSkill.getValue());
-                                addTransformSkill(sk);
-                                skillList.addSkill(
-                                        transformSkill.getKey(), transformSkill.getValue(), false, false, false);
-                            }
-                        }
-
-                        sendPacket(skillList);
-                        skillListTask = null;
-                    },
-                    300);
+                                sendPacket(skillList);
+                                skillListTask = null;
+                            },
+                            300,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -8989,7 +9010,8 @@ public class Player extends Playable {
 
     public void startWarnUserTakeBreak() {
         if (taskWarnUserTakeBreak == null) {
-            taskWarnUserTakeBreak = ThreadPool.scheduleAtFixedRate(new WarnUserTakeBreakTask(this), 7200000, 7200000);
+            taskWarnUserTakeBreak = WorldPartition.loop()
+                    .scheduleAtFixedRate(new WarnUserTakeBreakTask(this), 7200000, 7200000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -9010,7 +9032,8 @@ public class Player extends Playable {
 
     public void startRentPet(int seconds) {
         if (taskRentPet == null) {
-            taskRentPet = ThreadPool.scheduleAtFixedRate(new RentPetTask(this), seconds * 1000, seconds * 1000);
+            taskRentPet = WorldPartition.loop()
+                    .scheduleAtFixedRate(new RentPetTask(this), seconds * 1000, seconds * 1000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -9046,7 +9069,8 @@ public class Player extends Playable {
         sendPacket(new SetupGauge(getObjectId(), 2, timeInWater));
 
         // Schedule the water task.
-        taskWater = ThreadPool.scheduleAtFixedRate(new WaterTask(this), timeInWater, 1000);
+        taskWater = WorldPartition.loop()
+                .scheduleAtFixedRate(new WaterTask(this), timeInWater, 1000, TimeUnit.MILLISECONDS);
     }
 
     public boolean isInWater() {
@@ -9127,13 +9151,15 @@ public class Player extends Playable {
         // TODO : Need to fix that hack!
         if (!isDead()) {
             // Run on a separate thread to give time to above events to be notified.
-            ThreadPool.schedule(
-                    () -> {
-                        setCurrentHp(originalHp);
-                        setCurrentMp(originalMp);
-                        setCurrentCp(originalCp);
-                    },
-                    300);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                setCurrentHp(originalHp);
+                                setCurrentMp(originalMp);
+                                setCurrentCp(originalCp);
+                            },
+                            300,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -9396,8 +9422,11 @@ public class Player extends Playable {
         if (teleport) {
             if ((teleportWatchdog == null) && (PlayerConfig.TELEPORT_WATCHDOG_TIMEOUT > 0)) {
                 synchronized (this) {
-                    teleportWatchdog = ThreadPool.schedule(
-                            new TeleportWatchdogTask(this), PlayerConfig.TELEPORT_WATCHDOG_TIMEOUT * 1000);
+                    teleportWatchdog = WorldPartition.loop()
+                            .schedule(
+                                    new TeleportWatchdogTask(this),
+                                    PlayerConfig.TELEPORT_WATCHDOG_TIMEOUT * 1000,
+                                    TimeUnit.MILLISECONDS);
                 }
             }
         } else if (teleportWatchdog != null) {
@@ -10023,16 +10052,24 @@ public class Player extends Playable {
                 }
             }
 
-            taskForFish = ThreadPool.scheduleAtFixedRate(
-                    new LookingForFishTask(
-                            this,
-                            fish.getStartCombatTime(),
-                            fish.getFishGuts(),
-                            fish.getFishGroup(),
-                            isNoob,
-                            isUpperGrade),
-                    10000,
-                    checkDelay);
+            // TODO: lures outside the lists above have no guts-check period (#77); fishing ends instead of hanging.
+            if (checkDelay <= 0) {
+                endFishing(false);
+                return;
+            }
+
+            taskForFish = WorldPartition.loop()
+                    .scheduleAtFixedRate(
+                            new LookingForFishTask(
+                                    this,
+                                    fish.getStartCombatTime(),
+                                    fish.getFishGuts(),
+                                    fish.getFishGroup(),
+                                    isNoob,
+                                    isUpperGrade),
+                            10000,
+                            checkDelay,
+                            TimeUnit.MILLISECONDS);
         }
     }
 
@@ -10427,7 +10464,8 @@ public class Player extends Playable {
         }
 
         if (fameTask == null) {
-            fameTask = ThreadPool.scheduleAtFixedRate(new FameTask(this, fameFixRate), delay, delay);
+            fameTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(new FameTask(this, fameFixRate), delay, delay, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -10442,7 +10480,8 @@ public class Player extends Playable {
 
     public void startVitalityTask() {
         if (PlayerConfig.ENABLE_VITALITY && (vitalityTask == null)) {
-            vitalityTask = ThreadPool.scheduleAtFixedRate(new VitalityTask(this), 1000, 60000);
+            vitalityTask = WorldPartition.loop()
+                    .scheduleAtFixedRate(new VitalityTask(this), 1000, 60000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -10510,7 +10549,7 @@ public class Player extends Playable {
             soulTask = null;
         }
 
-        soulTask = ThreadPool.schedule(new ResetSoulsTask(this), 600000);
+        soulTask = WorldPartition.loop().schedule(new ResetSoulsTask(this), 600000, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -10750,7 +10789,8 @@ public class Player extends Playable {
                     (currentFeed * 10000) / getFeedConsume(),
                     (getMaxFeed() * 10000) / getFeedConsume()));
             if (!isDead()) {
-                mountFeedTask = ThreadPool.scheduleAtFixedRate(new PetFeedTask(this), 10000, 10000);
+                mountFeedTask = WorldPartition.loop()
+                        .scheduleAtFixedRate(new PetFeedTask(this), 10000, 10000, TimeUnit.MILLISECONDS);
             }
         } else if (canFeed) {
             setCurrentFeed(getMaxFeed());
@@ -10760,7 +10800,8 @@ public class Player extends Playable {
                     (currentFeed * 10000) / getFeedConsume(),
                     (getMaxFeed() * 10000) / getFeedConsume()));
             if (!isDead()) {
-                mountFeedTask = ThreadPool.scheduleAtFixedRate(new PetFeedTask(this), 10000, 10000);
+                mountFeedTask = WorldPartition.loop()
+                        .scheduleAtFixedRate(new PetFeedTask(this), 10000, 10000, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -10818,7 +10859,7 @@ public class Player extends Playable {
     }
 
     public void enteredNoLanding(int delay) {
-        dismountTask = ThreadPool.schedule(new DismountTask(this), delay * 1000);
+        dismountTask = WorldPartition.loop().schedule(new DismountTask(this), delay * 1000, TimeUnit.MILLISECONDS);
     }
 
     public void exitedNoLanding() {
@@ -10907,7 +10948,7 @@ public class Player extends Playable {
             }
         }
 
-        chargeTask = ThreadPool.schedule(new ResetChargesTask(this), 600000);
+        chargeTask = WorldPartition.loop().schedule(new ResetChargesTask(this), 600000, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -11402,19 +11443,22 @@ public class Player extends Playable {
             fallingDamageTask.cancel(true);
         }
 
-        fallingDamageTask = ThreadPool.schedule(
-                () -> {
-                    if ((fallingDamage > 0) && !isInvul()) {
-                        reduceCurrentHp(Math.min(fallingDamage, getCurrentHp() - 1), null, false, true, null);
-                        final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_RECEIVED_S1_FALLING_DAMAGE);
-                        sm.addInt(fallingDamage);
-                        sendPacket(sm);
-                    }
+        fallingDamageTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if ((fallingDamage > 0) && !isInvul()) {
+                                reduceCurrentHp(Math.min(fallingDamage, getCurrentHp() - 1), null, false, true, null);
+                                final SystemMessage sm =
+                                        new SystemMessage(SystemMessageId.YOU_RECEIVED_S1_FALLING_DAMAGE);
+                                sm.addInt(fallingDamage);
+                                sendPacket(sm);
+                            }
 
-                    fallingDamage = 0;
-                    fallingDamageTask = null;
-                },
-                1500);
+                            fallingDamage = 0;
+                            fallingDamageTask = null;
+                        },
+                        1500,
+                        TimeUnit.MILLISECONDS);
 
         // Prevent falling under ground.
         sendPacket(new ValidateLocation(this));
@@ -11718,7 +11762,8 @@ public class Player extends Playable {
         startNevitHourglassTask();
 
         // Create task to give new recommendations.
-        recoGiveTask = ThreadPool.scheduleAtFixedRate(new RecoGiveTask(this), 7200000, 3600000);
+        recoGiveTask = WorldPartition.loop()
+                .scheduleAtFixedRate(new RecoGiveTask(this), 7200000, 3600000, TimeUnit.MILLISECONDS);
 
         // Store new data.
         storeRecommendations(false);
@@ -11730,7 +11775,8 @@ public class Player extends Playable {
             final long taskTime = loadRecommendations();
             if (taskTime > 0) {
                 // If player have some timeleft, start bonus task
-                nevitHourglassTask = ThreadPool.schedule(new RecoBonusTaskEnd(this), taskTime);
+                nevitHourglassTask =
+                        WorldPartition.loop().schedule(new RecoBonusTaskEnd(this), taskTime, TimeUnit.MILLISECONDS);
             }
 
             sendPacket(new ExVoteSystemInfo(this));
@@ -12132,11 +12178,13 @@ public class Player extends Playable {
 
         inventoryUpdate.putAll(iu.getItemEntries());
 
-        inventoryUpdateTask = ThreadPool.schedule(
-                () -> {
-                    sendPacket(inventoryUpdate);
-                },
-                100);
+        inventoryUpdateTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            sendPacket(inventoryUpdate);
+                        },
+                        100,
+                        TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -12156,11 +12204,13 @@ public class Player extends Playable {
             itemListTask.cancel(false);
         }
 
-        itemListTask = ThreadPool.schedule(
-                () -> {
-                    sendPacket(new ItemList(this, open));
-                },
-                250);
+        itemListTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            sendPacket(new ItemList(this, open));
+                        },
+                        250,
+                        TimeUnit.MILLISECONDS);
     }
 
     /**

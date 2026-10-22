@@ -43,14 +43,15 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00692_HowtoOpposeEvil.Q00692_HowtoOpposeEvil;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Energy Seeds AI.
@@ -1887,16 +1888,18 @@ public class EnergySeeds extends Script {
         }
 
         public void scheduleRespawn(long waitTime) {
-            ThreadPool.schedule(
-                    () -> {
-                        // if the AI is inactive, do not spawn the NPC
-                        if (isSeedActive(seedId)) {
-                            // get a random NPC that should spawn at this location
-                            final Integer spawnId = this.spawnId; // the map uses "Integer", not "int"
-                            spawnedNpcs.put(addSpawn(npcIds[getRandom(npcIds.length)], loc, false, 0), spawnId);
-                        }
-                    },
-                    waitTime);
+            WorldPartition.loop()
+                    .schedule(
+                            () -> {
+                                // if the AI is inactive, do not spawn the NPC
+                                if (isSeedActive(seedId)) {
+                                    // get a random NPC that should spawn at this location
+                                    final Integer spawnId = this.spawnId; // the map uses "Integer", not "int"
+                                    spawnedNpcs.put(addSpawn(npcIds[getRandom(npcIds.length)], loc, false, 0), spawnId);
+                                }
+                            },
+                            waitTime,
+                            TimeUnit.MILLISECONDS);
         }
     }
 

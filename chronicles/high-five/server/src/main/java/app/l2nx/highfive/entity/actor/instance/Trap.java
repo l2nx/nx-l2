@@ -42,11 +42,12 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo.TrapInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -100,7 +101,7 @@ public class Trap extends Npc {
         this.lifeTime = lifeTime != 0 ? lifeTime : 30000;
         remainingTime = this.lifeTime;
         if (skill != null) {
-            trapTask = ThreadPool.scheduleAtFixedRate(new TrapTask(this), TICK, TICK);
+            trapTask = WorldPartition.loop().scheduleAtFixedRate(new TrapTask(this), TICK, TICK, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -363,7 +364,7 @@ public class Trap extends Npc {
                             this);
         }
 
-        ThreadPool.schedule(new TrapTriggerTask(this), 500);
+        WorldPartition.loop().schedule(new TrapTriggerTask(this), 500, TimeUnit.MILLISECONDS);
     }
 
     public void unSummon() {

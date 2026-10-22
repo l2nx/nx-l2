@@ -25,11 +25,12 @@ package app.l2nx.highfive.taskmanagers;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -40,7 +41,7 @@ public class ItemManaTaskManager implements Runnable {
     private static boolean working = false;
 
     protected ItemManaTaskManager() {
-        ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
+        WorldPartition.loop().scheduleAtFixedRate(this, 1000, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

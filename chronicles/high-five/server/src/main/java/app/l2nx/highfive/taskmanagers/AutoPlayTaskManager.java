@@ -38,11 +38,12 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mobius
@@ -395,7 +396,7 @@ public class AutoPlayTaskManager {
         final Set<Player> pool = ConcurrentHashMap.newKeySet(POOL_SIZE);
         player.onActionRequest();
         pool.add(player);
-        ThreadPool.schedulePriorityTaskAtFixedRate(new AutoPlay(pool), TASK_DELAY, TASK_DELAY);
+        WorldPartition.loop().scheduleAtFixedRate(new AutoPlay(pool), TASK_DELAY, TASK_DELAY, TimeUnit.MILLISECONDS);
         POOLS.add(pool);
     }
 

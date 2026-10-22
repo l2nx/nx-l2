@@ -51,7 +51,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -100,50 +101,82 @@ public class FortSiege implements Siegable {
                 final SystemMessage sm;
                 if (time == 3600) // 1hr remains
                 {
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(600), 3000000); // Prepare task for 10 minutes left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(600),
+                                    3000000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 minutes left.
                 } else if (time == 600) // 10min remains
                 {
                     fort.despawnSuspiciousMerchant();
                     sm = new SystemMessage(SystemMessageId.S1_MINUTE_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(10);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(300), 300000); // Prepare task for 5 minutes left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(300),
+                                    300000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 5 minutes left.
                 } else if (time == 300) // 5min remains
                 {
                     sm = new SystemMessage(SystemMessageId.S1_MINUTE_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(5);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(60), 240000); // Prepare task for 1 minute left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(60),
+                                    240000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 1 minute left.
                 } else if (time == 60) // 1min remains
                 {
                     sm = new SystemMessage(SystemMessageId.S1_MINUTE_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(1);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(30), 30000); // Prepare task for 30 seconds left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(30),
+                                    30000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 30 seconds left.
                 } else if (time == 30) // 30seconds remains
                 {
                     sm = new SystemMessage(SystemMessageId.S1_SECOND_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(30);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(10), 20000); // Prepare task for 10 seconds left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(10),
+                                    20000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 10 seconds left.
                 } else if (time == 10) // 10seconds remains
                 {
                     sm = new SystemMessage(SystemMessageId.S1_SECOND_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(10);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(5), 5000); // Prepare task for 5 seconds left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(5),
+                                    5000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 5 seconds left.
                 } else if (time == 5) // 5seconds remains
                 {
                     sm = new SystemMessage(SystemMessageId.S1_SECOND_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(5);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(1), 4000); // Prepare task for 1 seconds left.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(1),
+                                    4000,
+                                    TimeUnit.MILLISECONDS); // Prepare task for 1 seconds left.
                 } else if (time == 1) // 1seconds remains
                 {
                     sm = new SystemMessage(SystemMessageId.S1_SECOND_S_UNTIL_THE_FORTRESS_BATTLE_STARTS);
                     sm.addInt(1);
                     announceToPlayer(sm);
-                    ThreadPool.schedule(new ScheduleStartSiegeTask(0), 1000); // Prepare task start siege.
+                    WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleStartSiegeTask(0),
+                                    1000,
+                                    TimeUnit.MILLISECONDS); // Prepare task start siege.
                 } else if (time == 0) // start siege
                 {
                     fortInst.getSiege().startSiege();
@@ -243,11 +276,11 @@ public class FortSiege implements Siegable {
         fort.spawnNpcCommanders(); // Spawn NPC commanders
         getSiegeGuardManager().unspawnSiegeGuard(); // Remove all spawned siege guard from this fort.
         fort.resetDoors(); // Respawn door to fort
-        ThreadPool.schedule(
-                new ScheduleSuspiciousMerchantSpawn(),
-                FortSiegeManager.getInstance().getSuspiciousMerchantRespawnDelay()
-                        * 60
-                        * 1000); // Prepare 3hr task for suspicious merchant respawn.
+        WorldPartition.loop()
+                .schedule(
+                        new ScheduleSuspiciousMerchantSpawn(),
+                        FortSiegeManager.getInstance().getSuspiciousMerchantRespawnDelay() * 60 * 1000,
+                        TimeUnit.MILLISECONDS); // Prepare 3hr task for suspicious merchant respawn.
         setSiegeDateTime(true); // Store suspicious merchant spawn in DB.
         if (siegeEnd != null) {
             siegeEnd.cancel(true);
@@ -305,9 +338,11 @@ public class FortSiege implements Siegable {
         fort.getZone().updateZoneStatusForCharactersInside();
 
         // Schedule a task to prepare auto siege end.
-        siegeEnd = ThreadPool.schedule(
-                new ScheduleEndSiegeTask(),
-                FortSiegeManager.getInstance().getSiegeLength() * 60 * 1000); // Prepare auto end task.
+        siegeEnd = WorldPartition.loop()
+                .schedule(
+                        new ScheduleEndSiegeTask(),
+                        FortSiegeManager.getInstance().getSiegeLength() * 60 * 1000,
+                        TimeUnit.MILLISECONDS); // Prepare auto end task.
 
         final SystemMessage sm = new SystemMessage(SystemMessageId.THE_FORTRESS_BATTLE_S1_HAS_BEGUN);
         sm.addCastleId(fort.getResidenceId());
@@ -588,9 +623,11 @@ public class FortSiege implements Siegable {
             } else {
                 fort.getSiege().announceToPlayer(new SystemMessage(SystemMessageId.THE_BARRACKS_HAVE_BEEN_SEIZED));
                 if (siegeRestore == null) {
-                    siegeRestore = ThreadPool.schedule(
-                            new ScheduleSiegeRestore(),
-                            FortSiegeManager.getInstance().getCountDownLength() * 60 * 1000);
+                    siegeRestore = WorldPartition.loop()
+                            .schedule(
+                                    new ScheduleSiegeRestore(),
+                                    FortSiegeManager.getInstance().getCountDownLength() * 60 * 1000,
+                                    TimeUnit.MILLISECONDS);
                 }
             }
         } else {
@@ -730,31 +767,36 @@ public class FortSiege implements Siegable {
             clearSiegeClan(); // remove all clans
 
             // spawn suspicious merchant immediately
-            ThreadPool.execute(new ScheduleSuspiciousMerchantSpawn());
+            WorldPartition.loop().execute(new ScheduleSuspiciousMerchantSpawn());
         } else {
             loadSiegeClan();
             if (attackerClans.isEmpty()) {
                 // no attackers - waiting for suspicious merchant spawn
-                ThreadPool.schedule(new ScheduleSuspiciousMerchantSpawn(), delay);
+                WorldPartition.loop().schedule(new ScheduleSuspiciousMerchantSpawn(), delay, TimeUnit.MILLISECONDS);
             } else {
                 // preparing start siege task
                 if (delay > 3600000) // more than hour, how this can happens ? spawn suspicious merchant
                 {
-                    ThreadPool.execute(new ScheduleSuspiciousMerchantSpawn());
-                    siegeStartTask = ThreadPool.schedule(new ScheduleStartSiegeTask(3600), delay - 3600000);
+                    WorldPartition.loop().execute(new ScheduleSuspiciousMerchantSpawn());
+                    siegeStartTask = WorldPartition.loop()
+                            .schedule(new ScheduleStartSiegeTask(3600), delay - 3600000, TimeUnit.MILLISECONDS);
                 }
 
                 if (delay > 600000) // more than 10 min, spawn suspicious merchant
                 {
-                    ThreadPool.execute(new ScheduleSuspiciousMerchantSpawn());
-                    siegeStartTask = ThreadPool.schedule(new ScheduleStartSiegeTask(600), delay - 600000);
+                    WorldPartition.loop().execute(new ScheduleSuspiciousMerchantSpawn());
+                    siegeStartTask = WorldPartition.loop()
+                            .schedule(new ScheduleStartSiegeTask(600), delay - 600000, TimeUnit.MILLISECONDS);
                 } else if (delay > 300000) {
-                    siegeStartTask = ThreadPool.schedule(new ScheduleStartSiegeTask(300), delay - 300000);
+                    siegeStartTask = WorldPartition.loop()
+                            .schedule(new ScheduleStartSiegeTask(300), delay - 300000, TimeUnit.MILLISECONDS);
                 } else if (delay > 60000) {
-                    siegeStartTask = ThreadPool.schedule(new ScheduleStartSiegeTask(60), delay - 60000);
+                    siegeStartTask = WorldPartition.loop()
+                            .schedule(new ScheduleStartSiegeTask(60), delay - 60000, TimeUnit.MILLISECONDS);
                 } else {
                     // lower than 1 min, set to 1 min
-                    siegeStartTask = ThreadPool.schedule(new ScheduleStartSiegeTask(60), 0);
+                    siegeStartTask =
+                            WorldPartition.loop().schedule(new ScheduleStartSiegeTask(60), 0, TimeUnit.MILLISECONDS);
                 }
 
                 log.info(
@@ -783,7 +825,7 @@ public class FortSiege implements Siegable {
         }
 
         // Execute siege auto start.
-        siegeStartTask = ThreadPool.schedule(new ScheduleStartSiegeTask(3600), 0);
+        siegeStartTask = WorldPartition.loop().schedule(new ScheduleStartSiegeTask(3600), 0, TimeUnit.MILLISECONDS);
     }
 
     /**

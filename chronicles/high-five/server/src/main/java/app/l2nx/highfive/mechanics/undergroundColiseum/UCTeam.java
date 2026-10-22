@@ -42,8 +42,9 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPCCafePointInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchUserDie;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
@@ -164,29 +165,32 @@ public class UCTeam {
             return;
         }
 
-        ThreadPool.schedule(
-                () -> {
-                    if (tower == null) {
-                        return;
-                    }
-
-                    if (player.isDead()) {
-                        resPlayer(player);
-                        final RandomGenerator random = ClockBridge.random();
-                        player.teleToLocation(x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
-                        if (player.hasSummon()) {
-                            final Summon summon = player.getSummon();
-                            summon.abortAttack();
-                            summon.abortCast();
-                            if (!summon.isDead()) {
-                                summon.setCurrentHp(summon.getMaxHp());
-                                summon.setCurrentMp(summon.getMaxMp());
-                                summon.teleToLocation(x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            if (tower == null) {
+                                return;
                             }
-                        }
-                    }
-                },
-                UndergroundColiseumConfig.UC_RESS_TIME * 1000);
+
+                            if (player.isDead()) {
+                                resPlayer(player);
+                                final RandomGenerator random = ClockBridge.random();
+                                player.teleToLocation(x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
+                                if (player.hasSummon()) {
+                                    final Summon summon = player.getSummon();
+                                    summon.abortAttack();
+                                    summon.abortCast();
+                                    if (!summon.isDead()) {
+                                        summon.setCurrentHp(summon.getMaxHp());
+                                        summon.setCurrentMp(summon.getMaxMp());
+                                        summon.teleToLocation(
+                                                x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
+                                    }
+                                }
+                            }
+                        },
+                        UndergroundColiseumConfig.UC_RESS_TIME * 1000,
+                        TimeUnit.MILLISECONDS);
     }
 
     public void increaseKillCount() {

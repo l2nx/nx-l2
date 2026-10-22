@@ -43,12 +43,13 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExNevitAdventTimeChange;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRecommendationRepository;
 import app.l2nx.highfive.repository.character.CharacterSkillSaveRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.dao.DataAccessException;
@@ -110,10 +111,12 @@ public class DailyResetManager {
 
         // Daily reset task.
         final long startDelay = Math.max(0, nextResetTime - currentTime);
-        ThreadPool.scheduleAtFixedRate(this::onReset, startDelay, 86400000); // 86400000 = 1 day
+        WorldPartition.loop()
+                .scheduleAtFixedRate(this::onReset, startDelay, 86400000, TimeUnit.MILLISECONDS); // 86400000 = 1 day
 
         // Global save task.
-        ThreadPool.scheduleAtFixedRate(this::onSave, 1800000, 1800000); // 1800000 = 30 minutes
+        WorldPartition.loop()
+                .scheduleAtFixedRate(this::onSave, 1800000, 1800000, TimeUnit.MILLISECONDS); // 1800000 = 30 minutes
     }
 
     private void onReset() {

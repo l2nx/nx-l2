@@ -32,7 +32,7 @@ class ClockBridgeExtensionTest {
     private final ClockBridgeExtension extension = new ClockBridgeExtension();
     private final ExtensionContext context = context(null);
 
-    private ClockBridge.Binding outer;
+    private ClockBridge.TimeSource outer;
 
     @BeforeEach
     void unbind() {

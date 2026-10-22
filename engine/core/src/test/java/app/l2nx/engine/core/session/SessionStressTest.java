@@ -208,6 +208,7 @@ class SessionStressTest {
                         .failureWindow(Duration.ofSeconds(60))
                         .build(),
                 scheduler,
+                scheduler,
                 dispatcher,
                 metrics,
                 transport,

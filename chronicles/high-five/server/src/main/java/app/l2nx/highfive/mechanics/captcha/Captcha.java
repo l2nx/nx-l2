@@ -36,6 +36,8 @@ import java.awt.image.BufferedImage;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
 
 public class Captcha {
     private static final char[] CAPTCHA_TEXT_POSSIBILITIES = {
@@ -49,6 +51,11 @@ public class Captcha {
     // The answer and the id are secrets: a seeded, recorded game RNG would make them predictable.
     private static final SecureRandom SECRET_RANDOM = new SecureRandom();
 
+    // Noise of the image list, which is built off the world loop where ClockBridge.random() throws; createImageList
+    // holds the monitor, so the generator has one user at a time.
+    private final RandomGenerator noiseRandom =
+            RandomGeneratorFactory.of("L64X128MixRandom").create(SECRET_RANDOM.nextLong());
+
     char[] captchaText;
     int captchaId;
 
@@ -57,7 +64,7 @@ public class Captcha {
     public void generateCaptcha(PlayerData data, Player target) {
         final int cId = generateRandomCaptchaId();
         final char[] cText = generateCaptchaText();
-        final BufferedImage image = generateCaptcha(cText);
+        final BufferedImage image = generateCaptcha(cText, ClockBridge.random());
         final byte[] imageData = DDSConverter.convertToDDS(image).array();
 
         data.image = image;
@@ -82,7 +89,7 @@ public class Captcha {
             final ImageData dt = new ImageData();
             dt.captchaID = captchaId;
             dt.captchaText = String.valueOf(captchaText);
-            dt.image = generateCaptcha(captchaText);
+            dt.image = generateCaptcha(captchaText, noiseRandom);
             imageMap.put(i, dt);
         }
 
@@ -102,7 +109,7 @@ public class Captcha {
         return SECRET_RANDOM.nextInt(CAPTCHA_MIN_ID, CAPTCHA_MAX_ID + 1);
     }
 
-    public static BufferedImage generateCaptcha(char[] text) {
+    public static BufferedImage generateCaptcha(char[] text, RandomGenerator noise) {
         final Color textColor = new Color(38, 213, 30);
         final Color circleColor = new Color(73, 100, 151);
         final Font textFont = new Font("comic sans ms", Font.BOLD, 24);
@@ -121,9 +128,9 @@ public class Captcha {
 
         g.setColor(circleColor);
         for (int i = 0; i < circlesToDraw; i++) {
-            final int circleRadius = (int) ((ClockBridge.random().nextDouble() * height) / 2.0);
-            final int circleX = (int) ((ClockBridge.random().nextDouble() * width) - circleRadius);
-            final int circleY = (int) ((ClockBridge.random().nextDouble() * height) - circleRadius);
+            final int circleRadius = (int) ((noise.nextDouble() * height) / 2.0);
+            final int circleX = (int) ((noise.nextDouble() * width) - circleRadius);
+            final int circleY = (int) ((noise.nextDouble() * height) - circleRadius);
             g.drawOval(circleX, circleY, circleRadius * 2, circleRadius * 2);
         }
 
@@ -148,7 +155,7 @@ public class Captcha {
             final BufferedImage charImage = new BufferedImage(charDim, charDim, BufferedImage.TYPE_INT_ARGB);
             final Graphics2D charGraphics = charImage.createGraphics();
             charGraphics.translate(halfCharDim, halfCharDim);
-            final double angle = (ClockBridge.random().nextDouble() - 0.5) * rotationRange;
+            final double angle = (noise.nextDouble() - 0.5) * rotationRange;
             charGraphics.transform(AffineTransform.getRotateInstance(angle));
             charGraphics.translate(-halfCharDim, -halfCharDim);
             charGraphics.setColor(textColor);

@@ -54,9 +54,10 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.DoorStatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.OnEventTrigger;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StaticObjectInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -135,7 +136,7 @@ public class Door extends Creature {
             delay += ClockBridge.random().nextInt(getTemplate().getRandomTime());
         }
 
-        ThreadPool.schedule(new TimerOpen(), delay * 1000);
+        WorldPartition.loop().schedule(new TimerOpen(), delay * 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -620,7 +621,8 @@ public class Door extends Creature {
             oldTask.cancel(false);
         }
 
-        autoCloseTask = ThreadPool.schedule(new AutoClose(), getTemplate().getCloseTime() * 1000);
+        autoCloseTask = WorldPartition.loop()
+                .schedule(new AutoClose(), getTemplate().getCloseTime() * 1000, TimeUnit.MILLISECONDS);
     }
 
     class AutoClose implements Runnable {
@@ -646,7 +648,7 @@ public class Door extends Creature {
                 delay += ClockBridge.random().nextInt(getTemplate().getRandomTime());
             }
 
-            ThreadPool.schedule(this, delay * 1000);
+            WorldPartition.loop().schedule(this, delay * 1000, TimeUnit.MILLISECONDS);
         }
     }
 

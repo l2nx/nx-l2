@@ -27,7 +27,8 @@ import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.threads.ThreadPool;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
@@ -114,12 +115,14 @@ public class SeedOfInfinityManager {
         spawnOpenedSeed();
         DoorData.getInstance().getDoor(14240102).openMe();
 
-        ThreadPool.schedule(
-                () -> {
-                    closeSeed();
-                    setCurrentStage(4);
-                },
-                time);
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            closeSeed();
+                            setCurrentStage(4);
+                        },
+                        time,
+                        TimeUnit.MILLISECONDS);
     }
 
     public static void closeSeed() {

@@ -28,8 +28,8 @@ import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRaidPointRepository;
-import app.l2nx.highfive.threads.ThreadPool;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
@@ -69,8 +70,12 @@ public class RaidBossPointsManager {
         final ZonedDateTime now = ZonedDateTime.now(ClockBridge.wallClock());
         final ZonedDateTime todayResetTime = now.with(LocalTime.of(0, 10));
         final ZonedDateTime nextResetTime = todayResetTime.isBefore(now) ? todayResetTime.plusDays(1) : todayResetTime;
-        ThreadPool.scheduleAtFixedRate(
-                this::resetRaidPoints, nextResetTime.toInstant().toEpochMilli() - ClockBridge.wallMillis(), 86400000);
+        WorldPartition.loop()
+                .scheduleAtFixedRate(
+                        this::resetRaidPoints,
+                        nextResetTime.toInstant().toEpochMilli() - ClockBridge.wallMillis(),
+                        86400000,
+                        TimeUnit.MILLISECONDS);
     }
 
     private void init() {

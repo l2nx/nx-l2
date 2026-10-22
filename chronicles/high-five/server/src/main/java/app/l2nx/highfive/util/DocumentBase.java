@@ -127,6 +127,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -152,18 +153,33 @@ public abstract class DocumentBase {
     }
 
     public Document parse() {
-        Document document = null;
+        final Document document = read(file).orElse(null);
+        if (document != null) {
+            parse(document);
+        }
+
+        return document;
+    }
+
+    public void parse(Document document) {
         try {
-            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setValidating(false);
-            factory.setIgnoringComments(true);
-            document = factory.newDocumentBuilder().parse(file);
             parseDocument(document);
         } catch (Exception e) {
             log.error("Error loading file {}", file, e);
         }
+    }
 
-        return document;
+    /** Reads the XML only, so it may run on the parse pool; building the templates registers enchant routes. */
+    public static Optional<Document> read(File file) {
+        try {
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setValidating(false);
+            factory.setIgnoringComments(true);
+            return Optional.of(factory.newDocumentBuilder().parse(file));
+        } catch (Exception e) {
+            log.error("Error loading file {}", file, e);
+            return Optional.empty();
+        }
     }
 
     protected abstract void parseDocument(Document document);
