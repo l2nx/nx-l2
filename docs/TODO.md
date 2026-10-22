@@ -56,10 +56,12 @@ lists what is open.
 - [#78](https://github.com/l2nx/nx-l2/issues/78) SystemMessage writes the declared parameter count even when it skips a null parameter
 - [#79](https://github.com/l2nx/nx-l2/issues/79) Alliance chat ignores the block list
 - [#80](https://github.com/l2nx/nx-l2/issues/80) Restart into offline trade disconnects the trader just created when OfflineDisconnectSameAccount is on
+- [#84](https://github.com/l2nx/nx-l2/issues/84) Game server loses its login registration (hexid.txt) on every installDist
 
 ## Done
 
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
+- [#81](https://github.com/l2nx/nx-l2/issues/81) NetworkServer close leaves a connection accepted during shutdown open forever
 - [#75](https://github.com/l2nx/nx-l2/issues/75) REUSE licences check fails on main: ten files without SPDX information
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's connection pool sized to fit `max_connections` ([spec 006](specs/006-database.md)).
 - [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
