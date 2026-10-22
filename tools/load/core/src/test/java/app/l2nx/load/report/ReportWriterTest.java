@@ -7,6 +7,7 @@ package app.l2nx.load.report;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateCriterion;
 import app.l2nx.load.gate.model.GateVerdict;
@@ -17,6 +18,8 @@ import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.StepStats;
+import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,7 +57,7 @@ class ReportWriterTest {
 
         @Test
         void write_shouldWriteSummaryWithIsoTimesAndWithoutNulls() throws IOException {
-            var directory = writer.write(root, summary(), Map.of(), null, null);
+            var directory = writer.write(root, summary(), Map.of(), Map.of(), null, null);
 
             var actual = Files.readString(directory.resolve(ReportWriter.SUMMARY_FILE));
 
@@ -73,10 +76,31 @@ class ReportWriterTest {
             var histogram = new Histogram(3);
             histogram.recordValue(Duration.ofMillis(12).toNanos());
 
-            var directory = writer.write(root, summary(), Map.of(IntentKind.MOVE_TO, histogram), null, null);
+            var directory = writer.write(root, summary(), Map.of(IntentKind.MOVE_TO, histogram), Map.of(), null, null);
 
             var actual = Files.readString(directory.resolve("move_to.hgrm"));
             assertThat(actual).contains("Value     Percentile").contains("12.0").contains("#[Max     =       12.0");
+        }
+
+        @Test
+        void write_shouldWriteHistogramPerLifecycleStepNextToTheIntentOnes() throws IOException {
+            var intent = new Histogram(3);
+            intent.recordValue(Duration.ofMillis(12).toNanos());
+            var step = new Histogram(3);
+            step.recordValue(Duration.ofMillis(250).toNanos());
+
+            var directory = writer.write(
+                    root,
+                    summary(),
+                    Map.of(IntentKind.LOGIN, intent),
+                    Map.of(LoadBotState.LOGIN_AUTH, step),
+                    null,
+                    null);
+
+            assertThat(directory.resolve("login.hgrm")).exists();
+            var actual = Files.readString(directory.resolve(ReportWriter.stepHistogramFile(LoadBotState.LOGIN_AUTH)));
+            assertThat(ReportWriter.stepHistogramFile(LoadBotState.LOGIN_AUTH)).isEqualTo("step-login_auth.hgrm");
+            assertThat(actual).contains("#[Max     =      250.0");
         }
 
         @Test
@@ -84,7 +108,7 @@ class ReportWriterTest {
             var start = "# TYPE l2nx_engine_pass_seconds histogram\nl2nx_engine_pass_seconds_count 1\n";
             var end = "l2nx_engine_pass_seconds_count 2\n";
 
-            var directory = writer.write(root, summary(), Map.of(), start, end);
+            var directory = writer.write(root, summary(), Map.of(), Map.of(), start, end);
 
             assertThat(directory.resolve(ReportWriter.METRICS_START_FILE)).hasContent(start);
             assertThat(directory.resolve(ReportWriter.METRICS_END_FILE)).hasContent(end);
@@ -92,7 +116,7 @@ class ReportWriterTest {
 
         @Test
         void write_shouldSkipScrapeFiles_whenNotTaken() throws IOException {
-            var directory = writer.write(root, summary(), Map.of(), null, null);
+            var directory = writer.write(root, summary(), Map.of(), Map.of(), null, null);
 
             assertThat(directory.resolve(ReportWriter.METRICS_START_FILE)).doesNotExist();
             assertThat(directory.resolve(ReportWriter.METRICS_END_FILE)).doesNotExist();
@@ -105,7 +129,7 @@ class ReportWriterTest {
         @Test
         void readSummary_shouldReturnWrittenSummary() throws IOException {
             var expected = summary();
-            var directory = writer.write(root, expected, Map.of(), null, null);
+            var directory = writer.write(root, expected, Map.of(), Map.of(), null, null);
 
             var actual = writer.readSummary(directory.resolve(ReportWriter.SUMMARY_FILE));
 
@@ -115,7 +139,7 @@ class ReportWriterTest {
         @Test
         void readSummary_shouldKeepNullServer_whenRunReadNoServerMeters() throws IOException {
             var expected = summary().toBuilder().server(null).build();
-            var directory = writer.write(root, expected, Map.of(), null, null);
+            var directory = writer.write(root, expected, Map.of(), Map.of(), null, null);
 
             var actual = writer.readSummary(directory.resolve(ReportWriter.SUMMARY_FILE));
 
@@ -133,8 +157,12 @@ class ReportWriterTest {
             assertThat(actual)
                     .contains("Run load-roam-20261021-081530-42: VALID")
                     .contains("server commit -")
-                    .contains("timeouts 0.200%, rejected 0.100%, stopped load bots 0.000%")
+                    .contains("timeouts 0.200%, rejected 0.100%, stopped load bots 0.000%,"
+                            + " load bots at the final state IN_GAME: 20")
+                    .contains("ramp-down PT5S, measured STEADY")
                     .containsPattern("MOVE_TO\\s+1000\\s+997\\s+2\\s+1\\s+4\\.00\\s+11\\.50\\s+20\\.00\\s+25\\.00")
+                    .containsPattern("lifecycle step\\s+count")
+                    .containsPattern("LOGIN_AUTH\\s+20\\s+3\\.00\\s+40\\.00\\s+60\\.00\\s+61\\.00")
                     .containsPattern("world-0\\s+6000\\s+5\\.000\\s+20\\.000\\s+-\\s+3")
                     .contains("GC pause p99 3.000 ms mean 1.200 ms max - ms")
                     .contains("l2nx_legacy_task_seconds{type=\"ai\"} mean 0.500 ms p99 5.000 ms max 7.000 ms")
@@ -204,6 +232,8 @@ class ReportWriterTest {
                         .steady(Duration.ofMinutes(5))
                         .rampDown(Duration.ofSeconds(5))
                         .build())
+                .measuredPhase(MeasuredPhase.STEADY)
+                .finalState(LoadBotState.IN_GAME)
                 .startedAt(STARTED_AT)
                 .cpuAffinity("server 0-3, load bots 4-7")
                 .validity(RunValidity.VALID)
@@ -220,10 +250,20 @@ class ReportWriterTest {
                                 .p999Millis(20)
                                 .maxMillis(25)
                                 .build()))
+                .steps(Map.of(
+                        LoadBotState.LOGIN_AUTH,
+                        StepStats.builder()
+                                .count(20)
+                                .p50Millis(3)
+                                .p99Millis(40)
+                                .p999Millis(60)
+                                .maxMillis(61)
+                                .build()))
                 .generatorLagP99Millis(0.8)
                 .timeoutShare(0.002)
                 .rejectedShare(0.001)
                 .stoppedShare(0)
+                .reachedFinalState(20)
                 .server(ServerStats.builder()
                         .loops(Map.of(
                                 "world-0",

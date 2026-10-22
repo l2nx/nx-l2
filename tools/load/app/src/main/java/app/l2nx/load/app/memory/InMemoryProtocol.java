@@ -7,18 +7,19 @@ package app.l2nx.load.app.memory;
 import app.l2nx.load.app.LoadProperties;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotIdentity;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.protocol.ClientProtocol;
 import app.l2nx.load.protocol.ClientSession;
 import app.l2nx.load.protocol.SessionListener;
 import io.netty.channel.EventLoop;
+import io.netty.channel.IoHandlerFactory;
+import io.netty.channel.nio.NioIoHandler;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /** A run on this network-free server stand-in measures the generator's own overhead. */
-@Component
 @RequiredArgsConstructor
 public final class InMemoryProtocol implements ClientProtocol {
     public static final String ID = "in-memory";
@@ -35,6 +36,16 @@ public final class InMemoryProtocol implements ClientProtocol {
     @Override
     public Set<IntentKind> capabilities() {
         return CAPABILITIES;
+    }
+
+    @Override
+    public LoadBotState lastState() {
+        return LoadBotState.IN_GAME;
+    }
+
+    @Override
+    public IoHandlerFactory ioHandlerFactory() {
+        return NioIoHandler.newFactory();
     }
 
     @Override

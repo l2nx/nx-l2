@@ -6,20 +6,30 @@ package app.l2nx.load.protocol;
 
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotIdentity;
+import app.l2nx.load.bot.model.LoadBotState;
 import io.netty.channel.EventLoop;
+import io.netty.channel.IoHandlerFactory;
 import java.util.Set;
 
-/** A client adapter of one protocol: maps intents to packets and server packets to observations. */
 public interface ClientProtocol {
     String id();
 
-    /** Intent kinds this protocol can express; a load scenario that needs more does not start. */
+    /** A scenario needing more kinds does not start. */
     Set<IntentKind> capabilities();
 
+    /** A scenario whose final state lies beyond it does not start: every load bot would stop on an error. */
+    LoadBotState lastState();
+
+    /** Must match the channel class the adapter connects with. */
+    IoHandlerFactory ioHandlerFactory();
+
     /**
-     * Opens a session for one load bot. Non-blocking: the adapter connects on {@code loop} and walks the lifecycle
-     * itself, reporting each step to {@code listener}, starting with {@code LOGIN_CONNECT}. The listener is first
-     * called from a later task on {@code loop}, never before this method returns.
+     * Called for every load bot before any starts.
+     *
+     * @throws IllegalArgumentException when the protocol cannot carry the identity, such as an overlong account
      */
+    default void checkIdentity(LoadBotIdentity identity) {}
+
+    /** Non-blocking; the listener is first called from a later task on {@code loop}, never before this returns. */
     ClientSession open(LoadBotIdentity identity, EventLoop loop, SessionListener listener);
 }

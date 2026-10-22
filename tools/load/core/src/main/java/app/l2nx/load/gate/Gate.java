@@ -5,6 +5,7 @@
 package app.l2nx.load.gate;
 
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateCriterion;
 import app.l2nx.load.gate.model.GateThresholds;
@@ -16,14 +17,15 @@ import app.l2nx.load.report.model.RunValidity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Stream;
 
 /**
- * Compares the runs of a scenario with its baseline. Every measured criterion takes the median of the per-run values
- * over the valid runs, so one outlier run neither passes nor fails the gate. A meter the gate needs and a run lacks
- * fails its criterion with the reason; nothing passes for want of data.
+ * Compares the runs of a scenario with its baseline on the median over the valid runs, so one outlier cannot decide.
+ * A missing meter fails its criterion; engine criteria pass as not applicable when load bots stop before
+ * {@code IN_GAME}.
  */
 public final class Gate {
 
@@ -33,22 +35,19 @@ public final class Gate {
 
     private Gate() {}
 
-    /**
-     * @param runs the runs of one scenario, invalid ones included (they are ignored)
-     * @param baseline the run the client latency is compared with, of the same scenario
-     * @throws IllegalArgumentException when a run is of another scenario than the baseline
-     */
+    /** @param runs the runs of one scenario and final state, invalid ones included (they are ignored) */
     public static GateVerdict evaluate(List<RunSummary> runs, RunSummary baseline, GateThresholds thresholds) {
-        var foreign = runs.stream()
-                .filter(run -> !run.scenario().equals(baseline.scenario()))
-                .map(RunSummary::runId)
-                .toList();
-        if (!foreign.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Runs %s are not of the baseline scenario %s".formatted(foreign, baseline.scenario()));
+        var incomparable = incomparableReason(runs, baseline);
+        if (incomparable != null) {
+            return verdict(
+                    runs,
+                    baseline,
+                    List.of(),
+                    List.of(missing(GateCriterion.COMPARABLE_RUNS, null, null, incomparable)));
         }
         var valid =
                 runs.stream().filter(run -> run.validity() == RunValidity.VALID).toList();
+        var engineNotApplicable = engineNotApplicableReason(baseline);
         var results = new ArrayList<CriterionResult>();
         results.add(CriterionResult.builder()
                 .criterion(GateCriterion.VALID_RUNS)
@@ -56,17 +55,31 @@ public final class Gate {
                 .threshold((double) thresholds.runs())
                 .passed(valid.size() >= thresholds.runs())
                 .build());
-        if (valid.isEmpty()) {
-            var reason = "no valid runs";
-            results.add(missing(GateCriterion.ENGINE_PASS_P99, null, passBudgetMillis(thresholds), reason));
-            results.add(missing(GateCriterion.OVER_BUDGET_SHARE, null, thresholds.maxOverBudgetShare(), reason));
-            results.add(missing(GateCriterion.CLIENT_LATENCY_P99, null, null, reason));
-            results.add(missing(GateCriterion.TIMEOUTS_AND_ERRORS, null, thresholds.maxTimeoutAndErrorShare(), reason));
+        var noValidRuns = "no valid runs";
+        if (engineNotApplicable != null) {
+            results.add(
+                    notApplicable(GateCriterion.ENGINE_PASS_P99, passBudgetMillis(thresholds), engineNotApplicable));
+            results.add(notApplicable(
+                    GateCriterion.OVER_BUDGET_SHARE, thresholds.maxOverBudgetShare(), engineNotApplicable));
+        } else if (valid.isEmpty()) {
+            results.add(missing(GateCriterion.ENGINE_PASS_P99, null, passBudgetMillis(thresholds), noValidRuns));
+            results.add(missing(GateCriterion.OVER_BUDGET_SHARE, null, thresholds.maxOverBudgetShare(), noValidRuns));
         } else {
             results.addAll(engine(valid, thresholds));
+        }
+        if (valid.isEmpty()) {
+            results.add(missing(GateCriterion.CLIENT_LATENCY_P99, null, null, noValidRuns));
+            results.add(missing(
+                    GateCriterion.TIMEOUTS_AND_ERRORS, null, thresholds.maxTimeoutAndErrorShare(), noValidRuns));
+        } else {
             results.addAll(clientLatency(valid, baseline, thresholds));
             results.addAll(timeoutsAndErrors(valid, thresholds));
         }
+        return verdict(runs, baseline, valid, results);
+    }
+
+    private static GateVerdict verdict(
+            List<RunSummary> runs, RunSummary baseline, List<RunSummary> valid, List<CriterionResult> results) {
         return GateVerdict.builder()
                 .scenario(baseline.scenario())
                 .baselineRunId(baseline.runId())
@@ -77,6 +90,34 @@ public final class Gate {
                         .toList())
                 .results(results)
                 .build();
+    }
+
+    /** {@code null} when every run is of the baseline's scenario and final state. */
+    private static String incomparableReason(List<RunSummary> runs, RunSummary baseline) {
+        var reasons = new ArrayList<String>();
+        var otherScenario = runIds(runs.stream().filter(run -> !Objects.equals(run.scenario(), baseline.scenario())));
+        if (!otherScenario.isEmpty()) {
+            reasons.add("runs %s are of another scenario than baseline %s (%s)"
+                    .formatted(otherScenario, baseline.runId(), baseline.scenario()));
+        }
+        var otherFinalState = runIds(runs.stream()
+                .filter(run -> Objects.equals(run.scenario(), baseline.scenario())
+                        && run.finalState() != baseline.finalState()));
+        if (!otherFinalState.isEmpty()) {
+            reasons.add("runs %s stop at another final state than baseline %s (%s)"
+                    .formatted(otherFinalState, baseline.runId(), baseline.finalState()));
+        }
+        return reasons.isEmpty() ? null : String.join("; ", reasons);
+    }
+
+    /** {@code null} when the load bots play in the game, so the engine criteria apply. */
+    private static String engineNotApplicableReason(RunSummary baseline) {
+        var finalState = baseline.finalState();
+        if (finalState == LoadBotState.IN_GAME) {
+            return null;
+        }
+        return "not applicable: the load bots stop at %s, before %s, so the engine runs nothing of theirs"
+                .formatted(finalState, LoadBotState.IN_GAME);
     }
 
     private static List<CriterionResult> engine(List<RunSummary> runs, GateThresholds thresholds) {
@@ -203,6 +244,15 @@ public final class Gate {
                 .measured(value)
                 .threshold(threshold)
                 .passed(value <= threshold)
+                .build();
+    }
+
+    private static CriterionResult notApplicable(GateCriterion criterion, Double threshold, String reason) {
+        return CriterionResult.builder()
+                .criterion(criterion)
+                .threshold(threshold)
+                .passed(true)
+                .reason(reason)
                 .build();
     }
 

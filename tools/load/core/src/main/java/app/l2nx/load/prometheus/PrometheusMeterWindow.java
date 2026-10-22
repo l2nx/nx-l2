@@ -14,10 +14,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The steady window read from the server's Prometheus endpoint: a scrape with the text exposition at each boundary,
- * the per-second samples between them, and the {@link ServerStats} of all of them at the end. A boundary scrape is
- * retried; one that still fails leaves the run without server meters instead of failing it, so the client results
- * are kept. One instance per run; the scraper stays the caller's to close.
+ * A boundary scrape that still fails after retries leaves the run without server meters instead of failing it, so
+ * the client results are kept. The scraper stays the caller's to close.
  */
 @Slf4j
 public final class PrometheusMeterWindow implements ServerMeterWindow {
@@ -30,11 +28,9 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
     private final List<Scrape> scrapes = new ArrayList<>();
     private boolean started;
 
-    /** The text exposition at the window start, verbatim; {@code null} until {@link #start()} succeeded. */
     @Getter
     private String startText;
 
-    /** The text exposition at the window end, verbatim; {@code null} until {@link #finish()} succeeded. */
     @Getter
     private String endText;
 
@@ -47,7 +43,6 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
         this.retryPause = retryPause;
     }
 
-    /** A start that fails after its retries turns the samples off and makes {@link #finish()} return {@code null}. */
     @Override
     public void start() {
         scrapes.clear();
@@ -61,7 +56,6 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
         }
     }
 
-    /** A failed sample is logged and left out: the window still has its boundaries, only a gauge reading is lost. */
     @Override
     public void sample() {
         requireStarted();
@@ -73,15 +67,11 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
         } catch (IOException e) {
             log.warn("Server meter sample {} skipped", scrapes.size(), e);
         } catch (InterruptedException e) {
-            // The run's next sleep sees the flag and ends the run.
             Thread.currentThread().interrupt();
         }
     }
 
-    /**
-     * @return {@code null} when a boundary scrape failed after its retries (the window has no deltas then) or the
-     *     window's meters cannot be read
-     */
+    /** Returns {@code null} when a boundary scrape failed or the window's meters cannot be read. */
     @Override
     public ServerStats finish() {
         requireStarted();
@@ -97,7 +87,7 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
         try {
             return ServerStatsReader.read(new MetricWindow(scrapes));
         } catch (RuntimeException e) {
-            log.warn("Server meters of the steady window are unreadable, the report has no server meters", e);
+            log.warn("Server meters of the measured phase are unreadable, the report has no server meters", e);
             return null;
         }
     }
@@ -114,7 +104,7 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
             for (int attempt = 0; attempt <= BOUNDARY_RETRIES; attempt++) {
                 if (attempt > 0) {
                     log.info(
-                            "Server meter scrape at the steady window {} failed, retrying: {}",
+                            "Server meter scrape at the measured phase {} failed, retrying: {}",
                             which,
                             failure.toString());
                     Thread.sleep(retryPause);
@@ -126,13 +116,13 @@ public final class PrometheusMeterWindow implements ServerMeterWindow {
                 }
             }
         } catch (InterruptedException e) {
-            // The run's next sleep sees the flag and ends the run.
             Thread.currentThread().interrupt();
-            log.warn("Server meter scrape at the steady window {} interrupted, the report has no server meters", which);
+            log.warn(
+                    "Server meter scrape at the measured phase {} interrupted, the report has no server meters", which);
             return null;
         }
         log.warn(
-                "Server meter scrape at the steady window {} failed {} times, the report has no server meters",
+                "Server meter scrape at the measured phase {} failed {} times, the report has no server meters",
                 which,
                 BOUNDARY_RETRIES + 1,
                 failure);

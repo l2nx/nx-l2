@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.load.app;
+package app.l2nx.load.app.scenario;
 
 import app.l2nx.load.bot.LoadBotView;
 import app.l2nx.load.bot.intent.Intent;
@@ -10,9 +10,9 @@ import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.MoveTo;
 import app.l2nx.load.bot.intent.Say;
 import app.l2nx.load.bot.model.Position;
-import app.l2nx.load.scenario.ActionSchedule;
 import app.l2nx.load.scenario.LoadBehaviour;
 import app.l2nx.load.scenario.LoadScenario;
+import app.l2nx.load.scenario.model.ActionSchedule;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumSet;

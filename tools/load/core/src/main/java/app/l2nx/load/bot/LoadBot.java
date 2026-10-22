@@ -27,9 +27,9 @@ import app.l2nx.load.latency.LatencyRecorder;
 import app.l2nx.load.protocol.ClientProtocol;
 import app.l2nx.load.protocol.ClientSession;
 import app.l2nx.load.protocol.SessionListener;
-import app.l2nx.load.scenario.ActionSchedule;
 import app.l2nx.load.scenario.LoadBehaviour;
 import app.l2nx.load.scenario.LoadScenario;
+import app.l2nx.load.scenario.model.ActionSchedule;
 import io.netty.channel.EventLoop;
 import io.netty.util.concurrent.ScheduledFuture;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -47,20 +47,18 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * One simulated player. Everything but {@link #start()} and {@link #close()} runs on its session's event loop, so it
- * holds no locks. Latency counts from an intent's intended time, not its send time (coordinated omission).
- *
- * <p>Acknowledgements carry no correlation: each confirms the oldest pending intent of its kind, so an intent the
- * server drops silently absorbs the next acknowledgement and overstates latency, never understates it.
+ * holds no locks. Latency counts from an intent's intended time and the bot enters {@code LOGIN_CONNECT} at its
+ * intended start (coordinated omission). Acknowledgements carry no correlation: an intent the server drops silently
+ * absorbs the next acknowledgement and overstates latency.
  */
 @Slf4j
 public final class LoadBot implements LoadBotView {
-    /** Intent kinds the load bot sends itself; every protocol must express them. */
-    public static final Set<IntentKind> LIFECYCLE_INTENTS = Collections.unmodifiableSet(EnumSet.of(
-            IntentKind.LOGIN,
-            IntentKind.SELECT_SERVER,
-            IntentKind.SELECT_CHARACTER,
-            IntentKind.ENTER_WORLD,
-            IntentKind.LOGOUT));
+    private static final Map<LoadBotState, IntentKind> LIFECYCLE_STEP_INTENTS =
+            Collections.unmodifiableMap(new EnumMap<>(Map.of(
+                    LoadBotState.LOGIN_AUTH, IntentKind.LOGIN,
+                    LoadBotState.SERVER_LIST, IntentKind.SELECT_SERVER,
+                    LoadBotState.CHARACTER_SELECT, IntentKind.SELECT_CHARACTER,
+                    LoadBotState.ENTERING, IntentKind.ENTER_WORLD)));
 
     private static final long GOLDEN_GAMMA = 0x9E3779B97F4A7C15L;
 
@@ -69,6 +67,7 @@ public final class LoadBot implements LoadBotView {
     private final ClientProtocol protocol;
     private final Set<IntentKind> capabilities;
     private final LoadScenario scenario;
+    private final LoadBotState finalState;
     private final RunTimeline timeline;
     private final LatencyRecorder latencies;
     private final GeneratorLagMonitor lag;
@@ -88,10 +87,13 @@ public final class LoadBot implements LoadBotView {
     private ScheduledFuture<?> leaveTask;
     private ScheduledFuture<?> expiry;
     private long expiryDeadline;
+    private long enteredAt;
     private boolean leaving;
     private boolean loggedOut;
     private boolean finished;
     private boolean stoppedOnError;
+    private boolean reachedFinalState;
+    private boolean arrivalOver;
     private int selfObjectId;
     private Position position;
     private int hp;
@@ -115,12 +117,41 @@ public final class LoadBot implements LoadBotView {
         this.protocol = protocol;
         capabilities = Set.copyOf(protocol.capabilities());
         this.scenario = scenario;
+        finalState = requireFinalState(scenario.finalState());
         this.timeline = timeline;
         this.latencies = latencies;
         this.lag = lag;
         intentTimeoutNanos = intentTimeout.toNanos();
         this.onStopped = onStopped;
         random = new SplittableRandom(seedOf(seed, identity.index()));
+        enteredAt = timeline.startAt(identity.index());
+    }
+
+    /** Intent kinds a load bot sends itself on its way to {@code finalState}; a protocol must express them. */
+    public static Set<IntentKind> lifecycleIntents(LoadBotState finalState) {
+        requireFinalState(finalState);
+        final Set<IntentKind> kinds = EnumSet.noneOf(IntentKind.class);
+        for (LoadBotState state : LoadBotState.values()) {
+            if (state.compareTo(finalState) >= 0) {
+                break;
+            }
+            final IntentKind kind = LIFECYCLE_STEP_INTENTS.get(state);
+            if (kind != null) {
+                kinds.add(kind);
+            }
+        }
+        if (finalState == LoadBotState.IN_GAME) {
+            kinds.add(IntentKind.LOGOUT);
+        }
+        return Collections.unmodifiableSet(kinds);
+    }
+
+    private static LoadBotState requireFinalState(LoadBotState finalState) {
+        if (finalState == null || !finalState.canBeFinal()) {
+            throw new IllegalArgumentException("A load scenario's final state must lie after "
+                    + LoadBotState.LOGIN_CONNECT + " and up to " + LoadBotState.IN_GAME + ": " + finalState);
+        }
+        return finalState;
     }
 
     /** SplitMix64 mix of the run seed and the load bot index. */
@@ -139,14 +170,19 @@ public final class LoadBot implements LoadBotView {
         });
     }
 
-    /** Stops the load bot without a logout, from any thread; pending intents of the steady window count as timeouts. */
+    /** Stops the load bot without a logout, from any thread; pending intents of the measured phase count as timeouts. */
     public void close() {
         loop.execute(() -> finish(false));
     }
 
-    /** Whether the load bot stopped on a protocol error or a dropped connection; read once its event loop is done. */
+    /** Whether the load bot stopped on a protocol error or dropped connection; read once its event loop is done. */
     public boolean stoppedOnError() {
         return stoppedOnError;
+    }
+
+    /** Whether the load bot ever reached its final state; read once its event loop is done. */
+    public boolean reachedFinalState() {
+        return reachedFinalState;
     }
 
     @Override
@@ -200,7 +236,7 @@ public final class LoadBot implements LoadBotView {
     }
 
     private void recordLag(long intended) {
-        if (timeline.inSteady(intended)) {
+        if (timeline.countsLag(intended)) {
             lag.record(timeline.now() - intended);
         }
     }
@@ -227,6 +263,7 @@ public final class LoadBot implements LoadBotView {
         if (finished || next == state) {
             return;
         }
+        left(state, next);
         state = next;
         if (next != LoadBotState.IN_GAME) {
             cancelActions();
@@ -235,21 +272,56 @@ public final class LoadBot implements LoadBotView {
             finish(!loggedOut);
             return;
         }
-        if (leaving) {
+        if (next.inLifecycle() && arrived(next)) {
+            return;
+        }
+        if (departing()) {
             departWhenDrained();
             return;
         }
         switch (next) {
             case LOGIN_AUTH ->
-                sendNow(Login.builder()
+                sendArrival(Login.builder()
                         .account(identity.account())
                         .password(identity.password())
                         .build());
-            case SERVER_LIST -> sendNow(new SelectServer());
-            case CHARACTER_SELECT -> sendNow(new SelectCharacter(identity.characterSlot()));
-            case ENTERING -> sendNow(new EnterWorld());
+            case SERVER_LIST -> sendArrival(new SelectServer());
+            case CHARACTER_SELECT -> sendArrival(new SelectCharacter(identity.characterSlot()));
+            case ENTERING -> sendArrival(new EnterWorld());
             case IN_GAME -> enterGame();
             default -> {}
+        }
+    }
+
+    private void left(LoadBotState left, LoadBotState next) {
+        final long now = timeline.now();
+        if (left.inLifecycle()
+                && next.inLifecycle()
+                && left != finalState
+                && timeline.countsArrival(identity.index(), enteredAt)) {
+            latencies.recordStep(left, now - enteredAt);
+        }
+        enteredAt = now;
+    }
+
+    /** A state past the final one counts as reaching it: an adapter may report several steps at once. */
+    private boolean arrived(LoadBotState reached) {
+        if (reached.compareTo(finalState) < 0) {
+            return false;
+        }
+        reachedFinalState = true;
+        endArrival();
+        if (finalState == LoadBotState.IN_GAME) {
+            return false;
+        }
+        finish(false);
+        return true;
+    }
+
+    private void endArrival() {
+        if (!arrivalOver) {
+            arrivalOver = true;
+            timeline.arrivalOver();
         }
     }
 
@@ -279,7 +351,7 @@ public final class LoadBot implements LoadBotView {
             return;
         }
         if (intent != null) {
-            send(intent, intended);
+            send(intent, intended, timeline.countsAction(intended));
         }
         if (!finished && !leaving && state == LoadBotState.IN_GAME) {
             nextIntended = intended + schedule.nextDelayNanos(random);
@@ -294,11 +366,13 @@ public final class LoadBot implements LoadBotView {
         }
     }
 
-    private void sendNow(Intent intent) {
-        send(intent, timeline.now());
+    private void sendArrival(Intent intent) {
+        final long now = timeline.now();
+        send(intent, now, timeline.countsArrival(identity.index(), now));
     }
 
-    private void send(Intent intent, long intended) {
+    /** @param counted whether the measured phase counts the intent, judged once for its whole life */
+    private void send(Intent intent, long intended, boolean counted) {
         final IntentKind kind = intent.kind();
         if (!capabilities.contains(kind)) {
             fail(new IllegalStateException("Protocol " + protocol.id() + " cannot express " + kind));
@@ -308,11 +382,11 @@ public final class LoadBot implements LoadBotView {
             fail(new IllegalStateException("Protocol " + protocol.id() + " reported a state before open returned"));
             return;
         }
-        if (timeline.inSteady(intended)) {
+        if (counted) {
             latencies.recordSent(kind);
         }
         // Pending before the send: an adapter may acknowledge synchronously inside it.
-        pending.computeIfAbsent(kind, k -> new ArrayDeque<>()).addLast(new Pending(intended));
+        pending.computeIfAbsent(kind, k -> new ArrayDeque<>()).addLast(new Pending(intended, counted));
         armExpiry(intended + intentTimeoutNanos);
         session.send(intent);
     }
@@ -322,7 +396,7 @@ public final class LoadBot implements LoadBotView {
         if (head == null) {
             return;
         }
-        if (!head.expired && timeline.inSteady(head.intended)) {
+        if (!head.expired && head.counted) {
             final long latency = timeline.now() - head.intended;
             if (latency >= intentTimeoutNanos) {
                 // The expiry task has not run yet: the intent is late all the same.
@@ -340,7 +414,7 @@ public final class LoadBot implements LoadBotView {
             return;
         }
         // An expired intent has already counted as a timeout.
-        if (!head.expired && timeline.inSteady(head.intended)) {
+        if (!head.expired && head.counted) {
             latencies.recordError(kind);
         }
         departWhenDrained();
@@ -394,7 +468,7 @@ public final class LoadBot implements LoadBotView {
                     break;
                 }
                 waiting.expired = true;
-                if (timeline.inSteady(waiting.intended)) {
+                if (waiting.counted) {
                     latencies.recordTimeout(entry.getKey());
                 }
             }
@@ -420,9 +494,16 @@ public final class LoadBot implements LoadBotView {
         return count;
     }
 
-    /** Once a leaving load bot has no unexpired pending intent: a logout in the game, a plain close elsewhere. */
+    /**
+     * A bot with a final state before the game keeps walking to it past its leave time: leaving would cut short the
+     * lifecycle measured.
+     */
+    private boolean departing() {
+        return leaving && finalState == LoadBotState.IN_GAME;
+    }
+
     private void departWhenDrained() {
-        if (!leaving || loggedOut || finished) {
+        if (!departing() || loggedOut || finished) {
             return;
         }
         for (ArrayDeque<Pending> queue : pending.values()) {
@@ -432,7 +513,8 @@ public final class LoadBot implements LoadBotView {
         }
         if (state == LoadBotState.IN_GAME) {
             loggedOut = true;
-            sendNow(new Logout());
+            final long now = timeline.now();
+            send(new Logout(), now, timeline.countsAction(now));
         } else {
             finish(false);
         }
@@ -491,6 +573,7 @@ public final class LoadBot implements LoadBotView {
         finished = true;
         state = LoadBotState.STOPPED;
         stoppedOnError = onError;
+        endArrival();
         cancelActions();
         if (leaveTask != null) {
             leaveTask.cancel(false);
@@ -501,7 +584,7 @@ public final class LoadBot implements LoadBotView {
         }
         for (Map.Entry<IntentKind, ArrayDeque<Pending>> entry : pending.entrySet()) {
             for (Pending waiting : entry.getValue()) {
-                if (!waiting.expired && timeline.inSteady(waiting.intended)) {
+                if (!waiting.expired && waiting.counted) {
                     if (onError) {
                         latencies.recordError(entry.getKey());
                     } else {
@@ -549,10 +632,12 @@ public final class LoadBot implements LoadBotView {
     /** An intent waiting for its acknowledgement; an expired one only stays to absorb a late acknowledgement. */
     private static final class Pending {
         private final long intended;
+        private final boolean counted;
         private boolean expired;
 
-        private Pending(long intended) {
+        private Pending(long intended, boolean counted) {
             this.intended = intended;
+            this.counted = counted;
         }
     }
 }

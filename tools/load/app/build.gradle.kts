@@ -10,7 +10,9 @@ configurations.configureEach {
 
 dependencies {
     implementation(project(":tools:load:core"))
+    implementation(project(":tools:load:protocol-p267"))
     implementation(libs.commons.lang3)
+    implementation(libs.postgresql)
     implementation(libs.spring.boot)
     implementation(libs.spring.boot.autoconfigure)
     implementation(libs.spring.boot.starter.log4j2)
@@ -19,6 +21,7 @@ dependencies {
     annotationProcessor(libs.spring.boot.configuration.processor)
 
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(testFixtures(project(":libs:database")))
 }
 
 application {

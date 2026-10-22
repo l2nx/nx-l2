@@ -5,11 +5,11 @@
 package app.l2nx.load.gate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.within;
 
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateCriterion;
 import app.l2nx.load.gate.model.GateThresholds;
@@ -20,13 +20,18 @@ import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class GateTest {
 
@@ -211,13 +216,80 @@ class GateTest {
                             tuple("SAY", false, "no SAY intents in baseline base, present in runs [a]"));
         }
 
-        @Test
-        void evaluate_shouldThrow_whenRunIsOfAnotherScenario() {
-            var foreign = run("x").toBuilder().scenario("load-roam").build();
+        static Stream<Arguments> incomparableRuns() {
+            return Stream.of(
+                    Arguments.of(
+                            "another scenario",
+                            run("x").toBuilder().scenario("load-roam").build(),
+                            "runs [x] are of another scenario than baseline base (load-crowd-pvp)"),
+                    Arguments.of(
+                            "another final state",
+                            run("x").toBuilder()
+                                    .finalState(LoadBotState.SERVER_LIST)
+                                    .build(),
+                            "runs [x] stop at another final state than baseline base (IN_GAME)"));
+        }
 
-            assertThatThrownBy(() -> Gate.evaluate(List.of(run("a"), foreign), baseline(), THRESHOLDS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("[x]");
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("incomparableRuns")
+        void evaluate_shouldFailWithTheReasonAndCompareNothing_whenARunIsNotComparable(
+                String name, RunSummary incomparable, String reason) {
+            var actual = Gate.evaluate(List.of(run("a"), incomparable, run("b"), run("c")), baseline(), THRESHOLDS);
+
+            assertThat(actual.passed()).isFalse();
+            assertThat(actual.results())
+                    .extracting(
+                            CriterionResult::criterion,
+                            CriterionResult::measured,
+                            CriterionResult::passed,
+                            CriterionResult::reason)
+                    .containsExactly(tuple(GateCriterion.COMPARABLE_RUNS, null, false, reason));
+        }
+
+        @ParameterizedTest(name = "final state {0}")
+        @EnumSource(
+                value = LoadBotState.class,
+                names = {"LOGIN_AUTH", "SERVER_LIST", "GAME_CONNECT", "CHARACTER_SELECT", "ENTERING"})
+        void evaluate_shouldPassTheEngineCriteriaAsNotApplicable_whenTheLoadBotsStopBeforeTheGame(
+                LoadBotState finalState) {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run ->
+                            run.toBuilder().finalState(finalState).server(null).build())
+                    .toList();
+            var baseline =
+                    baseline().toBuilder().finalState(finalState).server(null).build();
+
+            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
+
+            assertThat(actual.passed()).isTrue();
+            assertThat(actual.results())
+                    .filteredOn(result -> result.criterion() == GateCriterion.ENGINE_PASS_P99
+                            || result.criterion() == GateCriterion.OVER_BUDGET_SHARE)
+                    .extracting(CriterionResult::criterion, CriterionResult::measured, CriterionResult::passed)
+                    .containsExactly(
+                            tuple(GateCriterion.ENGINE_PASS_P99, null, true),
+                            tuple(GateCriterion.OVER_BUDGET_SHARE, null, true));
+            assertThat(result(actual, GateCriterion.ENGINE_PASS_P99).reason())
+                    .contains("not applicable")
+                    .contains(finalState.name());
+        }
+
+        @Test
+        void evaluate_shouldPassTheEngineCriteriaAsNotApplicable_whenThereAreNoValidRunsBeforeTheGame() {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> run.toBuilder()
+                            .finalState(LoadBotState.GAME_CONNECT)
+                            .validity(RunValidity.INVALID)
+                            .build())
+                    .toList();
+            var baseline =
+                    baseline().toBuilder().finalState(LoadBotState.GAME_CONNECT).build();
+
+            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
+
+            assertThat(result(actual, GateCriterion.ENGINE_PASS_P99).passed()).isTrue();
+            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99).passed())
+                    .isFalse();
         }
 
         @ParameterizedTest(name = "pass p99 {0} ms -> passed {1}")
@@ -325,11 +397,14 @@ class GateTest {
         return RunSummary.builder()
                 .runId(runId)
                 .scenario(SCENARIO)
+                .measuredPhase(MeasuredPhase.STEADY)
+                .finalState(LoadBotState.IN_GAME)
                 .protocol("in-memory")
                 .seed(42)
                 .validity(RunValidity.VALID)
                 .invalidReasons(List.of())
                 .intents(Map.of(IntentKind.MOVE_TO, intent(10)))
+                .steps(Map.of())
                 .generatorLagP99Millis(1)
                 .timeoutShare(0.001)
                 .rejectedShare(0.001)

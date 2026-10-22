@@ -12,6 +12,8 @@ import app.l2nx.load.bot.model.Position;
 import app.l2nx.load.bot.observation.Entered;
 import app.l2nx.load.bot.observation.Observation;
 import io.netty.channel.EventLoop;
+import io.netty.channel.IoHandlerFactory;
+import io.netty.channel.nio.NioIoHandler;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -32,7 +34,9 @@ public final class FakeProtocol implements ClientProtocol {
     private final List<Session> sessions = new CopyOnWriteArrayList<>();
     private Set<IntentKind> capabilities = EnumSet.allOf(IntentKind.class);
     private Set<IntentKind> unacknowledged = EnumSet.noneOf(IntentKind.class);
+    private LoadBotState lastState = LoadBotState.IN_GAME;
     private long ackDelayNanos;
+    private long connectDelayNanos;
     private long stallFrom;
     private long stallUntil;
     private boolean stalled;
@@ -40,6 +44,7 @@ public final class FakeProtocol implements ClientProtocol {
     private final Set<Integer> rejections = new HashSet<>();
     private IntPredicate failOnEnter = index -> false;
     private IntPredicate dropOnEnter = index -> false;
+    private IntPredicate rejectIdentity = index -> false;
 
     public FakeProtocol(LongSupplier clock) {
         this.clock = clock;
@@ -50,8 +55,18 @@ public final class FakeProtocol implements ClientProtocol {
         return this;
     }
 
+    public FakeProtocol lastState(LoadBotState state) {
+        lastState = state;
+        return this;
+    }
+
     public FakeProtocol ackDelay(Duration delay) {
         ackDelayNanos = delay.toNanos();
+        return this;
+    }
+
+    public FakeProtocol connectDelay(Duration delay) {
+        connectDelayNanos = delay.toNanos();
         return this;
     }
 
@@ -88,6 +103,11 @@ public final class FakeProtocol implements ClientProtocol {
         return this;
     }
 
+    public FakeProtocol rejectIdentity(IntPredicate indexes) {
+        rejectIdentity = indexes;
+        return this;
+    }
+
     public List<Session> sessions() {
         return sessions;
     }
@@ -103,10 +123,34 @@ public final class FakeProtocol implements ClientProtocol {
     }
 
     @Override
+    public LoadBotState lastState() {
+        return lastState;
+    }
+
+    @Override
+    public IoHandlerFactory ioHandlerFactory() {
+        return NioIoHandler.newFactory();
+    }
+
+    @Override
+    public void checkIdentity(LoadBotIdentity identity) {
+        if (rejectIdentity.test(identity.index())) {
+            throw new IllegalArgumentException("The account " + identity.account() + " is too long");
+        }
+    }
+
+    @Override
     public ClientSession open(LoadBotIdentity identity, EventLoop loop, SessionListener listener) {
         final Session session = new Session(identity, loop, listener);
         sessions.add(session);
-        loop.execute(() -> session.state(LoadBotState.LOGIN_CONNECT, LoadBotState.LOGIN_AUTH));
+        loop.execute(() -> {
+            session.state(LoadBotState.LOGIN_CONNECT);
+            if (connectDelayNanos == 0) {
+                session.state(LoadBotState.LOGIN_AUTH);
+            } else {
+                loop.schedule(() -> session.state(LoadBotState.LOGIN_AUTH), connectDelayNanos, TimeUnit.NANOSECONDS);
+            }
+        });
         return session;
     }
 

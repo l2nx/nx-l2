@@ -5,7 +5,9 @@
 package app.l2nx.load.latency;
 
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.report.model.IntentStats;
+import app.l2nx.load.report.model.StepStats;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
@@ -13,24 +15,27 @@ import java.util.concurrent.atomic.LongAdder;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
-/**
- * Client-side results per intent kind: latency from the intended time in nanoseconds, and the counts of intents sent,
- * acknowledged, timed out and lost to a load bot error. Load bots record only intents intended in the steady window.
- * Every event loop records concurrently and wait-free; read after the run from one thread.
- */
+/** Records wait-free from every event loop, in nanoseconds from the intended time; read after the run from one thread. */
 public final class LatencyRecorder {
     private static final double NANOS_PER_MILLI = 1_000_000.0;
+    private static final int SIGNIFICANT_DIGITS = 3;
 
     private final Map<IntentKind, Recorder> latencies = new EnumMap<>(IntentKind.class);
     private final Map<IntentKind, Histogram> totals = new EnumMap<>(IntentKind.class);
     private final Map<IntentKind, LongAdder> sent = counters();
     private final Map<IntentKind, LongAdder> timeouts = counters();
     private final Map<IntentKind, LongAdder> errors = counters();
+    private final Map<LoadBotState, Recorder> steps = new EnumMap<>(LoadBotState.class);
+    private final Map<LoadBotState, Histogram> stepTotals = new EnumMap<>(LoadBotState.class);
 
     public LatencyRecorder() {
         for (IntentKind kind : IntentKind.values()) {
-            latencies.put(kind, new Recorder(3));
-            totals.put(kind, new Histogram(3));
+            latencies.put(kind, new Recorder(SIGNIFICANT_DIGITS));
+            totals.put(kind, new Histogram(SIGNIFICANT_DIGITS));
+        }
+        for (LoadBotState state : LoadBotState.values()) {
+            steps.put(state, new Recorder(SIGNIFICANT_DIGITS));
+            stepTotals.put(state, new Histogram(SIGNIFICANT_DIGITS));
         }
     }
 
@@ -54,15 +59,24 @@ public final class LatencyRecorder {
         timeouts.get(kind).increment();
     }
 
-    /** The server rejected the intent, or it was lost because its load bot stopped on an error. */
     public void recordError(IntentKind kind) {
         errors.get(kind).increment();
     }
 
-    /** Latencies of {@code kind} recorded so far, in nanoseconds. */
+    public void recordStep(LoadBotState state, long nanos) {
+        steps.get(state).recordValue(nanos);
+    }
+
     public Histogram histogram(IntentKind kind) {
-        final Histogram total = totals.get(kind);
-        total.add(latencies.get(kind).getIntervalHistogram());
+        return accumulate(totals.get(kind), latencies.get(kind));
+    }
+
+    public Histogram stepHistogram(LoadBotState state) {
+        return accumulate(stepTotals.get(state), steps.get(state));
+    }
+
+    private static Histogram accumulate(Histogram total, Recorder recorder) {
+        total.add(recorder.getIntervalHistogram());
         return total.copy();
     }
 
@@ -78,7 +92,6 @@ public final class LatencyRecorder {
         return errors.get(kind).sum();
     }
 
-    /** Results of every kind that sent at least one intent, in milliseconds. */
     public Map<IntentKind, IntentStats> stats() {
         final Map<IntentKind, IntentStats> stats = new EnumMap<>(IntentKind.class);
         for (IntentKind kind : IntentKind.values()) {
@@ -94,12 +107,36 @@ public final class LatencyRecorder {
                             .acknowledged(histogram.getTotalCount())
                             .timeouts(timeouts(kind))
                             .errors(errors(kind))
-                            .p50Millis(histogram.getValueAtPercentile(50.0) / NANOS_PER_MILLI)
-                            .p99Millis(histogram.getValueAtPercentile(99.0) / NANOS_PER_MILLI)
-                            .p999Millis(histogram.getValueAtPercentile(99.9) / NANOS_PER_MILLI)
+                            .p50Millis(percentileMillis(histogram, 50.0))
+                            .p99Millis(percentileMillis(histogram, 99.0))
+                            .p999Millis(percentileMillis(histogram, 99.9))
                             .maxMillis(histogram.getMaxValue() / NANOS_PER_MILLI)
                             .build());
         }
         return Collections.unmodifiableMap(stats);
+    }
+
+    public Map<LoadBotState, StepStats> stepStats() {
+        final Map<LoadBotState, StepStats> stats = new EnumMap<>(LoadBotState.class);
+        for (LoadBotState state : LoadBotState.values()) {
+            final Histogram histogram = stepHistogram(state);
+            if (histogram.getTotalCount() == 0) {
+                continue;
+            }
+            stats.put(
+                    state,
+                    StepStats.builder()
+                            .count(histogram.getTotalCount())
+                            .p50Millis(percentileMillis(histogram, 50.0))
+                            .p99Millis(percentileMillis(histogram, 99.0))
+                            .p999Millis(percentileMillis(histogram, 99.9))
+                            .maxMillis(histogram.getMaxValue() / NANOS_PER_MILLI)
+                            .build());
+        }
+        return Collections.unmodifiableMap(stats);
+    }
+
+    private static double percentileMillis(Histogram histogram, double percentile) {
+        return histogram.getValueAtPercentile(percentile) / NANOS_PER_MILLI;
     }
 }

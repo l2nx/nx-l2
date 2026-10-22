@@ -7,7 +7,7 @@ package app.l2nx.load.run;
 import app.l2nx.load.report.model.ServerStats;
 
 /**
- * Server meters over the steady window of one run, driven by {@link LoadRun}. Never aborts the run: when the meters
+ * Server meters over the measured phase of one run. Never aborts the run: when the meters
  * cannot be read, {@code finish} returns {@code null} and the run keeps its client results.
  */
 public interface ServerMeterWindow {

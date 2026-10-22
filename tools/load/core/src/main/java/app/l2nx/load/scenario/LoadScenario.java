@@ -6,14 +6,27 @@ package app.l2nx.load.scenario;
 
 import app.l2nx.load.bot.LoadBotView;
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotState;
+import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.util.Set;
 
 /** Ids carry the {@code load-} prefix. */
 public interface LoadScenario {
     String id();
 
-    /** Intent kinds the behaviours send; a protocol missing any of them fails the run before it starts. */
     Set<IntentKind> requires();
+
+    default MeasuredPhase measuredPhase() {
+        return MeasuredPhase.STEADY;
+    }
+
+    /**
+     * The state at which a load bot is done: before {@code IN_GAME} it closes the session there without an error;
+     * {@code IN_GAME} plays until the ramp-down, then logs out. Never {@code CLOSING} or {@code STOPPED}.
+     */
+    default LoadBotState finalState() {
+        return LoadBotState.IN_GAME;
+    }
 
     /** The behaviour of one load bot, created when it first reaches {@code IN_GAME}. */
     LoadBehaviour behaviour(LoadBotView bot);

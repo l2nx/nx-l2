@@ -8,7 +8,10 @@ import app.l2nx.load.bot.LoadBotView;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.MoveTo;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
+import app.l2nx.load.scenario.model.ActionSchedule;
+import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.time.Duration;
 import java.util.Set;
 import java.util.random.RandomGenerator;
@@ -16,6 +19,8 @@ import java.util.random.RandomGenerator;
 public final class FakeScenario implements LoadScenario {
     private final ActionSchedule schedule;
     private final Runnable onAction;
+    private MeasuredPhase measuredPhase = MeasuredPhase.STEADY;
+    private LoadBotState finalState = LoadBotState.IN_GAME;
 
     public FakeScenario(Duration interval, Duration jitter) {
         this(interval, jitter, () -> {});
@@ -24,6 +29,26 @@ public final class FakeScenario implements LoadScenario {
     public FakeScenario(Duration interval, Duration jitter, Runnable onAction) {
         schedule = ActionSchedule.builder().interval(interval).jitter(jitter).build();
         this.onAction = onAction;
+    }
+
+    public FakeScenario measuredPhase(MeasuredPhase phase) {
+        measuredPhase = phase;
+        return this;
+    }
+
+    public FakeScenario finalState(LoadBotState state) {
+        finalState = state;
+        return this;
+    }
+
+    @Override
+    public MeasuredPhase measuredPhase() {
+        return measuredPhase;
+    }
+
+    @Override
+    public LoadBotState finalState() {
+        return finalState;
     }
 
     @Override

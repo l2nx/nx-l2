@@ -20,7 +20,6 @@ import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.scenario.LoadScenario;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
-import io.netty.channel.nio.NioIoHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.time.Duration;
@@ -59,8 +58,8 @@ public final class LoadRun {
     /**
      * @param serverMeters reads the server meters; required when {@code settings.prometheusUrl()} is set, ignored
      *     otherwise
-     * @throws IllegalArgumentException before anything starts, when the protocol cannot express an intent the scenario
-     *     or the lifecycle needs, or the settings name another scenario or protocol
+     * @throws IllegalArgumentException before anything starts, when the protocol, identities, settings or injection
+     *     profile do not fit the scenario
      */
     public RunSummary execute(
             RunSettings settings,
@@ -72,13 +71,14 @@ public final class LoadRun {
             throws InterruptedException {
         check(settings, scenario, protocol, serverMeters);
         final int bots = settings.injection().bots();
+        final List<LoadBotIdentity> botIdentities = identities(bots, protocol, identities);
         final Instant startedAt = wallClock.instant();
+        final RunTimeline timeline = new RunTimeline(settings.injection(), scenario.measuredPhase(), clock);
         final GeneratorLagMonitor lag = new GeneratorLagMonitor();
         final CountDownLatch stopped = new CountDownLatch(bots);
         final List<LoadBot> loadBots = new ArrayList<>(bots);
         final EventLoopGroup group = new MultiThreadIoEventLoopGroup(
-                settings.eventLoopThreads(), new DefaultThreadFactory("l2nx-load"), NioIoHandler.newFactory());
-        final RunTimeline timeline = new RunTimeline(settings.injection(), clock);
+                settings.eventLoopThreads(), new DefaultThreadFactory("l2nx-load"), protocol.ioHandlerFactory());
         log.info(
                 "Load run {} on {} started: {} load bots, seed {}",
                 scenario.id(),
@@ -88,12 +88,7 @@ public final class LoadRun {
         ServerStats server = null;
         Throwable failure = null;
         try {
-            for (int index = 0; index < bots; index++) {
-                final LoadBotIdentity identity = identities.apply(index);
-                if (identity.index() != index) {
-                    throw new IllegalArgumentException(
-                            "Identity of load bot " + index + " has index " + identity.index());
-                }
+            for (LoadBotIdentity identity : botIdentities) {
                 final LoadBot bot = new LoadBot(
                         identity,
                         settings.seed(),
@@ -108,15 +103,12 @@ public final class LoadRun {
                 loadBots.add(bot);
                 bot.start();
             }
+            final long drainedAt = timeline.end() + settings.intentTimeout().toNanos() + LOGOUT_ROUND_TRIP.toNanos();
             if (settings.prometheusUrl() != null) {
-                server = readServerMeters(timeline, settings.scrapeInterval(), serverMeters);
+                server = readServerMeters(timeline, settings.scrapeInterval(), serverMeters, drainedAt);
             }
-            sleepUntil(timeline.end());
-            final long drainNanos = timeline.end()
-                    + settings.intentTimeout().toNanos()
-                    + LOGOUT_ROUND_TRIP.toNanos()
-                    - clock.getAsLong();
-            if (!stopped.await(Math.max(0, drainNanos), TimeUnit.NANOSECONDS)) {
+            // Load bots that close on a final state before the game may all be done long before the run's end.
+            if (!stopped.await(Math.max(0, drainedAt - clock.getAsLong()), TimeUnit.NANOSECONDS)) {
                 log.info("{} load bots did not log out in time and are closed", stopped.getCount());
             }
         } catch (Throwable e) {
@@ -148,7 +140,13 @@ public final class LoadRun {
             throw new IllegalArgumentException(
                     "Settings name protocol " + settings.protocol() + ", given " + protocol.id());
         }
-        final Set<IntentKind> missing = EnumSet.copyOf(LoadBot.LIFECYCLE_INTENTS);
+        final Set<IntentKind> lifecycle = LoadBot.lifecycleIntents(scenario.finalState());
+        if (scenario.finalState().compareTo(protocol.lastState()) > 0) {
+            throw new IllegalArgumentException("Protocol " + protocol.id() + " reaches up to " + protocol.lastState()
+                    + ", scenario " + scenario.id() + " stops at " + scenario.finalState());
+        }
+        final Set<IntentKind> missing = EnumSet.noneOf(IntentKind.class);
+        missing.addAll(lifecycle);
         missing.addAll(scenario.requires());
         missing.removeAll(protocol.capabilities());
         if (!missing.isEmpty()) {
@@ -160,16 +158,36 @@ public final class LoadRun {
         }
     }
 
-    private ServerStats readServerMeters(RunTimeline timeline, Duration scrapeInterval, ServerMeterWindow meters)
+    private static List<LoadBotIdentity> identities(
+            int bots, ClientProtocol protocol, IntFunction<LoadBotIdentity> identities) {
+        final List<LoadBotIdentity> checked = new ArrayList<>(bots);
+        for (int index = 0; index < bots; index++) {
+            final LoadBotIdentity identity = identities.apply(index);
+            if (identity.index() != index) {
+                throw new IllegalArgumentException("Identity of load bot " + index + " has index " + identity.index());
+            }
+            try {
+                protocol.checkIdentity(identity);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Protocol " + protocol.id() + " cannot carry load bot " + index + ": " + e.getMessage(), e);
+            }
+            checked.add(identity);
+        }
+        return checked;
+    }
+
+    private ServerStats readServerMeters(
+            RunTimeline timeline, Duration scrapeInterval, ServerMeterWindow meters, long drainedAt)
             throws InterruptedException {
-        sleepUntil(timeline.steadyStart());
+        sleepUntil(timeline.measuredStart());
         meters.start();
         final long interval = scrapeInterval.toNanos();
-        for (long at = timeline.steadyStart() + interval; at - timeline.steadyEnd() < 0; at += interval) {
-            sleepUntil(at);
+        for (long at = timeline.measuredStart() + interval;
+                !timeline.awaitMeasuredEnd(at - drainedAt < 0 ? at : drainedAt) && at - drainedAt < 0;
+                at += interval) {
             meters.sample();
         }
-        sleepUntil(timeline.steadyEnd());
         return meters.finish();
     }
 
@@ -209,6 +227,8 @@ public final class LoadRun {
         final long stoppedOnError =
                 loadBots.stream().filter(LoadBot::stoppedOnError).count();
         final double stoppedShare = (double) stoppedOnError / loadBots.size();
+        final int reachedFinalState =
+                (int) loadBots.stream().filter(LoadBot::reachedFinalState).count();
         final long lagP99 = lag.p99Nanos();
         final List<InvalidReason> reasons = new ArrayList<>();
         if (lagP99 > settings.maxGeneratorLagP99().toNanos()) {
@@ -223,16 +243,20 @@ public final class LoadRun {
                 .protocol(protocol.id())
                 .seed(settings.seed())
                 .injection(settings.injection())
+                .measuredPhase(scenario.measuredPhase())
+                .finalState(scenario.finalState())
                 .startedAt(startedAt)
                 .serverCommit(settings.serverCommit())
                 .cpuAffinity(settings.cpuAffinity())
                 .validity(reasons.isEmpty() ? RunValidity.VALID : RunValidity.INVALID)
                 .invalidReasons(List.copyOf(reasons))
                 .intents(intents)
+                .steps(latencies.stepStats())
                 .generatorLagP99Millis(lagP99 / NANOS_PER_MILLI)
                 .timeoutShare(sent == 0 ? 0 : (double) timeouts / sent)
                 .rejectedShare(sent == 0 ? 0 : (double) errors / sent)
                 .stoppedShare(stoppedShare)
+                .reachedFinalState(reachedFinalState)
                 .server(server)
                 .build();
     }

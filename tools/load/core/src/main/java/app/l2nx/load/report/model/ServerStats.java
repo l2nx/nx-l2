@@ -8,15 +8,12 @@ import java.util.Map;
 import lombok.Builder;
 
 /**
- * Server meters over the steady window. A boxed value is {@code null} when the server does not expose that meter or
+ * Server meters over the measured phase. A boxed value is {@code null} when the server does not expose that meter or
  * the window holds no observation of it.
  *
- * @param loops engine meters by the {@code loop} tag
- * @param legacyMeanMillis mean of the legacy task, task lag and packet timers, keyed by their PromQL selector
- * @param legacyP99Millis p99 of the legacy timers that publish a histogram (task lag, all tasks), same keys; a timer
- *     without a histogram has no entry
- * @param legacyMaxMillis max of the same histogram timers, bounded by the window's buckets; a timer without a
- *     histogram has no entry, since Micrometer's decaying max still holds observations from before the window
+ * @param legacyMeanMillis legacy timers keyed by their PromQL selector
+ * @param legacyP99Millis only timers that publish a histogram have an entry, under the same keys
+ * @param legacyMaxMillis histogram timers only: Micrometer's decaying max still holds pre-window observations
  */
 @Builder(toBuilder = true)
 public record ServerStats(

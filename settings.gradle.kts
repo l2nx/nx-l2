@@ -15,7 +15,7 @@ include(":libs:boot", ":libs:database", ":libs:gslink", ":libs:network")
 include(":engine:core")
 include(":protocols:login:c621")
 include(":login:server", ":login:boot")
-include(":tools:load:core", ":tools:load:app")
+include(":tools:load:core", ":tools:load:protocol-p267", ":tools:load:app")
 
 // -Pchronicles=high-five,essence limits the build; the default is every directory under chronicles/.
 val chronicles = providers.gradleProperty("chronicles").orNull?.split(',')?.map { it.trim() }

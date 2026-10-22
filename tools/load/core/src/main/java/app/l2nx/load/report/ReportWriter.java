@@ -5,10 +5,12 @@
 package app.l2nx.load.report;
 
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateVerdict;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.StepStats;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -38,6 +40,8 @@ public final class ReportWriter {
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneOffset.UTC);
     private static final double NANOS_PER_MILLI = 1_000_000.0;
     private static final String NONE = "-";
+    private static final String HISTOGRAM_EXTENSION = ".hgrm";
+    private static final String STEP_HISTOGRAM_PREFIX = "step-";
 
     private final JsonMapper jsonMapper = JsonMapper.builder()
             .changeDefaultPropertyInclusion(inclusion -> inclusion
@@ -53,14 +57,16 @@ public final class ReportWriter {
     }
 
     /**
-     * @param histograms client latency per intent kind, recorded in nanoseconds; written in milliseconds
-     * @param metricsStartText scrape at the steady window's start, {@code null} when not taken (no file)
-     * @param metricsEndText scrape at the steady window's end, {@code null} when not taken (no file)
+     * @param histograms recorded in nanoseconds; written in milliseconds
+     * @param stepHistograms recorded in nanoseconds; written in milliseconds
+     * @param metricsStartText {@code null} writes no file
+     * @param metricsEndText {@code null} writes no file
      */
     public Path write(
             Path root,
             RunSummary summary,
             Map<IntentKind, Histogram> histograms,
+            Map<LoadBotState, Histogram> stepHistograms,
             String metricsStartText,
             String metricsEndText)
             throws IOException {
@@ -68,6 +74,9 @@ public final class ReportWriter {
         jsonMapper.writeValue(directory.resolve(SUMMARY_FILE), summary);
         for (var entry : histograms.entrySet()) {
             writeHistogram(directory.resolve(histogramFile(entry.getKey())), entry.getValue());
+        }
+        for (var entry : stepHistograms.entrySet()) {
+            writeHistogram(directory.resolve(stepHistogramFile(entry.getKey())), entry.getValue());
         }
         writeText(directory.resolve(METRICS_START_FILE), metricsStartText);
         writeText(directory.resolve(METRICS_END_FILE), metricsEndText);
@@ -79,7 +88,12 @@ public final class ReportWriter {
     }
 
     public static String histogramFile(IntentKind kind) {
-        return kind.name().toLowerCase(Locale.ROOT) + ".hgrm";
+        return kind.name().toLowerCase(Locale.ROOT) + HISTOGRAM_EXTENSION;
+    }
+
+    /** Prefixed, so a state never shares a file with an intent kind of the same name. */
+    public static String stepHistogramFile(LoadBotState state) {
+        return STEP_HISTOGRAM_PREFIX + state.name().toLowerCase(Locale.ROOT) + HISTOGRAM_EXTENSION;
     }
 
     public String consoleTable(RunSummary summary) {
@@ -101,20 +115,24 @@ public final class ReportWriter {
             var injection = summary.injection();
             line(
                     out,
-                    "%d load bots, ramp %s, warm-up %s, steady %s, ramp-down %s",
+                    "%d load bots, ramp %s, warm-up %s, steady %s, ramp-down %s, measured %s",
                     injection.bots(),
                     injection.ramp(),
                     injection.warmUp(),
                     injection.steady(),
-                    injection.rampDown());
+                    injection.rampDown(),
+                    summary.measuredPhase());
         }
         line(
                 out,
-                "generator lag p99 %.2f ms, timeouts %.3f%%, rejected %.3f%%, stopped load bots %.3f%%",
+                "generator lag p99 %.2f ms, timeouts %.3f%%, rejected %.3f%%, stopped load bots %.3f%%,"
+                        + " load bots at the final state %s: %s",
                 summary.generatorLagP99Millis(),
                 summary.timeoutShare() * 100,
                 summary.rejectedShare() * 100,
-                summary.stoppedShare() * 100);
+                summary.stoppedShare() * 100,
+                summary.finalState(),
+                summary.reachedFinalState());
         out.append('\n');
         line(
                 out,
@@ -144,6 +162,7 @@ public final class ReportWriter {
                             stats.maxMillis()));
         }
         out.append('\n');
+        appendSteps(out, summary.steps());
         appendServer(out, summary.server());
         return out.toString();
     }
@@ -170,6 +189,24 @@ public final class ReportWriter {
                     text(result.reason()));
         }
         return out.toString();
+    }
+
+    private static void appendSteps(StringBuilder out, Map<LoadBotState, StepStats> steps) {
+        if (steps.isEmpty()) {
+            return;
+        }
+        line(out, "%-16s %10s %9s %9s %9s %9s", "lifecycle step", "count", "p50 ms", "p99 ms", "p99.9 ms", "max ms");
+        new TreeMap<>(steps)
+                .forEach((state, stats) -> line(
+                        out,
+                        "%-16s %10d %9.2f %9.2f %9.2f %9.2f",
+                        state,
+                        stats.count(),
+                        stats.p50Millis(),
+                        stats.p99Millis(),
+                        stats.p999Millis(),
+                        stats.maxMillis()));
+        out.append('\n');
     }
 
     private static void appendServer(StringBuilder out, ServerStats server) {

@@ -211,6 +211,7 @@ chronicles/
 tools/                data preparation from the operator's own client
   load/
     core              app.l2nx.load      load harness: load bots, scenarios, latency, server meters, report, gate (spec 009)
+    protocol-p267     app.l2nx.load.protocol.p267  client adapter of the High Five client: login c621, then game p267
     app               app.l2nx.load.app  command line: settings, load scenarios, run and gate commands
 build-logic/          Gradle convention plugins
 ```

@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# Overrides the load profile while seeding: bot accounts are created by their first login, not written by the harness.
+
+l2nx:
+  login:
+    auto-create-accounts: true

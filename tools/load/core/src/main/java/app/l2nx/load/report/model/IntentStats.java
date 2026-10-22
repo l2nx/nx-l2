@@ -6,11 +6,7 @@ package app.l2nx.load.report.model;
 
 import lombok.Builder;
 
-/**
- * Client-side results of one intent kind over the steady window; latencies in milliseconds from the intended time.
- *
- * @param errors intents the server rejected and pending intents lost because their load bot stopped on an error
- */
+/** Latencies in milliseconds from the intended time. */
 @Builder(toBuilder = true)
 public record IntentStats(
         long sent,

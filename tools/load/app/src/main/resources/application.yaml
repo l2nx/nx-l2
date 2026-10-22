@@ -7,23 +7,47 @@ spring:
   main:
     web-application-type: none
     banner-mode: off
+  autoconfigure:
+    exclude:
+      # It builds a server's event loops; load bots run on the harness's own group.
+      - app.l2nx.network.NetworkAutoConfiguration
+      # The database commands open plain JDBC connections, the admin database's included, and want no pool; the
+      # starter reaches the classpath with the database test fixtures.
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
 
 l2nx:
   load:
-    protocol: in-memory
     bots: 100
     ramp: 30s
     warm-up: 30s
     steady: 2m
     ramp-down: 10s
     seed: 1
-    repeats: 3
     intent-timeout: 5s
     scrape-timeout: 10s
     output-dir: build/load
     accounts:
       prefix: load
       password: load
+    login-storm:
+      final-state: IN_GAME
     in-memory:
       step-delay: 10ms
       ack-latency: 5ms
+    p267:
+      login-host: 127.0.0.1
+      login-port: 2106
+      server-id: 1
+      connect-timeout: 5s
+    # The l2nx-db container of compose.yaml; the server roles come from docker/postgres-init.sql.
+    database:
+      admin-url: jdbc:postgresql://localhost:5432/postgres
+      user: postgres
+      password: postgres
+      name: l2nx_load
+      template: l2nx_load_template
+      schemas:
+        - name: login
+          owner: l2nx_login
+        - name: game
+          owner: l2nx_game

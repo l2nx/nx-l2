@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/l2nx_load
+
+l2nx:
+  network:
+    connections-per-ip: 10000
+    accept-per-ip-per-second: 10000
+  login:
+    # A load bot without a seeded account must fail its login, not be measured creating one.
+    auto-create-accounts: false
+    ban:
+      # Every load bot shares the harness address: failed logins of a broken run must not ban all of them.
+      failed-logins: 2147483647
