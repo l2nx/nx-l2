@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.taskmanagers;
+package app.l2nx.highfive.movement.system;
 
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.partition.WorldPartition;
@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Mobius
  */
 @Slf4j
-public class MovementTaskManager {
+public class MovementSystems {
 
     private static final Set<Set<Creature>> POOLS_CREATURE = ConcurrentHashMap.newKeySet();
     private static final Set<Set<Creature>> POOLS_PLAYER = ConcurrentHashMap.newKeySet();
@@ -44,7 +44,7 @@ public class MovementTaskManager {
     private static final int TASK_DELAY_CREATURE = 100;
     private static final int TASK_DELAY_PLAYER = 50;
 
-    protected MovementTaskManager() {}
+    protected MovementSystems() {}
 
     private class Movement implements Runnable {
         private final Set<Creature> creatures;
@@ -81,8 +81,8 @@ public class MovementTaskManager {
     }
 
     /**
-     * Add a Creature to moving objects of MovementTaskManager.
-     * @param creature The Creature to add to moving objects of MovementTaskManager.
+     * Add a Creature to moving objects of MovementSystems.
+     * @param creature The Creature to add to moving objects of MovementSystems.
      */
     public synchronized void registerMovingObject(Creature creature) {
         if (creature.isPlayer()) {
@@ -128,11 +128,11 @@ public class MovementTaskManager {
         }
     }
 
-    public static MovementTaskManager getInstance() {
+    public static MovementSystems getInstance() {
         return SingletonHolder.INSTANCE;
     }
 
     private static class SingletonHolder {
-        protected static final MovementTaskManager INSTANCE = new MovementTaskManager();
+        protected static final MovementSystems INSTANCE = new MovementSystems();
     }
 }

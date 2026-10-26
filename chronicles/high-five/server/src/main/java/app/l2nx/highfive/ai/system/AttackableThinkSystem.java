@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.taskmanagers;
+package app.l2nx.highfive.ai.system;
 
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -33,12 +33,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Mobius
  */
-public class AttackableThinkTaskManager {
+public class AttackableThinkSystem {
     private static final Set<Set<Attackable>> POOLS = ConcurrentHashMap.newKeySet();
     private static final int POOL_SIZE = 1000;
     private static final int TASK_DELAY = 1000;
 
-    protected AttackableThinkTaskManager() {}
+    protected AttackableThinkSystem() {}
 
     private class AttackableThink implements Runnable {
         private final Set<Attackable> attackables;
@@ -101,11 +101,11 @@ public class AttackableThinkTaskManager {
         }
     }
 
-    public static AttackableThinkTaskManager getInstance() {
+    public static AttackableThinkSystem getInstance() {
         return SingletonHolder.INSTANCE;
     }
 
     private static class SingletonHolder {
-        protected static final AttackableThinkTaskManager INSTANCE = new AttackableThinkTaskManager();
+        protected static final AttackableThinkSystem INSTANCE = new AttackableThinkSystem();
     }
 }

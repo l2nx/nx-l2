@@ -125,8 +125,8 @@ public class ValidatePosition extends ClientPacket {
 
         if (player.isCursorKeyMovement()) {
             // Use setSyncedXYZ so the active MoveData's xAccurate/yAccurate are updated alongside _location.
-            // Plain setXYZ would let the next MovementTaskManager tick snap the player back to the stale xAccurate /
-            // yAccurate that MovementTaskManager tracks independently of getX() / getY().
+            // Plain setXYZ would let the next MovementSystems tick snap the player back to the stale xAccurate /
+            // yAccurate that MovementSystems tracks independently of getX() / getY().
             player.setSyncedXYZ(x, y, z);
             player.broadcastPacket(new ValidateLocation(player));
         }

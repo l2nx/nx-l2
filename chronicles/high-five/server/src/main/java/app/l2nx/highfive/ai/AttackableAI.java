@@ -71,7 +71,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.partition.WorldPartition;
-import app.l2nx.highfive.taskmanagers.AttackableThinkTaskManager;
+import app.l2nx.highfive.ai.system.AttackableThinkSystem;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
@@ -268,12 +268,12 @@ public class AttackableAI extends CreatureAI {
     }
 
     public void startAITask() {
-        AttackableThinkTaskManager.getInstance().add(getActiveChar());
+        AttackableThinkSystem.getInstance().add(getActiveChar());
     }
 
     @Override
     public void stopAITask() {
-        AttackableThinkTaskManager.getInstance().remove(getActiveChar());
+        AttackableThinkSystem.getInstance().remove(getActiveChar());
         super.stopAITask();
     }
 
