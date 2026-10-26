@@ -24,7 +24,7 @@ protobuf = "4.35.1"
 protobuf-plugin = "0.10.0"
 spotless = "8.10.4"
 spring-boot = "4.1.1"
-spring-modulith = "2.1.1"
+spring-modulith = "2.1.2"
 uuid-creator = "6.1.1"
 
 [libraries]
