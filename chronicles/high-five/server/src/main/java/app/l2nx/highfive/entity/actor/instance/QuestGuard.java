@@ -72,13 +72,8 @@ public class QuestGuard extends Guard {
     }
 
     @Override
-    public boolean doDie(Creature killer) {
-        // Kill the Npc (the corpse disappeared after 7 seconds).
-        if (!super.doDie(killer)) {
-            return false;
-        }
-
-        // Delayed notification
+    protected void notifyKill(Creature killer) {
+        super.notifyKill(killer);
         if (killer.isAttackable() && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_KILL, this)) {
             EventDispatcher.getInstance()
                     .notifyEventAsyncDelayed(
@@ -90,8 +85,6 @@ public class QuestGuard extends Guard {
                             this,
                             onKillDelay);
         }
-
-        return true;
     }
 
     @Override

@@ -33,12 +33,12 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.zone.ZoneRegion;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.movement.Movement;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.movement.system.MovementSystems;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
@@ -164,7 +164,7 @@ public abstract class Vehicle extends Creature {
 
                         m.moveStartTime = GameTimeTaskManager.getInstance().getGameTicks();
                         move = m;
-                        MovementSystems.getInstance().registerMovingObject(this);
+                        Movement.register(this);
 
                         // Make sure vehicle is not stuck.
                         if (monitorTask == null) {

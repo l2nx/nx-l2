@@ -14,13 +14,14 @@ A partition is an event loop, not a fixed-rate tick.
   batches bursts, so a client flood never turns into hundreds of passes per second, without adding a fixed tick of
   latency. A due timer or periodic system does not wait for `pass-min`: its pass runs when due, but at most one per
   millisecond, and processes the queued input too. The next pass is the earlier of the next deadline, no sooner than
-  1 ms after the previous pass started, and, when input is queued, the end of `pass-min`. One millisecond is the
-  timer wheels' resolution, so the spacing makes no deadline fire later; it bounds the pass rate at 1000 per second, so a
+  1 ms after the previous pass started, and, when input is queued, the end of `pass-min`. Deadlines are whole
+  milliseconds, so the spacing makes no deadline fire later; it bounds the pass rate at 1000 per second, so a
   timer re-armed at the pass time or a backlog of overdue timers cannot run passes back to back.
 - **Input latency is close to zero.** A packet is processed in the pass after it is decoded, not at the next tick
   boundary. A fixed tick of 100 ms or 50 ms would add up to that much to every action.
 - **No catch-up.** A pass that overruns is followed by the next pass as soon as possible; missed periodic runs are
-  not replayed in a burst (that is how loops spiral under load). Deadlines that fell due run in order (§4).
+  not replayed in a burst (that is how loops spiral under load), neither for a periodic system nor for a fixed-rate
+  timer. Deadlines that fell due run in order (§4).
 
 ## 2. Pass phases
 
@@ -74,7 +75,7 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
   `packets-per-pass` (configurable, default 16) from each; the rest waits for the next pass. A flooding client delays only
   itself, and order is kept.
 - **One failure costs one item.** A session queue only hands out its next item; the partition takes the item off the
-  queue, records it and then runs it, so a handler that throws is reported with that item and the rest of the batch
+  queue and then runs it, so a handler that throws is reported with that item and the rest of the batch
   runs in the same pass. A taken item is gone whether it ran or failed, so it is never retried and a failing packet
   cannot keep the partition busy. Disconnecting a client whose packets keep failing is the session's decision, not
   the loop's.
@@ -89,47 +90,57 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
 - **Coalescing is opt-in.** Only command types explicitly marked as intent, where only the latest matters (movement
   requests), may be collapsed; `nx-physics` already keeps the last intent. Every other command executes, and a
   legacy packet is never collapsed.
-- **Order across clients** is the order of processing within a pass. It is deterministic and recorded (§9): when
+- **Order across clients** is the order of processing within a pass. It is deterministic, which is what a recording would capture (§9): when
   two players pick up the same item, the one processed first wins.
 
 ## 4. Timers
 
-- **Two timer wheels per partition,** one for game-time and one for wall-clock deadlines (§6): Agrona
-  `DeadlineTimerWheel` with a 1 ms tick, polled by the loop; no timer threads. The deadlines phase runs the game
-  wheel, then the wall wheel. The wheel does not order timers inside one tick, so the loop collects the due timers
-  of a pass and sorts them by `(due time, deadline, sequence)` before running them; the due time is the deadline,
-  except for a timer scheduled at or before the last run (overdue timers below); inside one sequence `TICK` runs
-  before `END` ([effects.md §4](effects.md#4-order-on-equal-deadlines)). A timer scheduled during a pass fires in a
-  later pass. A wall clock set back never fires a deadline early.
-- **The wheel holds one turn** (1024 ticks, about a second). A deadline in a later turn waits in that turn's
-  bucket, which keeps its earliest due time, and the bucket enters the wheel whole when the cursor enters the turn;
-  the occupied turns are ordered by a fastutil `LongHeapPriorityQueue`. Agrona's spokes could hold far deadlines
-  themselves, but the wheel cannot tell its earliest deadline, which the loop needs to sleep until it; the buckets
-  and their heap give that answer.
-  The earliest due time the loop sleeps until is always a real one: an idle partition with timers minutes ahead
-  runs no pass before the first of them.
-- **Deadlines are absolute** in the partition's game time or wall-clock time (§6). Due timers run in
-  `(due time, deadline, sequence)` order; the sequence keeps registration order for equal deadlines.
-- **Periodic actions carry the remainder.** The next occurrence is `previous deadline + period`, not `now + period`.
-  An attack every 333 ms stays 333 ms on average instead of drifting to the next pass boundary.
-- **Cancellation is lazy.** A timer entry carries the target handle and a generation; when it fires, it is ignored
-  if the target is gone or its generation changed. Mass cancellation (cleanse, death, logout) costs nothing on the
-  wheel and does not use up the overdue cap.
-- **Overdue timers** (deadline older than `pass-min` before the pass) execute in that order, up to a cap of overdue
-  timers fired per pass and wheel (`overdue-per-pass`, default 4096); the rest keeps its order for the following pass,
-  which is due 1 ms later rather than after `pass-min`. A timer scheduled at or before the time of the last deadline
-  run keeps its deadline, so it counts as overdue when that deadline is older than `pass-min` before the pass, but its
-  due time is 1 ms after that run, after every entry already due, so a handler re-arming at its own overdue deadline
-  cannot starve later timers under the cap; the owed ticks of such a periodic timer keep that due time until they
-  catch up with it. A wall clock set back lowers that time to just before the new clock at the start of the next
-  pass, and timers scheduled late under the old clock become due at the new one.
+- **Two timer queues per partition,** one for game-time and one for wall-clock deadlines (§6): a JDK
+  `PriorityQueue` of entries ordered by `(deadline, sequence)`, polled by the loop; no timer threads. The sequence is a
+  per-queue counter, so equal deadlines keep registration order. The deadlines phase runs the game queue, then the
+  wall queue. A timer armed while the deadlines phase fires never fires in the same pass: its deadline becomes
+  `max(requested, now + 1)`, with `now` the time of the running queue, so it sorts after every entry already due, a
+  handler re-arming at its own deadline cannot loop inside one pass, and a handler re-arming into the past cannot
+  starve the timers behind it under the overdue cap. The queue keeps no clock of its own: a wall clock set back only
+  lowers `now`, and no deadline fires early.
+- **The earliest deadline is exact:** the head of the heap. An idle partition with timers minutes ahead runs no pass
+  before the first of them.
+- **Why a heap, not a timer wheel.** The partition ran Agrona's `DeadlineTimerWheel` before (1 ms tick, one turn of
+  1024 ticks, buckets per later turn, an occupancy bitmap to find the earliest deadline, a sort of each due tick). A
+  wheel does not order timers within a tick and cannot tell its earliest deadline, which the loop needs to sleep
+  until it; the heap gives both by construction in about 200 lines instead of 560. Measured with JMH
+  (`TimerComparisonBenchmark`, a batch of 1 000 timers scheduled and fired in one 5 ms pass while 1 000 / 100 000 /
+  1 000 000 respawn-like timers are pending; JDK 25 in Docker): the wheel build and the queue build ran
+  interleaved in one session, two rounds each. In the quiet first round the queue cost 85 / 134 / 169 ns per timer
+  in a batch against 581 (±1050) / 387 / 361 ns of the wheel; a timer scheduled and fired one at a time cost
+  73 / 262 / 3 143 ns against 78 / 224 / 1 143 ns, so the heap is slower per single timer at a million pending
+  ones (the O(log n) sift). The second round ran under CPU load from other processes and is not usable for
+  figures. A differential test (random chains of 200 actions, including handlers that arm timers while timers
+  fire, against a list-based reference model) checks the order on every build.
+- **Deadlines are absolute** in the partition's game time or wall-clock time (§6).
+- **Fixed-rate timers keep their phase and do not catch up.** After a run the next deadline is the first point of
+  the period grid after the pass time: `deadline + period × ((now − deadline) / period + 1)`. An attack every 333 ms
+  stays 333 ms on average instead of drifting to the pass boundary, and a pass late by several periods runs the timer
+  once, not once per missed period. Game logic that cares for the number of missed runs derives it from time, as an
+  effect does for its owed ticks ([effects.md §5](effects.md#5-periodic-ticks)).
+- **Cancellation is lazy.** A cancelled entry is flagged and skipped when it reaches the head; when cancelled entries
+  make up half the heap, the heap is rebuilt without them, so a timer re-armed on every event costs O(1) amortized
+  and the heap stays bounded. An entry also carries the target handle and a generation; when it comes up, it is
+  dropped if the target is gone or its generation changed, and that check comes before the overdue cap, so stale
+  entries never use it up. A mass generation bump that must leave nothing behind in the queue's size and next
+  deadline (the shutdown countdown) calls `cancelStale`, which cancels the stale entries of one handler at once; it
+  is O(n) and meant for rare bumps.
+- **Overdue timers** (deadline older than `pass-min` before the pass) execute in order, up to a cap of overdue timers
+  fired per pass and queue (`overdue-per-pass`, default 4096); the rest keeps its place for the following pass, which
+  is due 1 ms later rather than after `pass-min`. A timer scheduled outside the deadlines phase at a deadline in the
+  past keeps it, sorts by it and counts as overdue when it is older than `pass-min` before the pass.
 - **Legacy code schedules on the partition** from the E6 cutover; the Mobius `ThreadPool` and its pools are gone,
   and every call site is rewritten to the loop. The loop does not implement `ScheduledExecutorService` as a whole
   (shutdown, `invokeAll` and `submit(Callable)` have no meaning for a partition, and Spring's `TaskScheduler` works
   in `Instant`s of the wall clock, not in game time), but the handle it returns is the JDK type, as in Netty's
   `AbstractScheduledEventExecutor`:
-  - `schedule(task, delay)` and `scheduleAtFixedRate(task, initialDelay, period)` arm a timer on the game wheel at
-    the current time plus the delay; a fixed-rate timer carries the remainder like every periodic timer. The
+  - `schedule(task, delay)` and `scheduleAtFixedRate(task, initialDelay, period)` arm a timer on the game queue at
+    the current time plus the delay; a fixed-rate timer keeps its phase and skips missed runs like every periodic timer. The
     Mobius priority variant maps to `scheduleAtFixedRate`: one thread has no priorities.
   - They return a `java.util.concurrent.ScheduledFuture<Void>`, so legacy fields and `cancel`/`isDone`/`getDelay`
     calls stay as they are. `cancel(mayInterruptIfRunning)` ignores the interrupt flag, there is no other thread to
@@ -142,10 +153,9 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
   - A fixed-rate task that throws is reported and keeps its schedule, unlike the JDK and Netty, which stop it: one
     failure costs one run, as one failing packet costs one item (§3). A regeneration or AI task stopping for good on
     one bad target would be a silent outage, and the failure is already counted by the partition's meters (§8).
-  - `cancel` removes the timer at once: Agrona's wheel cancels a timer in O(1), and a turn bucket drops its entry,
-    so a timer re-armed on every event does not pile up cancelled entries until their deadlines (the Mobius pools
-    removed cancelled tasks too). The lazy generation check above stays for the entity timers that are cancelled en
-    masse.
+  - `cancel` takes the timer out of the queue's count at once and out of the heap by the purge above, so a timer
+    re-armed on every event does not pile up cancelled entries until their deadlines (the Mobius pools removed
+    cancelled tasks too). The generation check above stays for the entity timers that are cancelled en masse.
   - `execute(task)` runs the task in the next pass, through the inbox, from any thread; it is not deferred work of
     the current pass, so long chains of legacy asynchronous work (`notifyEventAsync`) do not run into
     `trigger-depth`.
@@ -156,8 +166,8 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
     waiting for good, as Netty cancels its scheduled tasks on termination; `schedule` on a stopped loop throws
     `RejectedExecutionException`.
 
-  E7 then turns these timers into subsystem deadlines (`TICK`/`END` entries, periodic systems) one subsystem at a
-  time. `java.util.Timer`, `TimerTask` and every other executor or thread are forbidden in game code by ArchUnit
+  E7 then turns these timers into subsystem deadlines (effect deadlines, [effects.md §5](effects.md#5-periodic-ticks))
+  and periodic systems (§5) one subsystem at a time. `java.util.Timer`, `TimerTask` and every other executor or thread are forbidden in game code by ArchUnit
   rules (`ScheduledWorkRules`): a timer thread dies silently on the first exception, and any other thread is a
   second writer. The rules name their two exceptions: the static data loader's parse pool and the bridge to
   background tasks (§7.1). Calls that block the thread (`Thread.sleep`, `Object.wait`, `Thread.join`,
@@ -173,16 +183,27 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
 
 Systems that do work per entity regardless of input run on their own cadence, expressed in time, never in ticks:
 
-| System          | Default cadence | Note                                                                 |
-| --------------- | --------------- | -------------------------------------------------------------------- |
-| player movement | 50 ms           | position is a function of time; checks for range, collision, arrival |
-| NPC movement    | 100 ms          | arrival is a precise deadline, the cadence only re-checks paths      |
-| visibility      | 100 ms          | recomputed for entities that crossed a cell, see replication.md      |
-| AI think        | per AI type     | taken from the AI's own interval                                     |
+| System          | Name              | Default cadence | Property                       | Note                                                                            |
+| --------------- | ----------------- | --------------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| player movement | `player-movement` | 50 ms           | `l2nx.movement.player-cadence` | position is a function of time; checks for range, collision, arrival            |
+| NPC movement    | `npc-movement`    | 100 ms          | `l2nx.movement.npc-cadence`    | every other moving creature; arrival is re-checked at this cadence              |
+| AI think        | `ai-think`        | 1 s             | `l2nx.ai.think-cadence`        | the think step of every attackable with an active AI, the Mobius think interval |
+| visibility      | -                 | 100 ms          | -                              | from E8: recomputed for entities that crossed a cell, see replication.md        |
 
-Every cadence is a configuration property; the values above are starting points to be tuned with bot load tests.
-The same holds for every other default in this spec.
-No game logic counts ticks or passes.
+Every cadence is a configuration property (whole milliseconds); the values above are starting points to be tuned
+with bot load tests. The same holds for every other default in this spec. No game logic counts ticks or passes.
+
+A system is registered on its loop with a name and a cadence (`Loop.addSystem`); the name tags its meters
+(`l2nx.engine.system{system}`, `l2nx.engine.system.skipped{system}`) and its failures, and its first run is one
+cadence after the pass time. Each slice that owns a system installs it through a `WorldSystem` bean
+(`partition.WorldSystem`); `WorldLifecycle` collects them and calls them in the startup pass, before the world loads,
+so the slice stays free of the lifecycle. Today `ai-think` is installed by the `ai` slice
+(`ai/system/AttackableThinkSystem`) and `player-movement` and `npc-movement` by the `movement` slice
+(`movement/system/MovementSystems`); legacy callers that are not beans register through the root bridge
+`movement.Movement`. Each system walks a copy of its entity set in insertion order, so a step that adds or removes
+entities (a death, an arrival) is safe and the order of a pass is deterministic; a failing entity costs its own step,
+logged, not the run of the others. A system outlives a world loop, so installing it clears the entities of the
+previous one. Missed runs are skipped and counted in `l2nx.engine.system.skipped`, never replayed.
 
 Not periodic systems: routing outgoing events and coalesced state runs in every pass (replication phase), and
 per-creature work with its own rhythm (regeneration, effect ticks, attack intervals) is a deadline per creature,
@@ -206,8 +227,8 @@ not a scan.
   legacy code still runs on many threads. From E6 the bridge answers by the calling thread:
   - **on a loop thread,** the time of the current pass (game and wall-clock, read once at pass start) and the seeded
     RNG of the partition or global service whose loop owns the thread. Every action of a pass sees one "now", and
-    a pass is reproduced from its two recorded clock readings (§9). The startup pass (§7.1) is the exception: it
-    loads the world for minutes, so it reads the clock live and a timer counts from the moment it is armed, not from
+    a recording of the pass needs only its two clock
+    readings (§9). The startup pass (§7.1) is the exception: it loads the world for minutes, so it reads the clock live and a timer counts from the moment it is armed, not from
     the start of the load. Timers that fall due during the load are overdue when it ends and run in the following
     passes in their order, `overdue-per-pass` at a time;
   - **on any other thread,** wall-clock time only; game time and the RNG fail with `IllegalStateException`, since
@@ -216,8 +237,8 @@ not a scan.
 
   The bridge is removed when its last caller receives the clock and RNG from its system (E7, E10).
 
-- **RNG per partition**, a seeded `java.util.random.RandomGenerator` (`L64X128MixRandom`). The seed is recorded
-  (§9).
+- **RNG per partition**, a seeded `java.util.random.RandomGenerator` (`L64X128MixRandom`). The seed is logged at loop
+  start and is part of what a recording needs (§9).
 - **Forbidden in game code:** `System.currentTimeMillis()`, `System.nanoTime()`, `Instant.now()`,
   `LocalDateTime.now()`, `ZonedDateTime.now()`, `Calendar.getInstance()`, `new Date()`, `ThreadLocalRandom`,
   `Math.random()`, `new Random()`, `Collections.shuffle` without a generator. Step E5 replaces them and an ArchUnit
@@ -229,20 +250,19 @@ not a scan.
 | Thread               | Count                                                                                         | Touches                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Netty IO             | Netty default                                                                                 | sockets, framing, cipher, decoders, session queues; never game state      |
-| Loop threads         | configurable, default = cores                                                                 | partitions and global services; one owner per partition at a time         |
+| Loop threads         | one per partition and global service                                                          | the loop pinned to it                                                     |
 | Persistence executor | small pool, ordered per key                                                                   | database only; results return through inboxes                             |
 | Background tasks     | Spring Boot's auto-configured `TaskScheduler` and `applicationTaskExecutor`, platform threads | work with no game state (§7.1); results return through inboxes            |
 | Loop watchdog        | 1                                                                                             | reads only the start time of the running pass and the loop thread's stack |
 | Spring / Tomcat      | framework                                                                                     | management endpoints; reach game state only through inboxes               |
 
-- **A partition is pinned to one loop thread** for its lifetime, as a Netty channel is to its event loop: a loop
-  thread runs the passes of the partitions assigned to it and sleeps (`LockSupport.parkNanos`) until the earliest
-  inbox signal, deadline or periodic system among them. An offer to a sleeping loop's inbox wakes it; a loop that
-  is awake is not woken again.
-- **The world partition has a loop thread of its own;** reflections, olympiad matches and global services share the
-  others, assigned to the least loaded thread. A heavy partition therefore delays only partitions on its thread.
+- **A loop is pinned to one loop thread** for its lifetime, as a Netty channel is to its event loop, and the thread
+  runs that loop only: it sleeps (`LockSupport.parkNanos`) until the loop's next inbox signal, deadline or periodic
+  system. An offer to a sleeping loop's inbox wakes it; a loop that is awake is not woken again.
+- **Every partition and global service has a loop thread of its own,** so a heavy partition delays only itself.
+  When E9 brings more partitions than cores, sharing threads comes back as a change of its own, with measurements.
 
-A loop thread that dies (an `Error`, a defect in the loop) stops its partitions, draining them and running their
+A loop thread that dies (an `Error`, a defect in the loop) stops its partition, draining it and running its
 shutdown hooks, and the server exits with code 1 so that its supervisor restarts it
 ([spec 002](../002-spring-boot-runtime.md)).
 
@@ -287,12 +307,13 @@ listed here, and anything else is a defect found by the ownership check.
   authenticated it: character list, creation, deletion and selection load and create world objects, so they run on
   the world loop too. Only the key exchange and the authentication stay in the session's own drain.
 - **Legacy scheduled and immediate work:** every former `ThreadPool` call site of game code and scripts uses the
-  loop API of §4, including the task managers, which move unchanged in E6 and become periodic systems in E7.
-- **The day and night cycle:** a timer on the wall wheel at the next change of the game day, computed as today from
+  loop API of §4, including the task managers, which moved unchanged in E6; the AI think and movement ones are periodic systems since
+  E7 (§5).
+- **The day and night cycle:** a timer on the wall queue at the next change of the game day, computed as today from
   the local time of day (with daylight saving), instead of a thread polling every 100 ms. Game time restarts with
   the process, so it cannot carry a cycle that must survive a restart.
-- **The shutdown and restart countdown:** game-wheel timers that announce the remaining time, instead of a thread
-  that sleeps between announcements. They sit on the game wheel because the steps are delays from the start, which
+- **The shutdown and restart countdown:** game-queue timers that announce the remaining time, instead of a thread
+  that sleeps between announcements. They sit on the game queue because the steps are delays from the start, which
   must not follow a step of the wall clock.
 - **The GS-link:** messages from the login server (authentication results, kicks) arrive on gRPC threads and are
   offered to the inbox.
@@ -365,6 +386,11 @@ code.
   between passes, since the pass timer records a blocked pass only once it ends.
 - **Ownership violations** (§7): `l2nx.engine.ownership.violations`, a counter per partition; any value above zero
   is a defect.
+- **Offers to a stopping loop:** an offer counts itself in flight, checks that the inbox has not terminated and
+  enqueues; termination waits for the offers in flight. `true` therefore means the message will be processed, by a
+  pass or by the stop drain; `false` means the inbox had terminated and the message was not taken. Messages left
+  after the last drain (the drain gave up after its pass limit) are logged at WARN with their count; there is no
+  meter, since the loop's meters are removed right after.
 - **Baseline of the legacy execution (E1),** before partitions exist. The three task meters go with `ThreadPool` at
   the E6 cutover: from then on the same work is timed by the partition meters above (pass, phase, timers, failures),
   and the runbook compares the two. `l2nx.legacy.packet` stays while legacy packets exist:
@@ -394,18 +420,20 @@ code.
 
 ## 9. Replay
 
-A partition records its inputs: inbox messages and the items taken from session queues with their pass number and
-order, the RNG seed and the clock readings per pass. An item is recorded when it is taken, before it runs, so one
-that fails stays in the record in its place. A recorder failure is reported and the work still runs; the replay of that
-pass is incomplete. Replaying the record against the same build reproduces the partition's behaviour, which turns
-an incident into a test. The record is written with bounded retention. The passes of the shutdown drain run no
-deadlines and no periodic systems, so the record marks them as drain passes.
+Deferred design; nothing is recorded yet. A partition would record its inputs: inbox messages and the items taken
+from session queues with their pass number and order, the RNG seed and the clock readings per pass. An item is
+recorded when it is taken, before it runs, so one that fails stays in the record in its place. A recorder failure is
+reported and the work still runs; the replay of that pass is incomplete. Replaying the record against the same build
+reproduces the partition's behaviour, which turns an incident into a test. The record is written with bounded
+retention. The passes of the shutdown drain run no deadlines and no periodic systems, so the record marks them as
+drain passes.
 
-TODO: recording is not wired yet (`PassRecorder.NOOP`). Replaying a production incident needs inputs that can be
-written out (raw packet bytes or command records instead of objects and lambdas) and the partition state at the
-start of the record (a checkpoint); it is designed and built as its own change
-([#44](https://github.com/l2nx/nx-l2/issues/44)). What it depends on is in place from E6: the partition's seeded RNG
-and one recorded time per pass (§6).
+TODO: recording and replay are designed and built together as one change
+([#44](https://github.com/l2nx/nx-l2/issues/44)): replaying a production incident needs inputs that can be written out
+(raw packet bytes or command records instead of objects and lambdas) and the partition state at the start of the
+record (a checkpoint). A recorder interface the loop called with nothing behind it was removed rather than kept as a
+seam. What replay depends on is in place from E6: the partition's seeded RNG, one recorded time per pass (§6) and the
+deterministic order of a pass.
 
 ## 10. Movement engine (`nx-physics`)
 

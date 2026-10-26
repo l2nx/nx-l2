@@ -22,117 +22,72 @@
  */
 package app.l2nx.highfive.movement.system;
 
+import app.l2nx.engine.core.loop.Loop;
+import app.l2nx.engine.core.loop.periodic.PeriodicSystem;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.Iterator;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Movement task manager class.
  * @author Mobius
  */
 @Slf4j
-public class MovementSystems {
+public final class MovementSystems {
+    static final String PLAYER_SYSTEM = "player-movement";
+    static final String NPC_SYSTEM = "npc-movement";
 
-    private static final Set<Set<Creature>> POOLS_CREATURE = ConcurrentHashMap.newKeySet();
-    private static final Set<Set<Creature>> POOLS_PLAYER = ConcurrentHashMap.newKeySet();
-    private static final int POOL_SIZE_CREATURE = 1000;
-    private static final int POOL_SIZE_PLAYER = 500;
-    private static final int TASK_DELAY_CREATURE = 100;
-    private static final int TASK_DELAY_PLAYER = 50;
+    private final Set<Creature> players = new LinkedHashSet<>();
+    private final Set<Creature> npcs = new LinkedHashSet<>();
+    private final List<Creature> moving = new ArrayList<>();
+    private final PeriodicSystem playerMovement = (loop, now) -> move(players);
+    private final PeriodicSystem npcMovement = (loop, now) -> move(npcs);
 
-    protected MovementSystems() {}
+    MovementSystems() {}
 
-    private class Movement implements Runnable {
-        private final Set<Creature> creatures;
+    /** Outlives a world loop, so a restart must not inherit the previous world's creatures. */
+    void install(Loop world, Duration playerCadence, Duration npcCadence) {
+        WorldPartition.checkOwner();
+        players.clear();
+        npcs.clear();
+        world.addSystem(PLAYER_SYSTEM, playerCadence, playerMovement);
+        world.addSystem(NPC_SYSTEM, npcCadence, npcMovement);
+    }
 
-        public Movement(Set<Creature> creatures) {
-            this.creatures = creatures;
-        }
+    public void registerMovingObject(Creature creature) {
+        WorldPartition.checkOwner();
+        (creature.isPlayer() ? players : npcs).add(creature);
+    }
 
-        @Override
-        public void run() {
-            if (creatures.isEmpty()) {
-                return;
-            }
-
-            Creature creature;
-            final Iterator<Creature> iterator = creatures.iterator();
-            while (iterator.hasNext()) {
-                creature = iterator.next();
-                boolean removed = false;
-                try {
-                    if (creature.updatePosition()) {
-                        iterator.remove();
-                        removed = true;
-                        creature.getAI().notifyActionArrived();
-                    }
-                } catch (Exception e) {
-                    if (!removed) {
-                        iterator.remove();
-                    }
-                    log.warn("Problem updating position of {}", creature, e);
+    // An arrival may register the creature again or start another one moving: the run walks a copy. Systems run one
+    // after another, so the shared copy is never in use by a second run.
+    private void move(Set<Creature> creatures) {
+        moving.addAll(creatures);
+        try {
+            for (int i = 0; i < moving.size(); i++) {
+                final Creature creature = moving.get(i);
+                if (creatures.contains(creature)) {
+                    update(creatures, creature);
                 }
             }
+        } finally {
+            moving.clear();
         }
     }
 
-    /**
-     * Add a Creature to moving objects of MovementSystems.
-     * @param creature The Creature to add to moving objects of MovementSystems.
-     */
-    public synchronized void registerMovingObject(Creature creature) {
-        if (creature.isPlayer()) {
-            for (Set<Creature> pool : POOLS_PLAYER) {
-                if (pool.contains(creature)) {
-                    return;
-                }
+    private static void update(Set<Creature> creatures, Creature creature) {
+        try {
+            if (creature.updatePosition()) {
+                creatures.remove(creature);
+                creature.getAI().notifyActionArrived();
             }
-
-            for (Set<Creature> pool : POOLS_PLAYER) {
-                if (pool.size() < POOL_SIZE_PLAYER) {
-                    pool.add(creature);
-                    return;
-                }
-            }
-
-            final Set<Creature> pool = ConcurrentHashMap.newKeySet(POOL_SIZE_PLAYER);
-            pool.add(creature);
-            WorldPartition.loop()
-                    .scheduleAtFixedRate(
-                            new Movement(pool), TASK_DELAY_PLAYER, TASK_DELAY_PLAYER, TimeUnit.MILLISECONDS);
-            POOLS_PLAYER.add(pool);
-        } else {
-            for (Set<Creature> pool : POOLS_CREATURE) {
-                if (pool.contains(creature)) {
-                    return;
-                }
-            }
-
-            for (Set<Creature> pool : POOLS_CREATURE) {
-                if (pool.size() < POOL_SIZE_CREATURE) {
-                    pool.add(creature);
-                    return;
-                }
-            }
-
-            final Set<Creature> pool = ConcurrentHashMap.newKeySet(POOL_SIZE_CREATURE);
-            pool.add(creature);
-            WorldPartition.loop()
-                    .scheduleAtFixedRate(
-                            new Movement(pool), TASK_DELAY_CREATURE, TASK_DELAY_CREATURE, TimeUnit.MILLISECONDS);
-            POOLS_CREATURE.add(pool);
+        } catch (RuntimeException e) {
+            creatures.remove(creature);
+            log.warn("Problem updating position of {}", creature, e);
         }
-    }
-
-    public static MovementSystems getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final MovementSystems INSTANCE = new MovementSystems();
     }
 }

@@ -41,7 +41,7 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class SliceLayoutRules {
     public static final String CHRONICLE_ROOT = "app.l2nx.highfive";
-    static final List<String> MIGRATED = List.of("login", "partition");
+    static final List<String> MIGRATED = List.of("login", "movement", "partition");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
 
     /**

@@ -45,7 +45,17 @@ flow inside a partition, and how state shared by several partitions is owned. Pa
   reaction in another partition or service is a message.
 - **Side effects are deferred to one place.** Death, drop, rewards, experience, karma, packets to third parties are
   queued during a pass and executed in the side-effect phase ([execution.md §2](execution.md#2-pass-phases)) in a
-  fixed order. Systems stay free of each other's consequences, and the order is deterministic.
+  fixed order. Systems stay free of each other's consequences, and the order is deterministic. Work deferred by
+  deferred work runs after its generation in the same phase, FIFO, up to `trigger-depth` generations.
+  - The first consumer (E7) is an attackable's death: the death itself stays synchronous, and in the side-effect phase
+    of the same pass its drop, then its event drop, then its experience, SP and vitality run, then the kill
+    notification (`OnAttackableKill`). They read a snapshot taken at the death (damage per attacker, over-hit share,
+    maximum HP, champion flag, vitality rate), because the rest of the death, or a script that deletes the corpse in
+    the same stack, clears the aggro list and the over-hit and stops the effects that raise the maximum HP, and a
+    corpse hit again in the same pass would add damage. Two things are evaluated when the phase runs, not at the
+    death: the party range of each attacker and whether the attacker is in the corpse's surrounding region (the
+    region itself comes from the snapshot). The listeners' `onKillDelay` (2.5 s) counts from the side-effect phase,
+    so a listener sees the drop and the rewards done.
 - **Events to the outside** (adapter, Kafka) for value operations go through the transactional outbox
   ([persistence.md §5](persistence.md#5-outbox)); other events are published after the pass.
 
@@ -76,7 +86,7 @@ State that spans partitions has its own single writer:
 Moving an entity between partitions (entering a reflection, an olympiad match, leaving them):
 
 1. the source partition detaches the entity at a pass boundary: removes it from its registry, visibility and timer
-   wheel (timer entries lapse by generation), and serializes nothing: the object moves as is;
+   queue (timer entries lapse by generation), and serializes nothing: the object moves as is;
 2. remaining time of its deadlines is converted to durations ([effects.md §8](effects.md#8-partition-transfer));
 3. a transfer message carries the object to the target inbox; the target attaches it, re-registers its deadlines
    against its own clock and adds it to visibility;

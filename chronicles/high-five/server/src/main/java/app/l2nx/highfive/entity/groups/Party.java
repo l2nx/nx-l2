@@ -701,7 +701,9 @@ public class Party extends AbstractPlayerGroup {
             List<Player> rewardedMembers,
             int topLvl,
             long partyDmg,
-            Attackable target) {
+            Attackable target,
+            int targetMaxHp,
+            boolean useVitalityRate) {
         final List<Player> validMembers = getValidMembers(rewardedMembers, topLvl, target);
         double xpReward = xpRewardValue * getExpBonus(validMembers.size());
         double spReward = spRewardValue * getSpBonus(validMembers.size());
@@ -715,9 +717,8 @@ public class Party extends AbstractPlayerGroup {
         averagePartyMemberLevel /= Math.max(1, validMembers.size());
 
         final float vitalityPoints =
-                (target.getVitalityPoints(averagePartyMemberLevel, partyDmg) * RatesConfig.RATE_PARTY_XP)
+                (target.getVitalityPoints(averagePartyMemberLevel, partyDmg, targetMaxHp) * RatesConfig.RATE_PARTY_XP)
                         / validMembers.size();
-        final boolean useVitalityRate = target.useVitalityRate();
         for (Player member : rewardedMembers) {
             if (member.isDead()) {
                 continue;

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.ai;
 
+import app.l2nx.highfive.ai.system.AttackableThinkSystem;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
@@ -71,7 +72,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.partition.WorldPartition;
-import app.l2nx.highfive.ai.system.AttackableThinkSystem;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;

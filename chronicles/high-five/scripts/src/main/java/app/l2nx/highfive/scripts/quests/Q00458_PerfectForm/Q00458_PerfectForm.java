@@ -187,7 +187,6 @@ public class Q00458_PerfectForm extends Quest {
                     qs.set("overhitsTotal", String.valueOf(qs.getInt("overhitsTotal") + 1)); // memoStateEx 1
                     final int maxHp = mob.getMaxHp();
 
-                    // Attackable#calculateOverhitExp() way of calculating overhit % seems illogical
                     final double overhitPercentage = (maxHp + mob.getOverhitDamage()) / maxHp;
                     if (overhitPercentage >= 1.2) {
                         qs.set("overhitsCritical", String.valueOf(qs.getInt("overhitsCritical") + 1)); // memoStateEx 2

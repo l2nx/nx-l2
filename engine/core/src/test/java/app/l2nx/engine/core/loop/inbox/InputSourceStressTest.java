@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -21,8 +20,7 @@ class InputSourceStressTest {
     private static final int TOTAL = 200_000;
 
     private final ManualGameClock clock = new ManualGameClock(Instant.parse("2026-10-19T12:00:00Z"), ZoneOffset.UTC);
-    private final Loop loop =
-            new Loop("test", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry(), PassRecorder.NOOP);
+    private final Loop loop = new Loop("test", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry());
 
     @Nested
     class SignalProtocol {

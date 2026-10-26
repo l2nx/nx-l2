@@ -104,7 +104,7 @@ class LoopStartupTest {
         void offerStartup_shouldStartSystemsFromLiveTime_notFromLoadStart() {
             loop.offerStartup(l -> {
                 load();
-                l.addSystem(new TestSystem("movement", Duration.ofSeconds(10), ran));
+                l.addSystem("movement", Duration.ofSeconds(10), new TestSystem("movement", ran));
             });
             loop.runPass(clock.gameMillis());
 

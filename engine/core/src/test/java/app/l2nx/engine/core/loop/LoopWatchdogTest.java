@@ -7,7 +7,6 @@ package app.l2nx.engine.core.loop;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.clock.ManualGameClock;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -35,7 +34,7 @@ class LoopWatchdogTest {
     }
 
     private Loop loop(EngineProperties settings) {
-        return new Loop("watched", clock, TestLoops.SEED, settings, registry, PassRecorder.NOOP);
+        return new Loop("watched", clock, TestLoops.SEED, settings, registry);
     }
 
     private void blockFor(long millis) {

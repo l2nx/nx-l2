@@ -117,10 +117,6 @@ public final class Session implements InputSource {
         this.finished = finished;
     }
 
-    /**
-     * Wraps a decoded {@link Command} or legacy packet ({@link Runnable}) so {@link #offer(Input)} takes it without
-     * further allocation.
-     */
     public Input input(Object item) {
         if (!(item instanceof Command) && !(item instanceof Runnable)) {
             throw new IllegalArgumentException("Session input is a command or a legacy packet, not "
@@ -149,7 +145,6 @@ public final class Session implements InputSource {
         });
     }
 
-    // IO thread only: the queue is single-producer.
     private boolean enqueue(Input input) {
         // The queue rounds its capacity up to a power of two; the limit is enforced here.
         if ((queue.size() >= queueLimit) || !queue.offer(input)) {
@@ -239,7 +234,6 @@ public final class Session implements InputSource {
         return queue.size();
     }
 
-    @Override
     public long id() {
         return id;
     }
@@ -310,10 +304,7 @@ public final class Session implements InputSource {
         }
     }
 
-    /**
-     * The pool closed before an accepted drain started: what the session holds is not drained and its close may stay
-     * unhandled.
-     */
+    /** The pool closed before an accepted drain started: queued items are not drained and the close may stay unhandled. */
     void drainAbandoned() {
         log.warn(
                 "Session {} ({}, {} queued) lost its drain: the pool closed before the drain started",

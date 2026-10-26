@@ -134,6 +134,7 @@ import app.l2nx.highfive.mechanics.stats.Calculator;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
+import app.l2nx.highfive.movement.Movement;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
@@ -163,7 +164,6 @@ import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.CreatureSeeTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
-import app.l2nx.highfive.movement.system.MovementSystems;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -3389,7 +3389,7 @@ public abstract class Creature extends WorldObject {
 
         this.move = move;
 
-        MovementSystems.getInstance().registerMovingObject(this);
+        Movement.register(this);
 
         if ((ticksToMove * GameTimeTaskManager.MILLIS_IN_TICK) > 3000) {
             WorldPartition.loop().schedule(() -> getAI().notifyActionArrivedRevalidate(), 2000, TimeUnit.MILLISECONDS);
@@ -3447,7 +3447,7 @@ public abstract class Creature extends WorldObject {
 
         this.move = newMove;
 
-        MovementSystems.getInstance().registerMovingObject(this);
+        Movement.register(this);
 
         if ((ticksToMove * GameTimeTaskManager.MILLIS_IN_TICK) > 3000) {
             WorldPartition.loop().schedule(() -> getAI().notifyActionArrivedRevalidate(), 2000, TimeUnit.MILLISECONDS);

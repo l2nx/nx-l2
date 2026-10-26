@@ -25,7 +25,6 @@ package app.l2nx.highfive.taskmanagers;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerHandler;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
@@ -82,10 +81,7 @@ public class GameTimeTaskManager {
         world.timers(TimeBase.WALL)
                 .schedule(
                         nextChangeAt(now).toEpochMilli(),
-                        TimerSpec.builder()
-                                .handler(dayChange)
-                                .kind(TimerKind.ACTION)
-                                .build());
+                        TimerSpec.builder().handler(dayChange).build());
 
         final boolean nightNow = isNightAt(now.toLocalTime());
         if (nightNow != night) {

@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Builder;
 
 public final class FakeInput implements InputSource {
-    private final long id;
     private final String label;
     private final List<String> log;
     private final ArrayDeque<Item> items = new ArrayDeque<>();
@@ -29,8 +28,7 @@ public final class FakeInput implements InputSource {
     public Runnable onClear = () -> {};
     public final Set<Operation> broken = EnumSet.noneOf(Operation.class);
 
-    public FakeInput(long id, String label, List<String> log) {
-        this.id = id;
+    public FakeInput(String label, List<String> log) {
         this.label = label;
         this.log = log;
     }
@@ -59,12 +57,6 @@ public final class FakeInput implements InputSource {
 
     public boolean isSignalled() {
         return signalled.get();
-    }
-
-    @Override
-    public long id() {
-        check(Operation.ID);
-        return id;
     }
 
     @Override
@@ -107,7 +99,6 @@ public final class FakeInput implements InputSource {
     }
 
     public enum Operation {
-        ID,
         POLL,
         HAS_INPUT,
         TRY_SIGNAL,

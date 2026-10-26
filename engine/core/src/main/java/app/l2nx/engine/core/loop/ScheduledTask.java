@@ -7,7 +7,7 @@ package app.l2nx.engine.core.loop;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerEntry;
 import app.l2nx.engine.core.loop.timer.TimerHandler;
-import app.l2nx.engine.core.loop.timer.TimerKind;
+import app.l2nx.engine.core.loop.timer.TimerQueue;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -75,16 +75,11 @@ final class ScheduledTask implements ScheduledFuture<Void>, TimerHandler {
         if (state != WAITING) {
             return;
         }
-        final long deadline = loop.gameNow() + delayMillis;
-        nextRunAt = deadline;
         entry = loop.timers(TimeBase.GAME)
                 .schedule(
-                        deadline,
-                        TimerSpec.builder()
-                                .handler(this)
-                                .kind(TimerKind.ACTION)
-                                .period(periodMillis)
-                                .build());
+                        loop.gameNow() + delayMillis,
+                        TimerSpec.builder().handler(this).period(periodMillis).build());
+        nextRunAt = entry.getDeadline();
     }
 
     @Override
@@ -101,11 +96,11 @@ final class ScheduledTask implements ScheduledFuture<Void>, TimerHandler {
             runOnce();
             return;
         }
-        nextRunAt = timer.getDeadline() + periodMillis;
+        nextRunAt = TimerQueue.nextFixedRateDeadline(timer.getDeadline(), periodMillis, owner.gameNow());
         try {
             task.run();
         } finally {
-            // Fails when cancelled during the run; the wheel then drops the task as not current.
+            // Fails when cancelled during the run; the queue then drops the task as not current.
             STATE.compareAndSet(this, RUNNING, WAITING);
         }
     }
@@ -134,9 +129,9 @@ final class ScheduledTask implements ScheduledFuture<Void>, TimerHandler {
         } while (!STATE.compareAndSet(this, current, CANCELLED));
         releaseWaiters();
         if (loop.inLoop()) {
-            removeFromWheel();
+            removeFromQueue();
         } else {
-            loop.offer(owner -> removeFromWheel());
+            loop.offer(owner -> removeFromQueue());
         }
         return true;
     }
@@ -147,7 +142,7 @@ final class ScheduledTask implements ScheduledFuture<Void>, TimerHandler {
         }
     }
 
-    private void removeFromWheel() {
+    private void removeFromQueue() {
         if (entry != null) {
             loop.timers(TimeBase.GAME).cancel(entry);
             entry = null;

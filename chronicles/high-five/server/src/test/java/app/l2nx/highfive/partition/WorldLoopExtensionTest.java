@@ -12,17 +12,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-@ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(WorldLoopExtension.LOCK)
 class WorldLoopExtensionTest {
     @Nested
+    @ExtendWith(WorldLoopExtension.class)
     class RunInPass {
         @Test
         void runInPass_shouldRunTheBodyOnTheBoundWorldLoop(Loop world) {
@@ -37,6 +39,7 @@ class WorldLoopExtensionTest {
     }
 
     @Nested
+    @ExtendWith(WorldLoopExtension.class)
     class PassAfter {
         @Test
         void passAfter_shouldFireTimers_whenTheirDelayHasPassed() {
@@ -49,6 +52,19 @@ class WorldLoopExtensionTest {
 
             WorldLoopExtension.passAfter(Duration.ofMillis(1));
             assertThat(ran).containsExactly("timer");
+        }
+    }
+
+    @Nested
+    class PerTest {
+        @RegisterExtension
+        static final WorldLoopExtension WORLD = WorldLoopExtension.perTest();
+
+        @RepeatedTest(2)
+        void perTest_shouldBindAFreshLoop_forEveryTest(Loop world) {
+            WorldLoopExtension.runInPass(() -> world.addSystem("probe", Duration.ofMillis(1), (loop, now) -> {}));
+
+            assertThat(WorldPartition.loop()).isSameAs(world);
         }
     }
 }

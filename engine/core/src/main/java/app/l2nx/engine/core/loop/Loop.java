@@ -10,9 +10,8 @@ import app.l2nx.engine.core.loop.inbox.InputSource;
 import app.l2nx.engine.core.loop.inbox.Wakeup;
 import app.l2nx.engine.core.loop.periodic.PeriodicSchedule;
 import app.l2nx.engine.core.loop.periodic.PeriodicSystem;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.loop.timer.TimeBase;
-import app.l2nx.engine.core.loop.timer.TimerWheel;
+import app.l2nx.engine.core.loop.timer.TimerQueue;
 import app.l2nx.network.channel.RateLimitedLog;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.invoke.VarHandle;
@@ -45,7 +44,8 @@ public class Loop {
 
     static final int SHUTDOWN_DRAIN_PASSES = 1_000;
 
-    // The timer wheels' resolution: a deadline pass held back this long fires nothing later than its tick.
+    // Deadlines are whole game milliseconds: a deadline pass held back this long fires nothing later than its
+    // millisecond.
     private static final long DEADLINE_PASS_SPACING_MILLIS = 1;
 
     private static final Duration VIOLATION_LOG_INTERVAL = Duration.ofMinutes(1);
@@ -72,9 +72,8 @@ public class Loop {
     private final long[] phaseNanos = new long[PassPhase.values().length];
     private final LoopMetrics metrics;
     private final RateLimitedLog violationLog;
-    private final PassRecorder recorder;
-    private final TimerWheel gameTimers;
-    private final TimerWheel wallTimers;
+    private final TimerQueue gameTimers;
+    private final TimerQueue wallTimers;
     private final PeriodicSchedule systems = new PeriodicSchedule();
     private final ArrayDeque<InputSource> ready = new ArrayDeque<>();
     private ArrayDeque<Runnable> deferred = new ArrayDeque<>();
@@ -92,7 +91,7 @@ public class Loop {
     @Getter
     private long pass;
 
-    /** Game time of the current or last pass; before the first pass, the loop's start, a recorded reading too. */
+    /** Game time of the current or last pass; before the first pass, the loop's start. */
     @Getter
     private long passTime;
 
@@ -104,21 +103,12 @@ public class Loop {
     private int passMessages;
     private int passTimers;
     private int passInput;
-    // Position of the next recorded input in the pass: messages first, then source items in the order they ran.
-    private int passOrder;
 
-    public Loop(
-            String name,
-            GameClock clock,
-            long seed,
-            EngineProperties settings,
-            MeterRegistry registry,
-            PassRecorder recorder) {
+    public Loop(String name, GameClock clock, long seed, EngineProperties settings, MeterRegistry registry) {
         this.name = Objects.requireNonNull(name, "name");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.seed = seed;
         this.settings = Objects.requireNonNull(settings, "settings");
-        this.recorder = Objects.requireNonNull(recorder, "recorder");
         this.random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seed);
         this.passMinMillis = settings.passMin().toMillis();
         this.passBudgetNanos = settings.passBudget().toNanos();
@@ -128,9 +118,8 @@ public class Loop {
         final long wallStart = clock.wallMillis();
         this.passTime = gameStart;
         this.passWallTime = wallStart;
-        this.gameTimers = new TimerWheel(gameStart, this::onFailure);
-        this.wallTimers = new TimerWheel(wallStart, this::onFailure);
-        recorder.loopStarted(name, seed, gameStart, wallStart);
+        this.gameTimers = new TimerQueue(this::onFailure);
+        this.wallTimers = new TimerQueue(this::onFailure);
         log.atInfo()
                 .addKeyValue("loop", name)
                 .addKeyValue("seed", seed)
@@ -216,15 +205,15 @@ public class Loop {
         return random;
     }
 
-    public TimerWheel timers(TimeBase base) {
+    public TimerQueue timers(TimeBase base) {
         assertOwner();
         return base == TimeBase.GAME ? gameTimers : wallTimers;
     }
 
-    /** The first run is one cadence after the pass time, not a live reading, which a replay would not reproduce. */
-    public void addSystem(PeriodicSystem system) {
+    /** The first run is one cadence after the pass time, not a live clock read, so it is deterministic. */
+    public void addSystem(String name, Duration cadence, PeriodicSystem system) {
         assertOwner();
-        systems.add(system, gameNow(), metrics);
+        systems.add(name, cadence, system, gameNow(), metrics);
     }
 
     /** Work of the same pass, run in the side-effect phase. */
@@ -277,9 +266,8 @@ public class Loop {
     }
 
     /**
-     * Queued work waits for the pass-min gate; a deadline runs when due and takes it along, but no sooner than one tick
-     * after the last pass started, so re-armed timers cannot run passes back to back. A time at or before
-     * {@code now} only means a pass is due.
+     * Queued work waits for the pass-min gate; a deadline runs when due and takes it along, but no sooner than 1 ms
+     * after the last pass started, so re-armed timers cannot run passes back to back.
      */
     long nextPassAt(long now) {
         assertOwner();
@@ -375,9 +363,9 @@ public class Loop {
     }
 
     private long nextDeadlineAt() {
-        final long at = Math.min(gameTimers.nextDueAt(), systems.nextDue());
-        final long wallDueAt = wallTimers.nextDueAt();
-        return wallDueAt == Long.MAX_VALUE ? at : Math.min(at, clock.gameMillisAtWall(wallDueAt));
+        final long at = Math.min(gameTimers.nextDeadline(), systems.nextDue());
+        final long wallDeadline = wallTimers.nextDeadline();
+        return wallDeadline == Long.MAX_VALUE ? at : Math.min(at, clock.gameMillisAtWall(wallDeadline));
     }
 
     private void runCurrent(long now, boolean simulate) {
@@ -420,9 +408,6 @@ public class Loop {
         passTimers = 0;
         passInput = 0;
         Arrays.fill(phaseNanos, 0);
-        recorder.passStarted(pass, now, wallNow, !simulate);
-        // Game time never goes back; only the wall clock can be set back.
-        wallTimers.passStarted(wallNow);
         final long start = metrics.monotonicTime();
         long mark = start;
         runInbox();
@@ -468,7 +453,10 @@ public class Loop {
         }
     }
 
-    /** As Netty on termination: nothing runs pending tasks, so a waiter in {@code get()} would block for good. */
+    /**
+     * As Netty on termination: nothing runs pending tasks, so a waiter in {@code get()} would block for good. Anything
+     * else still in the inbox is dropped: the drain gave up before it.
+     */
     private void cancelPendingTasks() {
         stopped = true;
         gameTimers.forEach(entry -> {
@@ -476,11 +464,18 @@ public class Loop {
                 task.cancelOnStop();
             }
         });
+        int dropped = 0;
         Message message;
         while ((message = inbox.poll()) != null) {
             if (message instanceof ArmTask(ScheduledTask task)) {
                 task.cancelOnStop();
+            } else {
+                dropped++;
             }
+        }
+        // The log is the only trace: a counter would go with the loop's meters before any scrape sees it.
+        if (dropped > 0) {
+            log.warn("Loop {} dropped {} messages left in its inbox at stop", name, dropped);
         }
     }
 
@@ -504,9 +499,8 @@ public class Loop {
 
     private int runDeadlines(long now, long wallNow) {
         final int cap = settings.overduePerPass();
-        final int owed = settings.owedTicksPerPass();
-        final int fired = gameTimers.runDue(this, now, cap, owed, now - passMinMillis)
-                + wallTimers.runDue(this, wallNow, cap, owed, wallNow - passMinMillis);
+        final int fired = gameTimers.runDue(this, now, cap, now - passMinMillis)
+                + wallTimers.runDue(this, wallNow, cap, wallNow - passMinMillis);
         metrics.overdue(gameTimers.getLastOverdue() + wallTimers.getLastOverdue());
         return fired;
     }
@@ -514,7 +508,6 @@ public class Loop {
     private void runInbox() {
         // Only what is queued now, so producers cannot keep the pass in this phase.
         final int limit = inbox.size();
-        passOrder = 0;
         for (int i = 0; i < limit; i++) {
             final Message message = inbox.poll();
             if (message == null) {
@@ -524,8 +517,6 @@ public class Loop {
                 ready.add(source);
                 continue;
             }
-            record(message, () -> recorder.message(pass, passOrder, message));
-            passOrder++;
             passMessages++;
             try {
                 message.execute(this);
@@ -575,34 +566,22 @@ public class Loop {
     }
 
     /**
-     * Each item is recorded and leaves the source before it runs, so a failing one is never retried. A failure of the
-     * source itself propagates.
+     * Each item leaves the source before it runs, so a failing one is never retried. A failure of the source itself
+     * propagates.
      */
     private void runInput(InputSource source) {
-        final long sourceId = source.id();
         final int max = settings.packetsPerPass();
         for (int ran = 0; ran < max; ran++) {
             final Message item = source.poll();
             if (item == null) {
                 break;
             }
-            record(item, () -> recorder.inputItem(pass, passOrder, sourceId, item));
-            passOrder++;
             passInput++;
             try {
                 item.execute(this);
             } catch (RuntimeException e) {
                 onFailure(PassPhase.INBOX, item, e);
             }
-        }
-    }
-
-    // Recording never blocks or drops game work: a failure is reported and the work still runs.
-    private void record(Message input, Runnable recording) {
-        try {
-            recording.run();
-        } catch (RuntimeException e) {
-            onFailure(PassPhase.INBOX, input, e);
         }
     }
 

@@ -5,10 +5,8 @@
 package app.l2nx.engine.core.loop;
 
 import app.l2nx.engine.core.clock.SystemGameClock;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerEntry;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import it.unimi.dsi.fastutil.longs.LongHeapPriorityQueue;
@@ -147,17 +145,13 @@ public class IdleWakeupBenchmark {
 
         ZeroTickWorld(int npcs) {
             final SystemGameClock clock = new SystemGameClock(Clock.systemUTC());
-            final Loop loop = new Loop("idle", clock, 1L, EngineProperties.defaults(), registry, PassRecorder.NOOP);
-            respawn = TimerSpec.builder()
-                    .handler(this::respawned)
-                    .kind(TimerKind.ACTION)
-                    .build();
+            final Loop loop = new Loop("idle", clock, 1L, EngineProperties.defaults(), registry);
+            respawn = TimerSpec.builder().handler(this::respawned).build();
             final long now = clock.gameMillis();
             for (int i = 0; i < npcs; i++) {
                 loop.timers(TimeBase.GAME).schedule(now + RESPAWN.first(random), respawn);
             }
-            thread = new LoopThread("idle", registry, (failed, failure) -> {});
-            thread.add(loop);
+            thread = new LoopThread("idle", loop, registry, (failed, failure) -> {});
             thread.start();
         }
 

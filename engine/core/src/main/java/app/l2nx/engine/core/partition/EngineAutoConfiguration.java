@@ -7,7 +7,6 @@ package app.l2nx.engine.core.partition;
 import app.l2nx.boot.ServerExit;
 import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import java.security.SecureRandom;
@@ -22,8 +21,6 @@ import org.springframework.context.annotation.Bean;
 @EnableConfigurationProperties(EngineProperties.class)
 public class EngineAutoConfiguration {
     // Stop timeout equals Spring's shutdown-phase timeout so both give up on a hanging hook together.
-    // TODO: record passes in an InMemoryPassRecorder with retention under l2nx.engine; until then nothing is
-    // replayable.
     @Bean
     @ConditionalOnMissingBean
     public PartitionRuntime partitionRuntime(
@@ -38,7 +35,6 @@ public class EngineAutoConfiguration {
                 clock,
                 registry.getIfAvailable(() -> Metrics.globalRegistry),
                 seeds::nextLong,
-                name -> PassRecorder.NOOP,
                 serverExit,
                 lifecycle.getIfAvailable(LifecycleProperties::new).getTimeoutPerShutdownPhase());
     }

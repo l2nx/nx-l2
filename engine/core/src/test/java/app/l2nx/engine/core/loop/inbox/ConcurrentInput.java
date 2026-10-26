@@ -31,11 +31,6 @@ final class ConcurrentInput implements InputSource {
     }
 
     @Override
-    public long id() {
-        return 1;
-    }
-
-    @Override
     public Message poll() {
         return items.poll();
     }

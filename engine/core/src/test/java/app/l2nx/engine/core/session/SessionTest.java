@@ -11,7 +11,6 @@ import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.Message;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.session.command.CoalescableCommand;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
@@ -394,8 +393,8 @@ class SessionTest {
     class AuthedDrain {
         private final ManualGameClock clock =
                 new ManualGameClock(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC);
-        private final Loop world = new Loop(
-                "world", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry(), PassRecorder.NOOP);
+        private final Loop world =
+                new Loop("world", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry());
         private final Session session = session(limits(256, 16, 200, 256), DrainScheduler.loop(() -> world));
 
         @Test

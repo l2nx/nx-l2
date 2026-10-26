@@ -239,6 +239,24 @@ class LoopSchedulingTest {
             assertThat(delay).hasValue(1000);
         }
 
+        // The queue floors a deadline armed while timers fire to the next millisecond; the delay follows the entry.
+        @Test
+        void getDelay_shouldBeTheArmedDeadline_whenScheduledDueFromATimer() {
+            final AtomicLong delay = new AtomicLong();
+            scheduleInPass(
+                    () -> {
+                        final ScheduledFuture<Void> future = loop.schedule(() -> ran.add("a"), 0, TimeUnit.SECONDS);
+                        delay.set(future.getDelay(TimeUnit.MILLISECONDS));
+                    },
+                    10);
+            passAfter(Duration.ofMillis(10));
+            assertThat(ran).isEmpty();
+
+            passAfter(Duration.ofMillis(1));
+            assertThat(delay).hasValue(1);
+            assertThat(ran).containsExactly("a");
+        }
+
         @Test
         void getDelay_shouldReturnWholeDelay_whenNotArmedYet() throws Exception {
             final ScheduledFuture<Void> future = scheduleOffLoop(() -> {}, 50);

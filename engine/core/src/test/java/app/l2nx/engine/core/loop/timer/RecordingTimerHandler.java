@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Records each fired entry as {@code "<target>:<kind>@<deadline>"}; a target with a set generation drops others. */
+/** Records each fired entry as {@code "<target>@<deadline>"}; a target with a set generation drops others. */
 public final class RecordingTimerHandler implements TimerHandler {
     public final List<String> fired = new ArrayList<>();
     private final Map<Integer, Integer> generations = new HashMap<>();
@@ -19,17 +19,12 @@ public final class RecordingTimerHandler implements TimerHandler {
         generations.put(target, generation);
     }
 
-    public TimerSpec spec(int target, TimerKind kind) {
-        return TimerSpec.builder().handler(this).target(target).kind(kind).build();
+    public TimerSpec spec(int target) {
+        return TimerSpec.builder().handler(this).target(target).build();
     }
 
     public TimerSpec periodic(int target, long period) {
-        return TimerSpec.builder()
-                .handler(this)
-                .target(target)
-                .kind(TimerKind.TICK)
-                .period(period)
-                .build();
+        return TimerSpec.builder().handler(this).target(target).period(period).build();
     }
 
     @Override
@@ -40,6 +35,6 @@ public final class RecordingTimerHandler implements TimerHandler {
 
     @Override
     public void onTimer(Loop loop, TimerEntry entry) {
-        fired.add(entry.getSpec().target() + ":" + entry.getSpec().kind() + "@" + entry.getDeadline());
+        fired.add(entry.getSpec().target() + "@" + entry.getDeadline());
     }
 }

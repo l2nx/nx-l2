@@ -6,12 +6,10 @@ package app.l2nx.engine.core.loop;
 
 import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.clock.SystemGameClock;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerHandler;
-import app.l2nx.engine.core.loop.timer.TimerKind;
+import app.l2nx.engine.core.loop.timer.TimerQueue;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
-import app.l2nx.engine.core.loop.timer.TimerWheel;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -32,14 +30,11 @@ import java.util.concurrent.atomic.LongAdder;
 import lombok.Builder;
 
 /**
- * Firing lateness ({@code firedAt - deadline}) of timers with spread deadlines under background CPU load, plus the
- * scheduler's wake-ups and {@link ThreadMXBean} CPU time over the measured window, which includes each round's
- * {@value #LEAD_MILLIS} ms idle lead. The loop schedules a round on its own thread (counted); the pool and the tick
- * thread get theirs from the harness thread (not). {@code MOBIUS_STPE} schedules exact nanosecond delays, finer than
- * the milliseconds Mobius passes.
+ * Firing lateness ({@code firedAt - deadline}) of spread-deadline timers under background CPU load, plus wake-ups and
+ * {@link ThreadMXBean} CPU time over a window that includes each round's {@value #LEAD_MILLIS} ms idle lead. The loop
+ * schedules on its own thread (counted); the pool and tick thread are scheduled from the harness thread (not).
  *
- * <p>A plain {@code main}, not JMH: JMH has no result type for a distribution measured inside the run. Run one
- * scheduler per JVM. Timer resolution is the operating system's: Windows parks and sleeps in coarser steps than Linux.
+ * <p>A plain {@code main}: JMH has no result type for a distribution. Run one scheduler per JVM.
  */
 public final class LatenessHarness {
     static final long LEAD_MILLIS = 200;
@@ -238,9 +233,8 @@ public final class LatenessHarness {
         private ZeroTickSubject(EngineProperties settings) {
             origin = System.nanoTime();
             final SystemGameClock clock = new SystemGameClock(Clock.systemUTC());
-            loop = new Loop("lateness", clock, 1L, settings, registry, PassRecorder.NOOP);
-            thread = new LoopThread("lateness", registry, (failed, failure) -> {});
-            thread.add(loop);
+            loop = new Loop("lateness", clock, 1L, settings, registry);
+            thread = new LoopThread("lateness", loop, registry, (failed, failure) -> {});
             thread.start();
         }
 
@@ -255,16 +249,12 @@ public final class LatenessHarness {
             final TimerHandler handler =
                     (owner, entry) -> round.fired(entry.getSpec().key());
             final boolean accepted = loop.offer(owner -> {
-                final TimerWheel timers = owner.timers(TimeBase.GAME);
+                final TimerQueue timers = owner.timers(TimeBase.GAME);
                 for (int i = 0; i < round.deadlines.length; i++) {
                     final long deadline = GameClock.ORIGIN_MILLIS + (round.deadlines[i] - origin) / NANOS_PER_MILLI;
                     timers.schedule(
                             deadline,
-                            TimerSpec.builder()
-                                    .handler(handler)
-                                    .kind(TimerKind.ACTION)
-                                    .key(i)
-                                    .build());
+                            TimerSpec.builder().handler(handler).key(i).build());
                 }
             });
             if (!accepted || !thread.getThread().isAlive()) {

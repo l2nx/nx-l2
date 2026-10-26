@@ -11,12 +11,12 @@ dependencies {
     api(libs.uuid.creator)
     api(project(":libs:network"))
     implementation(libs.spring.boot.autoconfigure)
-    implementation(libs.agrona)
     implementation(libs.bucket4j.core)
     implementation(libs.fastutil)
     implementation(libs.jctools.core)
 
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.jqwik)
 
     testFixturesImplementation(platform(libs.spring.boot.dependencies))
 
@@ -26,6 +26,8 @@ dependencies {
 tasks.test {
     // The inbox must never fall back to sun.misc.Unsafe (JEP 471/498): any use fails the tests here.
     jvmArgs("--sun-misc-unsafe-memory-access=deny")
+    // jqwik keeps its failure database in the working directory by default; the build directory keeps it out of git.
+    systemProperty("jqwik.database", layout.buildDirectory.file("jqwik-database").get().asFile.path)
 }
 
 jmh {

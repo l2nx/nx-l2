@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.loop.inbox.FakeInput;
 import app.l2nx.engine.core.loop.inbox.FakeInput.Operation;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +34,8 @@ class LoopInputTest {
     class RunPass {
         @Test
         void runPass_shouldTakeAtMostPacketsPerPassFromEachSourceRoundRobin() {
-            final FakeInput flooding = new FakeInput(1, "A", log);
-            final FakeInput quiet = new FakeInput(2, "B", log);
+            final FakeInput flooding = new FakeInput("A", log);
+            final FakeInput quiet = new FakeInput("B", log);
             flooding.push(loop, 40);
             quiet.push(loop, 3);
 
@@ -62,7 +61,7 @@ class LoopInputTest {
 
         @Test
         void runPass_shouldKeepInput_whenItArrivesWhileTheSignalIsCleared() {
-            final FakeInput source = new FakeInput(1, "A", log);
+            final FakeInput source = new FakeInput("A", log);
             source.push(loop, 1);
             source.onClear = () -> {
                 source.onClear = () -> {};
@@ -81,19 +80,15 @@ class LoopInputTest {
     @Nested
     class FailingInput {
         private double inboxFailures() {
-            return inboxFailures("test");
-        }
-
-        private double inboxFailures(String loopName) {
             return registry.get("l2nx.engine.failures")
-                    .tags("loop", loopName, "phase", "inbox")
+                    .tags("loop", "test", "phase", "inbox")
                     .counter()
                     .count();
         }
 
         @Test
         void runPass_shouldReportAFailingItemOnceAndNeverRetryIt() {
-            final FakeInput source = new FakeInput(1, "A", log);
+            final FakeInput source = new FakeInput("A", log);
             source.fail("A1");
             source.push(loop, 3);
 
@@ -107,8 +102,8 @@ class LoopInputTest {
 
         @Test
         void runPass_shouldRunTheRestOfTheBatchInTheSamePass_whenAnItemFails() {
-            final FakeInput source = new FakeInput(1, "A", log);
-            final FakeInput other = new FakeInput(2, "B", log);
+            final FakeInput source = new FakeInput("A", log);
+            final FakeInput other = new FakeInput("B", log);
             source.fail("A1");
             source.push(loop, 3);
             other.push(loop, 1);
@@ -120,7 +115,7 @@ class LoopInputTest {
 
         @Test
         void nextPassAt_shouldBeIdle_whenTheLastItemFailed() {
-            final FakeInput source = new FakeInput(1, "A", log);
+            final FakeInput source = new FakeInput("A", log);
             source.fail("A1");
             source.push(loop, 2);
 
@@ -135,8 +130,8 @@ class LoopInputTest {
         @MethodSource("brokenSources")
         void runPass_shouldFinishThePassAndDropTheSourceUntilItSignalsAgain_whenTheSourceThrows(
                 String operation, Consumer<FakeInput> breakage) {
-            final FakeInput broken = new FakeInput(1, "A", log);
-            final FakeInput other = new FakeInput(2, "B", log);
+            final FakeInput broken = new FakeInput("A", log);
+            final FakeInput other = new FakeInput("B", log);
             broken.push(loop, 2);
             other.push(loop, 1);
             loop.addHook(PassPhase.SIDE_EFFECTS, (l, now) -> log.add("hook"));
@@ -159,7 +154,6 @@ class LoopInputTest {
 
         static Stream<Arguments> brokenSources() {
             return Stream.of(
-                    broken("id", source -> source.broken.add(Operation.ID)),
                     broken("poll", source -> source.broken.add(Operation.POLL)),
                     broken("hasInput", source -> source.broken.add(Operation.HAS_INPUT)),
                     broken(
@@ -177,8 +171,8 @@ class LoopInputTest {
 
         @Test
         void runPass_shouldFinishThePass_whenClearingTheSignalThrows() {
-            final FakeInput broken = new FakeInput(1, "A", log);
-            final FakeInput other = new FakeInput(2, "B", log);
+            final FakeInput broken = new FakeInput("A", log);
+            final FakeInput other = new FakeInput("B", log);
             broken.push(loop, 1);
             other.push(loop, 1);
             loop.addHook(PassPhase.SIDE_EFFECTS, (l, now) -> log.add("hook"));
@@ -189,66 +183,13 @@ class LoopInputTest {
             assertThat(log).containsExactly("A0", "B0", "hook");
             assertThat(inboxFailures()).isEqualTo(2.0);
         }
-
-        @Test
-        void runPass_shouldRunTheItemsAndKeepTheSource_whenRecordingAnItemThrows() {
-            final Loop recorded = new Loop(
-                    "recorded",
-                    TestLoops.clock(),
-                    TestLoops.SEED,
-                    EngineProperties.defaults(),
-                    registry,
-                    new PassRecorder() {
-                        @Override
-                        public void inputItem(long pass, int order, long sourceId, Message item) {
-                            throw new IllegalStateException("record full");
-                        }
-                    });
-            final FakeInput source = new FakeInput(1, "A", log);
-            source.push(recorded, 2);
-            recorded.addHook(PassPhase.SIDE_EFFECTS, (l, now) -> log.add("hook"));
-
-            recorded.runPass(T0);
-            source.push(recorded, 1);
-            recorded.runPass(T0 + 5);
-
-            final List<String> expected = List.of("A0", "A1", "hook", "A2", "hook");
-            assertThat(log).isEqualTo(expected);
-            assertThat(inboxFailures("recorded")).isEqualTo(3.0);
-            assertThat(source.isSignalled()).isFalse();
-            assertThat(recorded.nextPassAt(recorded.getPassTime())).isEqualTo(Long.MAX_VALUE);
-        }
-
-        @Test
-        void runPass_shouldRunTheMessageAndCompleteThePass_whenRecordingAMessageThrows() {
-            final Loop recorded = new Loop(
-                    "recorded",
-                    TestLoops.clock(),
-                    TestLoops.SEED,
-                    EngineProperties.defaults(),
-                    registry,
-                    new PassRecorder() {
-                        @Override
-                        public void message(long pass, int order, Message message) {
-                            throw new IllegalStateException("record full");
-                        }
-                    });
-            recorded.addHook(PassPhase.SIDE_EFFECTS, (l, now) -> log.add("hook"));
-            recorded.offer(l -> log.add("message"));
-
-            recorded.runPass(T0);
-
-            final List<String> expected = List.of("message", "hook");
-            assertThat(log).isEqualTo(expected);
-            assertThat(inboxFailures("recorded")).isEqualTo(1.0);
-        }
     }
 
     @Nested
     class Signal {
         @Test
         void signal_shouldScheduleAPassAgain_whenTheSourceWasDrainedEmpty() {
-            final FakeInput source = new FakeInput(1, "A", log);
+            final FakeInput source = new FakeInput("A", log);
             source.push(loop, 1);
             loop.runPass(T0);
 

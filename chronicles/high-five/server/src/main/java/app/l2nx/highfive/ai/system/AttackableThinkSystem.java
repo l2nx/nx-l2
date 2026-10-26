@@ -22,82 +22,73 @@
  */
 package app.l2nx.highfive.ai.system;
 
+import app.l2nx.engine.core.loop.Loop;
+import app.l2nx.engine.core.loop.periodic.PeriodicSystem;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.Iterator;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class AttackableThinkSystem {
-    private static final Set<Set<Attackable>> POOLS = ConcurrentHashMap.newKeySet();
-    private static final int POOL_SIZE = 1000;
-    private static final int TASK_DELAY = 1000;
+    static final String SYSTEM = "ai-think";
+
+    private final Set<Attackable> attackables = new LinkedHashSet<>();
+    private final List<Attackable> thinking = new ArrayList<>();
+    private final PeriodicSystem think = (loop, now) -> thinkAll();
 
     protected AttackableThinkSystem() {}
 
-    private class AttackableThink implements Runnable {
-        private final Set<Attackable> attackables;
+    /** The singleton outlives a world loop: a restarted world starts without the attackables of the previous one. */
+    void install(Loop world, Duration cadence) {
+        WorldPartition.checkOwner();
+        attackables.clear();
+        world.addSystem(SYSTEM, cadence, think);
+    }
 
-        public AttackableThink(Set<Attackable> attackables) {
-            this.attackables = attackables;
-        }
-
-        @Override
-        public void run() {
-            if (attackables.isEmpty()) {
-                return;
-            }
-
-            CreatureAI ai;
-            Attackable attackable;
-            final Iterator<Attackable> iterator = attackables.iterator();
-            while (iterator.hasNext()) {
-                attackable = iterator.next();
-                if (attackable.hasAI()) {
-                    ai = attackable.getAI();
-                    if (ai != null) {
-                        ai.notifyActionThink();
-                    } else {
-                        iterator.remove();
-                    }
-                } else {
-                    iterator.remove();
+    // A think may add or remove attackables (a death, a spawn): the run walks a copy and skips the removed ones.
+    private void thinkAll() {
+        thinking.addAll(attackables);
+        try {
+            for (int i = 0; i < thinking.size(); i++) {
+                final Attackable attackable = thinking.get(i);
+                if (attackables.contains(attackable)) {
+                    think(attackable);
                 }
             }
+        } finally {
+            thinking.clear();
         }
     }
 
-    public synchronized void add(Attackable attackable) {
-        for (Set<Attackable> pool : POOLS) {
-            if (pool.contains(attackable)) {
-                return;
-            }
-        }
-
-        for (Set<Attackable> pool : POOLS) {
-            if (pool.size() < POOL_SIZE) {
-                pool.add(attackable);
-                return;
-            }
-        }
-
-        final Set<Attackable> pool = ConcurrentHashMap.newKeySet(POOL_SIZE);
-        pool.add(attackable);
-        WorldPartition.loop()
-                .scheduleAtFixedRate(new AttackableThink(pool), TASK_DELAY, TASK_DELAY, TimeUnit.MILLISECONDS);
-        POOLS.add(pool);
+    public void add(Attackable attackable) {
+        WorldPartition.checkOwner();
+        attackables.add(attackable);
     }
 
     public void remove(Attackable attackable) {
-        for (Set<Attackable> pool : POOLS) {
-            if (pool.remove(attackable)) {
-                return;
-            }
+        WorldPartition.checkOwner();
+        attackables.remove(attackable);
+    }
+
+    private void think(Attackable attackable) {
+        final CreatureAI ai = attackable.hasAI() ? attackable.getAI() : null;
+        if (ai == null) {
+            attackables.remove(attackable);
+            return;
+        }
+        try {
+            ai.notifyActionThink();
+        } catch (RuntimeException e) {
+            log.error("Think of {} failed", attackable, e);
         }
     }
 

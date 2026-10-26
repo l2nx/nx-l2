@@ -8,12 +8,10 @@ import static app.l2nx.engine.core.loop.TestLoops.T0;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.clock.ManualGameClock;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.loop.timer.RecordingTimerHandler;
 import app.l2nx.engine.core.loop.timer.TimeBase;
-import app.l2nx.engine.core.loop.timer.TimerKind;
+import app.l2nx.engine.core.loop.timer.TimerQueue;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
-import app.l2nx.engine.core.loop.timer.TimerWheel;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,12 +28,12 @@ class LoopDeadlinesTest {
     class GameDeadline {
         @Test
         void gameDeadline_shouldWakeTheLoopAndRunInTheDeadlinesPhase() {
-            loop.timers(TimeBase.GAME).schedule(T0 + 20, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.GAME).schedule(T0 + 20, handler.spec(1));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 20);
 
             loop.runPass(T0 + 20);
-            assertThat(handler.fired).containsExactly("1:ACTION@" + (T0 + 20));
+            assertThat(handler.fired).containsExactly("1@" + (T0 + 20));
         }
     }
 
@@ -44,20 +42,20 @@ class LoopDeadlinesTest {
         @Test
         void wallDeadline_shouldBeConvertedToGameTimeForTheWakeUp() {
             final long wallDeadline = clock.wallMillis() + 30;
-            loop.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(2, TimerKind.ACTION));
+            loop.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(2));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 30);
 
             clock.advance(Duration.ofMillis(30));
             loop.runPass(clock.gameMillis());
-            assertThat(handler.fired).containsExactly("2:ACTION@" + wallDeadline);
+            assertThat(handler.fired).containsExactly("2@" + wallDeadline);
         }
 
         @Test
         void wallClockSetBack_shouldNeitherFireEarlyNorStrandDueEntries() {
             final long wallStart = clock.wallMillis();
-            final TimerWheel wall = loop.timers(TimeBase.WALL);
-            wall.schedule(wallStart + 30, handler.spec(1, TimerKind.ACTION));
+            final TimerQueue wall = loop.timers(TimeBase.WALL);
+            wall.schedule(wallStart + 30, handler.spec(1));
             loop.runPass(T0);
 
             clock.advanceWall(Duration.ofMinutes(-10));
@@ -67,14 +65,14 @@ class LoopDeadlinesTest {
             assertThat(handler.fired).isEmpty();
 
             final long setBackNow = clock.wallMillis();
-            wall.schedule(setBackNow - 5, handler.spec(2, TimerKind.ACTION));
+            wall.schedule(setBackNow - 5, handler.spec(2));
             clock.advance(Duration.ofMillis(1));
             loop.runPass(T0 + 31);
-            assertThat(handler.fired).containsExactly("2:ACTION@" + (setBackNow - 5));
+            assertThat(handler.fired).containsExactly("2@" + (setBackNow - 5));
 
             clock.advanceWall(Duration.ofMinutes(10));
             loop.runPass(T0 + 31);
-            assertThat(handler.fired).containsExactly("2:ACTION@" + (setBackNow - 5), "1:ACTION@" + (wallStart + 30));
+            assertThat(handler.fired).containsExactly("2@" + (setBackNow - 5), "1@" + (wallStart + 30));
         }
 
         @Test
@@ -85,12 +83,12 @@ class LoopDeadlinesTest {
             loop.runPass(T0 + 1);
 
             final long wallDeadline = clock.wallMillis() + 20;
-            loop.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(1));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 21);
             clock.advance(Duration.ofMillis(20));
             loop.runPass(T0 + 21);
-            assertThat(handler.fired).containsExactly("1:ACTION@" + wallDeadline);
+            assertThat(handler.fired).containsExactly("1@" + wallDeadline);
         }
 
         @Test
@@ -99,13 +97,13 @@ class LoopDeadlinesTest {
             clock.advanceWall(Duration.ofMinutes(-10));
             clock.advance(Duration.ofMillis(1));
             final long wallDeadline = clock.wallMillis() + 20;
-            loop.offer(l -> l.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(1, TimerKind.ACTION)));
+            loop.offer(l -> l.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(1)));
 
             loop.runPass(T0 + 1);
             clock.advance(Duration.ofMillis(20));
             loop.runPass(T0 + 21);
 
-            assertThat(handler.fired).containsExactly("1:ACTION@" + wallDeadline);
+            assertThat(handler.fired).containsExactly("1@" + wallDeadline);
         }
     }
 
@@ -114,7 +112,7 @@ class LoopDeadlinesTest {
         @Test
         void gameDeadline_shouldBeThePassTime_whenItFallsDueInsidePassMin() {
             loop.runPass(T0);
-            loop.timers(TimeBase.GAME).schedule(T0 + 1, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.GAME).schedule(T0 + 1, handler.spec(1));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 1);
         }
@@ -122,7 +120,7 @@ class LoopDeadlinesTest {
         @Test
         void wallDeadline_shouldBeThePassTime_whenItFallsDueInsidePassMin() {
             loop.runPass(T0);
-            loop.timers(TimeBase.WALL).schedule(clock.wallMillis() + 2, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.WALL).schedule(clock.wallMillis() + 2, handler.spec(1));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 2);
         }
@@ -150,12 +148,12 @@ class LoopDeadlinesTest {
         void dueDeadline_shouldTakeTheQueuedInputAlong_whenItFallsDueBeforeTheGate() {
             loop.runPass(T0);
             loop.offer(l -> handler.fired.add("input@" + l.getPassTime()));
-            loop.timers(TimeBase.GAME).schedule(T0 + 2, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.GAME).schedule(T0 + 2, handler.spec(1));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 2);
             loop.runPass(T0 + 2);
 
-            assertThat(handler.fired).containsExactly("input@" + (T0 + 2), "1:ACTION@" + (T0 + 2));
+            assertThat(handler.fired).containsExactly("input@" + (T0 + 2), "1@" + (T0 + 2));
             loop.offer(l -> {});
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 7);
         }
@@ -164,25 +162,24 @@ class LoopDeadlinesTest {
         void overdueRemainder_shouldRunOneMillisecondLaterWithoutWaitingForPassMin() {
             final EngineProperties settings =
                     EngineProperties.defaults().toBuilder().overduePerPass(2).build();
-            final Loop capped =
-                    new Loop("capped", clock, TestLoops.SEED, settings, new SimpleMeterRegistry(), PassRecorder.NOOP);
+            final Loop capped = new Loop("capped", clock, TestLoops.SEED, settings, new SimpleMeterRegistry());
             for (int i = 1; i <= 3; i++) {
-                capped.timers(TimeBase.GAME).schedule(T0 + i, handler.spec(i, TimerKind.ACTION));
+                capped.timers(TimeBase.GAME).schedule(T0 + i, handler.spec(i));
             }
 
             capped.runPass(T0 + 100);
-            assertThat(handler.fired).containsExactly("1:ACTION@" + (T0 + 1), "2:ACTION@" + (T0 + 2));
+            assertThat(handler.fired).containsExactly("1@" + (T0 + 1), "2@" + (T0 + 2));
             assertThat(capped.nextPassAt(T0 + 100)).isEqualTo(T0 + 101);
 
             capped.runPass(T0 + 101);
-            assertThat(handler.fired).endsWith("3:ACTION@" + (T0 + 3));
+            assertThat(handler.fired).endsWith("3@" + (T0 + 3));
         }
 
         @Test
         void queuedInput_shouldWaitOnlyForTheGate_whenTheDeadlineFallsDueAfterIt() {
             loop.runPass(T0);
             loop.offer(l -> {});
-            loop.timers(TimeBase.GAME).schedule(T0 + 8, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.GAME).schedule(T0 + 8, handler.spec(1));
 
             assertThat(loop.nextPassAt(clock.gameMillis())).isEqualTo(T0 + 5);
         }
@@ -197,7 +194,6 @@ class LoopDeadlinesTest {
         void rearmAtPassTime_shouldRunAtMostOnePassPerMillisecond() {
             final TimerSpec rearm = TimerSpec.builder()
                     .handler((l, entry) -> l.timers(TimeBase.GAME).schedule(l.getPassTime(), entry.getSpec()))
-                    .kind(TimerKind.ACTION)
                     .build();
             loop.timers(TimeBase.GAME).schedule(T0, rearm);
 
@@ -210,11 +206,9 @@ class LoopDeadlinesTest {
         void stuckOverdueBacklog_shouldRunAtMostOnePassPerMillisecond() {
             final EngineProperties settings =
                     EngineProperties.defaults().toBuilder().overduePerPass(1).build();
-            final Loop capped =
-                    new Loop("capped", clock, TestLoops.SEED, settings, new SimpleMeterRegistry(), PassRecorder.NOOP);
+            final Loop capped = new Loop("capped", clock, TestLoops.SEED, settings, new SimpleMeterRegistry());
             final TimerSpec stuck = TimerSpec.builder()
                     .handler((l, entry) -> l.timers(TimeBase.GAME).schedule(entry.getDeadline(), entry.getSpec()))
-                    .kind(TimerKind.ACTION)
                     .build();
             capped.timers(TimeBase.GAME).schedule(T0, stuck);
             capped.timers(TimeBase.GAME).schedule(T0 + 1, stuck);
@@ -246,14 +240,14 @@ class LoopDeadlinesTest {
         @Test
         void loneFarTimer_shouldFireWithinOneMillisecondOfItsDeadline() {
             loop.runPass(T0);
-            loop.timers(TimeBase.GAME).schedule(T0 + 10_000, handler.spec(1, TimerKind.ACTION));
+            loop.timers(TimeBase.GAME).schedule(T0 + 10_000, handler.spec(1));
 
             final long at = loop.nextPassAt(clock.gameMillis());
             clock.advance(Duration.ofMillis(at - T0));
             loop.runPass(clock.gameMillis());
 
             assertThat(at).isEqualTo(T0 + 10_000);
-            assertThat(handler.fired).containsExactly("1:ACTION@" + (T0 + 10_000));
+            assertThat(handler.fired).containsExactly("1@" + (T0 + 10_000));
         }
 
         private int simulate(Loop target, int millis, Runnable arrivals) {
@@ -278,7 +272,7 @@ class LoopDeadlinesTest {
             final SimpleMeterRegistry registry = new SimpleMeterRegistry();
             final Loop idle = TestLoops.loop("idle", clock, registry);
             for (int i = 0; i < 1_000; i++) {
-                idle.timers(TimeBase.GAME).schedule(T0 + 120_000 + i * 97L, handler.spec(i, TimerKind.ACTION));
+                idle.timers(TimeBase.GAME).schedule(T0 + 120_000 + i * 97L, handler.spec(i));
             }
 
             int actual = 0;
@@ -290,7 +284,7 @@ class LoopDeadlinesTest {
             }
 
             assertThat(actual).isEqualTo(1);
-            assertThat(handler.fired).containsExactly("0:ACTION@" + (T0 + 120_000));
+            assertThat(handler.fired).containsExactly("0@" + (T0 + 120_000));
             assertThat(registry.get("l2nx.engine.pass")
                             .tag("loop", "idle")
                             .timer()

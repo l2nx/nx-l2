@@ -36,8 +36,7 @@ public final class LoopGroup {
         if (stopped) {
             throw new IllegalStateException("Loop group " + prefix + " is shut down");
         }
-        final LoopThread thread = new LoopThread(prefix + "-" + loop.getName(), registry, failures);
-        thread.add(loop);
+        final LoopThread thread = new LoopThread(prefix + "-" + loop.getName(), loop, registry, failures);
         thread.start();
         threads.add(thread);
         watchdog.watch(loop, thread.getThread());

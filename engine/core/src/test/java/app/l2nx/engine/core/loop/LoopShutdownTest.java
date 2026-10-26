@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.l2nx.engine.core.loop.inbox.FakeInput;
 import app.l2nx.engine.core.loop.timer.TimeBase;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ class LoopShutdownTest {
     class Shutdown {
         @Test
         void shutdown_shouldDrainRunHooksAndRejectLaterOffers() {
-            final FakeInput input = new FakeInput(1, "input", log);
+            final FakeInput input = new FakeInput("input", log);
             input.push(loop, 3);
             loop.offer(l -> {
                 log.add("message");
@@ -46,7 +45,6 @@ class LoopShutdownTest {
                             T0,
                             TimerSpec.builder()
                                     .handler((l, entry) -> log.add("deadline"))
-                                    .kind(TimerKind.ACTION)
                                     .build());
             loop.addShutdownHook(l -> {
                 log.add("save");

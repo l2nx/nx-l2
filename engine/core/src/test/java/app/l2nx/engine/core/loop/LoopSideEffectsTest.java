@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.loop.periodic.TestSystem;
 import app.l2nx.engine.core.loop.timer.TimeBase;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -42,9 +41,8 @@ class LoopSideEffectsTest {
                             T0 + 10,
                             TimerSpec.builder()
                                     .handler((l, entry) -> log.add("deadline"))
-                                    .kind(TimerKind.ACTION)
                                     .build());
-            loop.addSystem(new TestSystem("system", Duration.ofMillis(10), log));
+            loop.addSystem("system", Duration.ofMillis(10), new TestSystem("system", log));
             loop.addHook(PassPhase.SIDE_EFFECTS, (l, now) -> log.add("side-effect hook"));
             loop.addHook(PassPhase.REPLICATION, (l, now) -> log.add("replication"));
             loop.addHook(PassPhase.FLUSH, (l, now) -> log.add("flush"));
@@ -63,6 +61,26 @@ class LoopSideEffectsTest {
 
     @Nested
     class Defer {
+        @Test
+        void defer_shouldRunInEnqueueOrder_andWorkDeferredByDeferredWorkAfterItsWholeGeneration() {
+            loop.offer(l -> {
+                l.defer(() -> {
+                    log.add("a");
+                    l.defer(() -> log.add("a1"));
+                    l.defer(() -> log.add("a2"));
+                });
+                l.defer(() -> {
+                    log.add("b");
+                    l.defer(() -> log.add("b1"));
+                });
+                l.defer(() -> log.add("c"));
+            });
+
+            loop.runPass(T0);
+
+            assertThat(log).containsExactly("a", "b", "c", "a1", "a2", "b1");
+        }
+
         @Test
         void defer_shouldStopAtTheTriggerDepthAndContinueInTheNextPass() {
             final AtomicInteger runs = new AtomicInteger();

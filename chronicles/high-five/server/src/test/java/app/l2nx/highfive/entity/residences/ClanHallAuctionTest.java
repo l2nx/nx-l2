@@ -177,7 +177,7 @@ class ClanHallAuctionTest {
 
         @Test
         void cancelAuction_shouldCancelScheduledEnd(Loop world) {
-            final List<Long> timers = new ArrayList<>();
+            final List<Integer> timers = new ArrayList<>();
 
             WorldLoopExtension.runInPass(() -> {
                 timers.add(world.timers(TimeBase.GAME).size());
@@ -187,7 +187,7 @@ class ClanHallAuctionTest {
                 timers.add(world.timers(TimeBase.GAME).size());
             });
 
-            final long before = timers.getFirst();
+            final int before = timers.getFirst();
             assertThat(timers).containsExactly(before, before + 1, before);
         }
 

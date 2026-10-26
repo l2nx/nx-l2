@@ -29,7 +29,6 @@ import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerEntry;
 import app.l2nx.engine.core.loop.timer.TimerHandler;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
@@ -153,9 +152,9 @@ public class Shutdown {
             PrecautionaryRestartManager.getInstance().restartEnabled();
         }
 
-        generation++;
-        counting = true;
         final Loop world = WorldPartition.loop();
+        supersedeCountdown(world);
+        counting = true;
         final long startedAt = world.gameNow();
 
         announce(seconds);
@@ -174,6 +173,12 @@ public class Shutdown {
         arm(world, startedAt, seconds, FINISH);
     }
 
+    // An aborted countdown of an hour would otherwise hold its steps in the queue until each deadline passed.
+    private void supersedeCountdown(Loop world) {
+        generation++;
+        world.timers(TimeBase.GAME).cancelStale(world, countdown);
+    }
+
     // Game time: the steps are delays from the start, which a wall-clock step must not shift or collapse.
     private void arm(Loop world, long startedAt, int afterSeconds, int step) {
         world.timers(TimeBase.GAME)
@@ -183,7 +188,6 @@ public class Shutdown {
                                 .handler(countdown)
                                 .key(step)
                                 .generation(generation)
-                                .kind(TimerKind.ACTION)
                                 .build());
     }
 
@@ -219,7 +223,7 @@ public class Shutdown {
             return;
         }
 
-        generation++;
+        supersedeCountdown(WorldPartition.loop());
         counting = false;
         shutdownMode = ABORT;
 

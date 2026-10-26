@@ -7,25 +7,28 @@ package app.l2nx.engine.core.loop.periodic;
 import app.l2nx.engine.core.loop.FailureHandler;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.PassPhase;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** Owner thread only. */
 public final class PeriodicSchedule {
     private final List<Slot> slots = new ArrayList<>();
 
-    public void add(PeriodicSystem system, long now, PeriodicMetrics metrics) {
-        final long cadence = system.cadence().toMillis();
-        if (cadence < 1) {
-            throw new IllegalArgumentException(
-                    "Cadence of system " + system.name() + " must be at least 1 ms: " + system.cadence());
+    public void add(String name, Duration cadence, PeriodicSystem system, long now, PeriodicMetrics metrics) {
+        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(system, "system");
+        final long cadenceMillis = cadence.toMillis();
+        if (cadenceMillis < 1) {
+            throw new IllegalArgumentException("Cadence of system " + name + " must be at least 1 ms: " + cadence);
         }
         for (Slot slot : slots) {
-            if (slot.system.name().equals(system.name())) {
-                throw new IllegalArgumentException("System already registered: " + system.name());
+            if (slot.name.equals(name)) {
+                throw new IllegalArgumentException("System already registered: " + name);
             }
         }
-        slots.add(new Slot(system, cadence, metrics.system(system.name()), now + cadence));
+        slots.add(new Slot(name, system, cadenceMillis, metrics.system(name), now + cadenceMillis));
     }
 
     public long nextDue() {
@@ -46,7 +49,7 @@ public final class PeriodicSchedule {
             try {
                 slot.system.run(loop, now);
             } catch (RuntimeException e) {
-                failures.onFailure(PassPhase.SYSTEMS, slot.system, e);
+                failures.onFailure(PassPhase.SYSTEMS, slot.name, e);
             }
             slot.meters.recordRun(metrics.monotonicTime() - start);
             // Missed runs are skipped, not replayed in a burst; the next run stays on the cadence grid.
@@ -59,12 +62,14 @@ public final class PeriodicSchedule {
     }
 
     private static final class Slot {
+        private final String name;
         private final PeriodicSystem system;
         private final long cadence;
         private final PeriodicMetrics.SystemMeters meters;
         private long next;
 
-        private Slot(PeriodicSystem system, long cadence, PeriodicMetrics.SystemMeters meters, long next) {
+        private Slot(String name, PeriodicSystem system, long cadence, PeriodicMetrics.SystemMeters meters, long next) {
+            this.name = name;
             this.system = system;
             this.cadence = cadence;
             this.meters = meters;

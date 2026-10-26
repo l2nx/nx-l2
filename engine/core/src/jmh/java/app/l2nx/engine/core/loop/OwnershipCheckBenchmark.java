@@ -6,7 +6,6 @@ package app.l2nx.engine.core.loop;
 
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.inbox.Wakeup;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -39,8 +38,7 @@ public class OwnershipCheckBenchmark {
                 new ManualGameClock(Instant.parse("2026-10-19T12:00:00Z"), ZoneOffset.UTC),
                 1L,
                 EngineProperties.defaults(),
-                new SimpleMeterRegistry(),
-                PassRecorder.NOOP);
+                new SimpleMeterRegistry());
         loop.bind(Thread.currentThread(), Wakeup.NONE);
     }
 

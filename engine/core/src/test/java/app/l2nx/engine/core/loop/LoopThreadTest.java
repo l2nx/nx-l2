@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.clock.SystemGameClock;
 import app.l2nx.engine.core.loop.timer.TimeBase;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
@@ -35,9 +34,8 @@ class LoopThreadTest {
     class Wake {
         @Test
         void offer_shouldWakeAParkedThreadAtMostOncePerPark() throws Exception {
-            final LoopThread thread = new LoopThread("l2nx-loop-test-wake", registry, UNEXPECTED);
             final Loop loop = TestLoops.loop("wake", clock, registry);
-            thread.add(loop);
+            final LoopThread thread = new LoopThread("l2nx-loop-test-wake", loop, registry, UNEXPECTED);
             thread.start();
             try {
                 awaitSleeping(thread);
@@ -67,18 +65,19 @@ class LoopThreadTest {
     }
 
     @Nested
-    class Add {
+    class Constructor {
         @Test
-        void add_shouldThrow_whenTheThreadWasAskedToStop() throws Exception {
-            final LoopThread thread = new LoopThread("l2nx-loop-test-add", registry, UNEXPECTED);
-            thread.start();
-            thread.requestStop();
-            thread.join();
-            final Loop late = TestLoops.loop("late", clock, registry);
+        void constructor_shouldThrowAndRegisterNoMeter_whenTheLoopIsAlreadyPinned() {
+            final Loop loop = TestLoops.loop("pinned", clock, registry);
+            final LoopThread first = new LoopThread("l2nx-loop-test-first", loop, registry, UNEXPECTED);
 
-            assertThatIllegalStateException().isThrownBy(() -> thread.add(late));
-            assertThat(late.offer(l -> {})).isTrue();
-            late.random();
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> new LoopThread("l2nx-loop-test-second", loop, registry, UNEXPECTED));
+            assertThat(registry.find("l2nx.engine.loop.wakeups")
+                            .tag("thread", "l2nx-loop-test-second")
+                            .counter())
+                    .isNull();
+            first.close();
         }
     }
 
@@ -86,10 +85,9 @@ class LoopThreadTest {
     class Park {
         @Test
         void thread_shouldParkUntilTheNextDeadline() throws Exception {
-            final LoopThread thread = new LoopThread("l2nx-loop-test-deadline", registry, UNEXPECTED);
             final Loop loop = TestLoops.loop("deadline", clock, registry);
+            final LoopThread thread = new LoopThread("l2nx-loop-test-deadline", loop, registry, UNEXPECTED);
             final CountDownLatch fired = new CountDownLatch(1);
-            thread.add(loop);
             thread.start();
             try {
                 loop.offer(l -> l.timers(TimeBase.GAME)
@@ -97,7 +95,6 @@ class LoopThreadTest {
                                 l.getPassTime() + 20,
                                 TimerSpec.builder()
                                         .handler((x, entry) -> fired.countDown())
-                                        .kind(TimerKind.ACTION)
                                         .build()));
 
                 assertThat(fired.await(2, TimeUnit.SECONDS)).isTrue();
@@ -108,16 +105,14 @@ class LoopThreadTest {
             }
         }
 
-        // The manual clock stops one millisecond after the first pass, inside pass-min: only a timer pass that ignores
-        // pass-min can run.
+        // The clock stops 1 ms after the first pass, inside pass-min: only a timer pass ignoring pass-min can run.
         @Test
         void thread_shouldRunADueTimerBeforePassMinElapses() throws Exception {
             final ManualGameClock manual = TestLoops.clock();
-            final LoopThread thread = new LoopThread("l2nx-loop-test-pass-min", registry, UNEXPECTED);
             final Loop loop = TestLoops.loop("pass-min", manual, registry);
+            final LoopThread thread = new LoopThread("l2nx-loop-test-pass-min", loop, registry, UNEXPECTED);
             final CountDownLatch armed = new CountDownLatch(1);
             final CountDownLatch fired = new CountDownLatch(1);
-            thread.add(loop);
             thread.start();
             try {
                 loop.offer(l -> {
@@ -126,7 +121,6 @@ class LoopThreadTest {
                                     l.getPassTime() + 1,
                                     TimerSpec.builder()
                                             .handler((x, entry) -> fired.countDown())
-                                            .kind(TimerKind.ACTION)
                                             .build());
                     armed.countDown();
                 });
@@ -147,11 +141,10 @@ class LoopThreadTest {
     class Interrupt {
         @Test
         void interrupt_shouldBeClearedBeforeTheNextPass_whenAPassLeavesItSet() throws Exception {
-            final LoopThread thread = new LoopThread("l2nx-loop-test-interrupt", registry, UNEXPECTED);
             final Loop loop = TestLoops.loop("interrupt", clock, registry);
+            final LoopThread thread = new LoopThread("l2nx-loop-test-interrupt", loop, registry, UNEXPECTED);
             final CountDownLatch interrupted = new CountDownLatch(1);
             final CompletableFuture<Boolean> stillInterrupted = new CompletableFuture<>();
-            thread.add(loop);
             thread.start();
             try {
                 loop.offer(l -> {
@@ -177,7 +170,8 @@ class LoopThreadTest {
             final CompletableFuture<LoopThread> created = new CompletableFuture<>();
             Thread.ofPlatform()
                     .daemon(false)
-                    .start(() -> created.complete(new LoopThread("l2nx-loop-test-daemon", registry, UNEXPECTED)))
+                    .start(() -> created.complete(new LoopThread(
+                            "l2nx-loop-test-daemon", TestLoops.loop("daemon", clock, registry), registry, UNEXPECTED)))
                     .join();
 
             assertThat(created.get(2, TimeUnit.SECONDS).getThread().isDaemon()).isTrue();
@@ -187,12 +181,11 @@ class LoopThreadTest {
     @Nested
     class RequestStop {
         @Test
-        void requestStop_shouldEndAnIdleThreadAndShutItsLoopsDown() throws Exception {
-            final LoopThread thread = new LoopThread("l2nx-loop-test-stop", registry, UNEXPECTED);
+        void requestStop_shouldEndAnIdleThreadAndShutItsLoopDown() throws Exception {
             final Loop loop = TestLoops.loop("stop", clock, registry);
             final CountDownLatch hook = new CountDownLatch(1);
             loop.addShutdownHook(l -> hook.countDown());
-            thread.add(loop);
+            final LoopThread thread = new LoopThread("l2nx-loop-test-stop", loop, registry, UNEXPECTED);
             thread.start();
             awaitSleeping(thread);
 
@@ -208,14 +201,13 @@ class LoopThreadTest {
     @Nested
     class Death {
         @Test
-        void errorInAPass_shouldStopTheLoopsAndReportTheFailure() throws Exception {
+        void errorInAPass_shouldStopTheLoopAndReportTheFailure() throws Exception {
             final CompletableFuture<Throwable> reported = new CompletableFuture<>();
-            final LoopThread thread =
-                    new LoopThread("l2nx-loop-test-death", registry, (dead, failure) -> reported.complete(failure));
             final Loop loop = TestLoops.loop("death", clock, registry);
             final CountDownLatch hook = new CountDownLatch(1);
             loop.addShutdownHook(l -> hook.countDown());
-            thread.add(loop);
+            final LoopThread thread = new LoopThread(
+                    "l2nx-loop-test-death", loop, registry, (dead, failure) -> reported.complete(failure));
             thread.start();
 
             loop.offer(l -> {

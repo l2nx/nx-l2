@@ -38,6 +38,7 @@ import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.WorldRegion;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
 import app.l2nx.highfive.entity.actor.enums.creature.Team;
@@ -77,13 +78,16 @@ import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -330,20 +334,9 @@ public class Attackable extends Npc {
             return false;
         }
 
-        // Delayed notification.
         if (killer != null) {
-            final Player player = killer.asPlayer();
-            if ((player != null) && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_KILL, this)) {
-                EventDispatcher.getInstance()
-                        .notifyEventAsyncDelayed(
-                                OnAttackableKill.builder()
-                                        .attacker(player)
-                                        .target(this)
-                                        .summon(killer.isSummon())
-                                        .build(),
-                                this,
-                                onKillDelay);
-            }
+            WorldPartition.checkOwner();
+            WorldPartition.loop().defer(() -> notifyKill(killer));
         }
 
         // Notify to minions if there are.
@@ -365,6 +358,21 @@ public class Attackable extends Npc {
         return true;
     }
 
+    protected void notifyKill(Creature killer) {
+        final Player player = killer.asPlayer();
+        if ((player != null) && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_KILL, this)) {
+            EventDispatcher.getInstance()
+                    .notifyEventAsyncDelayed(
+                            OnAttackableKill.builder()
+                                    .attacker(player)
+                                    .target(this)
+                                    .summon(killer.isSummon())
+                                    .build(),
+                            this,
+                            onKillDelay);
+        }
+    }
+
     private static class PartyContainer {
         public Party party;
         public long damage;
@@ -376,236 +384,237 @@ public class Attackable extends Npc {
     }
 
     /**
+     * Rewards run later, in the side-effect phase, so everything they read is snapshotted here: by then the death, or
+     * a script deleting the corpse, has cleared the aggro list and over-hit and lowered the maximum HP.
+     */
+    @Override
+    protected void calculateRewards(Creature lastAttacker) {
+        if (aggroList.isEmpty()) {
+            return;
+        }
+
+        final Map<Creature, Long> damage = new LinkedHashMap<>();
+        for (AggroInfo info : aggroList.values()) {
+            damage.put(info.getAttacker(), info.getDamage());
+        }
+
+        final boolean overhitStrike = overhit && (overhitAttacker != null);
+        final DeathRewards death = DeathRewards.builder()
+                .lastAttacker(lastAttacker)
+                .damage(Collections.unmodifiableMap(damage))
+                .overhitAttacker(overhitStrike ? overhitAttacker : null)
+                .overhitExpShare(overhitStrike ? overhitExpShare() : 0)
+                .rewardExpSp(getMustRewardExpSP())
+                .region(getWorldRegion())
+                .maxHp(getMaxHp())
+                .champion(champion)
+                .useVitalityRate(useVitalityRate())
+                .build();
+        WorldPartition.checkOwner();
+        WorldPartition.loop().defer(() -> distributeRewards(death));
+    }
+
+    /**
      * Distribute Exp and SP rewards to Player (including Summon owner) that hit the Attackable and to their Party members.<br>
      * Actions:<br>
      * Get the Player owner of the Servitor (if necessary) and Party in progress.<br>
      * Calculate the Experience and SP rewards in function of the level difference.<br>
      * Add Exp and SP rewards to Player (including Summon penalty) and to Party members in the known area of the last attacker.<br>
      * Caution : This method DOESN'T GIVE rewards to Pet.
-     * @param lastAttacker The Creature that has killed the Attackable
      */
-    @Override
-    protected void calculateRewards(Creature lastAttacker) {
-        try {
-            if (aggroList.isEmpty()) {
-                return;
+    private void distributeRewards(DeathRewards death) {
+        final Creature lastAttacker = death.lastAttacker();
+
+        // NOTE: Concurrent-safe map is used because while iterating to verify all conditions sometimes an entry
+        // must be removed.
+        final Map<Player, DamageDoneInfo> rewards = new ConcurrentHashMap<>();
+
+        Player maxDealer = null;
+        long maxDamage = 0;
+        long totalDamage = 0;
+
+        for (Map.Entry<Creature, Long> dealt : death.damage().entrySet()) {
+            // Get the Creature corresponding to this attacker.
+            final Player attacker = dealt.getKey().asPlayer();
+            if (attacker == null) {
+                continue;
             }
 
-            // NOTE: Concurrent-safe map is used because while iterating to verify all conditions sometimes an entry
-            // must be removed.
-            final Map<Player, DamageDoneInfo> rewards = new ConcurrentHashMap<>();
+            // Get damages done by this attacker.
+            final long damage = dealt.getValue();
 
-            Player maxDealer = null;
-            long maxDamage = 0;
-            long totalDamage = 0;
-
-            // While Iterating over This Map Removing Object is Not Allowed.
-            // Go through the aggroList of the Attackable.
-            for (AggroInfo info : aggroList.values()) {
-                if (info == null) {
+            // Prevent unwanted behavior
+            if (damage > 1) {
+                // Check if damage dealer isn't too far from this (killed monster).
+                if (calculateDistance3D(attacker) > PlayerConfig.ALT_PARTY_RANGE) {
                     continue;
                 }
 
-                // Get the Creature corresponding to this attacker.
-                final Player attacker = info.getAttacker().asPlayer();
-                if (attacker == null) {
+                totalDamage += damage;
+
+                // Calculate real damages (Summoners should get own damage plus summon's damage).
+                final DamageDoneInfo reward = rewards.computeIfAbsent(attacker, DamageDoneInfo::new);
+                reward.addDamage(damage);
+
+                if (reward.getDamage() > maxDamage) {
+                    maxDealer = attacker;
+                    maxDamage = reward.getDamage();
+                }
+            }
+        }
+
+        final List<PartyContainer> damagingParties = new ArrayList<>();
+        for (Creature attacker : death.damage().keySet()) {
+            long totalMemberDamage = 0;
+            final Party party = attacker.getParty();
+            if (party == null) {
+                continue;
+            }
+
+            PartyContainer found = null;
+            for (int i = 0, damagingPartiesSize = damagingParties.size(); i < damagingPartiesSize; i++) {
+                final PartyContainer p = damagingParties.get(i);
+                if (p.party == party) {
+                    found = p;
+                    break;
+                }
+            }
+
+            final PartyContainer container = found != null ? found : new PartyContainer(party, 0L);
+            final List<Player> members = party.getMembers();
+            for (Player e : members) {
+                final Long memberDamage = death.damage().get(e);
+                if (memberDamage == null) {
                     continue;
                 }
 
-                // Get damages done by this attacker.
-                final long damage = info.getDamage();
-
-                // Prevent unwanted behavior
-                if (damage > 1) {
-                    // Check if damage dealer isn't too far from this (killed monster).
-                    if (calculateDistance3D(attacker) > PlayerConfig.ALT_PARTY_RANGE) {
-                        continue;
-                    }
-
-                    totalDamage += damage;
-
-                    // Calculate real damages (Summoners should get own damage plus summon's damage).
-                    final DamageDoneInfo reward = rewards.computeIfAbsent(attacker, DamageDoneInfo::new);
-                    reward.addDamage(damage);
-
-                    if (reward.getDamage() > maxDamage) {
-                        maxDealer = attacker;
-                        maxDamage = reward.getDamage();
-                    }
+                if (memberDamage > 1) {
+                    totalMemberDamage += memberDamage;
                 }
             }
 
-            final List<PartyContainer> damagingParties = new ArrayList<>();
-            for (AggroInfo info : aggroList.values()) {
-                final Creature attacker = info.getAttacker();
-                if (attacker == null) {
+            container.damage = totalMemberDamage;
+
+            if (found == null) {
+                damagingParties.add(container);
+            }
+        }
+
+        final PartyContainer mostDamageParty;
+        damagingParties.sort(Comparator.comparingLong(c -> -c.damage));
+        mostDamageParty = !damagingParties.isEmpty() ? damagingParties.get(0) : null;
+
+        // Manage Base, Quests and Sweep drops of the Attackable
+        if ((mostDamageParty != null) && (mostDamageParty.damage > maxDamage)) {
+            Player leader = mostDamageParty.party.getLeader();
+            doItemDrop(leader);
+            EventDropManager.getInstance().doEventDrop(leader, this);
+        } else {
+            doItemDrop((maxDealer != null) && maxDealer.isOnline() ? maxDealer : lastAttacker);
+            EventDropManager.getInstance().doEventDrop(lastAttacker, this);
+        }
+
+        if (!death.rewardExpSp()) {
+            return;
+        }
+
+        if (!rewards.isEmpty()) {
+            for (DamageDoneInfo reward : rewards.values()) {
+                if (reward == null) {
                     continue;
                 }
 
-                long totalMemberDamage = 0;
-                final Party party = attacker.getParty();
-                if (party == null) {
-                    continue;
-                }
+                // Attacker to be rewarded.
+                final Player attacker = reward.getAttacker();
 
-                PartyContainer found = null;
-                for (int i = 0, damagingPartiesSize = damagingParties.size(); i < damagingPartiesSize; i++) {
-                    final PartyContainer p = damagingParties.get(i);
-                    if (p.party == party) {
-                        found = p;
-                        break;
-                    }
-                }
+                // Total amount of damage done.
+                final long damage = reward.getDamage();
 
-                final PartyContainer container = found != null ? found : new PartyContainer(party, 0L);
-                final List<Player> members = party.getMembers();
-                for (Player e : members) {
-                    final AggroInfo memberAggro = aggroList.get(e);
-                    if (memberAggro == null) {
-                        continue;
-                    }
+                // Get party
+                final Party attackerParty = attacker.getParty();
 
-                    if (memberAggro.getDamage() > 1) {
-                        totalMemberDamage += memberAggro.getDamage();
-                    }
-                }
+                // Penalty applied to the attacker's XP.
+                // If this attacker have servitor, get Exp Penalty applied for the servitor.
+                final float penalty = attacker.hasServitor()
+                        ? attacker.getSummon().asServitor().getExpMultiplier()
+                        : 1;
 
-                container.damage = totalMemberDamage;
+                // If there's NO party in progress.
+                if (attackerParty == null) {
+                    // Calculate Exp and SP rewards.
+                    if (death.isInSurroundingRegion(attacker)) {
+                        // Calculate the difference of level between this attacker (player or servitor owner) and
+                        // the Attackable.
+                        // mob = 24, atk = 10, diff = -14 (full xp)
+                        // mob = 24, atk = 28, diff = 4 (some xp)
+                        // mob = 24, atk = 50, diff = 26 (no xp)
+                        final double[] expSp = calculateExpAndSp(attacker.getLevel(), damage, totalDamage);
+                        double exp = expSp[0];
+                        double sp = expSp[1];
 
-                if (found == null) {
-                    damagingParties.add(container);
-                }
-            }
+                        if (ChampionMonstersConfig.CHAMPION_ENABLE && death.champion()) {
+                            exp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
+                            sp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
+                        }
 
-            final PartyContainer mostDamageParty;
-            damagingParties.sort(Comparator.comparingLong(c -> -c.damage));
-            mostDamageParty = !damagingParties.isEmpty() ? damagingParties.get(0) : null;
+                        exp *= penalty;
 
-            // Manage Base, Quests and Sweep drops of the Attackable
-            if ((mostDamageParty != null) && (mostDamageParty.damage > maxDamage)) {
-                Player leader = mostDamageParty.party.getLeader();
-                doItemDrop(leader);
-                EventDropManager.getInstance().doEventDrop(leader, this);
-            } else {
-                doItemDrop((maxDealer != null) && maxDealer.isOnline() ? maxDealer : lastAttacker);
-                EventDropManager.getInstance().doEventDrop(lastAttacker, this);
-            }
-
-            if (!getMustRewardExpSP()) {
-                return;
-            }
-
-            if (!rewards.isEmpty()) {
-                for (DamageDoneInfo reward : rewards.values()) {
-                    if (reward == null) {
-                        continue;
-                    }
-
-                    // Attacker to be rewarded.
-                    final Player attacker = reward.getAttacker();
-
-                    // Total amount of damage done.
-                    final long damage = reward.getDamage();
-
-                    // Get party
-                    final Party attackerParty = attacker.getParty();
-
-                    // Penalty applied to the attacker's XP.
-                    // If this attacker have servitor, get Exp Penalty applied for the servitor.
-                    final float penalty = attacker.hasServitor()
-                            ? attacker.getSummon().asServitor().getExpMultiplier()
-                            : 1;
-
-                    // If there's NO party in progress.
-                    if (attackerParty == null) {
-                        // Calculate Exp and SP rewards.
-                        if (isInSurroundingRegion(attacker)) {
-                            // Calculate the difference of level between this attacker (player or servitor owner) and
-                            // the Attackable.
-                            // mob = 24, atk = 10, diff = -14 (full xp)
-                            // mob = 24, atk = 28, diff = 4 (some xp)
-                            // mob = 24, atk = 50, diff = 26 (no xp)
-                            final double[] expSp = calculateExpAndSp(attacker.getLevel(), damage, totalDamage);
-                            double exp = expSp[0];
-                            double sp = expSp[1];
-
-                            if (ChampionMonstersConfig.CHAMPION_ENABLE && champion) {
-                                exp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
-                                sp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
-                            }
-
-                            exp *= penalty;
-
-                            // Check for an over-hit enabled strike.
-                            final Creature overhitAttacker = this.overhitAttacker;
-                            if (overhit && (overhitAttacker != null)) {
-                                final Player player = overhitAttacker.asPlayer();
-                                if ((player != null) && (attacker == player)) {
-                                    attacker.sendPacket(SystemMessageId.OVER_HIT);
-                                    exp += calculateOverhitExp(exp);
-                                }
-                            }
-
-                            // Distribute the Exp and SP between the Player and its Summon.
-                            if (!attacker.isDead()) {
-                                long addExp = Math.round(attacker.calcStat(Stat.EXPSP_RATE, exp, null, null));
-                                int addSp = (int) attacker.calcStat(Stat.EXPSP_RATE, sp, null, null);
-
-                                // Premium rates
-                                if (attacker.hasPremiumStatus()) {
-                                    addExp *= PremiumSystemConfig.PREMIUM_RATE_XP;
-                                    addSp *= PremiumSystemConfig.PREMIUM_RATE_SP;
-                                }
-
-                                attacker.addExpAndSp(addExp, addSp, useVitalityRate());
-                                if ((addExp > 0) && useVitalityRate()) {
-                                    attacker.updateVitalityPoints(
-                                            getVitalityPoints(attacker.getLevel(), damage), true, false);
-                                    PcCafePointsManager.getInstance().givePcCafePoint(attacker, exp);
-                                }
+                        // Check for an over-hit enabled strike.
+                        final Creature overhitAttacker = death.overhitAttacker();
+                        if (overhitAttacker != null) {
+                            final Player player = overhitAttacker.asPlayer();
+                            if ((player != null) && (attacker == player)) {
+                                attacker.sendPacket(SystemMessageId.OVER_HIT);
+                                exp += exp * death.overhitExpShare();
                             }
                         }
-                    } else {
-                        // Share with party members.
-                        long partyDmg = 0;
-                        double partyMul = 1;
-                        int partyLvl = 0;
 
-                        // Get all Creature that can be rewarded in the party.
-                        final List<Player> rewardedMembers = new ArrayList<>();
+                        // Distribute the Exp and SP between the Player and its Summon.
+                        if (!attacker.isDead()) {
+                            long addExp = Math.round(attacker.calcStat(Stat.EXPSP_RATE, exp, null, null));
+                            int addSp = (int) attacker.calcStat(Stat.EXPSP_RATE, sp, null, null);
 
-                        // Go through all Player in the party.
-                        final List<Player> groupMembers = attackerParty.isInCommandChannel()
-                                ? attackerParty.getCommandChannel().getMembers()
-                                : attackerParty.getMembers();
-                        for (Player partyPlayer : groupMembers) {
-                            if ((partyPlayer == null) || partyPlayer.isDead()) {
-                                continue;
+                            // Premium rates
+                            if (attacker.hasPremiumStatus()) {
+                                addExp *= PremiumSystemConfig.PREMIUM_RATE_XP;
+                                addSp *= PremiumSystemConfig.PREMIUM_RATE_SP;
                             }
 
-                            // Get the RewardInfo of this Player from Attackable rewards.
-                            final DamageDoneInfo reward2 = rewards.get(partyPlayer);
+                            attacker.addExpAndSp(addExp, addSp, death.useVitalityRate());
+                            if ((addExp > 0) && death.useVitalityRate()) {
+                                attacker.updateVitalityPoints(
+                                        getVitalityPoints(attacker.getLevel(), damage, death.maxHp()), true, false);
+                                PcCafePointsManager.getInstance().givePcCafePoint(attacker, exp);
+                            }
+                        }
+                    }
+                } else {
+                    // Share with party members.
+                    long partyDmg = 0;
+                    double partyMul = 1;
+                    int partyLvl = 0;
 
-                            // If the Player is in the Attackable rewards add its damages to party damages.
-                            if (reward2 != null) {
-                                if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
-                                    partyDmg += reward2.getDamage(); // Add Player damages to party damages.
-                                    rewardedMembers.add(partyPlayer);
+                    // Get all Creature that can be rewarded in the party.
+                    final List<Player> rewardedMembers = new ArrayList<>();
 
-                                    if (partyPlayer.getLevel() > partyLvl) {
-                                        if (attackerParty.isInCommandChannel()) {
-                                            partyLvl = attackerParty
-                                                    .getCommandChannel()
-                                                    .getLevel();
-                                        } else {
-                                            partyLvl = partyPlayer.getLevel();
-                                        }
-                                    }
-                                }
+                    // Go through all Player in the party.
+                    final List<Player> groupMembers = attackerParty.isInCommandChannel()
+                            ? attackerParty.getCommandChannel().getMembers()
+                            : attackerParty.getMembers();
+                    for (Player partyPlayer : groupMembers) {
+                        if ((partyPlayer == null) || partyPlayer.isDead()) {
+                            continue;
+                        }
 
-                                rewards.remove(partyPlayer); // Remove the Player from the Attackable rewards.
-                            } else if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
+                        // Get the RewardInfo of this Player from Attackable rewards.
+                        final DamageDoneInfo reward2 = rewards.get(partyPlayer);
+
+                        // If the Player is in the Attackable rewards add its damages to party damages.
+                        if (reward2 != null) {
+                            if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
+                                partyDmg += reward2.getDamage(); // Add Player damages to party damages.
                                 rewardedMembers.add(partyPlayer);
+
                                 if (partyPlayer.getLevel() > partyLvl) {
                                     if (attackerParty.isInCommandChannel()) {
                                         partyLvl = attackerParty
@@ -616,48 +625,82 @@ public class Attackable extends Npc {
                                     }
                                 }
                             }
-                        }
 
-                        // If the party didn't killed this Attackable alone.
-                        if (partyDmg < totalDamage) {
-                            partyMul = ((double) partyDmg / totalDamage);
-                        }
-
-                        // Calculate Exp and SP rewards.
-                        final double[] expSp = calculateExpAndSp(partyLvl, partyDmg, totalDamage);
-                        double exp = expSp[0];
-                        double sp = expSp[1];
-
-                        if (ChampionMonstersConfig.CHAMPION_ENABLE && champion) {
-                            exp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
-                            sp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
-                        }
-
-                        exp *= partyMul;
-                        sp *= partyMul;
-
-                        // Check for an over-hit enabled strike.
-                        // (When in party, the over-hit exp bonus is given to the whole party and splitted
-                        // proportionally through the party members).
-                        final Creature overhitAttacker = this.overhitAttacker;
-                        if (overhit && (overhitAttacker != null)) {
-                            final Player player = overhitAttacker.asPlayer();
-                            if ((player != null) && (attacker == player)) {
-                                attacker.sendPacket(SystemMessageId.OVER_HIT);
-                                exp += calculateOverhitExp(exp);
+                            rewards.remove(partyPlayer); // Remove the Player from the Attackable rewards.
+                        } else if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
+                            rewardedMembers.add(partyPlayer);
+                            if (partyPlayer.getLevel() > partyLvl) {
+                                if (attackerParty.isInCommandChannel()) {
+                                    partyLvl = attackerParty.getCommandChannel().getLevel();
+                                } else {
+                                    partyLvl = partyPlayer.getLevel();
+                                }
                             }
                         }
+                    }
 
-                        // Distribute Experience and SP rewards to Player Party members in the known area of the last
-                        // attacker.
-                        if (partyDmg > 0) {
-                            attackerParty.distributeXpAndSp(exp, sp, rewardedMembers, partyLvl, partyDmg, this);
+                    // If the party didn't killed this Attackable alone.
+                    if (partyDmg < totalDamage) {
+                        partyMul = ((double) partyDmg / totalDamage);
+                    }
+
+                    // Calculate Exp and SP rewards.
+                    final double[] expSp = calculateExpAndSp(partyLvl, partyDmg, totalDamage);
+                    double exp = expSp[0];
+                    double sp = expSp[1];
+
+                    if (ChampionMonstersConfig.CHAMPION_ENABLE && death.champion()) {
+                        exp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
+                        sp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
+                    }
+
+                    exp *= partyMul;
+                    sp *= partyMul;
+
+                    // Check for an over-hit enabled strike.
+                    // (When in party, the over-hit exp bonus is given to the whole party and splitted
+                    // proportionally through the party members).
+                    final Creature overhitAttacker = death.overhitAttacker();
+                    if (overhitAttacker != null) {
+                        final Player player = overhitAttacker.asPlayer();
+                        if ((player != null) && (attacker == player)) {
+                            attacker.sendPacket(SystemMessageId.OVER_HIT);
+                            exp += exp * death.overhitExpShare();
                         }
+                    }
+
+                    // Distribute Experience and SP rewards to Player Party members in the known area of the last
+                    // attacker.
+                    if (partyDmg > 0) {
+                        attackerParty.distributeXpAndSp(
+                                exp,
+                                sp,
+                                rewardedMembers,
+                                partyLvl,
+                                partyDmg,
+                                this,
+                                death.maxHp(),
+                                death.useVitalityRate());
                     }
                 }
             }
-        } catch (Exception e) {
-            log.error("", e);
+        }
+    }
+
+    @Builder(toBuilder = true)
+    private record DeathRewards(
+            Creature lastAttacker,
+            Map<Creature, Long> damage,
+            Creature overhitAttacker,
+            double overhitExpShare,
+            boolean rewardExpSp,
+            WorldRegion region,
+            int maxHp,
+            boolean champion,
+            boolean useVitalityRate) {
+        boolean isInSurroundingRegion(Creature attacker) {
+            final WorldRegion attackerRegion = attacker.getWorldRegion();
+            return (region != null) && (attackerRegion != null) && attackerRegion.isSurroundingRegion(region);
         }
     }
 
@@ -1350,19 +1393,8 @@ public class Attackable extends Npc {
         return new double[] {xp, sp};
     }
 
-    public double calculateOverhitExp(double exp) {
-        // Get the percentage based on the total of extra (over-hit) damage done relative to the total (maximum) ammount
-        // of HP on the Attackable.
-        double overhitPercentage = ((overhitDamage * 100) / getMaxHp());
-
-        // Over-hit damage percentages are limited to 25% max.
-        if (overhitPercentage > 25) {
-            overhitPercentage = 25;
-        }
-
-        // Get the overhit exp bonus according to the above over-hit damage percentage.
-        // (1/1 basis - 13% of over-hit damage, 13% of extra exp is given, and so on...).
-        return (overhitPercentage / 100) * exp;
+    private double overhitExpShare() {
+        return Math.min(overhitDamage / getMaxHp(), 0.25);
     }
 
     /**
@@ -1539,7 +1571,7 @@ public class Attackable extends Npc {
     /*
      * Return vitality points decrease (if positive) or increase (if negative) based on damage. Maximum for damage = maxHp.
      */
-    public float getVitalityPoints(int level, long damage) {
+    public float getVitalityPoints(int level, long damage, int maxHp) {
         // sanity check
         if (damage <= 0) {
             return 0;
@@ -1554,7 +1586,7 @@ public class Attackable extends Npc {
         }
 
         // negative value - vitality will be consumed
-        return -Math.min(damage, getMaxHp()) / divider;
+        return -Math.min(damage, maxHp) / divider;
     }
 
     /*

@@ -8,6 +8,7 @@ import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.partition.PartitionRuntime;
 import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.WorldShutdown;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.RejectedExecutionException;
@@ -30,6 +31,7 @@ class WorldLifecycle implements SmartLifecycle {
     private final WorldLoader loader;
     private final WorldShutdown shutdown;
     private final OnlinePlayersGauge onlinePlayers;
+    private final List<WorldSystem> systems;
     private volatile boolean running;
     private boolean worldShutDown;
 
@@ -73,6 +75,7 @@ class WorldLifecycle implements SmartLifecycle {
 
     private void load(Loop loop) {
         onlinePlayers.install(loop);
+        systems.forEach(system -> system.install(loop));
         loader.load();
         loop.addShutdownHook(_ -> shutDownWorld());
     }

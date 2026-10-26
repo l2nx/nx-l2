@@ -17,7 +17,6 @@ import app.l2nx.engine.core.clock.SystemGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.LoopGroup;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.partition.PartitionRuntime;
 import app.l2nx.engine.core.session.DrainScheduler;
 import app.l2nx.engine.core.session.Session;
@@ -170,8 +169,7 @@ class AuthenticationResultHandlerTest {
                 new SystemGameClock(Clock.systemUTC()),
                 42L,
                 EngineProperties.defaults(),
-                registry,
-                PassRecorder.NOOP);
+                registry);
 
         @AfterEach
         void stopTheLoop() {

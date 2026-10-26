@@ -5,9 +5,7 @@
 package app.l2nx.engine.core.loop;
 
 import app.l2nx.engine.core.clock.ManualGameClock;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.loop.timer.TimeBase;
-import app.l2nx.engine.core.loop.timer.TimerKind;
 import app.l2nx.engine.core.loop.timer.TimerSpec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -44,12 +42,9 @@ public class PassBenchmark {
     @Setup
     public void setUp() {
         clock = new ManualGameClock(Instant.parse("2026-10-19T12:00:00Z"), ZoneOffset.UTC);
-        loop = new Loop("bench", clock, 1L, EngineProperties.defaults(), new SimpleMeterRegistry(), PassRecorder.NOOP);
-        final TimerSpec spec = TimerSpec.builder()
-                .handler((l, entry) -> {})
-                .kind(TimerKind.TICK)
-                .period(1_000)
-                .build();
+        loop = new Loop("bench", clock, 1L, EngineProperties.defaults(), new SimpleMeterRegistry());
+        final TimerSpec spec =
+                TimerSpec.builder().handler((l, entry) -> {}).period(1_000).build();
         final long start = clock.gameMillis();
         for (int i = 0; i < timers; i++) {
             loop.timers(TimeBase.GAME).schedule(start + 1 + i % 1_000, spec);

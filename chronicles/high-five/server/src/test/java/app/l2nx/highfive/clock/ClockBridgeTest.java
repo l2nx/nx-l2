@@ -11,7 +11,6 @@ import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
@@ -52,8 +51,7 @@ class ClockBridgeTest {
         previous = ClockBridge.swap(null);
         clock = new ManualGameClock(WALL_START, ZoneOffset.UTC);
         loopClock = new ManualGameClock(LOOP_WALL_START, ZoneOffset.UTC);
-        loop = new Loop(
-                "world", loopClock, 7L, EngineProperties.defaults(), new SimpleMeterRegistry(), PassRecorder.NOOP);
+        loop = new Loop("world", loopClock, 7L, EngineProperties.defaults(), new SimpleMeterRegistry());
     }
 
     @AfterEach

@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,7 +18,6 @@ import app.l2nx.boot.ServerExit;
 import app.l2nx.engine.core.clock.SystemGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.partition.PartitionRuntime;
 import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.WorldShutdown;
@@ -26,6 +26,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InOrder;
 import org.springframework.context.support.GenericApplicationContext;
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -54,13 +56,14 @@ class WorldLifecycleTest {
             new SystemGameClock(Clock.systemUTC()),
             registry,
             () -> 42L,
-            name -> PassRecorder.NOOP,
             new ServerExit(new GenericApplicationContext()),
             STOP_TIMEOUT);
     private final WorldLoader loader = mock(WorldLoader.class);
     private final WorldShutdown shutdown = mock(WorldShutdown.class);
     private final OnlinePlayersGauge onlinePlayers = new OnlinePlayersGauge(registry);
-    private final WorldLifecycle lifecycle = new WorldLifecycle(runtime, loader, shutdown, onlinePlayers);
+    private final WorldSystem system = mock(WorldSystem.class);
+    private final WorldLifecycle lifecycle =
+            new WorldLifecycle(runtime, loader, shutdown, onlinePlayers, List.of(system));
 
     private Loop previous;
 
@@ -122,6 +125,24 @@ class WorldLifecycleTest {
             } finally {
                 World.removeObject(player);
             }
+        }
+
+        @Test
+        void start_shouldInstallTheWorldSystemsInTheStartupPass_beforeTheLoad() {
+            final AtomicReference<Loop> installedOn = new AtomicReference<>();
+            doAnswer(invocation -> {
+                        installedOn.set(Loop.current());
+                        return null;
+                    })
+                    .when(system)
+                    .install(runtime.world());
+
+            lifecycle.start();
+
+            assertThat(installedOn.get()).isSameAs(runtime.world());
+            final InOrder order = inOrder(system, loader);
+            order.verify(system).install(runtime.world());
+            order.verify(loader).load();
         }
 
         @Test

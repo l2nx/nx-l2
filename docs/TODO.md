@@ -27,8 +27,8 @@ lists what is open.
 - [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
 - [#40](https://github.com/l2nx/nx-l2/issues/40) Dropped items lose augmentation and elemental attributes across a restart
 - [#41](https://github.com/l2nx/nx-l2/issues/41) E10: inject beans instead of the static getInstance() bridges
-- [#42](https://github.com/l2nx/nx-l2/issues/42) E7/E8: cadence settings for periodic systems (`l2nx.engine.cadence.*`)
-- [#44](https://github.com/l2nx/nx-l2/issues/44) Replay production incidents of the world loop
+- [#42](https://github.com/l2nx/nx-l2/issues/42) E8: cadence setting of the visibility periodic system (`ai-think`, `player-movement` and `npc-movement` have theirs in `l2nx.ai.*` and `l2nx.movement.*`)
+- [#44](https://github.com/l2nx/nx-l2/issues/44) Record and replay production incidents of the world loop (recorder and replay built together)
 - [#45](https://github.com/l2nx/nx-l2/issues/45) Input runs against timers due up to one pass earlier (sub-tick order)
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
 - [#51](https://github.com/l2nx/nx-l2/issues/51) Replace key-value variable stores with typed owner state
@@ -68,7 +68,6 @@ lists what is open.
 - [#97](https://github.com/l2nx/nx-l2/issues/97) Bound the world lifecycle waits and merge the two game server lifecycles
 - [#98](https://github.com/l2nx/nx-l2/issues/98) Decide which Errors from a loop task stop the server
 - [#99](https://github.com/l2nx/nx-l2/issues/99) Keep the loop out of overload spirals: coalesce missed fixed-rate runs, time-budget the deadlines phase
-- [#100](https://github.com/l2nx/nx-l2/issues/100) Justify or replace the custom timer wheel and remove engine scaffolding without a consumer
 - [#101](https://github.com/l2nx/nx-l2/issues/101) Check ownership at runtime on the world state mutators
 - [#102](https://github.com/l2nx/nx-l2/issues/102) Close the gaps in the architecture rules: scheduled work, randomness and slice layout gates
 - [#103](https://github.com/l2nx/nx-l2/issues/103) Cut engine loop overhead and attribute heavy tasks in the meters
@@ -104,8 +103,6 @@ lists what is open.
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's connection pool sized to fit `max_connections` ([spec 006](specs/006-database.md)).
 - [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
   ([spec 003](specs/003-engine-core/spec.md)).
-- [#46](https://github.com/l2nx/nx-l2/issues/46) Timer wheel: a handler re-arming an overdue timer at its own deadline
-  starves later timers ([execution.md §4](specs/003-engine-core/execution.md#4-timers)).
 - [#8](https://github.com/l2nx/nx-l2/issues/8) Publish project docs on l2nx.dev: the `/l2/` section, from
   `docs/public/{en,ru}/` (spec 001 §1).
 - Ownership of the reference L2NX host layer: not ours; the adapter host is written from scratch against the

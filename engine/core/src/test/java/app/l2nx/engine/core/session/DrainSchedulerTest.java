@@ -11,7 +11,6 @@ import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.LoopGroup;
 import app.l2nx.engine.core.loop.ThreadFailureHandler;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.engine.core.session.command.CommandRegistry;
@@ -41,13 +40,8 @@ class DrainSchedulerTest {
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private final List<String> log = new CopyOnWriteArrayList<>();
     private final LoopGroup group = new LoopGroup("test-loop", registry, EngineProperties.defaults(), UNEXPECTED);
-    private final Loop world = new Loop(
-            "world",
-            new SystemGameClock(Clock.systemUTC()),
-            42L,
-            EngineProperties.defaults(),
-            registry,
-            PassRecorder.NOOP);
+    private final Loop world =
+            new Loop("world", new SystemGameClock(Clock.systemUTC()), 42L, EngineProperties.defaults(), registry);
     private final SessionMetrics metrics = SessionMetrics.noop();
     private final SessionFactory factory = new SessionFactory(
             Session.Limits.builder()

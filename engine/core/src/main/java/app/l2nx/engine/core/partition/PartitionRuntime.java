@@ -10,10 +10,8 @@ import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.LoopGroup;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +44,6 @@ public class PartitionRuntime
     private final GameClock clock;
     private final MeterRegistry registry;
     private final LongSupplier seeds;
-    private final Function<String, PassRecorder> recorders;
     private final ServerExit serverExit;
     private final Duration stopTimeout;
     private volatile LoopGroup group;
@@ -60,8 +57,7 @@ public class PartitionRuntime
         }
         final LoopGroup started = new LoopGroup(THREAD_PREFIX, registry, properties, this::onThreadFailure);
         try {
-            final Loop created =
-                    new Loop(WORLD, clock, seeds.getAsLong(), properties, registry, recorders.apply(WORLD));
+            final Loop created = new Loop(WORLD, clock, seeds.getAsLong(), properties, registry);
             started.pin(created);
             world = created;
             group = started;

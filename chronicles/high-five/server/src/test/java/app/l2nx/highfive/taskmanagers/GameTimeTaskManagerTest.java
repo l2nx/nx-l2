@@ -10,7 +10,6 @@ import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.partition.PartitionRuntime;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -212,12 +211,7 @@ class GameTimeTaskManagerTest {
             this(
                     clock,
                     new Loop(
-                            PartitionRuntime.WORLD,
-                            clock,
-                            42L,
-                            EngineProperties.defaults(),
-                            new SimpleMeterRegistry(),
-                            PassRecorder.NOOP),
+                            PartitionRuntime.WORLD, clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry()),
                     new RecordingManager());
         }
 

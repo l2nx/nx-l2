@@ -5,12 +5,8 @@
 package app.l2nx.engine.core.loop.periodic;
 
 import app.l2nx.engine.core.loop.Loop;
-import java.time.Duration;
 
+@FunctionalInterface
 public interface PeriodicSystem {
-    String name();
-
-    Duration cadence();
-
     void run(Loop loop, long now);
 }

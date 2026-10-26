@@ -69,7 +69,7 @@ onto it and the longer it is exercised. The order follows the stages: `clock` (E
 
 | Package       | Contents                                                                                                    |
 | ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `loop`        | partition and service loops, pass phases, loop threads; sub-packages `inbox`, `timer`, `periodic`, `replay` |
+| `loop`        | partition and service loops, pass phases, loop threads; sub-packages `inbox`, `timer`, `periodic`        |
 | `clock`       | `GameClock`, RNG                                                                                            |
 | `partition`   | partitions, entity transfer, global service base                                                            |
 | `identity`    | UUIDv7 generation, wire-handle allocator                                                                    |
@@ -90,9 +90,10 @@ app.l2nx.highfive
   network     pipeline, protocol registry, protocol/<id>/ adapters (packets), gslink/; no game logic
   session     shared session kernel: the command handler base, legacy notices
   login       the game server's side of the login server: online accounts, server listing, LoginPort
-  partition   the world partition: world load and shutdown hook, the static bridges of legacy code to the world loop
-              and to background tasks
-  combat  skill  effect  movement  ai  item  trade  mail  auction
+  movement    the periodic systems `player-movement` and `npc-movement`, the root bridge `Movement` for legacy callers
+  partition   the world partition: world load and shutdown hook, `WorldSystem` (how a slice installs its periodic
+              systems into the world loop), the static bridges of legacy code to the world loop and to background tasks
+  combat  skill  effect  ai  item  trade  mail  auction
   clan  party  siege  olympiad  quest  chat  reflection  ...
 ```
 

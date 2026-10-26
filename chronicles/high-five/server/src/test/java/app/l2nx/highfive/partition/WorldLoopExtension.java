@@ -7,7 +7,6 @@ package app.l2nx.highfive.partition;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.partition.PartitionRuntime;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -15,14 +14,17 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 /** Users declare {@code @Execution(SAME_THREAD)} and {@code @ResourceLock(LOCK)}: the bridge is static. */
-public final class WorldLoopExtension implements BeforeAllCallback, AfterAllCallback, ParameterResolver {
+public final class WorldLoopExtension
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
     public static final String LOCK = "app.l2nx.highfive.partition.WorldPartition";
     public static final Instant WALL_START = Instant.parse("2026-01-05T12:00:00Z");
     public static final long SEED = 42L;
@@ -32,6 +34,21 @@ public final class WorldLoopExtension implements BeforeAllCallback, AfterAllCall
     private static final String PREVIOUS = "previous";
 
     private static volatile World current;
+
+    private final boolean perTest;
+
+    public WorldLoopExtension() {
+        this(false);
+    }
+
+    private WorldLoopExtension(boolean perTest) {
+        this.perTest = perTest;
+    }
+
+    /** A loop takes a periodic system name once, so a test that installs systems needs a loop of its own. */
+    public static WorldLoopExtension perTest() {
+        return new WorldLoopExtension(true);
+    }
 
     public static void runInPass(Runnable body) {
         final World world = bound();
@@ -46,17 +63,38 @@ public final class WorldLoopExtension implements BeforeAllCallback, AfterAllCall
     }
 
     static Loop newLoop(ManualGameClock clock) {
-        return new Loop(
-                PartitionRuntime.WORLD,
-                clock,
-                SEED,
-                EngineProperties.defaults(),
-                new SimpleMeterRegistry(),
-                PassRecorder.NOOP);
+        return new Loop(PartitionRuntime.WORLD, clock, SEED, EngineProperties.defaults(), new SimpleMeterRegistry());
     }
 
     @Override
     public void beforeAll(ExtensionContext context) {
+        if (!perTest) {
+            bind(context);
+        }
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        if (!perTest) {
+            unbind(context);
+        }
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        if (perTest) {
+            bind(context);
+        }
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) {
+        if (perTest) {
+            unbind(context);
+        }
+    }
+
+    private static void bind(ExtensionContext context) {
         if (boundByEnclosingClass(context)) {
             return;
         }
@@ -72,8 +110,7 @@ public final class WorldLoopExtension implements BeforeAllCallback, AfterAllCall
         store.put(PREVIOUS, previous);
     }
 
-    @Override
-    public void afterAll(ExtensionContext context) {
+    private static void unbind(ExtensionContext context) {
         if (boundByEnclosingClass(context)) {
             return;
         }

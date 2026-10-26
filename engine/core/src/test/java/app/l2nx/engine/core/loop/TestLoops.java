@@ -6,7 +6,6 @@ package app.l2nx.engine.core.loop;
 
 import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.engine.core.clock.ManualGameClock;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
@@ -28,6 +27,6 @@ final class TestLoops {
     }
 
     static Loop loop(String name, GameClock clock, MeterRegistry registry) {
-        return new Loop(name, clock, SEED, EngineProperties.defaults(), registry, PassRecorder.NOOP);
+        return new Loop(name, clock, SEED, EngineProperties.defaults(), registry);
     }
 }

@@ -9,47 +9,40 @@ import lombok.Getter;
 import lombok.ToString;
 
 @ToString(onlyExplicitlyIncluded = true)
-public final class TimerEntry {
-    static final long NO_TIMER = -1;
-    static final long NO_TURN = Long.MIN_VALUE;
-    static final int NO_SLOT = -1;
+public final class TimerEntry implements Comparable<TimerEntry> {
+    final TimerQueue queue;
 
     @Getter
     @ToString.Include
     private final TimerSpec spec;
 
-    @Getter
     @ToString.Include
     private final long sequence;
-
-    @Getter(AccessLevel.PACKAGE)
-    private final long insertion;
 
     @Getter
     @ToString.Include
     long deadline;
 
-    // When the wheel fires the entry: the deadline, unless it was scheduled at or before the last run.
+    // Pending: in the heap or scheduled during the running pass; false once it fired, was dropped stale or purged.
+    boolean queued;
+
     @Getter(AccessLevel.PACKAGE)
-    @ToString.Include
-    long dueAt;
+    boolean cancelled;
 
-    // Ticks this periodic entry has run in the current pass.
-    int owed;
-
-    long timerId = NO_TIMER;
-    long turn = NO_TURN;
-    int slot = NO_SLOT;
-
-    TimerEntry(TimerSpec spec, long sequence, long insertion, long deadline, long dueAt) {
+    TimerEntry(TimerQueue queue, TimerSpec spec, long sequence, long deadline) {
+        this.queue = queue;
         this.spec = spec;
         this.sequence = sequence;
-        this.insertion = insertion;
         this.deadline = deadline;
-        this.dueAt = dueAt;
     }
 
     boolean isPeriodic() {
         return spec.period() > 0;
+    }
+
+    @Override
+    public int compareTo(TimerEntry other) {
+        final int byDeadline = Long.compare(deadline, other.deadline);
+        return byDeadline != 0 ? byDeadline : Long.compare(sequence, other.sequence);
     }
 }

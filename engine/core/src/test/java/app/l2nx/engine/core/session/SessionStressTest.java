@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.engine.core.loop.replay.PassRecorder;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.engine.core.session.command.CommandRegistry;
@@ -86,8 +85,7 @@ class SessionStressTest {
     class OnTheLoop {
         private final ManualGameClock clock =
                 new ManualGameClock(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC);
-        private final Loop loop =
-                new Loop("test", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry(), PassRecorder.NOOP);
+        private final Loop loop = new Loop("test", clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry());
 
         @Test
         @Timeout(60)
@@ -216,7 +214,7 @@ class SessionStressTest {
                 () -> {});
     }
 
-    // One producer, as the IO thread; a full queue is retried here instead of closing the connection.
+    // Single producer, as the IO thread; a full queue is retried, not dropped.
     private static void produce(Session session) {
         for (int i = 0; i < TOTAL; i++) {
             while (!session.offer(session.input(new Step(i)))) {

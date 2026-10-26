@@ -10,6 +10,8 @@ import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import app.l2nx.engine.core.loop.Loop;
+import app.l2nx.engine.core.loop.timer.TimeBase;
+import app.l2nx.engine.core.loop.timer.TimerQueue;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.login.FakeLoginPort;
 import app.l2nx.highfive.login.ListingStatus;
@@ -17,6 +19,7 @@ import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.partition.WorldPartition;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -176,6 +179,23 @@ class ShutdownTest {
                     .extracting(Announcement::secondsLeft)
                     .containsExactly(30);
             assertThat(listing.getStatus()).isEqualTo(ListingStatus.AUTO);
+        }
+
+        @Test
+        void abort_shouldCancelTheCountdownStepsAtOnce() {
+            final List<Long> expected = new ArrayList<>();
+            final List<Long> actual = new ArrayList<>();
+            WorldLoopExtension.runInPass(() -> {
+                final TimerQueue timers = WorldPartition.loop().timers(TimeBase.GAME);
+                expected.add(timers.nextDeadline());
+                expected.add((long) timers.size());
+                shutdown.startShutdown(null, 3_600, false);
+                shutdown.abort(null);
+                actual.add(timers.nextDeadline());
+                actual.add((long) timers.size());
+            });
+
+            assertThat(actual).isEqualTo(expected);
         }
 
         @Test
