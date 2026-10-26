@@ -88,6 +88,7 @@ lists what is open.
 - [#117](https://github.com/l2nx/nx-l2/issues/117) Isolate and de-mock the Mobius batch tests
 - [#118](https://github.com/l2nx/nx-l2/issues/118) Bring specs and comments in line with the code
 - [#119](https://github.com/l2nx/nx-l2/issues/119) Add slice and domain-event to the glossary and settle term mismatches
+- [#120](https://github.com/l2nx/nx-l2/issues/120) Flaky tools/load tests assert timing-dependent exact counts
 
 ## Done
 
