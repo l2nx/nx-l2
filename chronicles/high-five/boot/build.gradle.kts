@@ -9,6 +9,7 @@ dependencies {
 
     testImplementation(testFixtures(project(":libs:database")))
     testImplementation(libs.spring.modulith.starter.test)
+    testImplementation(libs.pmd.java)
 }
 
 application {
@@ -39,4 +40,7 @@ tasks.withType<Test>().configureEach {
     listOf("freeze.refreeze", "freeze.store.default.allowStoreCreation").forEach { key ->
         providers.gradleProperty("archunit.$key").orNull?.let { systemProperty("archunit.$key", it) }
     }
+    val singleWriterRuleset = rootProject.layout.projectDirectory.file("config/pmd/single-writer.xml")
+    systemProperty("l2nx.pmd.single-writer-ruleset", singleWriterRuleset.asFile.absolutePath)
+    inputs.file(singleWriterRuleset).withPropertyName("singleWriterRuleset").withPathSensitivity(PathSensitivity.RELATIVE)
 }
