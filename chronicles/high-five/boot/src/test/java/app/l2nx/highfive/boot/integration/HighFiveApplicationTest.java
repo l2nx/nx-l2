@@ -236,11 +236,15 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @Test
-        void prometheus_shouldExposeEmptyWorldInbox() throws Exception {
-            final HttpResponse<String> actual = get("/actuator/prometheus");
+        void prometheus_shouldExposeEmptyWorldInbox() {
+            // Legacy timers keep posting to the inbox, so a single scrape can catch it mid-drain.
+            await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+                final HttpResponse<String> actual = get("/actuator/prometheus");
 
-            assertThat(actual.statusCode()).isEqualTo(200);
-            assertThat(actual.body()).containsPattern("l2nx_engine_inbox_depth\\{[^}]*loop=\"world\"[^}]*\\} 0\\.0");
+                assertThat(actual.statusCode()).isEqualTo(200);
+                assertThat(actual.body())
+                        .containsPattern("l2nx_engine_inbox_depth\\{[^}]*loop=\"world\"[^}]*\\} 0\\.0");
+            });
         }
 
         @Test
