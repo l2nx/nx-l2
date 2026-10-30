@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -102,28 +103,39 @@ class WorldLifecycleTest {
 
         @Test
         void start_shouldPublishTheOnlinePlayers_fromTheStartupPassOn() throws Exception {
-            final int expected = World.getPlayers().size() + 1;
+            final AtomicInteger expected = new AtomicInteger();
             final Player player = mock(Player.class);
             when(player.getObjectId()).thenReturn(PLAYER_ID);
             when(player.isPlayer()).thenReturn(true);
             when(player.asPlayer()).thenReturn(player);
             doAnswer(invocation -> {
+                        expected.set(World.getPlayers().size() + 1);
                         World.addObject(player);
                         return null;
                     })
                     .when(loader)
                     .load();
 
+            Throwable failure = null;
             try {
                 lifecycle.start();
                 // The startup pass flushes after the load completes, so a later pass has seen its flush.
-                final CompletableFuture<Void> nextPass = new CompletableFuture<>();
-                runtime.world().execute(() -> nextPass.complete(null));
-                nextPass.get(WAIT_SECONDS, TimeUnit.SECONDS);
+                onTheWorldLoop(() -> {});
 
-                assertThat(registry.get("l2nx.players.online").gauge().value()).isEqualTo(expected);
+                assertThat(registry.get("l2nx.players.online").gauge().value()).isEqualTo(expected.get());
+            } catch (Throwable e) {
+                failure = e;
+                throw e;
             } finally {
-                World.removeObject(player);
+                // A failed start leaves no loop to clean up on; that cleanup error must not hide the failure.
+                try {
+                    onTheWorldLoop(() -> World.removeObject(player));
+                } catch (Exception cleanup) {
+                    if (failure == null) {
+                        throw cleanup;
+                    }
+                    failure.addSuppressed(cleanup);
+                }
             }
         }
 
@@ -238,6 +250,10 @@ class WorldLifecycleTest {
             assertThat(lifecycle.isRunning()).isFalse();
             verify(shutdown).run();
         }
+    }
+
+    private void onTheWorldLoop(Runnable work) throws Exception {
+        CompletableFuture.runAsync(work, runtime.world()::execute).get(WAIT_SECONDS, TimeUnit.SECONDS);
     }
 
     static Stream<Throwable> failures() {

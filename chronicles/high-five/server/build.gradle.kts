@@ -1,5 +1,6 @@
 plugins {
     id("nx-l2.java-conventions")
+    alias(libs.plugins.jmh)
 }
 
 dependencies {
@@ -12,6 +13,7 @@ dependencies {
     implementation(libs.classgraph)
     implementation(libs.commons.lang3)
     implementation(libs.datasource.proxy)
+    implementation(libs.fastutil)
     implementation(libs.lib.recur)
     implementation(libs.micrometer.core)
     implementation(libs.spring.modulith.api)
@@ -24,10 +26,18 @@ dependencies {
     testImplementation(libs.grpc.inprocess)
     testImplementation(libs.liquibase.core)
     testRuntimeOnly(libs.postgresql)
+
+    jmhImplementation(testFixtures(project(":engine:core")))
+    jmhImplementation(platform(libs.spring.boot.dependencies))
+    jmhImplementation(libs.mockito.core)
 }
 
 // The engine reads ./config and ./data against the working directory.
 tasks.withType<Test>().configureEach {
     maxHeapSize = "2g"
     workingDir = layout.projectDirectory.dir("../datapack").asFile
+}
+
+jmh {
+    includes.set(providers.gradleProperty("jmh.includes").map { listOf(it) }.orElse(listOf(".*")))
 }

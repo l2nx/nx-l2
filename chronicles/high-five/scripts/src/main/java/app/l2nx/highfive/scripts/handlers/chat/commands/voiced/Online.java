@@ -36,7 +36,7 @@ public class Online implements IVoicedCommandHandler {
     @Override
     public boolean onCommand(String command, Player player, String target) {
         if (command.equals("online") && OnlineInfoConfig.ENABLE_ONLINE_COMMAND) {
-            final int count = World.getPlayers().size();
+            final int count = World.getPlayersCount();
             if (count > 1) {
                 player.sendMessage("There are " + count + " players online!");
             } else {

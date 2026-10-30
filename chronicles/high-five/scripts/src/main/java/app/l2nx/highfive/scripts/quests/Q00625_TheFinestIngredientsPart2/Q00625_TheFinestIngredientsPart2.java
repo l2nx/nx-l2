@@ -272,7 +272,7 @@ public class Q00625_TheFinestIngredientsPart2 extends Quest {
     private static boolean isBumbalumpSpawned() {
         if (ClockBridge.wallMillis()
                 > GlobalVariablesManager.getInstance().getLong(ICICLE_EMPEROR_BUMBALUMP_RESPAWN_TIME, 0)) {
-            return World.getVisibleObjects().stream().anyMatch(object -> object.getId() == ICICLE_EMPEROR_BUMBALUMP);
+            return World.getNpc(ICICLE_EMPEROR_BUMBALUMP) != null;
         }
 
         return true;

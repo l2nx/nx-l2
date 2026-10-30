@@ -78,7 +78,7 @@ class MailManagerTest {
             final MailRow unrelated = mail(otherCharacter, otherCharacter, false);
             load(received, sent, unrelated);
 
-            manager.deleteMailOfCharacter(character);
+            WorldLoopExtension.runInPass(() -> manager.deleteMailOfCharacter(character));
 
             verify(mails).delete(received.id());
             verify(mails).delete(sent.id());
@@ -93,7 +93,7 @@ class MailManagerTest {
             final MailRow received = mail(otherCharacter, character, true);
             load(received);
 
-            manager.deleteMailOfCharacter(character);
+            WorldLoopExtension.runInPass(() -> manager.deleteMailOfCharacter(character));
 
             verify(items).moveMailToWarehouse(received.id(), otherCharacter);
             verify(items, never()).deleteByMail(anyInt());
@@ -108,7 +108,7 @@ class MailManagerTest {
                     .build();
             load(received);
 
-            manager.deleteMailOfCharacter(character);
+            WorldLoopExtension.runInPass(() -> manager.deleteMailOfCharacter(character));
 
             verify(items, never()).moveMailToWarehouse(anyInt(), anyInt());
             verify(items).deleteByMail(received.id());
@@ -122,7 +122,7 @@ class MailManagerTest {
             when(items.deleteByMail(sent.id())).thenReturn(List.of(attachment));
             load(sent);
 
-            manager.deleteMailOfCharacter(character);
+            WorldLoopExtension.runInPass(() -> manager.deleteMailOfCharacter(character));
 
             assertThat(registry.findId(attachment)).isEmpty();
         }
@@ -156,7 +156,7 @@ class MailManagerTest {
         void sendMessage_shouldStoreMailInTransaction() {
             final MailMessage message = new MailMessage(otherCharacter, character, false, "Hello", "Some text", 0);
 
-            manager.sendMessage(message);
+            WorldLoopExtension.runInPass(() -> manager.sendMessage(message));
 
             verify(mails).insert(message.toRow());
             assertThat(manager.isSent(message.getId())).isTrue();

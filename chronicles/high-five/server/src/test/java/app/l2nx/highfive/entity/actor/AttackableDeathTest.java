@@ -4,6 +4,7 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import static app.l2nx.highfive.entity.WorldTestObjects.player;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -104,7 +105,6 @@ class AttackableDeathTest {
             assertThat(log).containsExactly("drop:" + 0x7ffe_0102);
         }
 
-        // Template level 70, base max HP 1000 and an experience reward of 4410 make the vitality divider 100.
         @Test
         void calculateRewards_shouldKeepTheVitalityOfTheMaxHpAtDeath_whenAMaxHpBuffStopsInTheSameStack() {
             final Player killer = player(0x7ffe_0105);
@@ -172,16 +172,6 @@ class AttackableDeathTest {
                 mob.doDie(killer);
             });
         }
-    }
-
-    private static Player player(int objectId) {
-        final Player player = mock(Player.class);
-        when(player.getObjectId()).thenReturn(objectId);
-        when(player.isPlayer()).thenReturn(true);
-        when(player.isPlayable()).thenReturn(true);
-        when(player.isOnline()).thenReturn(true);
-        when(player.asPlayer()).thenReturn(player);
-        return player;
     }
 
     private static void standAt(Attackable mob, Player... players) {

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class WorldObjectTest {
 
-    private static WorldObject objectWithId(int objectId) {
+    static WorldObject objectWithId(int objectId) {
         return new WorldObject(objectId) {
             @Override
             public boolean isAutoAttackable(Creature attacker) {

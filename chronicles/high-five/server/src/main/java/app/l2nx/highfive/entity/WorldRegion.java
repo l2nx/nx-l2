@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -30,41 +31,37 @@ import app.l2nx.highfive.entity.actor.instance.Fence;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.RandomAnimationTaskManager;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
+import java.util.function.Predicate;
 
+/**
+ * Collections handed out are read-only: the object sets as snapshots, as in {@link World}; the surrounding regions,
+ * fixed when the world is set up, as one immutable list.
+ */
+@SingleWriter
 public class WorldRegion {
-    /** Set containing visible objects in this world region. */
-    private final Set<WorldObject> visibleObjects = ConcurrentHashMap.newKeySet();
-    /** Set containing doors in this world region. */
-    private final Set<Door> doors = ConcurrentHashMap.newKeySet();
-    /** Set containing fences in this world region. */
-    private final Set<Fence> fences = ConcurrentHashMap.newKeySet();
-    /** Array containing nearby regions forming this world region's effective area. */
-    @Getter
+    private final ObjectArraySet<WorldObject> visibleObjects = new ObjectArraySet<>();
+    private final ObjectArraySet<Door> doors = new ObjectArraySet<>();
+    private final ObjectArraySet<Fence> fences = new ObjectArraySet<>();
     private WorldRegion[] surroundingRegions;
 
-    private final ConcurrentHashMap<WorldRegion, Boolean> surroundingRegionCache = new ConcurrentHashMap<>();
+    private List<WorldRegion> surroundingRegionList;
 
-    @Getter
     private final int regionX;
 
-    @Getter
     private final int regionY;
 
-    @Getter
     private final int regionZ;
 
-    @Getter
     private boolean active = GeneralConfig.GRIDS_ALWAYS_ON;
 
     private ScheduledFuture<?> neighborsTask = null;
-    private final AtomicInteger activeNeighbors = new AtomicInteger();
+    private int activeNeighbors;
 
     public WorldRegion(int regionX, int regionY, int regionZ) {
         this.regionX = regionX;
@@ -77,73 +74,89 @@ public class WorldRegion {
             return;
         }
 
-        if (!isOn) {
-            for (WorldObject wo : visibleObjects) {
-                if (wo.isAttackable()) {
-                    final Attackable mob = wo.asAttackable();
+        // A snapshot: mobs too far from their spawn teleport back, which moves them out of this region. An object an
+        // earlier iteration took out of the world is skipped.
+        final ObjectArrayList<WorldObject> objects = ScratchBuffers.acquire();
+        try {
+            ScratchBuffers.copy(visibleObjects, objects);
+            for (int i = 0; i < objects.size(); i++) {
+                final WorldObject wo = objects.get(i);
+                if (!wo.isSpawned()) {
+                    continue;
+                }
 
-                    // Set target to null and cancel attack or cast.
-                    mob.setTarget(null);
-
-                    // Stop movement.
-                    mob.stopMove(null);
-
-                    // Stop all active skills effects in progress on the Creature.
-                    mob.stopAllEffects();
-
-                    mob.clearAggroList();
-                    mob.getAttackByList().clear();
-
-                    // Teleport to spawn when too far away.
-                    final Spawn spawn = mob.getSpawn();
-                    if ((spawn != null) && (mob.calculateDistance2D(spawn) > NpcConfig.MAX_DRIFT_RANGE)) {
-                        mob.teleToLocation(spawn);
-                    }
-
-                    // Stop the AI tasks.
-                    if (mob.hasAI()) {
-                        mob.getAI().setIntentionIdle();
-                        mob.getAI().stopAITask();
-                    }
-
-                    // Stop attack task.
-                    mob.abortAttack();
-
-                    RandomAnimationTaskManager.getInstance().remove(mob);
-                } else if (wo.isNpc()) {
-                    RandomAnimationTaskManager.getInstance().remove(wo.asNpc());
+                if (isOn) {
+                    startAI(wo);
+                } else {
+                    stopAI(wo);
                 }
             }
-        } else {
-            for (WorldObject wo : visibleObjects) {
-                if (wo.isAttackable()) {
-                    // Start HP/MP/CP regeneration task.
-                    wo.asAttackable().getStatus().startHpMpRegeneration();
-                    RandomAnimationTaskManager.getInstance().add(wo.asNpc());
-                } else if (wo.isNpc()) {
-                    RandomAnimationTaskManager.getInstance().add(wo.asNpc());
-                }
+        } finally {
+            ScratchBuffers.release(objects);
+        }
+    }
+
+    private static void stopAI(WorldObject wo) {
+        if (wo.isAttackable()) {
+            final Attackable mob = wo.asAttackable();
+
+            mob.setTarget(null);
+
+            mob.stopMove(null);
+
+            mob.stopAllEffects();
+
+            mob.clearAggroList();
+            mob.getAttackByList().clear();
+
+            final Spawn spawn = mob.getSpawn();
+            if ((spawn != null) && (mob.calculateDistance2D(spawn) > NpcConfig.MAX_DRIFT_RANGE)) {
+                mob.teleToLocation(spawn);
             }
+
+            if (mob.hasAI()) {
+                mob.getAI().setIntentionIdle();
+                mob.getAI().stopAITask();
+            }
+
+            mob.abortAttack();
+
+            RandomAnimationTaskManager.getInstance().remove(mob);
+        } else if (wo.isNpc()) {
+            RandomAnimationTaskManager.getInstance().remove(wo.asNpc());
+        }
+    }
+
+    private static void startAI(WorldObject wo) {
+        if (wo.isAttackable()) {
+            wo.asAttackable().getStatus().startHpMpRegeneration();
+            RandomAnimationTaskManager.getInstance().add(wo.asNpc());
+        } else if (wo.isNpc()) {
+            RandomAnimationTaskManager.getInstance().add(wo.asNpc());
         }
     }
 
     public void incrementActiveNeighbors() {
-        activeNeighbors.incrementAndGet();
+        WorldPartition.checkOwner();
+        activeNeighbors++;
     }
 
     public void decrementActiveNeighbors() {
-        activeNeighbors.decrementAndGet();
+        WorldPartition.checkOwner();
+        activeNeighbors--;
     }
 
     public boolean areNeighborsActive() {
-        return GeneralConfig.GRIDS_ALWAYS_ON || (activeNeighbors.get() > 0);
+        WorldPartition.checkOwner();
+        return GeneralConfig.GRIDS_ALWAYS_ON || (activeNeighbors > 0);
     }
 
     public boolean areNeighborsEmpty() {
+        WorldPartition.checkOwner();
         for (int i = 0; i < surroundingRegions.length; i++) {
             final WorldRegion worldRegion = surroundingRegions[i];
             if (worldRegion.isActive()) {
-                final Collection<WorldObject> regionObjects = worldRegion.getVisibleObjects();
+                final Collection<WorldObject> regionObjects = worldRegion.visibleObjectsView();
                 if (regionObjects.isEmpty()) {
                     continue;
                 }
@@ -159,11 +172,8 @@ public class WorldRegion {
         return true;
     }
 
-    /**
-     * This function turns this region's AI ON or OFF.
-     * @param value
-     */
-    public synchronized void setActive(boolean value) {
+    public void setActive(boolean value) {
+        WorldPartition.checkOwner();
         if (active == value) {
             return;
         }
@@ -180,71 +190,52 @@ public class WorldRegion {
             }
         }
 
-        // Turn the AI on or off to match the region's activation.
         switchAI(value);
     }
 
-    /**
-     * Immediately sets self as active and starts a timer to set neighbors as active this timer is to avoid turning on neighbors in the case when a person just teleported into a region and then teleported out immediately...there is no reason to activate all the neighbors in that case.
-     */
+    /** Activates self at once but neighbors after a delay, so a player teleporting in and straight out wakes none. */
     private void startActivation() {
-        // First set self to active and do self-tasks...
         setActive(true);
 
-        // If the timer to deactivate neighbors is running, cancel it.
-        synchronized (this) {
-            if (neighborsTask != null) {
-                neighborsTask.cancel(true);
-                neighborsTask = null;
-            }
-
-            // Then, set a timer to activate the neighbors.
-            neighborsTask = WorldPartition.loop()
-                    .schedule(
-                            () -> {
-                                for (int i = 0; i < surroundingRegions.length; i++) {
-                                    surroundingRegions[i].setActive(true);
-                                }
-                            },
-                            1000 * GeneralConfig.GRID_NEIGHBOR_TURNON_TIME,
-                            TimeUnit.MILLISECONDS);
+        if (neighborsTask != null) {
+            neighborsTask.cancel(true);
+            neighborsTask = null;
         }
+
+        neighborsTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            for (int i = 0; i < surroundingRegions.length; i++) {
+                                surroundingRegions[i].setActive(true);
+                            }
+                        },
+                        1000 * GeneralConfig.GRID_NEIGHBOR_TURNON_TIME,
+                        TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * starts a timer to set neighbors (including self) as inactive this timer is to avoid turning off neighbors in the case when a person just moved out of a region that he may very soon return to. There is no reason to turn self & neighbors off in that case.
-     */
+    /** Deactivation is delayed, since a player who just left may come straight back. */
     private void startDeactivation() {
-        // If the timer to activate neighbors is running, cancel it.
-        synchronized (this) {
-            if (neighborsTask != null) {
-                neighborsTask.cancel(true);
-                neighborsTask = null;
-            }
-
-            // Start a timer to "suggest" a deactivate to self and neighbors.
-            // Suggest means: first check if a neighbor has Players in it. If not, deactivate.
-            neighborsTask = WorldPartition.loop()
-                    .schedule(
-                            () -> {
-                                for (int i = 0; i < surroundingRegions.length; i++) {
-                                    final WorldRegion worldRegion = surroundingRegions[i];
-                                    if (worldRegion.areNeighborsEmpty()) {
-                                        worldRegion.setActive(false);
-                                    }
-                                }
-                            },
-                            1000 * GeneralConfig.GRID_NEIGHBOR_TURNOFF_TIME,
-                            TimeUnit.MILLISECONDS);
+        if (neighborsTask != null) {
+            neighborsTask.cancel(true);
+            neighborsTask = null;
         }
+
+        neighborsTask = WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            for (int i = 0; i < surroundingRegions.length; i++) {
+                                final WorldRegion worldRegion = surroundingRegions[i];
+                                if (worldRegion.areNeighborsEmpty()) {
+                                    worldRegion.setActive(false);
+                                }
+                            }
+                        },
+                        1000 * GeneralConfig.GRID_NEIGHBOR_TURNOFF_TIME,
+                        TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Add the WorldObject in the WorldObjectHashSet(WorldObject) visibleObjects containing WorldObject visible in this WorldRegion<br>
-     * If WorldObject is a Player, Add the Player in the HashSet(Player) _allPlayable containing Player of all player in game in this WorldRegion
-     * @param object
-     */
-    public synchronized void addVisibleObject(WorldObject object) {
+    public void addVisibleObject(WorldObject object) {
+        WorldPartition.checkOwner();
         if (object == null) {
             return;
         }
@@ -261,17 +252,13 @@ public class WorldRegion {
             }
         }
 
-        // If this is the first player to enter the region, activate self and neighbors.
         if (object.isPlayable() && !active && !GeneralConfig.GRIDS_ALWAYS_ON) {
             startActivation();
         }
     }
 
-    /**
-     * Remove the WorldObject from the WorldObjectHashSet(WorldObject) visibleObjects in this WorldRegion. If WorldObject is a Player, remove it from the HashSet(Player) _allPlayable of this WorldRegion
-     * @param object
-     */
-    public synchronized void removeVisibleObject(WorldObject object) {
+    public void removeVisibleObject(WorldObject object) {
+        WorldPartition.checkOwner();
         if (object == null) {
             return;
         }
@@ -298,10 +285,17 @@ public class WorldRegion {
     }
 
     public Collection<WorldObject> getVisibleObjects() {
+        WorldPartition.checkOwner();
+        return List.copyOf(visibleObjects);
+    }
+
+    /** Live: only for loops that filter into a local result and call nothing that can move an object. */
+    Collection<WorldObject> visibleObjectsView() {
         return visibleObjects;
     }
 
     public void addDoor(Door door) {
+        WorldPartition.checkOwner();
         doors.add(door);
     }
 
@@ -309,11 +303,46 @@ public class WorldRegion {
         doors.remove(door);
     }
 
-    public Collection<Door> getDoors() {
-        return doors;
+    public boolean hasDoors() {
+        WorldPartition.checkOwner();
+        return !doors.isEmpty();
+    }
+
+    /** The predicate runs on a copy, never during a live walk, so it may change game state. */
+    public boolean anyDoor(Predicate<Door> test) {
+        WorldPartition.checkOwner();
+        return anyOf(doors, test);
+    }
+
+    public boolean hasFences() {
+        WorldPartition.checkOwner();
+        return !fences.isEmpty();
+    }
+
+    /** The predicate runs on a copy, never during a live walk, so it may change game state. */
+    public boolean anyFence(Predicate<Fence> test) {
+        WorldPartition.checkOwner();
+        return anyOf(fences, test);
+    }
+
+    private static <T> boolean anyOf(Collection<T> source, Predicate<T> test) {
+        final ObjectArrayList<T> snapshot = ScratchBuffers.acquire();
+        try {
+            ScratchBuffers.copy(source, snapshot);
+            for (int i = 0; i < snapshot.size(); i++) {
+                if (test.test(snapshot.get(i))) {
+                    return true;
+                }
+            }
+
+            return false;
+        } finally {
+            ScratchBuffers.release(snapshot);
+        }
     }
 
     public void addFence(Fence fence) {
+        WorldPartition.checkOwner();
         fences.add(fence);
     }
 
@@ -321,15 +350,11 @@ public class WorldRegion {
         fences.remove(fence);
     }
 
-    public Collection<Fence> getFences() {
-        return fences;
-    }
-
     public void setSurroundingRegions(WorldRegion[] regions) {
-        surroundingRegions = regions;
+        WorldPartition.checkOwner();
+        surroundingRegions = regions.clone();
 
-        // Make sure that this region is always the first region to improve bulk operations when this region should be
-        // updated first.
+        // Self first, so bulk operations update this region first.
         for (int i = 0; i < surroundingRegions.length; i++) {
             if (surroundingRegions[i] == this) {
                 final WorldRegion first = surroundingRegions[0];
@@ -337,26 +362,49 @@ public class WorldRegion {
                 surroundingRegions[i] = first;
             }
         }
+
+        surroundingRegionList = List.of(surroundingRegions);
     }
 
-    /**
-     * Checks if the given region is a surrounding region of this region.
-     * @param region region to check
-     * @return true if the region is surrounding this region
-     */
     public boolean isSurroundingRegion(WorldRegion region) {
+        WorldPartition.checkOwner();
         if (region == null) {
             return false;
         }
 
-        return surroundingRegionCache.computeIfAbsent(
-                region,
-                r -> (regionX >= (r.getRegionX() - 1))
-                        && (regionX <= (r.getRegionX() + 1))
-                        && (regionY >= (r.getRegionY() - 1))
-                        && (regionY <= (r.getRegionY() + 1))
-                        && (regionZ >= (r.getRegionZ() - 1))
-                        && (regionZ <= (r.getRegionZ() + 1)));
+        return (Math.abs(regionX - region.regionX) <= 1)
+                && (Math.abs(regionY - region.regionY) <= 1)
+                && (Math.abs(regionZ - region.regionZ) <= 1);
+    }
+
+    public List<WorldRegion> getSurroundingRegions() {
+        WorldPartition.checkOwner();
+        return surroundingRegionList;
+    }
+
+    /** The internal array, for the hot loops of {@link World}: never handed out further and never written. */
+    WorldRegion[] surroundingRegionsArray() {
+        return surroundingRegions;
+    }
+
+    public int getRegionX() {
+        WorldPartition.checkOwner();
+        return regionX;
+    }
+
+    public int getRegionY() {
+        WorldPartition.checkOwner();
+        return regionY;
+    }
+
+    public int getRegionZ() {
+        WorldPartition.checkOwner();
+        return regionZ;
+    }
+
+    public boolean isActive() {
+        WorldPartition.checkOwner();
+        return active;
     }
 
     @Override

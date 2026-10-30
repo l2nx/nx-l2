@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -40,21 +41,25 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Collections handed out are read-only snapshots, since legacy callers mutate the world while iterating them.
+ * A loop that calls into game objects or caller predicates walks a snapshot, since a call can move an object between
+ * regions, and skips objects taken out meanwhile; only pure filters walk a live region view.
+ */
 @Slf4j
+@SingleWriter
 public class World {
-
-    public static volatile int MAX_CONNECTED_COUNT = 0;
-    public static volatile int OFFLINE_TRADE_COUNT = 0;
 
     /** Gracia border Flying objects not allowed to the east of it. */
     public static final int GRACIA_MAX_X = -166168;
@@ -62,12 +67,11 @@ public class World {
     public static final int GRACIA_MAX_Z = 6105;
     public static final int GRACIA_MIN_Z = -895;
 
-    /** Bit shift, defines number of regions note, shifting by 15 will result in regions corresponding to map tiles shifting by 11 divides one tile to 16x16 regions. */
+    /** Regions are {@code 1 << SHIFT_BY} wide; 11 divides a 32768 tile into 16x16 regions. */
     public static final int SHIFT_BY = 11;
 
     public static final int TILE_SIZE = 32768;
 
-    /** Map dimensions. */
     public static final int TILE_X_MIN = 11;
 
     public static final int TILE_Y_MIN = 10;
@@ -81,41 +85,36 @@ public class World {
     public static final int WORLD_X_MAX = ((TILE_X_MAX - TILE_ZERO_COORD_X) + 1) * TILE_SIZE;
     public static final int WORLD_Y_MAX = ((TILE_Y_MAX - TILE_ZERO_COORD_Y) + 1) * TILE_SIZE;
 
-    /** Z coordinate limits */
     public static final int WORLD_Z_MIN = -16000;
 
     public static final int WORLD_Z_MAX = 16000;
     public static final int Z_REGION_SIZE = 2000;
 
-    /** Calculated offset used so top left region is 0,0 */
     public static final int OFFSET_X = Math.abs(WORLD_X_MIN >> SHIFT_BY);
 
     public static final int OFFSET_Y = Math.abs(WORLD_Y_MIN >> SHIFT_BY);
 
-    /** Number of regions. */
     private static final int REGIONS_X = (WORLD_X_MAX >> SHIFT_BY) + OFFSET_X;
 
     private static final int REGIONS_Y = (WORLD_Y_MAX >> SHIFT_BY) + OFFSET_Y;
     private static final int REGIONS_Z = (Math.abs(WORLD_Z_MIN) + Math.abs(WORLD_Z_MAX)) / Z_REGION_SIZE;
 
-    /** Map containing all the players in game. */
-    private static final Map<Integer, Player> allPlayers = new ConcurrentHashMap<>();
-    /** Map containing all the Good players in game. */
-    private static final Map<Integer, Player> allGoodPlayers = new ConcurrentHashMap<>();
-    /** Map containing all the Evil players in game. */
-    private static final Map<Integer, Player> allEvilPlayers = new ConcurrentHashMap<>();
-    /** Map containing all visible objects. */
-    private static final Map<Integer, WorldObject> allObjects = new ConcurrentHashMap<>();
-    /** Map with the pets instances and their owner ID. */
-    private static final Map<Integer, Pet> petsInstance = new ConcurrentHashMap<>();
+    private static final Int2ObjectOpenHashMap<Player> allPlayers = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<Player> allGoodPlayers = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<Player> allEvilPlayers = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<WorldObject> allObjects = new Int2ObjectOpenHashMap<>();
+    /** Keyed by owner id. */
+    private static final Int2ObjectOpenHashMap<Pet> petsInstance = new Int2ObjectOpenHashMap<>();
 
-    @Getter
     private static final WorldRegion[][][] worldRegions = new WorldRegion[REGIONS_X + 1][REGIONS_Y + 1][REGIONS_Z];
+
+    /** Range of a walk without a distance bound; no two points of the world are that far apart. */
+    private static final int UNBOUNDED = Integer.MAX_VALUE;
 
     private World() {}
 
     public static void init() {
-        // Initialize regions.
+        WorldPartition.checkOwner();
         for (int x = 0; x <= REGIONS_X; x++) {
             for (int y = 0; y <= REGIONS_Y; y++) {
                 for (int z = 0; z < REGIONS_Z; z++) {
@@ -124,7 +123,6 @@ public class World {
             }
         }
 
-        // Set surrounding regions.
         for (int rx = 0; rx <= REGIONS_X; rx++) {
             for (int ry = 0; ry <= REGIONS_Y; ry++) {
                 for (int rz = 0; rz < REGIONS_Z; rz++) {
@@ -154,24 +152,9 @@ public class World {
         log.info("({} by {}) World Region Grid set up.", REGIONS_X, REGIONS_Y);
     }
 
-    /**
-     * Adds an object to the world.<br>
-     * <br>
-     * <b><u>Example of use</u>:</b>
-     * <ul>
-     * <li>Withdraw an item from the warehouse, create an item</li>
-     * <li>Spawn a Creature (PC, NPC, Pet)</li>
-     * </ul>
-     * @param object
-     */
     public static void addObject(WorldObject object) {
+        WorldPartition.checkOwner();
         allObjects.putIfAbsent(object.getObjectId(), object);
-
-        // if (_allObjects.putIfAbsent(object.getObjectId(), object) != null)
-        // {
-        // LOGGER.warning(World.class.getSimpleName() + ": Object " + object + " already exists in the world. Stack
-        // Trace: " + CommonUtil.getTraceString(Thread.currentThread().getStackTrace()));
-        // }
 
         if (object.isPlayer()) {
             final Player newPlayer = object.asPlayer();
@@ -191,18 +174,8 @@ public class World {
         }
     }
 
-    /**
-     * Removes an object from the world.<br>
-     * <br>
-     * <b><u>Example of use</u>:</b>
-     * <ul>
-     * <li>Delete item from inventory, transfer Item from inventory to warehouse</li>
-     * <li>Crystallize item</li>
-     * <li>Remove NPC/PC/Pet from the world</li>
-     * </ul>
-     * @param object the object to remove
-     */
     public static void removeObject(WorldObject object) {
+        WorldPartition.checkOwner();
         allObjects.remove(object.getObjectId());
         if (object.isPlayer()) {
             final Player player = object.asPlayer();
@@ -223,92 +196,87 @@ public class World {
         }
     }
 
-    /**
-     * <b><u>Example of use</u>:</b>
-     * <ul>
-     * <li>Client packets : Action, AttackRequest, RequestJoinParty, RequestJoinPledge...</li>
-     * </ul>
-     * @param objectId Identifier of the WorldObject
-     * @return the WorldObject object that belongs to an ID or null if no object found.
-     */
     public static WorldObject findObject(int objectId) {
+        WorldPartition.checkOwner();
         return allObjects.get(objectId);
     }
 
     public static Collection<WorldObject> getVisibleObjects() {
-        return allObjects.values();
+        WorldPartition.checkOwner();
+        return snapshotOf(allObjects);
     }
 
-    /**
-     * Get the count of all visible objects in world.
-     * @return count off all World objects
-     */
     public static int getVisibleObjectsCount() {
+        WorldPartition.checkOwner();
         return allObjects.size();
     }
 
+    public static int getPlayersCount() {
+        WorldPartition.checkOwner();
+        return allPlayers.size();
+    }
+
     public static Collection<Player> getPlayers() {
-        return allPlayers.values();
+        WorldPartition.checkOwner();
+        return snapshotOf(allPlayers);
     }
 
     public static Collection<Player> getAllGoodPlayers() {
-        return allGoodPlayers.values();
+        WorldPartition.checkOwner();
+        return snapshotOf(allGoodPlayers);
     }
 
     public static Collection<Player> getAllEvilPlayers() {
-        return allEvilPlayers.values();
+        WorldPartition.checkOwner();
+        return snapshotOf(allEvilPlayers);
     }
 
-    /**
-     * <b>If you have access to player objectId use {@link #getPlayer(int playerObjId)}</b>
-     * @param name Name of the player to get Instance
-     * @return the player instance corresponding to the given name.
-     */
+    public static int getGoodPlayersCount() {
+        WorldPartition.checkOwner();
+        return allGoodPlayers.size();
+    }
+
+    public static int getEvilPlayersCount() {
+        WorldPartition.checkOwner();
+        return allEvilPlayers.size();
+    }
+
+    // One pass over the table into an exact-size array; List.copyOf goes through the iterator and copies twice.
+    private static <V> List<V> snapshotOf(Int2ObjectOpenHashMap<V> map) {
+        final ObjectArrayList<V> snapshot = new ObjectArrayList<>(map.size());
+        map.values().forEach(snapshot::add);
+        return ObjectLists.unmodifiable(snapshot);
+    }
+
     public static Player getPlayer(String name) {
+        WorldPartition.checkOwner();
         return getPlayer(CharInfoTable.getInstance().getIdByName(name));
     }
 
-    /**
-     * @param objectId of the player to get Instance
-     * @return the player instance corresponding to the given object ID.
-     */
     public static Player getPlayer(int objectId) {
+        WorldPartition.checkOwner();
         return allPlayers.get(objectId);
     }
 
-    /**
-     * @param ownerId ID of the owner
-     * @return the pet instance from the given ownerId.
-     */
     public static Pet getPet(int ownerId) {
+        WorldPartition.checkOwner();
         return petsInstance.get(ownerId);
     }
 
-    /**
-     * Add the given pet instance from the given ownerId.
-     * @param ownerId ID of the owner
-     * @param pet Pet of the pet
-     * @return
-     */
     public static Pet addPet(int ownerId, Pet pet) {
+        WorldPartition.checkOwner();
         return petsInstance.put(ownerId, pet);
     }
 
-    /**
-     * Remove the given pet instance.
-     * @param ownerId ID of the owner
-     */
     public static void removePet(int ownerId) {
+        WorldPartition.checkOwner();
         petsInstance.remove(ownerId);
     }
 
-    /**
-     * This operation is quite heave as it iterates all world visible objects.
-     * @param npcId the id of the NPC to find.
-     * @return the first NPC found corresponding to the given id.
-     */
+    /** Scans every visible object. */
     public static Npc getNpc(int npcId) {
-        for (WorldObject wo : getVisibleObjects()) {
+        WorldPartition.checkOwner();
+        for (WorldObject wo : allObjects.values()) {
             if (wo.isNpc() && (wo.getId() == npcId)) {
                 return wo.asNpc();
             }
@@ -317,57 +285,17 @@ public class World {
         return null;
     }
 
-    /**
-     * Add a WorldObject in the world. <b><u>Concept</u>:</b> WorldObject (including Player) are identified in <b>visibleObjects</b> of his current WorldRegion and in <b>_knownObjects</b> of other surrounding Creatures<br>
-     * Player are identified in <b>allPlayers</b> of World, in <b>allPlayers</b> of his current WorldRegion and in <b>_knownPlayer</b> of other surrounding Creatures <b><u> Actions</u>:</b>
-     * <li>Add the WorldObject object in allPlayers* of World</li>
-     * <li>Add the WorldObject object in _gmList** of GmListTable</li>
-     * <li>Add object in _knownObjects and _knownPlayer* of all surrounding WorldRegion Creatures</li>
-     * <li>If object is a Creature, add all surrounding WorldObject in its _knownObjects and all surrounding Player in its _knownPlayer</li><br>
-     * <i>* only if object is a Player</i><br>
-     * <i>** only if object is a GM Player</i> <font color=#FF0000><b><u>Caution</u>: This method DOESN'T ADD the object in visibleObjects and allPlayers* of WorldRegion (need synchronisation)</b></font><br>
-     * <font color=#FF0000><b><u>Caution</u>: This method DOESN'T ADD the object to allObjects and allPlayers* of World (need synchronisation)</b></font> <b><u> Example of use</u>:</b>
-     * <li>Drop an Item</li>
-     * <li>Spawn a Creature</li>
-     * <li>Apply Death Penalty of a Player</li><br>
-     * @param object L2object to add in the world
-     * @param newRegion WorldRegion in wich the object will be add (not used)
-     */
     public static void addVisibleObject(WorldObject object, WorldRegion newRegion) {
+        WorldPartition.checkOwner();
         if (!newRegion.isActive()) {
             return;
         }
 
-        forEachVisibleObject(object, WorldObject.class, wo -> {
-            if (object.isPlayer() && wo.isVisibleFor(object.asPlayer())) {
-                wo.sendInfo(object.asPlayer());
-                if (wo.isCreature()) {
-                    final CreatureAI ai = wo.asCreature().getAI();
-                    if (ai != null) {
-                        ai.describeStateToPlayer(object.asPlayer());
-                        if (wo.isMonster() && (ai.getIntention() == Intention.IDLE)) {
-                            ai.setIntentionActive();
-                        }
-                    }
-                }
-            }
-
-            if (wo.isPlayer() && object.isVisibleFor(wo.asPlayer())) {
-                object.sendInfo(wo.asPlayer());
-                if (object.isCreature()) {
-                    final CreatureAI ai = object.asCreature().getAI();
-                    if (ai != null) {
-                        ai.describeStateToPlayer(wo.asPlayer());
-                        if (object.isMonster() && (ai.getIntention() == Intention.IDLE)) {
-                            ai.setIntentionActive();
-                        }
-                    }
-                }
-            }
-        });
+        forEachVisibleObject(object, WorldObject.class, wo -> reveal(object, wo));
     }
 
     public static void addFactionPlayerToWorld(Player player) {
+        WorldPartition.checkOwner();
         if (player.isGood()) {
             allGoodPlayers.put(player.getObjectId(), player);
         } else if (player.isEvil()) {
@@ -375,1853 +303,718 @@ public class World {
         }
     }
 
-    /**
-     * Remove a WorldObject from the world. <b><u>Concept</u>:</b> WorldObject (including Player) are identified in <b>visibleObjects</b> of his current WorldRegion and in <b>_knownObjects</b> of other surrounding Creatures<br>
-     * Player are identified in <b>allPlayers</b> of World, in <b>allPlayers</b> of his current WorldRegion and in <b>_knownPlayer</b> of other surrounding Creatures <b><u> Actions</u>:</b>
-     * <li>Remove the WorldObject object from allPlayers* of World</li>
-     * <li>Remove the WorldObject object from visibleObjects and allPlayers* of WorldRegion</li>
-     * <li>Remove the WorldObject object from _gmList** of GmListTable</li>
-     * <li>Remove object from _knownObjects and _knownPlayer* of all surrounding WorldRegion Creatures</li>
-     * <li>If object is a Creature, remove all WorldObject from its _knownObjects and all Player from its _knownPlayer</li> <font color=#FF0000><b><u>Caution</u>: This method DOESN'T REMOVE the object from allObjects of World</b></font> <i>* only if object is a Player</i><br>
-     * <i>** only if object is a GM Player</i> <b><u> Example of use</u>:</b>
-     * <li>Pickup an Item</li>
-     * <li>Decay a Creature</li><br>
-     * @param object L2object to remove from the world
-     * @param oldRegion WorldRegion in which the object was before removing
-     */
     public static void removeVisibleObject(WorldObject object, WorldRegion oldRegion) {
+        WorldPartition.checkOwner();
         if ((object == null) || (oldRegion == null)) {
             return;
         }
 
         oldRegion.removeVisibleObject(object);
 
-        // Go through all surrounding WorldRegion Creatures.
-        final WorldRegion[] surroundingRegions = oldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if (wo == object) {
+        final ObjectArrayList<WorldObject> snapshot = ScratchBuffers.acquire();
+        try {
+            final WorldRegion[] surroundingRegions = oldRegion.surroundingRegionsArray();
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                final WorldRegion worldRegion = surroundingRegions[i];
+                if (worldRegion.visibleObjectsView().isEmpty()) {
                     continue;
                 }
 
-                if (object.isCreature()) {
-                    final Creature objectCreature = object.asCreature();
-                    final CreatureAI ai = objectCreature.getAI();
-                    if (ai != null) {
-                        ai.notifyActionForgetObject(wo);
-                    }
-
-                    if (objectCreature.getTarget() == wo) {
-                        objectCreature.setTarget(null);
-                    }
-
-                    if (object.isPlayer()) {
-                        object.sendPacket(new DeleteObject(wo));
-                    }
-                }
-
-                if (wo.isCreature()) {
-                    final Creature woCreature = wo.asCreature();
-                    final CreatureAI ai = woCreature.getAI();
-                    if (ai != null) {
-                        ai.notifyActionForgetObject(object);
-                    }
-
-                    if (woCreature.getTarget() == object) {
-                        woCreature.setTarget(null);
-                    }
-
-                    if (wo.isPlayer()) {
-                        wo.sendPacket(new DeleteObject(object));
+                ScratchBuffers.copy(worldRegion.visibleObjectsView(), snapshot);
+                for (int j = 0; j < snapshot.size(); j++) {
+                    final WorldObject wo = snapshot.get(j);
+                    if ((wo != object) && wo.isSpawned()) {
+                        forget(object, wo);
                     }
                 }
             }
+        } finally {
+            ScratchBuffers.release(snapshot);
         }
     }
 
     public static void switchRegion(WorldObject object, WorldRegion newRegion) {
+        WorldPartition.checkOwner();
         final WorldRegion oldRegion = object.getWorldRegion();
         if ((oldRegion == null) || (oldRegion == newRegion)) {
             return;
         }
 
-        final WorldRegion[] oldSurroundingRegions = oldRegion.getSurroundingRegions();
-        for (int i = 0; i < oldSurroundingRegions.length; i++) {
-            final WorldRegion worldRegion = oldSurroundingRegions[i];
-            if (newRegion.isSurroundingRegion(worldRegion)) {
-                continue;
-            }
-
-            final Collection<WorldObject> visibleObjects = worldRegion.getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if (wo == object) {
+        final ObjectArrayList<WorldObject> snapshot = ScratchBuffers.acquire();
+        try {
+            final WorldRegion[] oldSurroundingRegions = oldRegion.surroundingRegionsArray();
+            for (int i = 0; i < oldSurroundingRegions.length; i++) {
+                final WorldRegion worldRegion = oldSurroundingRegions[i];
+                if (newRegion.isSurroundingRegion(worldRegion)
+                        || worldRegion.visibleObjectsView().isEmpty()) {
                     continue;
                 }
 
-                if (object.isCreature()) {
-                    final Creature objectCreature = object.asCreature();
-                    final CreatureAI ai = objectCreature.getAI();
-                    if (ai != null) {
-                        ai.notifyActionForgetObject(wo);
-                    }
-
-                    if (objectCreature.getTarget() == wo) {
-                        objectCreature.setTarget(null);
-                    }
-
-                    if (object.isPlayer()) {
-                        object.sendPacket(new DeleteObject(wo));
+                ScratchBuffers.copy(worldRegion.visibleObjectsView(), snapshot);
+                for (int j = 0; j < snapshot.size(); j++) {
+                    final WorldObject wo = snapshot.get(j);
+                    if ((wo != object) && wo.isSpawned()) {
+                        forget(object, wo);
                     }
                 }
+            }
 
-                if (wo.isCreature()) {
-                    final Creature woCreature = wo.asCreature();
-                    final CreatureAI ai = woCreature.getAI();
-                    if (ai != null) {
-                        ai.notifyActionForgetObject(object);
+            final WorldRegion[] newSurroundingRegions = newRegion.surroundingRegionsArray();
+            for (int i = 0; i < newSurroundingRegions.length; i++) {
+                final WorldRegion worldRegion = newSurroundingRegions[i];
+                if (oldRegion.isSurroundingRegion(worldRegion)
+                        || worldRegion.visibleObjectsView().isEmpty()) {
+                    continue;
+                }
+
+                ScratchBuffers.copy(worldRegion.visibleObjectsView(), snapshot);
+                for (int j = 0; j < snapshot.size(); j++) {
+                    final WorldObject wo = snapshot.get(j);
+                    if ((wo != object) && wo.isSpawned() && (wo.getInstanceId() == object.getInstanceId())) {
+                        reveal(object, wo);
                     }
+                }
+            }
+        } finally {
+            ScratchBuffers.release(snapshot);
+        }
+    }
 
-                    if (woCreature.getTarget() == object) {
-                        woCreature.setTarget(null);
-                    }
-
-                    if (wo.isPlayer()) {
-                        wo.sendPacket(new DeleteObject(object));
+    private static void reveal(WorldObject object, WorldObject wo) {
+        if (object.isPlayer() && wo.isVisibleFor(object.asPlayer())) {
+            wo.sendInfo(object.asPlayer());
+            if (wo.isCreature()) {
+                final CreatureAI ai = wo.asCreature().getAI();
+                if (ai != null) {
+                    ai.describeStateToPlayer(object.asPlayer());
+                    if (wo.isMonster() && (ai.getIntention() == Intention.IDLE)) {
+                        ai.setIntentionActive();
                     }
                 }
             }
         }
 
-        final WorldRegion[] newSurroundingRegions = newRegion.getSurroundingRegions();
-        for (int i = 0; i < newSurroundingRegions.length; i++) {
-            final WorldRegion worldRegion = newSurroundingRegions[i];
-            if (oldRegion.isSurroundingRegion(worldRegion)) {
-                continue;
-            }
-
-            final Collection<WorldObject> visibleObjects = worldRegion.getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                if (object.isPlayer() && wo.isVisibleFor(object.asPlayer())) {
-                    wo.sendInfo(object.asPlayer());
-                    if (wo.isCreature()) {
-                        final CreatureAI ai = wo.asCreature().getAI();
-                        if (ai != null) {
-                            ai.describeStateToPlayer(object.asPlayer());
-                            if (wo.isMonster() && (ai.getIntention() == Intention.IDLE)) {
-                                ai.setIntentionActive();
-                            }
-                        }
-                    }
-                }
-
-                if (wo.isPlayer() && object.isVisibleFor(wo.asPlayer())) {
-                    object.sendInfo(wo.asPlayer());
-                    if (object.isCreature()) {
-                        final CreatureAI ai = object.asCreature().getAI();
-                        if (ai != null) {
-                            ai.describeStateToPlayer(wo.asPlayer());
-                            if (object.isMonster() && (ai.getIntention() == Intention.IDLE)) {
-                                ai.setIntentionActive();
-                            }
-                        }
+        if (wo.isPlayer() && object.isVisibleFor(wo.asPlayer())) {
+            object.sendInfo(wo.asPlayer());
+            if (object.isCreature()) {
+                final CreatureAI ai = object.asCreature().getAI();
+                if (ai != null) {
+                    ai.describeStateToPlayer(wo.asPlayer());
+                    if (object.isMonster() && (ai.getIntention() == Intention.IDLE)) {
+                        ai.setIntentionActive();
                     }
                 }
             }
         }
     }
 
+    private static void forget(WorldObject object, WorldObject wo) {
+        if (object.isCreature()) {
+            final Creature objectCreature = object.asCreature();
+            final CreatureAI ai = objectCreature.getAI();
+            if (ai != null) {
+                ai.notifyActionForgetObject(wo);
+            }
+
+            if (objectCreature.getTarget() == wo) {
+                objectCreature.setTarget(null);
+            }
+
+            if (object.isPlayer()) {
+                object.sendPacket(new DeleteObject(wo));
+            }
+        }
+
+        if (wo.isCreature()) {
+            final Creature woCreature = wo.asCreature();
+            final CreatureAI ai = woCreature.getAI();
+            if (ai != null) {
+                ai.notifyActionForgetObject(object);
+            }
+
+            if (woCreature.getTarget() == object) {
+                woCreature.setTarget(null);
+            }
+
+            if (wo.isPlayer()) {
+                wo.sendPacket(new DeleteObject(object));
+            }
+        }
+    }
+
     /**
-     * Collects every visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that share its instance world. The reference object itself is excluded.
-     * <p>
-     * If the caller does not need a materialized {@link List}, prefer {@link #forEachVisibleObject(WorldObject, Class, Consumer)} to avoid {@link ArrayList} allocation, resizes and population overhead, or {@link #getFirstVisibleObject(WorldObject, Class)} /
-     * {@link #forFirstVisibleObject(WorldObject, Class, Consumer)} when a single match is enough.
-     * @param <T> the {@link WorldObject} subtype to collect
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @return a freshly allocated {@link List} of matches; empty when {@code object} is {@code null} or has no region
+     * Matches share {@code object}'s instance and exclude it. Returns a mutable list, empty when {@code object} is
+     * null or has no region.
      */
     public static <T extends WorldObject> List<T> getVisibleObjects(WorldObject object, Class<T> clazz) {
-        final List<T> result = new ArrayList<>();
-        if (object == null) {
-            return result;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return result;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                result.add(clazz.cast(wo));
-            }
-        }
-
-        return result;
+        WorldPartition.checkOwner();
+        return collectVisible(object, clazz, false, UNBOUNDED);
     }
 
     /**
-     * Collects every visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that share its instance world and lie within {@code range} 3D-distance from it. The reference object itself is excluded.
-     * <p>
-     * If the caller does not need a materialized {@link List}, prefer {@link #forEachVisibleObjectInRange(WorldObject, Class, int, Consumer)} to avoid {@link ArrayList} allocation, resizes and population overhead, or {@link #getFirstVisibleObjectInRange(WorldObject, Class, int)} /
-     * {@link #forFirstVisibleObjectInRange(WorldObject, Class, int, Consumer)} when a single match is enough.
-     * @param <T> the {@link WorldObject} subtype to collect
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @return a freshly allocated {@link List} of matches; empty when {@code object} is {@code null} or has no region
+     * Matches share {@code object}'s instance and exclude it. Returns a mutable list, empty when {@code object} is
+     * null or has no region.
      */
     public static <T extends WorldObject> List<T> getVisibleObjectsInRange(
             WorldObject object, Class<T> clazz, int range) {
-        final List<T> result = new ArrayList<>();
-        if (object == null) {
-            return result;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return result;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                result.add(clazz.cast(wo));
-            }
-        }
-
-        return result;
+        WorldPartition.checkOwner();
+        return collectVisible(object, clazz, false, range);
     }
 
     /**
-     * Collects every visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that share its instance world and satisfy {@code predicate}. The reference object itself is excluded.
-     * <p>
-     * If the caller does not need a materialized {@link List}, prefer {@link #forEachVisibleObject(WorldObject, Class, Consumer)} (testing the predicate inline) to avoid {@link ArrayList} allocation, resizes and population overhead, or {@link #getFirstVisibleObject(WorldObject, Class, Predicate)} /
-     * {@link #forFirstVisibleObject(WorldObject, Class, Predicate, Consumer)} when a single match is enough.
-     * @param <T> the {@link WorldObject} subtype to collect
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @return a freshly allocated {@link List} of matches; empty when {@code object} is {@code null} or has no region
+     * Matches share {@code object}'s instance and exclude it. Returns a mutable list, empty when {@code object} is
+     * null or has no region.
      */
     public static <T extends WorldObject> List<T> getVisibleObjects(
             WorldObject object, Class<T> clazz, Predicate<T> predicate) {
-        final List<T> result = new ArrayList<>();
-        if (object == null) {
-            return result;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return result;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    result.add(cast);
-                }
-            }
-        }
-
+        WorldPartition.checkOwner();
+        final List<T> result = getVisibleObjects(object, clazz);
+        result.removeIf(candidate -> !predicate.test(candidate));
         return result;
     }
 
     /**
-     * Collects every visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that share its instance world, lie within {@code range} 3D-distance from it and satisfy {@code predicate}. The reference object itself is excluded.
-     * <p>
-     * If the caller does not need a materialized {@link List}, prefer {@link #forEachVisibleObjectInRange(WorldObject, Class, int, Consumer)} (testing the predicate inline) to avoid {@link ArrayList} allocation, resizes and population overhead, or
-     * {@link #getFirstVisibleObjectInRange(WorldObject, Class, int, Predicate)} / {@link #forFirstVisibleObjectInRange(WorldObject, Class, int, Predicate, Consumer)} when a single match is enough.
-     * @param <T> the {@link WorldObject} subtype to collect
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @return a freshly allocated {@link List} of matches; empty when {@code object} is {@code null} or has no region
+     * Matches share {@code object}'s instance and exclude it. Returns a mutable list, empty when {@code object} is
+     * null or has no region.
      */
     public static <T extends WorldObject> List<T> getVisibleObjectsInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate) {
-        final List<T> result = new ArrayList<>();
-        if (object == null) {
-            return result;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return result;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    result.add(cast);
-                }
-            }
-        }
-
+        WorldPartition.checkOwner();
+        final List<T> result = getVisibleObjectsInRange(object, clazz, range);
+        result.removeIf(candidate -> !predicate.test(candidate));
         return result;
     }
 
-    /**
-     * Applies {@code c} to every visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that share its instance world. The reference object itself is skipped. Returns silently when {@code object} is {@code null} or has no region.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param c action invoked for each matching object
-     */
-    public static <T extends WorldObject> void forEachVisibleObject(WorldObject object, Class<T> clazz, Consumer<T> c) {
-        if (object == null) {
-            return;
-        }
+    private static <T extends WorldObject> List<T> collectVisible(
+            WorldObject object, Class<T> clazz, boolean includeSelf, int range) {
+        final List<T> matches = new ArrayList<>();
+        walkVisible(object, clazz, includeSelf, range, matches, World::addMatch);
+        return matches;
+    }
 
-        final WorldRegion worldRegion = getRegion(object);
+    // Copies the regions whole and filters at each turn rather than filtering into the copy: every object is touched
+    // once, as in a live walk.
+    private static <T extends WorldObject> void forEachMatch(
+            WorldObject object, Class<T> clazz, int range, Consumer<T> action) {
+        final WorldRegion worldRegion = regionOf(object);
         if (worldRegion == null) {
             return;
         }
 
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
+        final ObjectArrayList<WorldObject> candidates = ScratchBuffers.acquire();
+        try {
+            final WorldRegion[] surroundingRegions = worldRegion.surroundingRegionsArray();
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                candidates.addAll(surroundingRegions[i].visibleObjectsView());
             }
 
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
+            for (int i = 0; i < candidates.size(); i++) {
+                final WorldObject wo = candidates.get(i);
+                if (wo.isSpawned() && isMatch(wo, object, clazz, false, object.getInstanceId(), range)) {
+                    action.accept(clazz.cast(wo));
                 }
-
-                c.accept(clazz.cast(wo));
             }
+        } finally {
+            ScratchBuffers.release(candidates);
         }
     }
 
+    private static <T extends WorldObject> T nearestMatching(
+            WorldObject object, Class<T> clazz, int range, Predicate<T> predicate) {
+        final Scan scan = new Scan().start(object, UNBOUNDED);
+        visitCandidates(
+                object, clazz, range, scan, (s, candidate) -> predicate.test(candidate) && s.offerNearest(candidate));
+        return scan.finish(clazz);
+    }
+
+    private static <T extends WorldObject> T randomMatching(
+            WorldObject object, Class<T> clazz, int range, Predicate<T> predicate) {
+        final Scan scan = new Scan().start(object, UNBOUNDED);
+        visitCandidates(
+                object, clazz, range, scan, (s, candidate) -> predicate.test(candidate) && s.offerRandom(candidate));
+        return scan.finish(clazz);
+    }
+
+    private static <T extends WorldObject, S> T walkVisible(
+            WorldObject object, Class<T> clazz, boolean includeSelf, int range, S state, MatchVisitor<T, S> visitor) {
+        final WorldRegion worldRegion = regionOf(object);
+        if (worldRegion == null) {
+            return null;
+        }
+
+        final WorldRegion[] surroundingRegions = worldRegion.surroundingRegionsArray();
+        for (int i = 0; i < surroundingRegions.length; i++) {
+            final T stoppedAt = walkRegion(surroundingRegions[i], object, clazz, includeSelf, range, state, visitor);
+            if (stoppedAt != null) {
+                return stoppedAt;
+            }
+        }
+
+        return null;
+    }
+
+    // The visitor may call out, so it runs over one region's candidates at a time, collected before its first call.
+    private static <T extends WorldObject, S> T visitCandidates(
+            WorldObject object, Class<T> clazz, int range, S state, MatchVisitor<T, S> visitor) {
+        final WorldRegion worldRegion = regionOf(object);
+        if (worldRegion == null) {
+            return null;
+        }
+
+        final ObjectArrayList<T> candidates = ScratchBuffers.acquire();
+        try {
+            final WorldRegion[] surroundingRegions = worldRegion.surroundingRegionsArray();
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                candidates.clear();
+                walkRegion(surroundingRegions[i], object, clazz, false, range, candidates, World::addMatch);
+                for (int j = 0; j < candidates.size(); j++) {
+                    final T candidate = candidates.get(j);
+                    if (visitor.visit(state, candidate)) {
+                        return candidate;
+                    }
+                }
+            }
+
+            return null;
+        } finally {
+            ScratchBuffers.release(candidates);
+        }
+    }
+
+    // The one live walk over a region: a pure filter, so nothing called here can move an object between regions.
+    private static <T extends WorldObject, S> T walkRegion(
+            WorldRegion region,
+            WorldObject object,
+            Class<T> clazz,
+            boolean includeSelf,
+            int range,
+            S state,
+            MatchVisitor<T, S> visitor) {
+        final Collection<WorldObject> visibleObjects = region.visibleObjectsView();
+        if (visibleObjects.isEmpty()) {
+            return null;
+        }
+
+        final int instanceId = object.getInstanceId();
+        for (WorldObject wo : visibleObjects) {
+            if (!isMatch(wo, object, clazz, includeSelf, instanceId, range)) {
+                continue;
+            }
+
+            final T match = clazz.cast(wo);
+            if (visitor.visit(state, match)) {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean isMatch(
+            WorldObject wo, WorldObject object, Class<?> clazz, boolean includeSelf, int instanceId, int range) {
+        return (includeSelf || (wo != object))
+                && clazz.isInstance(wo)
+                && (wo.getInstanceId() == instanceId)
+                && ((range == UNBOUNDED) || (wo.calculateDistance3D(object) <= range));
+    }
+
+    private static WorldRegion regionOf(WorldObject object) {
+        return (object == null) ? null : getRegion(object);
+    }
+
+    private static <T> boolean addMatch(List<T> matches, T match) {
+        matches.add(match);
+        return false;
+    }
+
+    private static boolean stopAtFirst(Object state, WorldObject match) {
+        return true;
+    }
+
     /**
-     * Applies {@code c} to every visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that share its instance world and lie within {@code range} 3D-distance from it. The reference object itself is skipped. Returns silently when {@code object} is {@code null}
-     * or has no region.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param c action invoked for each matching object
+     * Candidates are collected before the first call of {@code c}, so {@code c} may add, move or remove objects;
+     * one taken out of the world or out of reach meanwhile is skipped.
+     */
+    public static <T extends WorldObject> void forEachVisibleObject(WorldObject object, Class<T> clazz, Consumer<T> c) {
+        WorldPartition.checkOwner();
+        forEachMatch(object, clazz, UNBOUNDED, c);
+    }
+
+    /**
+     * Candidates are collected before the first call of {@code c}, so {@code c} may add, move or remove objects;
+     * one taken out of the world or out of reach meanwhile is skipped.
      */
     public static <T extends WorldObject> void forEachVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Consumer<T> c) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                c.accept(clazz.cast(wo));
-            }
-        }
+        WorldPartition.checkOwner();
+        forEachMatch(object, clazz, range, c);
     }
 
     /**
-     * Returns the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The reference object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @return the first matching object, or {@code null}
+     * First hit in region iteration order, not the closest; {@code null} when none, or when {@code object} is null or
+     * has no region.
      */
     public static <T extends WorldObject> T getFirstVisibleObject(WorldObject object, Class<T> clazz) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                return clazz.cast(wo);
-            }
-        }
-
-        return null;
+        WorldPartition.checkOwner();
+        return walkVisible(object, clazz, false, UNBOUNDED, null, World::stopAtFirst);
     }
 
     /**
-     * Returns the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world and lies within {@code range} 3D-distance from it, or {@code null} if none is found (also when {@code object} is {@code null} or has no
-     * region). The reference object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match within range.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @return the first matching object, or {@code null}
+     * First hit in region iteration order, not the closest; {@code null} when none, or when {@code object} is null or
+     * has no region.
      */
     public static <T extends WorldObject> T getFirstVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                return clazz.cast(wo);
-            }
-        }
-
-        return null;
+        WorldPartition.checkOwner();
+        return walkVisible(object, clazz, false, range, null, World::stopAtFirst);
     }
 
     /**
-     * Returns the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world and satisfies {@code predicate}, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The reference
-     * object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @return the first matching object, or {@code null}
+     * First hit in region iteration order, not the closest; {@code null} when none, or when {@code object} is null or
+     * has no region.
      */
     public static <T extends WorldObject> T getFirstVisibleObject(
             WorldObject object, Class<T> clazz, Predicate<T> predicate) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    return cast;
-                }
-            }
-        }
-
-        return null;
+        WorldPartition.checkOwner();
+        return visitCandidates(object, clazz, UNBOUNDED, predicate, Predicate::test);
     }
 
     /**
-     * Returns the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world, lies within {@code range} 3D-distance from it and satisfies {@code predicate}, or {@code null} if none is found (also when {@code object}
-     * is {@code null} or has no region). The reference object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match within range.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @return the first matching object, or {@code null}
+     * First hit in region iteration order, not the closest; {@code null} when none, or when {@code object} is null or
+     * has no region.
      */
     public static <T extends WorldObject> T getFirstVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    return cast;
-                }
-            }
-        }
-
-        return null;
+        WorldPartition.checkOwner();
+        return visitCandidates(object, clazz, range, predicate, Predicate::test);
     }
 
     /**
-     * Invokes {@code action} on the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world, then returns. Does nothing if no match is found, or if {@code object} is {@code null} or has no region. The reference
-     * object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match. Prefer this over {@link #getFirstVisibleObject(WorldObject, Class)} when the hit can be acted on inline without a {@code null} check.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param action action invoked at most once, on the first matching object
+     * Acts at most once, on the first hit in region iteration order, not the closest.
      */
     public static <T extends WorldObject> void forFirstVisibleObject(
             WorldObject object, Class<T> clazz, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                action.accept(clazz.cast(wo));
-                return;
-            }
+        WorldPartition.checkOwner();
+        final T match = getFirstVisibleObject(object, clazz);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world and lies within {@code range} 3D-distance from it, then returns. Does nothing if no match is found, or if {@code object}
-     * is {@code null} or has no region. The reference object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match within range. Prefer this over {@link #getFirstVisibleObjectInRange(WorldObject, Class, int)} when the hit can be acted on inline without a {@code null} check.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param action action invoked at most once, on the first matching object
+     * Acts at most once, on the first hit in region iteration order, not the closest.
      */
     public static <T extends WorldObject> void forFirstVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                action.accept(clazz.cast(wo));
-                return;
-            }
+        WorldPartition.checkOwner();
+        final T match = getFirstVisibleObjectInRange(object, clazz, range);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world and satisfies {@code predicate}, then returns. Does nothing if no match is found, or if {@code object} is {@code null} or
-     * has no region. The reference object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match. Prefer this over {@link #getFirstVisibleObject(WorldObject, Class, Predicate)} when the hit can be acted on inline without a {@code null} check.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @param action action invoked at most once, on the first matching object
+     * Acts at most once, on the first hit in region iteration order, not the closest.
      */
     public static <T extends WorldObject> void forFirstVisibleObject(
             WorldObject object, Class<T> clazz, Predicate<T> predicate, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    action.accept(cast);
-                    return;
-                }
-            }
+        WorldPartition.checkOwner();
+        final T match = getFirstVisibleObject(object, clazz, predicate);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on the first visible {@link WorldObject} of type {@code T} encountered in the reference object's surrounding regions that shares its instance world, lies within {@code range} 3D-distance from it and satisfies {@code predicate}, then returns. Does nothing if no match is
-     * found, or if {@code object} is {@code null} or has no region. The reference object itself is skipped.
-     * <p>
-     * "First" is the first hit in region iteration order, not the closest match within range. Prefer this over {@link #getFirstVisibleObjectInRange(WorldObject, Class, int, Predicate)} when the hit can be acted on inline without a {@code null} check.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @param action action invoked at most once, on the first matching object
+     * Acts at most once, on the first hit in region iteration order, not the closest.
      */
     public static <T extends WorldObject> void forFirstVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    action.accept(cast);
-                    return;
-                }
-            }
+        WorldPartition.checkOwner();
+        final T match = getFirstVisibleObjectInRange(object, clazz, range, predicate);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Returns the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The reference object itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #getFirstVisibleObject(WorldObject, Class)} unless the actual closest match is required - the simple {@code getFirst*} variant can
-     * short-circuit on the first hit while this method must inspect every candidate.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @return the nearest matching object, or {@code null}
+     * Inspects every candidate; prefer the {@code getFirst*} variant when any match will do. {@code null} when none.
      */
     public static <T extends WorldObject> T getNearestVisibleObject(WorldObject object, Class<T> clazz) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final double distance = wo.calculateDistance3D(object);
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    nearest = clazz.cast(wo);
-                }
-            }
-        }
-
-        return nearest;
+        WorldPartition.checkOwner();
+        final Scan scan = new Scan().start(object, UNBOUNDED);
+        walkVisible(object, clazz, false, UNBOUNDED, scan, Scan::offerNearest);
+        return scan.finish(clazz);
     }
 
     /**
-     * Returns the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and lies within {@code range} 3D-distance from it, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The
-     * reference object itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #getFirstVisibleObjectInRange(WorldObject, Class, int)} unless the actual closest match is required - the simple {@code getFirst*}
-     * variant can short-circuit on the first hit while this method must inspect every candidate within range.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @return the nearest matching object, or {@code null}
+     * Inspects every candidate; prefer the {@code getFirst*} variant when any match will do. {@code null} when none.
      */
     public static <T extends WorldObject> T getNearestVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final double distance = wo.calculateDistance3D(object);
-                if ((distance <= range) && (distance < bestDistance)) {
-                    bestDistance = distance;
-                    nearest = clazz.cast(wo);
-                }
-            }
-        }
-
-        return nearest;
+        WorldPartition.checkOwner();
+        // The scan checks the range itself, so each distance is computed once.
+        final Scan scan = new Scan().start(object, range);
+        walkVisible(object, clazz, false, UNBOUNDED, scan, Scan::offerNearest);
+        return scan.finish(clazz);
     }
 
     /**
-     * Returns the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and satisfies {@code predicate}, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The reference object
-     * itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #getFirstVisibleObject(WorldObject, Class, Predicate)} unless the actual closest match is required - the simple {@code getFirst*}
-     * variant can short-circuit on the first hit while this method must inspect every candidate.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @return the nearest matching object, or {@code null}
+     * Inspects every candidate; prefer the {@code getFirst*} variant when any match will do. {@code null} when none.
      */
     public static <T extends WorldObject> T getNearestVisibleObject(
             WorldObject object, Class<T> clazz, Predicate<T> predicate) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    final double distance = wo.calculateDistance3D(object);
-                    if (distance < bestDistance) {
-                        bestDistance = distance;
-                        nearest = cast;
-                    }
-                }
-            }
-        }
-
-        return nearest;
+        WorldPartition.checkOwner();
+        return nearestMatching(object, clazz, UNBOUNDED, predicate);
     }
 
     /**
-     * Returns the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, lies within {@code range} 3D-distance from it and satisfies {@code predicate}, or {@code null} if none is found (also when {@code object} is {@code
-     * null} or has no region). The reference object itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #getFirstVisibleObjectInRange(WorldObject, Class, int, Predicate)} unless the actual closest match is required - the simple {@code
-     * getFirst*} variant can short-circuit on the first hit while this method must inspect every candidate within range.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @return the nearest matching object, or {@code null}
+     * Inspects every candidate; prefer the {@code getFirst*} variant when any match will do. {@code null} when none.
      */
     public static <T extends WorldObject> T getNearestVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final double distance = wo.calculateDistance3D(object);
-                if (distance <= range) {
-                    final T cast = clazz.cast(wo);
-                    if (predicate.test(cast) && (distance < bestDistance)) {
-                        bestDistance = distance;
-                        nearest = cast;
-                    }
-                }
-            }
-        }
-
-        return nearest;
+        WorldPartition.checkOwner();
+        return nearestMatching(object, clazz, range, predicate);
     }
 
     /**
-     * Invokes {@code action} on the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, then returns. Does nothing if no match is found, or if {@code object} is {@code null} or has no region. The reference object itself
-     * is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #forFirstVisibleObject(WorldObject, Class, Consumer)} unless the actual closest match is required - the simple {@code forFirst*}
-     * variant can short-circuit on the first hit while this method must inspect every candidate.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param action action invoked at most once, on the nearest matching object
+     * Acts at most once. Inspects every candidate; prefer the {@code forFirst*} variant when any match will do.
      */
     public static <T extends WorldObject> void forNearestVisibleObject(
             WorldObject object, Class<T> clazz, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final double distance = wo.calculateDistance3D(object);
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    nearest = clazz.cast(wo);
-                }
-            }
-        }
-
-        if (nearest != null) {
-            action.accept(nearest);
+        WorldPartition.checkOwner();
+        final T match = getNearestVisibleObject(object, clazz);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and lies within {@code range} 3D-distance from it, then returns. Does nothing if no match is found, or if {@code object} is
-     * {@code null} or has no region. The reference object itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #forFirstVisibleObjectInRange(WorldObject, Class, int, Consumer)} unless the actual closest match is required - the simple {@code
-     * forFirst*} variant can short-circuit on the first hit while this method must inspect every candidate within range.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param action action invoked at most once, on the nearest matching object
+     * Acts at most once. Inspects every candidate; prefer the {@code forFirst*} variant when any match will do.
      */
     public static <T extends WorldObject> void forNearestVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final double distance = wo.calculateDistance3D(object);
-                if ((distance <= range) && (distance < bestDistance)) {
-                    bestDistance = distance;
-                    nearest = clazz.cast(wo);
-                }
-            }
-        }
-
-        if (nearest != null) {
-            action.accept(nearest);
+        WorldPartition.checkOwner();
+        final T match = getNearestVisibleObjectInRange(object, clazz, range);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and satisfies {@code predicate}, then returns. Does nothing if no match is found, or if {@code object} is {@code null} or has no
-     * region. The reference object itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #forFirstVisibleObject(WorldObject, Class, Predicate, Consumer)} unless the actual closest match is required - the simple {@code
-     * forFirst*} variant can short-circuit on the first hit while this method must inspect every candidate.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @param action action invoked at most once, on the nearest matching object
+     * Acts at most once. Inspects every candidate; prefer the {@code forFirst*} variant when any match will do.
      */
     public static <T extends WorldObject> void forNearestVisibleObject(
             WorldObject object, Class<T> clazz, Predicate<T> predicate, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    final double distance = wo.calculateDistance3D(object);
-                    if (distance < bestDistance) {
-                        bestDistance = distance;
-                        nearest = cast;
-                    }
-                }
-            }
-        }
-
-        if (nearest != null) {
-            action.accept(nearest);
+        WorldPartition.checkOwner();
+        final T match = getNearestVisibleObject(object, clazz, predicate);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on the nearest visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, lies within {@code range} 3D-distance from it and satisfies {@code predicate}, then returns. Does nothing if no match is found, or
-     * if {@code object} is {@code null} or has no region. The reference object itself is skipped.
-     * <p>
-     * "Nearest" is computed by 3D distance to {@code object} via a single-pass scan that tracks the best candidate, with no {@link ArrayList} allocation. Prefer {@link #forFirstVisibleObjectInRange(WorldObject, Class, int, Predicate, Consumer)} unless the actual closest match is required - the
-     * simple {@code forFirst*} variant can short-circuit on the first hit while this method must inspect every candidate within range.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @param action action invoked at most once, on the nearest matching object
+     * Acts at most once. Inspects every candidate; prefer the {@code forFirst*} variant when any match will do.
      */
     public static <T extends WorldObject> void forNearestVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T nearest = null;
-        double bestDistance = Double.MAX_VALUE;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final double distance = wo.calculateDistance3D(object);
-                if (distance <= range) {
-                    final T cast = clazz.cast(wo);
-                    if (predicate.test(cast) && (distance < bestDistance)) {
-                        bestDistance = distance;
-                        nearest = cast;
-                    }
-                }
-            }
-        }
-
-        if (nearest != null) {
-            action.accept(nearest);
+        WorldPartition.checkOwner();
+        final T match = getNearestVisibleObjectInRange(object, clazz, range, predicate);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Returns a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The reference object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #getFirstVisibleObject(WorldObject, Class)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform randomness over all matching
-     * candidates is required.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @return a uniformly-random matching object, or {@code null}
+     * Uniform over all matches via a full scan; prefer the {@code getFirst*} variant when order is irrelevant.
+     * {@code null} when none.
      */
     public static <T extends WorldObject> T getRandomVisibleObject(WorldObject object, Class<T> clazz) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T selected = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                count++;
-                if (ClockBridge.random().nextInt(count) == 0) {
-                    selected = clazz.cast(wo);
-                }
-            }
-        }
-
-        return (selected != null) ? selected : getFirstVisibleObject(object, clazz);
+        WorldPartition.checkOwner();
+        final Scan scan = new Scan().start(object, UNBOUNDED);
+        walkVisible(object, clazz, false, UNBOUNDED, scan, Scan::offerRandom);
+        return scan.finish(clazz);
     }
 
     /**
-     * Returns a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and lies within {@code range} 3D-distance from it, or {@code null} if none is found (also when {@code object} is {@code null} or has no
-     * region). The reference object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #getFirstVisibleObjectInRange(WorldObject, Class, int)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform randomness over all
-     * matching candidates within range is required.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @return a uniformly-random matching object, or {@code null}
+     * Uniform over all matches via a full scan; prefer the {@code getFirst*} variant when order is irrelevant.
+     * {@code null} when none.
      */
     public static <T extends WorldObject> T getRandomVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T selected = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                count++;
-                if (ClockBridge.random().nextInt(count) == 0) {
-                    selected = clazz.cast(wo);
-                }
-            }
-        }
-
-        return (selected != null) ? selected : getFirstVisibleObjectInRange(object, clazz, range);
+        WorldPartition.checkOwner();
+        final Scan scan = new Scan().start(object, range);
+        walkVisible(object, clazz, false, range, scan, Scan::offerRandom);
+        return scan.finish(clazz);
     }
 
     /**
-     * Returns a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and satisfies {@code predicate}, or {@code null} if none is found (also when {@code object} is {@code null} or has no region). The reference
-     * object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #getFirstVisibleObject(WorldObject, Class, Predicate)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform randomness over all
-     * matching candidates is required.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @return a uniformly-random matching object, or {@code null}
+     * Uniform over all matches via a full scan; prefer the {@code getFirst*} variant when order is irrelevant.
+     * {@code null} when none.
      */
     public static <T extends WorldObject> T getRandomVisibleObject(
             WorldObject object, Class<T> clazz, Predicate<T> predicate) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T selected = null;
-        T firstValid = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    if (firstValid == null) {
-                        firstValid = cast;
-                    }
-
-                    count++;
-                    if (ClockBridge.random().nextInt(count) == 0) {
-                        selected = cast;
-                    }
-                }
-            }
-        }
-
-        return (selected != null) ? selected : firstValid;
+        WorldPartition.checkOwner();
+        return randomMatching(object, clazz, UNBOUNDED, predicate);
     }
 
     /**
-     * Returns a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, lies within {@code range} 3D-distance from it and satisfies {@code predicate}, or {@code null} if none is found (also when {@code object} is
-     * {@code null} or has no region). The reference object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #getFirstVisibleObjectInRange(WorldObject, Class, int, Predicate)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform
-     * randomness over all matching candidates within range is required.
-     * @param <T> the {@link WorldObject} subtype to return
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @return a uniformly-random matching object, or {@code null}
+     * Uniform over all matches via a full scan; prefer the {@code getFirst*} variant when order is irrelevant.
+     * {@code null} when none.
      */
     public static <T extends WorldObject> T getRandomVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate) {
-        if (object == null) {
-            return null;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return null;
-        }
-
-        T selected = null;
-        T firstValid = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    if (firstValid == null) {
-                        firstValid = cast;
-                    }
-
-                    count++;
-                    if (ClockBridge.random().nextInt(count) == 0) {
-                        selected = cast;
-                    }
-                }
-            }
-        }
-
-        return (selected != null) ? selected : firstValid;
+        WorldPartition.checkOwner();
+        return randomMatching(object, clazz, range, predicate);
     }
 
     /**
-     * Invokes {@code action} on a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world. Does nothing if no match is found, or if {@code object} is {@code null} or has no region. The reference object itself is
-     * skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #forFirstVisibleObject(WorldObject, Class, Consumer)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform randomness is
-     * required.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param action action invoked at most once, on the randomly-selected matching object
+     * Acts at most once. Uniform over all matches via a full scan; prefer the {@code forFirst*} variant when order
+     * is irrelevant.
      */
     public static <T extends WorldObject> void forRandomVisibleObject(
             WorldObject object, Class<T> clazz, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T selected = null;
-        T firstValid = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (firstValid == null) {
-                    firstValid = cast;
-                }
-
-                count++;
-                if (ClockBridge.random().nextInt(count) == 0) {
-                    selected = cast;
-                }
-            }
-        }
-
-        final T target = (selected != null) ? selected : firstValid;
-        if (target != null) {
-            action.accept(target);
+        WorldPartition.checkOwner();
+        final T match = getRandomVisibleObject(object, clazz);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and lies within {@code range} 3D-distance from it. Does nothing if no match is found, or if {@code object} is {@code null} or
-     * has no region. The reference object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #forFirstVisibleObjectInRange(WorldObject, Class, int, Consumer)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform
-     * randomness over all matching candidates within range is required.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param action action invoked at most once, on the randomly-selected matching object
+     * Acts at most once. Uniform over all matches via a full scan; prefer the {@code forFirst*} variant when order
+     * is irrelevant.
      */
     public static <T extends WorldObject> void forRandomVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T selected = null;
-        T firstValid = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (firstValid == null) {
-                    firstValid = cast;
-                }
-
-                count++;
-                if (ClockBridge.random().nextInt(count) == 0) {
-                    selected = cast;
-                }
-            }
-        }
-
-        final T target = (selected != null) ? selected : firstValid;
-        if (target != null) {
-            action.accept(target);
+        WorldPartition.checkOwner();
+        final T match = getRandomVisibleObjectInRange(object, clazz, range);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world and satisfies {@code predicate}. Does nothing if no match is found, or if {@code object} is {@code null} or has no region.
-     * The reference object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #forFirstVisibleObject(WorldObject, Class, Predicate, Consumer)} when first-in-iteration-order is acceptable; this method's full scan is only needed when uniform randomness
-     * is required.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param predicate additional filter applied to each candidate already matching {@code clazz}
-     * @param action action invoked at most once, on the randomly-selected matching object
+     * Acts at most once. Uniform over all matches via a full scan; prefer the {@code forFirst*} variant when order
+     * is irrelevant.
      */
     public static <T extends WorldObject> void forRandomVisibleObject(
             WorldObject object, Class<T> clazz, Predicate<T> predicate, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T selected = null;
-        T firstValid = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object) || !clazz.isInstance(wo) || (wo.getInstanceId() != object.getInstanceId())) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    if (firstValid == null) {
-                        firstValid = cast;
-                    }
-
-                    count++;
-                    if (ClockBridge.random().nextInt(count) == 0) {
-                        selected = cast;
-                    }
-                }
-            }
-        }
-
-        final T target = (selected != null) ? selected : firstValid;
-        if (target != null) {
-            action.accept(target);
+        WorldPartition.checkOwner();
+        final T match = getRandomVisibleObject(object, clazz, predicate);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
     /**
-     * Invokes {@code action} on a uniformly-random visible {@link WorldObject} of type {@code T} in the reference object's surrounding regions that shares its instance world, lies within {@code range} 3D-distance from it and satisfies {@code predicate}. Does nothing if no match is found, or if
-     * {@code
-     * object} is {@code null} or has no region. The reference object itself is skipped.
-     * <p>
-     * Uses single-pass reservoir sampling (Algorithm R with k=1) - no {@link ArrayList} allocation, O(1) memory. Prefer {@link #forFirstVisibleObjectInRange(WorldObject, Class, int, Predicate, Consumer)} when first-in-iteration-order is acceptable; this method's full scan is only needed when
-     * uniform randomness over all matching candidates within range is required.
-     * @param <T> the {@link WorldObject} subtype to consume
-     * @param object the reference object whose surrounding regions are scanned
-     * @param clazz the type filter
-     * @param range the maximum inclusive 3D distance from {@code object}
-     * @param predicate additional filter applied to each candidate already matching {@code clazz} and within range
-     * @param action action invoked at most once, on the randomly-selected matching object
+     * Acts at most once. Uniform over all matches via a full scan; prefer the {@code forFirst*} variant when order
+     * is irrelevant.
      */
     public static <T extends WorldObject> void forRandomVisibleObjectInRange(
             WorldObject object, Class<T> clazz, int range, Predicate<T> predicate, Consumer<T> action) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        T selected = null;
-        T firstValid = null;
-        int count = 0;
-        final WorldRegion[] surroundingRegions = worldRegion.getSurroundingRegions();
-        for (int i = 0; i < surroundingRegions.length; i++) {
-            final Collection<WorldObject> visibleObjects = surroundingRegions[i].getVisibleObjects();
-            if (visibleObjects.isEmpty()) {
-                continue;
-            }
-
-            for (WorldObject wo : visibleObjects) {
-                if ((wo == object)
-                        || !clazz.isInstance(wo)
-                        || (wo.getInstanceId() != object.getInstanceId())
-                        || (wo.calculateDistance3D(object) > range)) {
-                    continue;
-                }
-
-                final T cast = clazz.cast(wo);
-                if (predicate.test(cast)) {
-                    if (firstValid == null) {
-                        firstValid = cast;
-                    }
-
-                    count++;
-                    if (ClockBridge.random().nextInt(count) == 0) {
-                        selected = cast;
-                    }
-                }
-            }
-        }
-
-        final T target = (selected != null) ? selected : firstValid;
-        if (target != null) {
-            action.accept(target);
+        WorldPartition.checkOwner();
+        final T match = getRandomVisibleObjectInRange(object, clazz, range, predicate);
+        if (match != null) {
+            action.accept(match);
         }
     }
 
-    /**
-     * Sends a packet to every other player visible from the given object's surrounding regions, sharing the same instance world.<br>
-     * The source object itself is excluded from the broadcast.
-     * @param object the reference WorldObject whose surrounding regions define the broadcast area
-     * @param packet the ServerPacket to send to each nearby player
-     */
     public static void broadcastToVisiblePlayers(WorldObject object, ServerPacket packet) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        packet.sendInBroadcast();
-        try {
-            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-            if (regions != null) {
-                for (int i = 0; i < regions.length; i++) {
-                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                    if (objects.isEmpty()) {
-                        continue;
-                    }
-
-                    for (WorldObject nearby : objects) {
-                        if ((nearby == object)
-                                || !nearby.isPlayer()
-                                || (nearby.getInstanceId() != object.getInstanceId())) {
-                            continue;
-                        }
-
-                        nearby.asPlayer().sendPacket(packet);
-                    }
-                }
-            }
-        } finally {
-            packet.releaseBroadcast();
-        }
+        WorldPartition.checkOwner();
+        sendToVisiblePlayers(object, false, UNBOUNDED, packet);
     }
 
-    /**
-     * Sends a packet to every other player visible from the given object's surrounding regions, sharing the same instance world and within the specified range.<br>
-     * The source object itself is excluded from the broadcast.
-     * @param object the reference WorldObject whose surrounding regions define the broadcast area
-     * @param packet the ServerPacket to send to each nearby player
-     * @param range the maximum 3D distance from the object at which a player will receive the packet
-     */
     public static void broadcastToVisiblePlayersInRange(WorldObject object, ServerPacket packet, int range) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        packet.sendInBroadcast();
-        try {
-            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-            if (regions != null) {
-                for (int i = 0; i < regions.length; i++) {
-                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                    if (objects.isEmpty()) {
-                        continue;
-                    }
-
-                    for (WorldObject nearby : objects) {
-                        if ((nearby == object)
-                                || !nearby.isPlayer()
-                                || (nearby.getInstanceId() != object.getInstanceId())
-                                || (nearby.calculateDistance3D(object) > range)) {
-                            continue;
-                        }
-
-                        nearby.asPlayer().sendPacket(packet);
-                    }
-                }
-            }
-        } finally {
-            packet.releaseBroadcast();
-        }
+        WorldPartition.checkOwner();
+        sendToVisiblePlayers(object, false, range, packet);
     }
 
-    /**
-     * Sends a packet to the given object (if it is a player) and to every other player visible from its surrounding regions, sharing the same instance world.
-     * @param object the reference WorldObject whose surrounding regions define the broadcast area
-     * @param packet the ServerPacket to send to the object and each nearby player
-     */
     public static void broadcastToSelfAndVisiblePlayers(WorldObject object, ServerPacket packet) {
-        if (object == null) {
-            return;
-        }
-
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        packet.sendInBroadcast();
-        try {
-            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-            if (regions != null) {
-                for (int i = 0; i < regions.length; i++) {
-                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                    if (objects.isEmpty()) {
-                        continue;
-                    }
-
-                    for (WorldObject nearby : objects) {
-                        if (!nearby.isPlayer() || (nearby.getInstanceId() != object.getInstanceId())) {
-                            continue;
-                        }
-
-                        nearby.asPlayer().sendPacket(packet);
-                    }
-                }
-            }
-        } finally {
-            packet.releaseBroadcast();
-        }
+        WorldPartition.checkOwner();
+        sendToVisiblePlayers(object, true, UNBOUNDED, packet);
     }
 
-    /**
-     * Sends a packet to the given object (if it is a player) and to every other player visible from its surrounding regions, sharing the same instance world and within the specified range.
-     * @param object the reference WorldObject whose surrounding regions define the broadcast area
-     * @param packet the ServerPacket to send to the object and each nearby player
-     * @param range the maximum 3D distance from the object at which a player will receive the packet
-     */
     public static void broadcastToSelfAndVisiblePlayersInRange(WorldObject object, ServerPacket packet, int range) {
-        if (object == null) {
-            return;
-        }
+        WorldPartition.checkOwner();
+        sendToVisiblePlayers(object, true, range, packet);
+    }
 
-        final WorldRegion worldRegion = getRegion(object);
-        if (worldRegion == null) {
-            return;
-        }
-
-        packet.sendInBroadcast();
+    // A send can close the session and take the player out of its region, so the recipients are collected first.
+    private static void sendToVisiblePlayers(WorldObject object, boolean includeSelf, int range, ServerPacket packet) {
+        final ObjectArrayList<Player> players = ScratchBuffers.acquire();
         try {
-            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-            if (regions != null) {
-                for (int i = 0; i < regions.length; i++) {
-                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                    if (objects.isEmpty()) {
-                        continue;
-                    }
+            walkVisible(object, Player.class, includeSelf, range, players, World::addMatch);
+            if (players.isEmpty()) {
+                return;
+            }
 
-                    for (WorldObject nearby : objects) {
-                        if (!nearby.isPlayer()
-                                || (nearby.getInstanceId() != object.getInstanceId())
-                                || (nearby.calculateDistance3D(object) > range)) {
-                            continue;
-                        }
-
-                        nearby.asPlayer().sendPacket(packet);
-                    }
+            packet.sendInBroadcast();
+            try {
+                for (int i = 0; i < players.size(); i++) {
+                    players.get(i).sendPacket(packet);
                 }
+            } finally {
+                packet.releaseBroadcast();
             }
         } finally {
-            packet.releaseBroadcast();
+            ScratchBuffers.release(players);
         }
     }
 
-    /**
-     * Sends a packet to every online player currently registered in the world, regardless of instance or location.
-     * @param packet the ServerPacket to send to all online players
-     */
     public static void broadcastToAllOnlinePlayers(ServerPacket packet) {
-        packet.sendInBroadcast();
+        WorldPartition.checkOwner();
+        final ObjectArrayList<Player> players = ScratchBuffers.acquire();
         try {
-            for (Player player : allPlayers.values()) {
-                if (player.isOnline()) {
-                    player.sendPacket(packet);
+            // A failed send can close the session, which takes the player out of the world.
+            ScratchBuffers.copy(allPlayers.values(), players);
+            packet.sendInBroadcast();
+            try {
+                for (int i = 0; i < players.size(); i++) {
+                    final Player player = players.get(i);
+                    if (player.isOnline()) {
+                        player.sendPacket(packet);
+                    }
                 }
+            } finally {
+                packet.releaseBroadcast();
             }
         } finally {
-            packet.releaseBroadcast();
+            ScratchBuffers.release(players);
         }
     }
 
-    /**
-     * Broadcasts a non-critical announcement chat message to every online player.
-     * @param text the text to be sent as a regular announcement
-     */
     public static void broadcastToAllOnlinePlayers(String text) {
+        WorldPartition.checkOwner();
         broadcastToAllOnlinePlayers(text, false);
     }
 
-    /**
-     * Broadcasts an announcement chat message to every online player, optionally as a critical announcement.
-     * @param text the text to be sent as an announcement
-     * @param isCritical {@code true} to send as a CRITICAL_ANNOUNCE chat type, {@code false} to send as a regular ANNOUNCEMENT
-     */
     public static void broadcastToAllOnlinePlayers(String text, boolean isCritical) {
+        WorldPartition.checkOwner();
         broadcastToAllOnlinePlayers(
                 new CreatureSay(null, isCritical ? ChatType.CRITICAL_ANNOUNCE : ChatType.ANNOUNCEMENT, "", text));
     }
 
-    /**
-     * Broadcasts an on-screen message to every online player for a default duration of 10 seconds.
-     * @param text the text to display on each player's screen
-     */
     public static void broadcastToAllOnlinePlayersOnScreen(String text) {
+        WorldPartition.checkOwner();
         broadcastToAllOnlinePlayers(new ExShowScreenMessage(text, 10000));
     }
 
-    /**
-     * Calculate the current WorldRegions of the object according to its position (x,y). <b><u>Example of use</u>:</b>
-     * <li>Set position of a new WorldObject (drop, spawn...)</li>
-     * <li>Update position of a WorldObject after a movement</li><br>
-     * @param object the object
-     * @return
-     */
     public static WorldRegion getRegion(WorldObject object) {
+        WorldPartition.checkOwner();
         try {
             final int z = object.getZ();
             final int regionZ = calculateRegionZ(z);
             return worldRegions[(object.getX() >> SHIFT_BY) + OFFSET_X][(object.getY() >> SHIFT_BY) + OFFSET_Y][
                     regionZ];
-        } catch (ArrayIndexOutOfBoundsException e) // Precaution. Moved at invalid region?
-        {
+        } catch (ArrayIndexOutOfBoundsException e) {
             disposeOutOfBoundsObject(object);
             return null;
         }
     }
 
     public static WorldRegion getRegion(int x, int y, int z) {
+        WorldPartition.checkOwner();
         try {
             final int regionZ = calculateRegionZ(z);
             return worldRegions[(x >> SHIFT_BY) + OFFSET_X][(y >> SHIFT_BY) + OFFSET_Y][regionZ];
@@ -2235,25 +1028,19 @@ public class World {
         }
     }
 
-    /**
-     * Calculate the region Z index based on Z coordinate
-     * @param z The Z coordinate
-     * @return The region Z index (0-3)
-     */
     private static int calculateRegionZ(int z) {
-        // Handle values outside the normal range.
         if (z < WORLD_Z_MIN) {
-            return 0; // Bottom region.
+            return 0;
         }
         if (z > WORLD_Z_MAX) {
-            return REGIONS_Z - 1; // Top region.
+            return REGIONS_Z - 1;
         }
 
-        // Calculate the region Z index (0-based).
         return (z - WORLD_Z_MIN) / Z_REGION_SIZE;
     }
 
-    public static synchronized void disposeOutOfBoundsObject(WorldObject object) {
+    public static void disposeOutOfBoundsObject(WorldObject object) {
+        WorldPartition.checkOwner();
         if (object.isPlayer()) {
             object.asCreature().stopMove(object.asPlayer().getLastServerPosition());
         } else if (object.isSummon()) {
@@ -2294,6 +1081,56 @@ public class World {
             if (object.getWorldRegion() != null) {
                 object.getWorldRegion().removeVisibleObject(object);
             }
+        }
+    }
+
+    /**
+     * Returns true to stop the walk at that match. A {@link #walkVisible} visitor runs during the live walk and only
+     * updates state; a {@link #visitCandidates} visitor runs over collected candidates and may call out.
+     */
+    @FunctionalInterface
+    private interface MatchVisitor<T, S> {
+        boolean visit(S state, T match);
+    }
+
+    private static final class Scan {
+        private WorldObject reference;
+        private int range;
+        private WorldObject best;
+        private double bestDistance;
+        private int count;
+
+        private Scan start(WorldObject reference, int range) {
+            this.reference = reference;
+            this.range = range;
+            best = null;
+            bestDistance = Double.MAX_VALUE;
+            count = 0;
+            return this;
+        }
+
+        private boolean offerNearest(WorldObject candidate) {
+            final double distance = candidate.calculateDistance3D(reference);
+            if ((distance <= range) && (distance < bestDistance)) {
+                bestDistance = distance;
+                best = candidate;
+            }
+
+            return false;
+        }
+
+        // Reservoir sampling (Algorithm R, k = 1): uniform over every candidate offered, without collecting them.
+        private boolean offerRandom(WorldObject candidate) {
+            count++;
+            if (ClockBridge.random().nextInt(count) == 0) {
+                best = candidate;
+            }
+
+            return false;
+        }
+
+        private <T> T finish(Class<T> clazz) {
+            return clazz.cast(best);
         }
     }
 }

@@ -2961,8 +2961,8 @@ public abstract class Creature extends WorldObject {
                     } else {
                         final WorldRegion region = getWorldRegion();
                         if (region != null) {
-                            final boolean hasDoors = !region.getDoors().isEmpty();
-                            final boolean hasFences = !region.getFences().isEmpty();
+                            final boolean hasDoors = region.hasDoors();
+                            final boolean hasFences = region.hasFences();
                             if (hasDoors || hasFences) {
                                 final double angle = LocationUtil.convertHeadingToDegree(getHeading());
                                 final double radian = Math.toRadians(angle);

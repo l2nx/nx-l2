@@ -66,7 +66,7 @@ class CustomMailManagerTest {
         when(receiver.isPlayer()).thenReturn(true);
         when(receiver.asPlayer()).thenReturn(receiver);
         when(receiver.isOnline()).thenReturn(true);
-        World.addObject(receiver);
+        WorldLoopExtension.runInPass(() -> World.addObject(receiver));
 
         mail = CustomMail.builder()
                 .id(7L)
@@ -78,7 +78,7 @@ class CustomMailManagerTest {
 
     @AfterEach
     void leaveWorld() {
-        World.removeObject(receiver);
+        WorldLoopExtension.runInPass(() -> World.removeObject(receiver));
         CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY = previousDelay;
     }
 

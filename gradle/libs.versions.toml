@@ -54,6 +54,7 @@ liquibase-core = { module = "org.liquibase:liquibase-core", version.ref = "liqui
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+mockito-core = { module = "org.mockito:mockito-core" }
 netty-codec-base = { module = "io.netty:netty-codec-base" }
 netty-handler = { module = "io.netty:netty-handler" }
 netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epoll" }

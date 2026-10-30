@@ -15,6 +15,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.identity.WireHandleAllocator;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.item.EtcItem;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -39,6 +40,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -78,7 +80,7 @@ class ItemManagerTest {
 
     @AfterEach
     void forgetItems() {
-        spawned.forEach(World::removeObject);
+        WorldLoopExtension.runInPass(() -> spawned.forEach(World::removeObject));
     }
 
     @Nested
@@ -94,7 +96,7 @@ class ItemManagerTest {
             assertThat(warehouse.getItems()).doesNotContain(token);
             assertThat(token.getCount()).isZero();
             assertThat(token.getItemLocation()).isEqualTo(ItemLocation.VOID);
-            assertThat(World.findObject(token.getObjectId())).isNull();
+            assertThat(findObject(token.getObjectId())).isNull();
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
         }
 
@@ -104,7 +106,7 @@ class ItemManagerTest {
 
             WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
-            assertThat(World.findObject(inTransit.getObjectId())).isSameAs(inTransit);
+            assertThat(findObject(inTransit.getObjectId())).isSameAs(inTransit);
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(inTransit.getObjectId()));
         }
 
@@ -116,7 +118,7 @@ class ItemManagerTest {
             WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
             assertThat(dropped.isSpawned()).isFalse();
-            assertThat(World.findObject(dropped.getObjectId())).isNull();
+            assertThat(findObject(dropped.getObjectId())).isNull();
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
         }
 
@@ -127,7 +129,7 @@ class ItemManagerTest {
             assertThatThrownBy(() -> manager.destroyItemsOfTemplate(EVENT_ITEM))
                     .isInstanceOf(IllegalStateException.class);
 
-            assertThat(World.findObject(token.getObjectId())).isSameAs(token);
+            assertThat(findObject(token.getObjectId())).isSameAs(token);
             verifyNoInteractions(items);
         }
     }
@@ -149,9 +151,15 @@ class ItemManagerTest {
         return table.getClan(clanId).getWarehouse();
     }
 
+    private static WorldObject findObject(int objectId) {
+        final AtomicReference<WorldObject> found = new AtomicReference<>();
+        WorldLoopExtension.runInPass(() -> found.set(World.findObject(objectId)));
+        return found.get();
+    }
+
     private Item item() {
         final Item item = new Item(registry.allocateTransient(), eventTemplate);
-        World.addObject(item);
+        WorldLoopExtension.runInPass(() -> World.addObject(item));
         spawned.add(item);
         return item;
     }

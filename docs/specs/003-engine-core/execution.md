@@ -268,16 +268,17 @@ shutdown hooks, and the server exits with code 1 so that its supervisor restarts
 
 A thread that is not the owner of a partition never reads or writes its mutable state. Two checks enforce it:
 
-- **Always on, in game state without locks.** Every public method of a migrated class (§7.2) that writes its state
-  or hands out one of its collections first checks that the calling thread owns the loop of the object: the world
-  partition in E6, the service loop for a party or clan once E9 moves them out. A violation throws at the caller,
+- **Always on, in game state without locks.** Every public method of a migrated class (§7.2), constructors and
+  `toString`/`equals`/`hashCode` aside, first checks that the calling thread owns the loop of the object: the world
+  partition in E6, the service loop for a party or clan once E9 moves them out. Reads are checked as well as writes:
+  a read of a plain collection while the owner writes it is a data race too. A violation throws at the caller,
   so the write does not happen, counts `l2nx.engine.ownership.violations` and logs the stack, at most once per call
   site and minute so a load run cannot flood the log. Without locks a missed second writer would corrupt state
   silently (duplicated or lost items); a failed task with a loud log is the lesser harm. This is the thread
   confinement check of the UI toolkits (Android `View.checkThread`, JavaFX `checkFxUserThread`); Netty's
   `inEventLoop()` is the same test, used there to hop threads instead of failing. The check is one reference
   comparison against `Thread.currentThread()`, a JIT intrinsic; its cost is measured by JMH. An ArchUnit rule
-  checks that every such method of a migrated class calls it.
+  checks that every public method of a migrated class calls it before any other call or field access.
 - **Debug only, on the loop's own hot path.** The loop's owner-only methods (timers, systems, deferred work) assert
   the owner with Java `assert`, enabled (`-ea`) in tests and local runs.
 
@@ -362,17 +363,35 @@ reads world state, which the cutover verifies for every legacy packet.
 With one writer the locks and concurrent collections of game state only cost time. They are removed class by
 class, each class a change of its own and in this order: `World` and `WorldRegion` (object registry, visibility),
 `Creature`, `EffectList`, `Player`, the item containers with `Inventory` and `Item`, `Party` and `Clan`. A class is
-migrated when its methods carry the ownership check, a load run shows no violation, and its `synchronized` methods
-and blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
-place).
+migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
+blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
+place). Done: `World` and `WorldRegion`. Their runs were the tests, a client run on the live world and a JMH A/B of
+the visibility paths (`WorldBenchmark`); the load-run check waits for the load harness to enter the world
+([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
+
+**Iteration without concurrent collections.** Legacy code removes and moves objects while it iterates them, which the
+weakly consistent iterators of `ConcurrentHashMap` tolerated and a plain collection does not (a JDK iterator throws
+`ConcurrentModificationException`, a fastutil one silently skips or repeats elements). So a migrated class hands out
+only read-only snapshots of its collections, and walks a live collection itself only when the loop body is a pure
+filter that calls nothing able to move an object; any walk that calls out (packets, AI, a consumer or a caller's
+predicate) runs over a copy. These copies go into reusable per-depth scratch buffers (`ScratchBuffers`: one list per
+nesting level, since a callback may query the world again), so they allocate nothing in a steady state; no standard
+library offers single-threaded scratch buffers, and Netty's `Recycler` pools objects per thread. Region sets are
+fastutil `ObjectArraySet`, a dense array whose copy is one `arraycopy`; adding and removing scan it, which happens
+only when an object enters or leaves a region. The visibility paths measured 7–48% faster than with
+`ConcurrentHashMap`. The target design is to defer membership changes to a sync point of the pass instead of copying
+([#122](https://github.com/l2nx/nx-l2/issues/122), E7): it changes the immediate-removal semantics legacy code
+relies on.
 
 A migrated class carries the annotation `@SingleWriter`, the one list both build checks read, so a lock cannot
-return: an ArchUnit rule over annotated classes (fields of concurrent collection types, `java.util.concurrent.atomic`
-and `java.util.concurrent.locks` types and executors, lock calls, and the ownership check of §7; a
-`ScheduledFuture` field holding a timer handle of §4 is allowed) and PMD 7 (7.5 or later) with
-`AvoidSynchronizedStatement` and `AvoidSynchronizedAtMethodLevel`, limited to annotated classes by the standard
-`violationSuppressXPath` property on both rule references (suppress unless an enclosing class has the annotation;
-`hasAnnotation` needs the auxiliary classpath, which the PMD Gradle plugin passes). ArchUnit sees a `synchronized` modifier but not a
+return: an ArchUnit rule over annotated classes (fields of any `java.util.concurrent` type, futures and
+synchronizers included, enums such as `TimeUnit` aside; `volatile` fields; creating or obtaining a concurrent
+object; `Collections.synchronized*` wrappers; lock calls; public non-final fields, whose writes cannot carry a
+check; and the ownership check of §7 as the first call; a `ScheduledFuture` field holding a timer handle of §4 is
+allowed) and PMD 7 (7.28.0, on the main sources of `:chronicles:high-five:server`) with
+`AvoidSynchronizedStatement` and `AvoidSynchronizedAtMethodLevel`, limited to annotated types by the standard
+`violationSuppressXPath` property on both rule references (suppress unless an enclosing class, interface, enum or
+record has the annotation; `hasAnnotation` needs the auxiliary classpath, which the PMD Gradle plugin passes). ArchUnit sees a `synchronized` modifier but not a
 `synchronized` block, which compiles to monitor instructions it does not import; PMD reads the source and covers
 both, so `synchronized` has one tool. The rest of the legacy locks (managers, scripts) go as E7 and E10 rework their
 code.

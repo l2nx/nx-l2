@@ -156,68 +156,62 @@ public class DoorData implements IXmlReader {
 
     public boolean checkIfDoorsBetween(
             int x, int y, int z, int tx, int ty, int tz, int instanceId, boolean doubleFaceCheck) {
-        final Collection<Door> doors;
         if (instanceId < 1) {
             final WorldRegion region = World.getRegion(x, y, z);
-            if (region != null) {
-                doors = region.getDoors();
-            } else {
-                doors = null;
-            }
-        } else {
-            final Instance instance = InstanceManager.getInstance().getInstance(instanceId);
-            if (instance != null) {
-                doors = instance.getDoors();
-            } else {
-                doors = null;
-            }
+            return (region != null)
+                    && region.anyDoor(door -> blocks(door, x, y, z, tx, ty, tz, instanceId, doubleFaceCheck));
         }
 
-        if ((doors == null) || doors.isEmpty()) {
+        final Instance instance = InstanceManager.getInstance().getInstance(instanceId);
+        if (instance == null) {
             return false;
         }
 
-        for (Door doorInst : doors) {
-            // Check dead and open.
-            if ((instanceId != doorInst.getInstanceId())
-                    || doorInst.isDead()
-                    || doorInst.isOpen()
-                    || !doorInst.checkCollision()
-                    || (doorInst.getX(0) == 0)) {
+        for (Door door : instance.getDoors()) {
+            if (blocks(door, x, y, z, tx, ty, tz, instanceId, doubleFaceCheck)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean blocks(
+            Door doorInst, int x, int y, int z, int tx, int ty, int tz, int instanceId, boolean doubleFaceCheck) {
+        if ((instanceId != doorInst.getInstanceId())
+                || doorInst.isDead()
+                || doorInst.isOpen()
+                || !doorInst.checkCollision()
+                || (doorInst.getX(0) == 0)) {
+            return false;
+        }
+
+        boolean intersectFace = false;
+        for (int i = 0; i < 4; i++) {
+            final int j = (i + 1) < 4 ? i + 1 : 0;
+
+            // Zero denominator: the segments are parallel.
+            final int denominator = ((ty - y) * (doorInst.getX(i) - doorInst.getX(j)))
+                    - ((tx - x) * (doorInst.getY(i) - doorInst.getY(j)));
+            if (denominator == 0) {
                 continue;
             }
 
-            boolean intersectFace = false;
-            for (int i = 0; i < 4; i++) {
-                final int j = (i + 1) < 4 ? i + 1 : 0;
+            // A multiplier outside [0, 1] means the segments don't intersect.
+            final float multiplier1 = (float) (((doorInst.getX(j) - doorInst.getX(i)) * (y - doorInst.getY(i)))
+                            - ((doorInst.getY(j) - doorInst.getY(i)) * (x - doorInst.getX(i))))
+                    / denominator;
+            final float multiplier2 =
+                    (float) (((tx - x) * (y - doorInst.getY(i))) - ((ty - y) * (x - doorInst.getX(i)))) / denominator;
+            if ((multiplier1 >= 0) && (multiplier1 <= 1) && (multiplier2 >= 0) && (multiplier2 <= 1)) {
+                final int intersectZ = Math.round(z + (multiplier1 * (tz - z)));
 
-                // Lower part of the multiplier fraction, if it is 0 we avoid an error and also know that the lines are
-                // parallel.
-                final int denominator = ((ty - y) * (doorInst.getX(i) - doorInst.getX(j)))
-                        - ((tx - x) * (doorInst.getY(i) - doorInst.getY(j)));
-                if (denominator == 0) {
-                    continue;
-                }
-
-                // Multipliers to the equations of the lines. If they are lower than 0 or bigger than 1, we know that
-                // segments don't intersect.
-                final float multiplier1 = (float) (((doorInst.getX(j) - doorInst.getX(i)) * (y - doorInst.getY(i)))
-                                - ((doorInst.getY(j) - doorInst.getY(i)) * (x - doorInst.getX(i))))
-                        / denominator;
-                final float multiplier2 =
-                        (float) (((tx - x) * (y - doorInst.getY(i))) - ((ty - y) * (x - doorInst.getX(i))))
-                                / denominator;
-                if ((multiplier1 >= 0) && (multiplier1 <= 1) && (multiplier2 >= 0) && (multiplier2 <= 1)) {
-                    final int intersectZ = Math.round(z + (multiplier1 * (tz - z)));
-
-                    // Now checking if the resulting point is between door's min and max z.
-                    if ((intersectZ > doorInst.getZMin()) && (intersectZ < doorInst.getZMax())) {
-                        if (!doubleFaceCheck || intersectFace) {
-                            return true;
-                        }
-
-                        intersectFace = true;
+                if ((intersectZ > doorInst.getZMin()) && (intersectZ < doorInst.getZMax())) {
+                    if (!doubleFaceCheck || intersectFace) {
+                        return true;
                     }
+
+                    intersectFace = true;
                 }
             }
         }

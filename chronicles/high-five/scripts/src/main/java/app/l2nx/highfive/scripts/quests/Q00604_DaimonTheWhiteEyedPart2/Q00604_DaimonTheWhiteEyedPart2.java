@@ -248,7 +248,7 @@ public class Q00604_DaimonTheWhiteEyedPart2 extends Quest {
     private static boolean isDaimonSpawned() {
         if (ClockBridge.wallMillis()
                 > GlobalVariablesManager.getInstance().getLong(DAIMON_THE_WHITE_EYED_RESPAWN_TIME, 0)) {
-            return World.getVisibleObjects().stream().anyMatch(object -> object.getId() == DAIMON_THE_WHITE_EYED);
+            return World.getNpc(DAIMON_THE_WHITE_EYED) != null;
         }
 
         return true;

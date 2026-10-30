@@ -61,8 +61,8 @@ public class FactionSystem extends Script {
         switch (event) {
             case "selectGoodFaction": {
                 if (FactionSystemConfig.FACTION_BALANCE_ONLINE_PLAYERS
-                        && (World.getAllGoodPlayers().size()
-                                >= (World.getAllEvilPlayers().size()
+                        && (World.getGoodPlayersCount()
+                                >= (World.getEvilPlayersCount()
                                         + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
                     final String htmltext = null;
                     final NpcHtmlMessage packet = new NpcHtmlMessage(npc.getObjectId());
@@ -95,8 +95,8 @@ public class FactionSystem extends Script {
             }
             case "selectEvilFaction": {
                 if (FactionSystemConfig.FACTION_BALANCE_ONLINE_PLAYERS
-                        && (World.getAllEvilPlayers().size()
-                                >= (World.getAllGoodPlayers().size()
+                        && (World.getEvilPlayersCount()
+                                >= (World.getGoodPlayersCount()
                                         + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
                     final String htmltext = null;
                     final NpcHtmlMessage packet = new NpcHtmlMessage(npc.getObjectId());

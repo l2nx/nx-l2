@@ -83,6 +83,8 @@ lists what is open.
 - [#117](https://github.com/l2nx/nx-l2/issues/117) Isolate and de-mock the Mobius batch tests
 - [#118](https://github.com/l2nx/nx-l2/issues/118) Bring specs and comments in line with the code
 - [#119](https://github.com/l2nx/nx-l2/issues/119) Add slice and domain-event to the glossary and settle term mismatches
+- [#121](https://github.com/l2nx/nx-l2/issues/121) GameServerTest openPort release test fails with BindException under parallel load
+- [#122](https://github.com/l2nx/nx-l2/issues/122) E7: defer world membership changes to a sync point instead of snapshots
 - [#123](https://github.com/l2nx/nx-l2/issues/123) Loop wakes up to 15 ms late on Windows and counts on-time timers as overdue
 - [#126](https://github.com/l2nx/nx-l2/issues/126) Default-locale case conversion breaks identifiers under a Turkish locale
 

@@ -28,7 +28,6 @@ import app.l2nx.highfive.entity.actor.enums.creature.FenceState;
 import app.l2nx.highfive.entity.actor.instance.Fence;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
@@ -116,64 +115,55 @@ public class FenceData implements IXmlReader {
 
     public boolean checkIfFenceBetween(int x, int y, int z, int tx, int ty, int tz, int instanceId) {
         final WorldRegion region = World.getRegion(x, y, z);
-        final Collection<Fence> fences = region != null ? region.getFences() : null;
-        if ((fences == null) || fences.isEmpty()) {
+        return (region != null) && region.anyFence(fence -> blocks(fence, x, y, z, tx, ty, tz, instanceId));
+    }
+
+    private boolean blocks(Fence fence, int x, int y, int z, int tx, int ty, int tz, int instanceId) {
+        if (!fence.getState().isGeodataEnabled()) {
             return false;
         }
 
-        for (Fence fence : fences) {
-            // Check if fence is geodata enabled.
-            if (!fence.getState().isGeodataEnabled()) {
-                continue;
-            }
-
-            // Check if fence is within the instance we search for.
-            if (fence.getInstanceId() != instanceId) {
-                continue;
-            }
-
-            final int xMin = fence.getXMin();
-            if ((x < xMin) && (tx < xMin)) {
-                continue;
-            }
-
-            final int xMax = fence.getXMax();
-            if ((x > xMax) && (tx > xMax)) {
-                continue;
-            }
-
-            final int yMin = fence.getYMin();
-            if ((y < yMin) && (ty < yMin)) {
-                continue;
-            }
-
-            final int yMax = fence.getYMax();
-            if ((y > yMax) && (ty > yMax)) {
-                continue;
-            }
-
-            if ((x > xMin)
-                    && (tx > xMin)
-                    && (x < xMax)
-                    && (tx < xMax)
-                    && (y > yMin)
-                    && (ty > yMin)
-                    && (y < yMax)
-                    && (ty < yMax)) {
-                continue;
-            }
-
-            if ((crossLinePart(xMin, yMin, xMax, yMin, x, y, tx, ty, xMin, yMin, xMax, yMax)
-                            || crossLinePart(xMax, yMin, xMax, yMax, x, y, tx, ty, xMin, yMin, xMax, yMax)
-                            || crossLinePart(xMax, yMax, xMin, yMax, x, y, tx, ty, xMin, yMin, xMax, yMax)
-                            || crossLinePart(xMin, yMax, xMin, yMin, x, y, tx, ty, xMin, yMin, xMax, yMax))
-                    && (z > (fence.getZ() - MAX_Z_DIFF))
-                    && (z < (fence.getZ() + MAX_Z_DIFF))) {
-                return true;
-            }
+        if (fence.getInstanceId() != instanceId) {
+            return false;
         }
 
-        return false;
+        final int xMin = fence.getXMin();
+        if ((x < xMin) && (tx < xMin)) {
+            return false;
+        }
+
+        final int xMax = fence.getXMax();
+        if ((x > xMax) && (tx > xMax)) {
+            return false;
+        }
+
+        final int yMin = fence.getYMin();
+        if ((y < yMin) && (ty < yMin)) {
+            return false;
+        }
+
+        final int yMax = fence.getYMax();
+        if ((y > yMax) && (ty > yMax)) {
+            return false;
+        }
+
+        if ((x > xMin)
+                && (tx > xMin)
+                && (x < xMax)
+                && (tx < xMax)
+                && (y > yMin)
+                && (ty > yMin)
+                && (y < yMax)
+                && (ty < yMax)) {
+            return false;
+        }
+
+        return (crossLinePart(xMin, yMin, xMax, yMin, x, y, tx, ty, xMin, yMin, xMax, yMax)
+                        || crossLinePart(xMax, yMin, xMax, yMax, x, y, tx, ty, xMin, yMin, xMax, yMax)
+                        || crossLinePart(xMax, yMax, xMin, yMax, x, y, tx, ty, xMin, yMin, xMax, yMax)
+                        || crossLinePart(xMin, yMax, xMin, yMin, x, y, tx, ty, xMin, yMin, xMax, yMax))
+                && (z > (fence.getZ() - MAX_Z_DIFF))
+                && (z < (fence.getZ() + MAX_Z_DIFF));
     }
 
     private boolean crossLinePart(

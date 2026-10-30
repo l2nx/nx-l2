@@ -86,7 +86,7 @@ public class AdminShutdown implements IAdminCommandHandler {
         final int m = t % 60;
         final LocalTime time = LocalTime.of(h, m);
         adminReply.setFile(activeChar, "data/html/admin/shutdown.htm");
-        adminReply.replace("%count%", String.valueOf(World.getPlayers().size()));
+        adminReply.replace("%count%", String.valueOf(World.getPlayersCount()));
         adminReply.replace(
                 "%used%",
                 String.valueOf(Runtime.getRuntime().totalMemory()

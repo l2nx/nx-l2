@@ -187,7 +187,6 @@ public class OfflineTraderTable {
                 }
             }
 
-            World.OFFLINE_TRADE_COUNT = nTraders;
             log.info("Loaded {} offline traders.", nTraders);
 
             if (!OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME) {
@@ -213,8 +212,6 @@ public class OfflineTraderTable {
     }
 
     public synchronized void removeTrader(int traderObjId) {
-        World.OFFLINE_TRADE_COUNT--;
-
         try {
             offlineTradeRepository.delete(traderObjId);
         } catch (DataAccessException e) {
@@ -338,8 +335,6 @@ public class OfflineTraderTable {
         if (!offlineMode(player)) {
             return false;
         }
-
-        World.OFFLINE_TRADE_COUNT++;
 
         final GameClient client = player.getClient();
         client.close(ServerClose.STATIC_PACKET);

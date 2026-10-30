@@ -83,7 +83,6 @@ public class AdminOnline implements IAdminCommandHandler {
             activeChar.sendSysMessage("Total count: " + total);
             activeChar.sendSysMessage("Total online: " + online);
             activeChar.sendSysMessage("Total offline: " + offline);
-            activeChar.sendSysMessage("Max connected: " + World.MAX_CONNECTED_COUNT);
             activeChar.sendSysMessage("Unique IPs: " + ips.size());
             activeChar.sendSysMessage("In peace zone: " + peace);
             activeChar.sendSysMessage("Not in peace zone: " + notPeace);

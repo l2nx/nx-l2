@@ -181,8 +181,8 @@ public class CharacterSelect extends ClientPacket {
                     if (FactionSystemConfig.FACTION_SYSTEM_ENABLED
                             && FactionSystemConfig.FACTION_BALANCE_ONLINE_PLAYERS) {
                         if (info.isGood()
-                                && (World.getAllGoodPlayers().size()
-                                        >= (World.getAllEvilPlayers().size()
+                                && (World.getGoodPlayersCount()
+                                        >= (World.getEvilPlayersCount()
                                                 + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
                             final NpcHtmlMessage msg = new NpcHtmlMessage();
                             msg.setFile(null, "data/html/mods/Faction/ExceededOnlineLimit.htm");
@@ -193,8 +193,8 @@ public class CharacterSelect extends ClientPacket {
                         }
 
                         if (info.isEvil()
-                                && (World.getAllEvilPlayers().size()
-                                        >= (World.getAllGoodPlayers().size()
+                                && (World.getEvilPlayersCount()
+                                        >= (World.getGoodPlayersCount()
                                                 + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
                             final NpcHtmlMessage msg = new NpcHtmlMessage();
                             msg.setFile(null, "data/html/mods/Faction/ExceededOnlineLimit.htm");

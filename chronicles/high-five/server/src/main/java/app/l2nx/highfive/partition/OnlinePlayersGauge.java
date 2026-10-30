@@ -24,7 +24,6 @@ class OnlinePlayersGauge {
     }
 
     void install(Loop world) {
-        world.addHook(
-                PassPhase.FLUSH, (loop, now) -> online = World.getPlayers().size());
+        world.addHook(PassPhase.FLUSH, (loop, now) -> online = World.getPlayersCount());
     }
 }

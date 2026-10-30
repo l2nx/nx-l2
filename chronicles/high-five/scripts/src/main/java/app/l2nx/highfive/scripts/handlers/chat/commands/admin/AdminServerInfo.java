@@ -113,7 +113,7 @@ public class AdminServerInfo implements IAdminCommandHandler {
     private int getPlayersCount(String type) {
         switch (type) {
             case "ALL": {
-                return World.getPlayers().size();
+                return World.getPlayersCount();
             }
             case "OFF_TRADE": {
                 int offlineCount = 0;

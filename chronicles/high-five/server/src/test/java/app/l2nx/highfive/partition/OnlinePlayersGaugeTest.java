@@ -12,7 +12,8 @@ import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-// World is static: tests adding players to it hold the world loop lock as this one does.
 @ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(WorldLoopExtension.LOCK)
@@ -43,7 +43,7 @@ class OnlinePlayersGaugeTest {
 
     @AfterEach
     void leaveWorld() {
-        World.removeObject(player);
+        WorldLoopExtension.runInPass(() -> World.removeObject(player));
     }
 
     private double actual() {
@@ -62,15 +62,22 @@ class OnlinePlayersGaugeTest {
     class Install {
         @Test
         void install_shouldPublishThePlayerCount_inTheFlushOfEveryPass() {
-            WorldLoopExtension.runInPass(() -> gauge.install(Loop.current()));
-            final int before = World.getPlayers().size();
-            assertThat(actual()).as("published by the installing pass").isEqualTo(before);
+            final AtomicInteger before = new AtomicInteger();
+            WorldLoopExtension.runInPass(() -> {
+                gauge.install(Loop.current());
+                before.set(World.getPlayers().size());
+            });
+            assertThat(actual()).as("published by the installing pass").isEqualTo(before.get());
 
-            World.addObject(player);
-            assertThat(actual()).as("between passes").isEqualTo(before);
-
-            WorldLoopExtension.passAfter(Duration.ZERO);
-            assertThat(actual()).as("after the next pass").isEqualTo(before + 1);
+            final AtomicReference<Double> beforeFlush = new AtomicReference<>();
+            WorldLoopExtension.runInPass(() -> {
+                World.addObject(player);
+                beforeFlush.set(actual());
+            });
+            assertThat(beforeFlush.get())
+                    .as("within the pass, before its flush")
+                    .isEqualTo(before.get());
+            assertThat(actual()).as("after the pass").isEqualTo(before.get() + 1);
         }
     }
 }
