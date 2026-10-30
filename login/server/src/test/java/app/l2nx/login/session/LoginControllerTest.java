@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.login.controller;
+package app.l2nx.login.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -15,15 +15,17 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.login.account.AccountInfo;
+import app.l2nx.login.account.AccountRepository;
 import app.l2nx.login.config.TestLoginProperties;
-import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.GameServerRepository;
+import app.l2nx.login.gameserver.GameServerTable;
+import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginKeys;
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.repository.AccountRepository;
-import app.l2nx.login.repository.GameServerRepository;
+import app.l2nx.login.session.model.LoginResult;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.File;
 import java.net.InetAddress;

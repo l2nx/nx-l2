@@ -24,15 +24,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.controller;
+package app.l2nx.login.session;
 
+import app.l2nx.login.account.AccountInfo;
+import app.l2nx.login.account.AccountRepository;
+import app.l2nx.login.account.AccountRepository.IpRule;
+import app.l2nx.login.account.PasswordHash;
 import app.l2nx.login.config.LoginProperties;
-import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.GameServerTable;
+import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.repository.AccountRepository;
-import app.l2nx.login.repository.AccountRepository.IpRule;
+import app.l2nx.login.session.model.LoginResult;
+import app.l2nx.login.session.model.ScrambledKeyPair;
+import app.l2nx.login.session.model.SessionKey;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.security.GeneralSecurityException;

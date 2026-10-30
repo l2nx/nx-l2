@@ -7,8 +7,8 @@ package app.l2nx.login.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import app.l2nx.login.repository.GameServerRepository;
-import app.l2nx.login.repository.GameServerRepository.StoredGameServer;
+import app.l2nx.login.gameserver.GameServerRepository;
+import app.l2nx.login.gameserver.GameServerRepository.StoredGameServer;
 import java.security.SecureRandom;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;

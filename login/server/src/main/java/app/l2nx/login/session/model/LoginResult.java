@@ -1,8 +1,4 @@
 /*
- * SPDX-FileCopyrightText: 2026 L2NX contributors
- * SPDX-License-Identifier: MIT
- */
-/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,30 +20,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.controller;
+package app.l2nx.login.session.model;
 
-import app.l2nx.protocol.login.c621.crypt.ScrambledModulus;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.interfaces.RSAPublicKey;
-import lombok.Getter;
-
-public class ScrambledKeyPair {
-    private final KeyPair pair;
-
-    @Getter
-    private final byte[] scrambledModulus;
-
-    public ScrambledKeyPair(KeyPair pair) {
-        this.pair = pair;
-        scrambledModulus = ScrambledModulus.scramble(((RSAPublicKey) this.pair.getPublic()).getModulus());
-    }
-
-    public Key getPrivateKey() {
-        return pair.getPrivate();
-    }
-
-    public Key getPublicKey() {
-        return pair.getPublic();
-    }
+public enum LoginResult {
+    INVALID_PASSWORD,
+    ACCOUNT_BANNED,
+    ALREADY_ON_LS,
+    ALREADY_ON_GS,
+    AUTH_SUCCESS
 }

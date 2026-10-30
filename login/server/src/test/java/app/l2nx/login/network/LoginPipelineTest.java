@@ -6,10 +6,10 @@ package app.l2nx.login.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
+import app.l2nx.login.session.LoginController;
+import app.l2nx.login.session.model.ScrambledKeyPair;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.PipelineNames;

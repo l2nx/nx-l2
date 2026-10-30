@@ -27,8 +27,8 @@
 package app.l2nx.login.protocol.c621;
 
 import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
-import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.GameServerTable;
+import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList.Characters;

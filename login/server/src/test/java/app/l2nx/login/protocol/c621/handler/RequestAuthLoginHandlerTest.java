@@ -14,13 +14,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.LoginServer;
+import app.l2nx.login.account.AccountInfo;
 import app.l2nx.login.config.LoginProperties;
-import app.l2nx.login.controller.AccountInfo;
-import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.controller.LoginResult;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.session.LoginController;
+import app.l2nx.login.session.model.LoginResult;
 import app.l2nx.protocol.login.c621.clientpackets.RequestAuthLogin;
 import app.l2nx.protocol.login.c621.crypt.Credentials;
 import app.l2nx.protocol.login.c621.crypt.Credentials.Layout;

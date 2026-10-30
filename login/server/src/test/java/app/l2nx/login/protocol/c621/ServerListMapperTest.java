@@ -10,11 +10,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.config.TestLoginProperties;
-import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.GameServerRepository;
+import app.l2nx.login.gameserver.GameServerTable;
+import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.repository.GameServerRepository;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList.Server;
 import io.netty.buffer.ByteBuf;

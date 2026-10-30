@@ -20,17 +20,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.data;
+package app.l2nx.login.gameserver;
 
 import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.config.LoginProperties;
+import app.l2nx.login.gameserver.GameServerRepository.StoredGameServer;
+import app.l2nx.login.gameserver.model.Subnet;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.repository.GameServerRepository;
-import app.l2nx.login.repository.GameServerRepository.StoredGameServer;
-import app.l2nx.login.util.Subnet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

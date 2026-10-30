@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.login.data;
+package app.l2nx.login.gameserver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -12,10 +12,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.config.TestLoginProperties;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.GameServerRepository.StoredGameServer;
+import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.repository.GameServerRepository;
-import app.l2nx.login.repository.GameServerRepository.StoredGameServer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,7 +93,7 @@ class GameServerTableTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @MethodSource("app.l2nx.login.data.GameServerTableTest#hexIds")
+        @MethodSource("app.l2nx.login.gameserver.GameServerTableTest#hexIds")
         void load_shouldKeepTheStoredHexIdByteForByte(String name, byte[] hexId) {
             final GameServerRepository repository = mock(GameServerRepository.class);
             when(repository.findAll())
@@ -112,7 +111,7 @@ class GameServerTableTest {
     @Nested
     class RegisterServerOnDb {
         @ParameterizedTest(name = "{0}")
-        @MethodSource("app.l2nx.login.data.GameServerTableTest#hexIds")
+        @MethodSource("app.l2nx.login.gameserver.GameServerTableTest#hexIds")
         void registerServerOnDB_shouldStoreTheHexIdByteForByte(String name, byte[] hexId) {
             final GameServerRepository repository = mock(GameServerRepository.class);
             final GameServerTable table =

@@ -7,9 +7,9 @@ package app.l2nx.login.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import app.l2nx.login.controller.AccountInfo;
-import app.l2nx.login.repository.AccountRepository;
-import app.l2nx.login.repository.AccountRepository.IpRule;
+import app.l2nx.login.account.AccountInfo;
+import app.l2nx.login.account.AccountRepository;
+import app.l2nx.login.account.AccountRepository.IpRule;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;

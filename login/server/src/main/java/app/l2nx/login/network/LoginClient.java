@@ -26,12 +26,12 @@
  */
 package app.l2nx.login.network;
 
-import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.ConnectionState;
 import app.l2nx.login.protocol.c621.OutgoingLoginPacket;
 import app.l2nx.login.protocol.c621.ServerListMapper;
+import app.l2nx.login.session.LoginController;
+import app.l2nx.login.session.model.SessionKey;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.OutboundQueue;

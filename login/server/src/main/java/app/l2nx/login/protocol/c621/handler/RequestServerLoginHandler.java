@@ -28,9 +28,9 @@ package app.l2nx.login.protocol.c621.handler;
 
 import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.LoginServer;
-import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.session.LoginController;
+import app.l2nx.login.session.model.SessionKey;
 import app.l2nx.protocol.login.c621.clientpackets.RequestServerLogin;
 import app.l2nx.protocol.login.c621.serverpackets.PlayOk;
 import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
