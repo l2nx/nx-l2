@@ -31,6 +31,7 @@ public record LoginProperties(
         @NotNull @Valid Client client,
         @NotNull @Valid GameServer gameServer,
         @NotNull @Valid Ban ban,
+        @NotNull @Valid Password password,
         @NotNull @Valid ScheduledRestart scheduledRestart,
         boolean showLicence,
         boolean autoCreateAccounts,
@@ -71,6 +72,9 @@ public record LoginProperties(
 
             @NotNull @DurationMin(nanos = 0) @DurationUnit(ChronoUnit.SECONDS)
             Duration duration) {}
+
+    @Builder(toBuilder = true)
+    public record Password(@Positive int maxConcurrentHashes) {}
 
     @Builder(toBuilder = true)
     public record ScheduledRestart(

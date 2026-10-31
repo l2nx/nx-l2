@@ -37,6 +37,7 @@ class LoginPropertiesTest {
                     "l2nx.login.ban.failed-logins=0",
                     "l2nx.login.ban.failed-logins-window=0",
                     "l2nx.login.ban.duration=-1s",
+                    "l2nx.login.password.max-concurrent-hashes=0",
                     "l2nx.login.scheduled-restart.delay=0"
                 })
         void bind_shouldFailStartup_whenValueIsInvalid(String property) {

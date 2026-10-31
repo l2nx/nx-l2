@@ -7,6 +7,8 @@ package app.l2nx.login.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,7 +16,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class PasswordEncoderConfigurationTest {
-    private static final PasswordEncoder ENCODER = new PasswordEncoderConfiguration().passwordEncoder();
+    private static final PasswordEncoder ENCODER = new PasswordEncoderConfiguration()
+            .passwordEncoder(TestLoginProperties.create(new File(".")), new SimpleMeterRegistry());
 
     @Nested
     class Encode {

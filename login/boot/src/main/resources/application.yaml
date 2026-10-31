@@ -39,11 +39,13 @@ l2nx:
     game-server:
       accept-new: true
     ban:
-      # Failed logins from one address that ban it, counted until failed-logins-window passes without a failure.
       failed-logins: 5
       # A number without a unit is seconds.
       failed-logins-window: 15m
       duration: 15m
+    password:
+      # Each Argon2id hash holds about 16.6 MiB of heap; 4 take 66 MiB of the -Xmx256m heap, so raise it with the heap.
+      max-concurrent-hashes: 4
     scheduled-restart:
       enabled: false
       # A number without a unit is hours.

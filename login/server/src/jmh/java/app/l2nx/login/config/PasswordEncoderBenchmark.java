@@ -32,7 +32,7 @@ public class PasswordEncoderBenchmark {
 
     @Setup
     public void setUp() {
-        encoder = new PasswordEncoderConfiguration().passwordEncoder();
+        encoder = PasswordEncoderConfiguration.argon2();
         stored = encoder.encode(PASSWORD);
     }
 

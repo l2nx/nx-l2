@@ -363,9 +363,13 @@ Packets not yet moved to ports pass through the `p267` adapter as they are:
   with the stored hash in Java and replaces the hash only if it is still the one it read.
   - Cost, measured with JMH on a 6-core desktop CPU with 12 hardware threads: about 18 ms and 16.6 MiB allocated per
     hash on one thread, about 165 hashes/s on 12 threads.
-  - Memory: a hash never blocks its virtual thread, so at most one hash runs per carrier thread (one per available
-    processor, within `max-concurrent-tasks`). A burst of logins holds about 16.6 MiB of heap per concurrent hash,
-    which the login server's heap must leave room for; the distribution starts with `-Xmx256m`.
+  - Memory: a hash holds about 16.6 MiB of heap while it runs and never unmounts its virtual thread, so unbounded a
+    burst of logins would run one per carrier thread and need heap in proportion to the core count. The encoder bean
+    wraps the Argon2id encoder in a fair semaphore of `l2nx.login.password.max-concurrent-hashes` permits (default 4),
+    taken by `encode` and `matches`, the anti-enumeration hash included; `upgradeEncoding` only parses the stored hash
+    and takes none. Callers wait on their virtual thread: the login lane or the GS-link stream lane. Worst case
+    4 × 16.6 MiB ≈ 66 MiB of the distribution's `-Xmx256m`; the key and the heap are raised together. The wait is the
+    timer `l2nx.login.password.wait`, the waiting hashes the gauge `l2nx.login.password.queued` (§11).
 - **Codecs and handlers:** the records, the frame cipher and the credentials block are `protocols/login/c621`
   (§8 Wire codecs); `login/server` holds a handler per client record, which does what the packet means (RSA
   decrypt and account check for `RequestAuthLogin`), and sends server records. The login server has no ports or
@@ -507,6 +511,9 @@ The blocking executors of the login (§9) and of the session drain (§5) publish
 wait for a slot) and the gauges `executor.active`, `executor.queued` and `executor.pool.max`. The gauges read the
 semaphore, since Micrometer cannot read a `ThreadPerTaskExecutor` without `--add-opens`; closing the executor removes
 all five.
+
+The login's password encoder (§9) publishes `l2nx.login.password.wait`, a timer of the wait for a hash slot, and
+`l2nx.login.password.queued`, a gauge of the hashes waiting for one.
 
 The GS-link has the standard gRPC observations of Spring Boot (`grpc.server`, `grpc.client`) and the gRPC health
 service.

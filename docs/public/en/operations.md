@@ -46,11 +46,13 @@ within `l2nx.login.ban.failed-logins-window` of the previous one (default `15m`)
 starts the count over.
 
 Account passwords are stored as Argon2id hashes (16 MiB of memory, 2 iterations). On a 6-core desktop CPU one hash
-takes about 18 ms of one core and allocates about 16.6 MiB, and 12 threads reach about 165 hashes per second. The
-login server runs at most one hash per available processor at a time (and no more than `max-concurrent-tasks`), so a
-burst of logins holds about 16.6 MiB of heap for each hash running at once. The start script sets `-Xmx256m`; on a
-machine or container with many processors, raise the heap so it has room for 16.6 MiB per processor on top of the
-server's own use, for example with the environment variable `LOGIN_SERVER_OPTS=-Xmx512m`.
+takes about 18 ms of one core and allocates about 16.6 MiB, and 12 threads reach about 165 hashes per second. Each hash
+holds its 16.6 MiB of heap while it runs, so the login server runs at most `l2nx.login.password.max-concurrent-hashes`
+hashes at once (default `4`), whatever the number of processors; the others wait their turn. The default takes
+4 × 16.6 MiB ≈ 66 MiB of the `-Xmx256m` heap the start script sets, and the rest stays for the server itself. Raise
+the key and the heap together, by about 16.6 MiB of heap per extra hash, for example `max-concurrent-hashes: 12` with
+the environment variable `LOGIN_SERVER_OPTS=-Xmx512m`. The wait for a slot is the timer `l2nx.login.password.wait`, the
+hashes waiting the gauge `l2nx.login.password.queued`.
 
 Both servers take their network limits and timeouts from `l2nx.network.*`; a key marked "game server" applies to the
 game server only. The defaults suit a public server:

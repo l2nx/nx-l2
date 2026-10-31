@@ -28,6 +28,7 @@ public final class TestLoginProperties {
                         .failedLoginsWindow(Duration.ofMinutes(15))
                         .duration(Duration.ofMinutes(15))
                         .build())
+                .password(new LoginProperties.Password(2))
                 .scheduledRestart(scheduledRestart)
                 .showLicence(true)
                 .autoCreateAccounts(true)
