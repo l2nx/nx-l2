@@ -166,7 +166,6 @@ class UCArenaTest {
 
     private static void stubVariables(Player player) {
         final PlayerVariables variables = mock(PlayerVariables.class);
-        when(variables.getString(PlayerVariables.RESTORE_LOCATION, "")).thenReturn("");
         when(player.getVariables()).thenReturn(variables);
     }
 }

@@ -342,8 +342,8 @@ public class UCArena {
                         UCTeam.resPlayer(player);
                     }
 
-                    final String restore = player.getVariables().getString(PlayerVariables.RESTORE_LOCATION, "");
-                    if (!restore.isEmpty()) {
+                    final String restore = player.getVariables().getString(PlayerVariables.RESTORE_LOCATION, null);
+                    if (restore != null) {
                         final String[] split = restore.split(";");
                         player.teleToLocation(
                                 Integer.parseInt(split[0]),
