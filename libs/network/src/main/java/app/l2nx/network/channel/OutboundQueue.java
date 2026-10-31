@@ -129,6 +129,8 @@ public final class OutboundQueue extends ChannelDuplexHandler {
         return buffer == null ? 0 : buffer.totalPendingWriteBytes();
     }
 
+    // Never writes inline, even on the event loop: encoding the key packet switches inbound decryption on, and clear
+    // frames decoded later in the same channelRead must still pass in clear.
     private void schedule() {
         if (!role.compareAndSet(IDLE, SUBMITTED)) {
             return;
