@@ -17,7 +17,7 @@ import app.l2nx.highfive.repository.character.model.CharacterAccess;
 import app.l2nx.highfive.repository.character.model.CharacterClanAlly;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.character.model.CharacterRow;
-import app.l2nx.highfive.repository.character.model.CharacterSummary;
+import app.l2nx.highfive.repository.character.model.CharacterSummaryRow;
 import app.l2nx.highfive.repository.character.model.Faction;
 import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import java.sql.Timestamp;
@@ -749,9 +749,9 @@ class CharacterRepositoryTest extends RepositoryTest {
                 .build();
     }
 
-    private static CharacterSummary summary(
+    private static CharacterSummaryRow summary(
             int objectId, String name, OnlineStatus onlineStatus, int classId, int level) {
-        return CharacterSummary.builder()
+        return CharacterSummaryRow.builder()
                 .objectId(objectId)
                 .name(name)
                 .onlineStatus(onlineStatus)

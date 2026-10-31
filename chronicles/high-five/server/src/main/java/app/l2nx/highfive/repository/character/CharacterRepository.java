@@ -18,7 +18,7 @@ import app.l2nx.highfive.repository.character.model.CharacterAccess;
 import app.l2nx.highfive.repository.character.model.CharacterClanAlly;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.character.model.CharacterRow;
-import app.l2nx.highfive.repository.character.model.CharacterSummary;
+import app.l2nx.highfive.repository.character.model.CharacterSummaryRow;
 import app.l2nx.highfive.repository.character.model.Faction;
 import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import java.sql.ResultSet;
@@ -248,12 +248,12 @@ public class CharacterRepository {
                 .list();
     }
 
-    public Optional<CharacterSummary> findSummary(int objectId) {
+    public Optional<CharacterSummaryRow> findSummary(int objectId) {
         return registry.findId(objectId)
                 .flatMap(id -> jdbcClient
                         .sql(SELECT_SUMMARY)
                         .param(id)
-                        .query((rs, rowNum) -> CharacterSummary.builder()
+                        .query((rs, rowNum) -> CharacterSummaryRow.builder()
                                 .objectId(objectId)
                                 .name(rs.getString("name"))
                                 .onlineStatus(OnlineStatus.valueOf(rs.getString("online_status")))

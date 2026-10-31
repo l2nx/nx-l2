@@ -5,7 +5,7 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.repository.character.CharacterRepository;
-import app.l2nx.highfive.repository.character.model.CharacterSummary;
+import app.l2nx.highfive.repository.character.model.CharacterSummaryRow;
 import app.l2nx.highfive.repository.social.CharacterContactRepository;
 import app.l2nx.highfive.repository.social.CharacterRelationRepository;
 import app.l2nx.highfive.repository.social.model.RelationType;
@@ -58,7 +58,7 @@ public class CharacterRelationsManager {
         relationRepository.removeFriendship(characterId, friendId);
     }
 
-    public Optional<CharacterSummary> findFriendSummary(int friendId) {
+    public Optional<CharacterSummaryRow> findFriendSummary(int friendId) {
         return characterRepository.findSummary(friendId);
     }
 

@@ -7,4 +7,4 @@ package app.l2nx.highfive.repository.character.model;
 import lombok.Builder;
 
 @Builder(toBuilder = true)
-public record CharacterSummary(int objectId, String name, OnlineStatus onlineStatus, int classId, int level) {}
+public record CharacterSummaryRow(int objectId, String name, OnlineStatus onlineStatus, int classId, int level) {}
