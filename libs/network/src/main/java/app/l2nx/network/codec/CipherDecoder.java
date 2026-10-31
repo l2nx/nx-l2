@@ -6,7 +6,7 @@ package app.l2nx.network.codec;
 
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.metrics.model.Direction;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

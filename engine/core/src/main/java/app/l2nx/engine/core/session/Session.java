@@ -14,7 +14,7 @@ import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.network.channel.CloseReason;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.config.NetworkProperties;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.TimeMeter;

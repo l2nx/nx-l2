@@ -9,7 +9,7 @@ import app.l2nx.login.protocol.c621.LoginRoutes;
 import app.l2nx.login.protocol.c621.model.LoginRoute;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.channel.TailExceptionHandler;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;

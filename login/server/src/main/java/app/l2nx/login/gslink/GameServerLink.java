@@ -39,7 +39,7 @@ import app.l2nx.login.gameserver.model.Registration;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.SessionKey;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import com.google.protobuf.Timestamp;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;

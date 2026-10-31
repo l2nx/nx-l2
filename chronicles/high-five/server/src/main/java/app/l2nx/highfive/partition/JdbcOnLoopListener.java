@@ -5,7 +5,7 @@
 package app.l2nx.highfive.partition;
 
 import app.l2nx.engine.core.loop.Loop;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;

@@ -44,7 +44,7 @@ import app.l2nx.highfive.login.command.PasswordChangeResult;
 import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
 import app.l2nx.highfive.partition.WorldPartition;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.config.NetworkProperties;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;

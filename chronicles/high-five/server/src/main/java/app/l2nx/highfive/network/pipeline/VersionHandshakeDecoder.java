@@ -10,7 +10,7 @@ import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

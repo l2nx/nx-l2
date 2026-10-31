@@ -9,7 +9,7 @@ import app.l2nx.load.bot.intent.Login;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.network.channel.PipelineNames;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.codec.CipherDecoder;
 import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;

@@ -12,7 +12,7 @@ import app.l2nx.engine.core.loop.periodic.PeriodicSchedule;
 import app.l2nx.engine.core.loop.periodic.PeriodicSystem;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerQueue;
-import app.l2nx.network.channel.RateLimitedLog;
+import app.l2nx.logging.RateLimitedLog;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.invoke.VarHandle;
 import java.time.Duration;

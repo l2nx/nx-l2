@@ -26,7 +26,6 @@ import app.l2nx.engine.core.session.ContextBound;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.LegacyContext;
-import app.l2nx.network.codec.IncomingPacket;
 
 /**
  * A legacy route: read on the IO thread, run from the session queue in order with the commands.
