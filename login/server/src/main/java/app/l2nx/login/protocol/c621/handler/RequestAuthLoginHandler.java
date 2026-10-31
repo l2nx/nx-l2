@@ -32,7 +32,7 @@ import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.gameserver.model.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.ConnectionState;
+import app.l2nx.login.protocol.c621.model.ConnectionState;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.LoginResult;
 import app.l2nx.protocol.login.c621.clientpackets.RequestAuthLogin;

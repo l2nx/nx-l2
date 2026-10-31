@@ -16,6 +16,7 @@ import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
 import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
 import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
 import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
+import app.l2nx.login.protocol.c621.model.LoginRoute;
 import app.l2nx.protocol.login.c621.clientpackets.AuthGameGuard;
 import app.l2nx.protocol.login.c621.clientpackets.LoginClientOpcode;
 import io.netty.buffer.ByteBuf;

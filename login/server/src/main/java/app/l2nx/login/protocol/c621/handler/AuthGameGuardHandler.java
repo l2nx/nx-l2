@@ -28,7 +28,7 @@
 package app.l2nx.login.protocol.c621.handler;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.ConnectionState;
+import app.l2nx.login.protocol.c621.model.ConnectionState;
 import app.l2nx.protocol.login.c621.clientpackets.AuthGameGuard;
 import app.l2nx.protocol.login.c621.serverpackets.GGAuth;
 import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;

@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.login.account;
+package app.l2nx.login.config;
 
 import java.util.Map;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;

@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.config.TestLoginProperties;
+import app.l2nx.login.config.TestPasswordEncoders;
 import app.l2nx.login.session.AddressBans;
 import java.io.File;
 import java.time.Duration;

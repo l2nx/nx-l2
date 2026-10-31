@@ -2,9 +2,10 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.login.protocol.c621;
+package app.l2nx.login.protocol.c621.pipeline;
 
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.protocol.c621.model.ConnectionState;
 import app.l2nx.network.metrics.model.DropReason;
 import java.util.Set;
 import java.util.function.Consumer;

@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621;
+package app.l2nx.login.protocol.c621.model;
 
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.network.codec.PacketDecodeException;
@@ -52,7 +52,7 @@ public record LoginRoute(
     }
 
     /**
-     * Decodes whatever the connection state; the state is checked on the lane ({@link LanePacket}).
+     * Decodes whatever the connection state; the state is checked on the lane ({@code LanePacket}).
      *
      * @throws PacketDecodeException when the body is too short for the record
      */

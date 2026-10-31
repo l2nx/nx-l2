@@ -8,13 +8,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
 import app.l2nx.login.protocol.c621.LoginRoutes;
 import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
 import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
 import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
 import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
+import app.l2nx.login.protocol.c621.pipeline.LoginHandshakeHandler;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.ScrambledKeyPair;
 import app.l2nx.network.channel.CloseReason;

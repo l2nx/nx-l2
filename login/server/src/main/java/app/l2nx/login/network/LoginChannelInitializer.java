@@ -5,10 +5,10 @@
 package app.l2nx.login.network;
 
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
-import app.l2nx.login.protocol.c621.LoginPacketDecoder;
 import app.l2nx.login.protocol.c621.LoginRoutes;
 import app.l2nx.login.protocol.c621.ServerListMapper;
+import app.l2nx.login.protocol.c621.pipeline.LoginHandshakeHandler;
+import app.l2nx.login.protocol.c621.pipeline.LoginPacketDecoder;
 import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
