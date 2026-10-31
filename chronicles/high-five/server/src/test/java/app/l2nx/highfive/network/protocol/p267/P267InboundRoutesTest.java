@@ -6,10 +6,12 @@ package app.l2nx.highfive.network.protocol.p267;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.l2nx.highfive.login.command.Authenticate;
 import app.l2nx.highfive.network.protocol.OpcodeTable.Route;
 import app.l2nx.highfive.network.protocol.OpcodeTable.RouteKind;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPackets;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.ExClientPackets;
+import app.l2nx.highfive.session.GameContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,7 @@ class P267InboundRoutesTest {
                     .as("%s", packet)
                     .hasValueSatisfying(route -> {
                         assertThat(route.kind()).isEqualTo(expected);
-                        assertThat(route.preAuth()).isEqualTo(packet.getContext() == LegacyContext.LOGIN);
+                        assertThat(route.preAuth()).isEqualTo(packet.getContext() == GameContext.LOGIN);
                     });
         }
         for (ExClientPackets packet : ExClientPackets.values()) {
@@ -75,32 +77,40 @@ class P267InboundRoutesTest {
 
     @Test
     void packetsBeforeTheWorld_shouldBeTheLoginTheSelectionScreenAndTheLoadingQueries() {
-        final Map<String, LegacyContext> actual = new TreeMap<>();
+        final Map<String, GameContext> actual = new TreeMap<>();
         Stream.concat(
                         Arrays.stream(ClientPackets.values()).map(p -> Map.entry(p.name(), p.getContext())),
                         Arrays.stream(ExClientPackets.values()).map(p -> Map.entry(p.name(), p.getContext())))
-                .filter(entry -> entry.getValue() != LegacyContext.WORLD)
+                .filter(entry -> entry.getValue() != GameContext.WORLD)
                 .forEach(entry -> actual.put(entry.getKey(), entry.getValue()));
 
         assertThat(actual)
                 .containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
-                        Map.entry("AUTH_LOGIN", LegacyContext.LOGIN),
-                        Map.entry("LOGOUT", LegacyContext.ACCOUNT),
-                        Map.entry("REQUEST_HARDWARE_INFO", LegacyContext.ACCOUNT),
-                        Map.entry("NEW_CHARACTER", LegacyContext.LOBBY),
-                        Map.entry("CHARACTER_CREATE", LegacyContext.LOBBY),
-                        Map.entry("CHARACTER_DELETE", LegacyContext.LOBBY),
-                        Map.entry("CHARACTER_RESTORE", LegacyContext.LOBBY),
-                        Map.entry("CHARACTER_SELECT", LegacyContext.LOBBY),
-                        Map.entry("REQUEST_GOTO_LOBBY", LegacyContext.LOBBY),
-                        Map.entry("REQUEST_EX_2ND_PASSWORD_CHECK", LegacyContext.LOBBY),
-                        Map.entry("REQUEST_EX_2ND_PASSWORD_VERIFY", LegacyContext.LOBBY),
-                        Map.entry("REQUEST_EX_2ND_PASSWORD_REQ", LegacyContext.LOBBY),
-                        Map.entry("ENTER_WORLD", LegacyContext.CHARACTER),
-                        Map.entry("REQUEST_KEY_MAPPING", LegacyContext.CHARACTER),
-                        Map.entry("REQUEST_MANOR_LIST", LegacyContext.CHARACTER),
-                        Map.entry("REQUEST_ALL_FORTRESS_INFO", LegacyContext.CHARACTER),
-                        Map.entry("REQUEST_SKILL_COOL_TIME", LegacyContext.CHARACTER)));
+                        Map.entry("LOGOUT", GameContext.ACCOUNT),
+                        Map.entry("REQUEST_HARDWARE_INFO", GameContext.ACCOUNT),
+                        Map.entry("NEW_CHARACTER", GameContext.LOBBY),
+                        Map.entry("CHARACTER_CREATE", GameContext.LOBBY),
+                        Map.entry("CHARACTER_DELETE", GameContext.LOBBY),
+                        Map.entry("CHARACTER_RESTORE", GameContext.LOBBY),
+                        Map.entry("CHARACTER_SELECT", GameContext.LOBBY),
+                        Map.entry("REQUEST_GOTO_LOBBY", GameContext.LOBBY),
+                        Map.entry("REQUEST_EX_2ND_PASSWORD_CHECK", GameContext.LOBBY),
+                        Map.entry("REQUEST_EX_2ND_PASSWORD_VERIFY", GameContext.LOBBY),
+                        Map.entry("REQUEST_EX_2ND_PASSWORD_REQ", GameContext.LOBBY),
+                        Map.entry("ENTER_WORLD", GameContext.CHARACTER),
+                        Map.entry("REQUEST_KEY_MAPPING", GameContext.CHARACTER),
+                        Map.entry("REQUEST_MANOR_LIST", GameContext.CHARACTER),
+                        Map.entry("REQUEST_ALL_FORTRESS_INFO", GameContext.CHARACTER),
+                        Map.entry("REQUEST_SKILL_COOL_TIME", GameContext.CHARACTER)));
+    }
+
+    @Test
+    void authLogin_shouldBeTheOnlyCommandReadBeforeAuthentication() {
+        assertThat(ROUTES.stream().filter(Route::preAuth)).singleElement().satisfies(route -> {
+            assertThat(route.opcode()).isEqualTo(0x2B);
+            assertThat(route.kind()).isEqualTo(RouteKind.COMMAND);
+            assertThat(route.command()).isEqualTo(Authenticate.class);
+        });
     }
 
     private static Optional<Route> route(int opcode, int exOpcode) {

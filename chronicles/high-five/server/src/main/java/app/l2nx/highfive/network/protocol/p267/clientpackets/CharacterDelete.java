@@ -26,15 +26,15 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.character.CharacterService;
+import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.mechanics.events.Containers;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerDelete;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteFail;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteSuccess;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import app.l2nx.protocol.game.p267.serverpackets.reason.CharDeleteFailReason;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,12 +72,12 @@ public class CharacterDelete extends ClientPacket {
                 {
                     client.sendPacket(new CharDeleteSuccess());
                     if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_DELETE, Containers.Players())) {
-                        final CharacterInfoHolder charInfo = client.getCharSelection(charSlot);
+                        final CharacterSummary charInfo = client.getCharSelection(charSlot);
                         EventDispatcher.getInstance()
                                 .notifyEvent(
                                         OnPlayerDelete.builder()
-                                                .objectId(charInfo.getObjectId())
-                                                .name(charInfo.getName())
+                                                .objectId(charInfo.objectId())
+                                                .name(charInfo.name())
                                                 .client(client)
                                                 .build(),
                                         Containers.Players());
@@ -97,8 +97,6 @@ public class CharacterDelete extends ClientPacket {
             log.warn("{}: {}", getClass().getSimpleName(), e.getMessage());
         }
 
-        final CharSelectionInfo cl = new CharSelectionInfo(client, 0);
-        client.sendPacket(cl);
-        client.setCharSelection(cl.getCharInfo());
+        CharacterService.getInstance().showCharacterList(client, 0);
     }
 }

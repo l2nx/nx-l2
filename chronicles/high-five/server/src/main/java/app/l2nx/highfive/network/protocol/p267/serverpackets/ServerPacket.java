@@ -72,6 +72,10 @@ public abstract class ServerPacket extends OutgoingPacket<GameClient> implements
         return PAPERDOLL_ORDER;
     }
 
+    public static int[] paperdollOrder() {
+        return PAPERDOLL_ORDER.clone();
+    }
+
     private volatile boolean broadcast;
     private ByteBuf broadcastFrame;
 

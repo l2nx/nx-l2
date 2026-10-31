@@ -8,9 +8,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandHandler;
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
 import app.l2nx.engine.core.session.command.SessionAddressed;
 import app.l2nx.engine.core.session.command.SessionCommandHandler;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
+import app.l2nx.highfive.login.command.Authenticate;
 import app.l2nx.highfive.login.command.AuthenticationResult;
 import app.l2nx.highfive.login.command.KickAccount;
 import app.l2nx.highfive.login.command.LinkLost;
@@ -47,6 +49,7 @@ class P267AdapterCompletenessTest {
         assertThat(commands)
                 .as("the import sees the login-link commands")
                 .contains(
+                        Authenticate.class,
                         AuthenticationResult.class,
                         PasswordChangeResult.class,
                         KickAccount.class,
@@ -83,7 +86,8 @@ class P267AdapterCompletenessTest {
                 .allSatisfy(command -> assertThat(handlers.get(command))
                         .as("handlers of %s", command.getName())
                         .singleElement()
-                        .matches(SessionCommandHandler.class::isAssignableFrom));
+                        .matches(handler -> SessionCommandHandler.class.isAssignableFrom(handler)
+                                || ContextCommandHandler.class.isAssignableFrom(handler)));
     }
 
     @ArchTest

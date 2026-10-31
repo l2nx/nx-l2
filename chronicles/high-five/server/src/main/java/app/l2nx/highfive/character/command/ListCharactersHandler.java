@@ -24,21 +24,23 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.login.command;
+package app.l2nx.highfive.character.command;
 
 import app.l2nx.engine.core.session.Session;
 import app.l2nx.engine.core.session.command.SessionCommandHandler;
+import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class ListCharactersHandler implements SessionCommandHandler<ListCharacters> {
+    private final CharacterService characters;
+
     @Override
     public void handle(Session session, ListCharacters command) {
-        final GameClient client = GameClient.of(session);
-        final CharSelectionInfo selection = new CharSelectionInfo(client);
-        client.sendPacket(selection);
-        client.setCharSelection(selection.getCharInfo());
+        characters.showCharacterList(GameClient.of(session));
     }
 }

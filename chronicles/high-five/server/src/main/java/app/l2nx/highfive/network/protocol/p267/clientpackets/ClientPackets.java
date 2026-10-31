@@ -23,7 +23,7 @@
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.DevelopmentConfig;
-import app.l2nx.highfive.network.protocol.p267.LegacyContext;
+import app.l2nx.highfive.session.GameContext;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public enum ClientPackets {
-    LOGOUT(0x00, Logout::new, LegacyContext.ACCOUNT),
+    LOGOUT(0x00, Logout::new, GameContext.ACCOUNT),
     ATTACK(0x01, AttackRequest::new),
     REQUEST_START_PLEDGE_WAR(0x03, RequestStartPledgeWar::new),
     REQUEST_REPLY_START_PLEDGE(0x04, RequestReplyStartPledgeWar::new),
@@ -43,12 +43,12 @@ public enum ClientPackets {
     REQUEST_REPLY_SURRENDER_PLEDGE_WAR(0x08, RequestReplySurrenderPledgeWar::new),
     REQUEST_SET_PLEDGE_CREST(0x09, RequestSetPledgeCrest::new),
     REQUEST_GIVE_NICK_NAME(0x0B, RequestGiveNickName::new),
-    CHARACTER_CREATE(0x0C, CharacterCreate::new, LegacyContext.LOBBY),
-    CHARACTER_DELETE(0x0D, CharacterDelete::new, LegacyContext.LOBBY),
+    CHARACTER_CREATE(0x0C, CharacterCreate::new, GameContext.LOBBY),
+    CHARACTER_DELETE(0x0D, CharacterDelete::new, GameContext.LOBBY),
     MOVE_TO_LOCATION(0x0F, MoveToLocation::new),
-    ENTER_WORLD(0x11, EnterWorld::new, LegacyContext.CHARACTER),
-    CHARACTER_SELECT(0x12, CharacterSelect::new, LegacyContext.LOBBY),
-    NEW_CHARACTER(0x13, NewCharacter::new, LegacyContext.LOBBY),
+    ENTER_WORLD(0x11, EnterWorld::new, GameContext.CHARACTER),
+    CHARACTER_SELECT(0x12, CharacterSelect::new, GameContext.LOBBY),
+    NEW_CHARACTER(0x13, NewCharacter::new, GameContext.LOBBY),
     REQUEST_ITEM_LIST(0x14, RequestItemList::new),
     REQUEST_UN_EQUIP_ITEM(0x16, RequestUnEquipItem::new),
     REQUEST_DROP_ITEM(0x17, RequestDropItem::new),
@@ -64,7 +64,6 @@ public enum ClientPackets {
     REQUEST_ANSWER_JOIN_PLEDGE(0x27, RequestAnswerJoinPledge::new),
     REQUEST_WITHDRAWAL_PLEDGE(0x28, RequestWithdrawalPledge::new),
     REQUEST_OUST_PLEDGE_MEMBER(0x29, RequestOustPledgeMember::new),
-    AUTH_LOGIN(0x2B, AuthLogin::new, LegacyContext.LOGIN),
     REQUEST_GET_ITEM_FROM_PET(0x2C, RequestGetItemFromPet::new),
     REQUEST_ALLY_INFO(0x2E, RequestAllyInfo::new),
     REQUEST_CRYSTALLIZE_ITEM(0x2F, RequestCrystallizeItem::new),
@@ -126,7 +125,7 @@ public enum ClientPackets {
     REQUEST_ANSWER_FRIEND_INVITE(0x78, RequestAnswerFriendInvite::new),
     REQUEST_FRIEND_LIST(0x79, RequestFriendList::new),
     REQUEST_FRIEND_DEL(0x7A, RequestFriendDel::new),
-    CHARACTER_RESTORE(0x7B, CharacterRestore::new, LegacyContext.LOBBY),
+    CHARACTER_RESTORE(0x7B, CharacterRestore::new, GameContext.LOBBY),
     REQUEST_ACQUIRE_SKILL(0x7C, RequestAcquireSkill::new),
     REQUEST_RESTART_POINT(0x7D, RequestRestartPoint::new),
     REQUEST_GM_COMMAND(0x7E, RequestGMCommand::new),
@@ -160,7 +159,7 @@ public enum ClientPackets {
     SET_PRIVATE_STORE_MSG_BUY(0x9D, SetPrivateStoreMsgBuy::new),
     REQUEST_PRIVATE_STORE_SELL(0x9F, RequestPrivateStoreSell::new),
     SEND_TIME_CHECK_PACKET(0xA0, null),
-    REQUEST_SKILL_COOL_TIME(0xA6, RequestSkillCoolTime::new, LegacyContext.CHARACTER),
+    REQUEST_SKILL_COOL_TIME(0xA6, RequestSkillCoolTime::new, GameContext.CHARACTER),
     REQUEST_PACKAGE_SENDABLE_ITEM_LIST(0xA7, RequestPackageSendableItemList::new),
     REQUEST_PACKAGE_SEND(0xA8, RequestPackageSend::new),
     REQUEST_BLOCK(0xA9, RequestBlock::new),
@@ -208,13 +207,13 @@ public enum ClientPackets {
     private final boolean implemented;
 
     @Getter
-    private final LegacyContext context;
+    private final GameContext context;
 
     ClientPackets(int packetId, Supplier<ClientPacket> packetSupplier) {
-        this(packetId, packetSupplier, LegacyContext.WORLD);
+        this(packetId, packetSupplier, GameContext.WORLD);
     }
 
-    ClientPackets(int packetId, Supplier<ClientPacket> packetSupplier, LegacyContext context) {
+    ClientPackets(int packetId, Supplier<ClientPacket> packetSupplier, GameContext context) {
         // Packet id is an unsigned byte.
         if (packetId > 0xFF) {
             throw new IllegalArgumentException("Packet id must not be bigger than 0xFF");

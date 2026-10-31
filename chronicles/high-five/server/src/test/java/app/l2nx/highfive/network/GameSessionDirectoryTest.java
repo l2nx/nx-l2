@@ -12,9 +12,9 @@ import app.l2nx.engine.core.session.Session;
 import app.l2nx.engine.core.session.command.SessionAddress;
 import app.l2nx.highfive.login.FakeLoginPort;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
+import app.l2nx.highfive.session.SessionKey;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -79,7 +79,7 @@ class GameSessionDirectoryTest {
         }
 
         @Test
-        void find_shouldReturnNothing_afterTheSessionClosed() {
+        void find_shouldReturnNothing_whenTheSessionClosed() {
             final UUID requestId = accounts.awaitAuthentication("alice", client, KEY);
 
             accounts.cancelRequests(client);

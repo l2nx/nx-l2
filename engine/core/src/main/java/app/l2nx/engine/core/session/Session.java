@@ -12,6 +12,7 @@ import app.l2nx.engine.core.loop.inbox.InputSource;
 import app.l2nx.engine.core.session.command.CoalescableCommand;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
+import app.l2nx.engine.core.session.command.CommandDispatcher.Dispatch;
 import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.channel.CloseReason;
@@ -29,9 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jctools.queues.atomic.SpscAtomicArrayQueue;
 
 /**
- * The IO thread is the single producer, one drain at a time the single consumer. A {@link ContextBound} item's context
- * is checked when it executes, not when offered. Once closed, only the pending close counts as input, so a close
- * racing an idle session still gets its drain.
+ * The IO thread is the single producer, one drain at a time the single consumer. A {@link ContextBound} item's context,
+ * and the context a command's handler takes, are checked when the item executes, not when offered. Once closed, only
+ * the pending close counts as input, so a close racing an idle session still gets its drain.
  */
 @Slf4j
 public final class Session implements InputSource {
@@ -304,7 +305,7 @@ public final class Session implements InputSource {
         }
     }
 
-    /** The pool closed before an accepted drain started: queued items are not drained and the close may stay unhandled. */
+    /** Queued items are not drained and the close may stay unhandled. */
     void drainAbandoned() {
         log.warn(
                 "Session {} ({}, {} queued) lost its drain: the pool closed before the drain started",
@@ -322,11 +323,14 @@ public final class Session implements InputSource {
     private void run(Object item) {
         try {
             if ((item instanceof ContextBound bound) && !bound.hasContext()) {
-                reject(item, bound);
+                reject(item, bound.requiredContext());
                 return;
             }
             if (item instanceof Command command) {
-                metrics.command(command, () -> dispatcher.dispatch(this, command));
+                switch (dispatcher.resolve(this, command)) {
+                    case Dispatch.Ready ready -> metrics.command(command, ready.handling());
+                    case Dispatch.Rejected rejected -> reject(item, rejected.resolver());
+                }
             } else {
                 metrics.legacyPacket((Runnable) item);
             }
@@ -337,14 +341,14 @@ public final class Session implements InputSource {
     }
 
     // An input racing the close is discarded like the rest of the queue, uncounted.
-    private void reject(Object item, ContextBound bound) {
+    private void reject(Object item, String context) {
         if (closed.get()) {
             return;
         }
-        metrics.rejected(item, bound.requiredContext());
+        metrics.rejected(item, context);
         if (log.isDebugEnabled()
                 && RATE.tryAcquire("rejected-" + item.getClass().getName())) {
-            log.debug("Session {} rejected {}: needs {}", id, item.getClass().getName(), bound.requiredContext());
+            log.debug("Session {} rejected {}: needs {}", id, item.getClass().getName(), context);
         }
     }
 

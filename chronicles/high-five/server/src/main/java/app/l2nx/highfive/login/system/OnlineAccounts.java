@@ -27,8 +27,8 @@
 package app.l2nx.highfive.login.system;
 
 import app.l2nx.engine.core.identity.EntityIds;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.session.SessionKey;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

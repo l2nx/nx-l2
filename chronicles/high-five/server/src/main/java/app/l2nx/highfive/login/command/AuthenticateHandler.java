@@ -20,52 +20,35 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.network.GameClient;
-import java.util.Locale;
+import app.l2nx.highfive.session.GameContexts;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-public class AuthLogin extends ClientPacket {
-    private String loginName;
-    private int playKey1;
-    private int playKey2;
-    private int loginKey1;
-    private int loginKey2;
+@Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class AuthenticateHandler implements ContextCommandHandler<GameClient, Authenticate> {
+    private final LoginService loginService;
 
     @Override
-    protected void readImpl() {
-        loginName = readString().toLowerCase(Locale.ROOT);
-        playKey2 = readInt();
-        playKey1 = readInt();
-        loginKey1 = readInt();
-        loginKey2 = readInt();
+    public ContextResolver<GameClient> context() {
+        return GameContexts.LOGIN;
     }
 
     @Override
-    protected void runImpl() {
-        final GameClient client = getClient();
-        if (loginName.isEmpty() || !client.isProtocolOk()) {
+    public void handle(GameClient client, Authenticate command) {
+        // Blocks a duplicate login while the login server has not answered or its link is down.
+        if (!loginService.reserveLogin(command.login(), client)) {
             client.closeNow();
             return;
         }
-
-        if (client.getAccountName() == null) {
-            // Blocks a duplicate login while the login-server socket is down or this packet is not yet sent.
-            if (LoginService.getInstance().reserveLogin(loginName, client)) {
-                client.setAccountName(loginName);
-                final SessionKey key = SessionKey.builder()
-                        .loginOk1(loginKey1)
-                        .loginOk2(loginKey2)
-                        .playOk1(playKey1)
-                        .playOk2(playKey2)
-                        .build();
-
-                LoginService.getInstance().authenticate(loginName, client, key);
-            } else {
-                client.close(null);
-            }
-        }
+        client.setAccountName(command.login());
+        loginService.authenticate(command.login(), client, command.key());
     }
 }

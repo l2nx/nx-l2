@@ -18,6 +18,9 @@ public final class CommandRegistry {
         final Map<Class<? extends Command>, CommandHandler<?>> byType = new HashMap<>();
         for (CommandHandler<?> handler : handlers) {
             final Class<? extends Command> type = commandType(handler);
+            if (handler instanceof ContextCommandHandler<?, ?> contextual) {
+                checkContext(contextual, type);
+            }
             final CommandHandler<?> previous = byType.putIfAbsent(type, handler);
             if (previous != null) {
                 throw new IllegalStateException("Two handlers for " + type.getName() + ": "
@@ -38,6 +41,17 @@ public final class CommandRegistry {
             throw new IllegalStateException("No handler for " + type.getName());
         }
         return handler;
+    }
+
+    private static void checkContext(ContextCommandHandler<?, ?> handler, Class<? extends Command> type) {
+        if (SessionAddressed.class.isAssignableFrom(type)) {
+            throw new IllegalStateException(handler.getClass().getName() + " takes a game context, but "
+                    + type.getName() + " is addressed by the server, which carries none");
+        }
+        if (handler.context() == null) {
+            throw new IllegalStateException(
+                    handler.getClass().getName() + " takes a game context but names no resolver");
+        }
     }
 
     // Dispatch looks a command up by its exact class, so a handler of an interface or abstract type would never run.

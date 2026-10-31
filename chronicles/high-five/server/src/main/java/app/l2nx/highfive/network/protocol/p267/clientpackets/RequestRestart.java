@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
 import app.l2nx.highfive.data.xml.MapRegionData;
@@ -42,7 +43,6 @@ import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.RestartResponse;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import lombok.extern.slf4j.Slf4j;
@@ -155,8 +155,6 @@ public class RequestRestart extends ClientPacket {
         client.sendPacket(RestartResponse.valueOf(true));
 
         // Send character list.
-        final CharSelectionInfo cl = new CharSelectionInfo(client);
-        client.sendPacket(cl);
-        client.setCharSelection(cl.getCharInfo());
+        CharacterService.getInstance().showCharacterList(client);
     }
 }

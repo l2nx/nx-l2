@@ -28,14 +28,16 @@ import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.engine.core.session.command.CommandRegistry;
 import app.l2nx.engine.core.session.command.SessionAddress;
 import app.l2nx.engine.core.session.command.SessionCommandHandler;
+import app.l2nx.engine.core.session.outbound.ClientPort;
+import app.l2nx.highfive.character.command.ListCharacters;
 import app.l2nx.highfive.login.FakeLoginPort;
 import app.l2nx.highfive.login.FakeLoginPort.Call;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
+import app.l2nx.highfive.login.view.AuthenticationFailed;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail;
+import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.metrics.NetworkMetrics;
@@ -65,23 +67,31 @@ class AuthenticationResultHandlerTest {
     private final AuthenticationResultHandler handler = new AuthenticationResultHandler(port, loginService, accounts);
     private final GameClient client = mock(GameClient.class);
     private final Session session = mock(Session.class);
+    private final ClientPort clientPort = mock(ClientPort.class);
 
     AuthenticationResultHandlerTest() {
         when(session.attachment(GameClient.class)).thenReturn(client);
+        when(client.port()).thenReturn(clientPort);
     }
 
-    @Test
-    void address_shouldBeTheRequest() {
-        final UUID requestId = UUID.randomUUID();
+    @Nested
+    class Address {
+        @Test
+        void address_shouldBeTheRequest() {
+            final UUID requestId = UUID.randomUUID();
 
-        assertThat(AuthenticationResult.builder().requestId(requestId).build().address())
-                .isEqualTo(new SessionAddress.Request(requestId));
+            assertThat(AuthenticationResult.builder()
+                            .requestId(requestId)
+                            .build()
+                            .address())
+                    .isEqualTo(new SessionAddress.Request(requestId));
+        }
     }
 
     @Nested
     class Handle {
         @Test
-        void handle_shouldEnterTheAccount_andListTheCharactersAfterAuthenticating_whenAccepted() {
+        void handle_shouldEnterTheAccountAndListTheCharactersAfterAuthenticating_whenAccepted() {
             final UUID accountId = UUID.randomUUID();
             accounts.reserve("alice", client);
             final UUID requestId = accounts.awaitAuthentication("alice", client, KEY);
@@ -105,7 +115,7 @@ class AuthenticationResultHandlerTest {
         }
 
         @Test
-        void handle_shouldCloseTheClient_andFreeItsLogin_whenRefused() {
+        void handle_shouldCloseTheClientAndFreeItsLogin_whenRefused() {
             accounts.reserve("alice", client);
             final UUID requestId = accounts.awaitAuthentication("alice", client, KEY);
 
@@ -116,7 +126,8 @@ class AuthenticationResultHandlerTest {
                             .accepted(false)
                             .build());
 
-            verify(client).close(any(LoginFail.class));
+            verify(clientPort).emitAndClose(AuthenticationFailed.INSTANCE);
+            verify(session, never()).offerInternal(any());
             verify(client).disconnect();
             assertThat(accounts.reserve("alice", client)).isTrue();
             assertThat(port.getCalls()).isEmpty();

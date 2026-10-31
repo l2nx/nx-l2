@@ -18,8 +18,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class P267Mappers {
-    private static final List<OutboundMapper<?>> MAPPERS =
-            List.of(new ActionCancelledMapper(), new MessageShownMapper());
+    private static final List<OutboundMapper<?>> MAPPERS = List.of(
+            new ActionCancelledMapper(),
+            new MessageShownMapper(),
+            new AuthenticationFailedMapper(),
+            new CharacterListShownMapper());
 
     private static final Set<Class<? extends ViewEvent>> DROPPED = Set.of();
 

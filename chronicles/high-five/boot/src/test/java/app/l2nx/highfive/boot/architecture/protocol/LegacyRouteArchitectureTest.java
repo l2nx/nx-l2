@@ -22,7 +22,7 @@ import com.tngtech.archunit.lang.ArchRule;
         packages = {"app.l2nx.highfive", "app.l2nx.engine"},
         importOptions = ImportOption.DoNotIncludeTests.class)
 class LegacyRouteArchitectureTest {
-    private static final int LEGACY_INBOUND_OPCODES = 274;
+    private static final int LEGACY_INBOUND_OPCODES = 273;
 
     @ArchTest
     static final ArchRule serverPacketReferences = freeze(LegacyRouteRules.CHRONICLE.serverPacketReferences());

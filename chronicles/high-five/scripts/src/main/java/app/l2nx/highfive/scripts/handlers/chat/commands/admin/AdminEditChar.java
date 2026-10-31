@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
@@ -380,6 +381,11 @@ public class AdminEditChar implements IAdminCommandHandler {
                 if ((target != null) && target.isPlayer()) {
                     player = target.asPlayer();
                 } else {
+                    return false;
+                }
+
+                if (val.isEmpty() || (val.length() > CharacterService.MAX_NAME_LENGTH)) {
+                    activeChar.sendSysMessage("A name has 1 to " + CharacterService.MAX_NAME_LENGTH + " characters.");
                     return false;
                 }
 

@@ -17,8 +17,6 @@ import app.l2nx.engine.core.session.command.CommandHandler;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaParameterizedType;
@@ -39,15 +37,15 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class SliceLayoutRules {
     public static final String CHRONICLE_ROOT = "app.l2nx.highfive";
-    static final List<String> MIGRATED = List.of("login", "movement", "partition", "message", "action");
+    static final List<String> MIGRATED = List.of("login", "movement", "partition", "message", "action", "character");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
 
     /**
      * Legacy connection classes migrated slices may still use until the network layer has client-connection ports;
      * the list may only shrink.
      */
-    static final DescribedPredicate<JavaClass> LEGACY_NETWORK_FACADES = JavaClass.Predicates.belongToAnyOf(
-            GameClient.class, Disconnection.class, CharSelectionInfo.class, LoginFail.class);
+    static final DescribedPredicate<JavaClass> LEGACY_NETWORK_FACADES =
+            JavaClass.Predicates.belongToAnyOf(GameClient.class, Disconnection.class);
 
     private static final List<String> SUBPACKAGES =
             List.of("command", "view", "event", "system", "model", "template", "repository");
@@ -302,6 +300,8 @@ public final class SliceLayoutRules {
                 .filter(type -> type.toErasure().isAssignableTo(CommandHandler.class))
                 .flatMap(type -> type.getActualTypeArguments().stream())
                 .map(JavaType::toErasure)
+                // A context handler names its context type before the command.
+                .filter(type -> type.isAssignableTo(Command.class))
                 .findFirst();
     }
 }

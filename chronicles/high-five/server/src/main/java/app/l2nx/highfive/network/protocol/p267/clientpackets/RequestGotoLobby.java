@@ -23,8 +23,8 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 
 /**
  * (ch)
@@ -37,6 +37,6 @@ public class RequestGotoLobby extends ClientPacket {
     @Override
     protected void runImpl() {
         final GameClient client = getClient();
-        client.sendPacket(new CharSelectionInfo(client));
+        CharacterService.getInstance().showCharacterList(client);
     }
 }

@@ -7,9 +7,9 @@ package app.l2nx.highfive.login.system;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.session.SessionKey;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -99,7 +99,7 @@ class OnlineAccountsTest {
     @Nested
     class LeaveAll {
         @Test
-        void leaveAll_shouldReturnEveryHeldAccount_andForgetThem() {
+        void leaveAll_shouldReturnEveryHeldAccountAndForgetThem() {
             final UUID first = UUID.randomUUID();
             final UUID second = UUID.randomUUID();
             accounts.enter(first, client);

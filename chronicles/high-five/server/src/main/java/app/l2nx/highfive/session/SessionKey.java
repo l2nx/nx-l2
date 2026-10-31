@@ -24,10 +24,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.login;
+package app.l2nx.highfive.session;
 
 import lombok.Builder;
 
-/** The key pairs the login server gave the client; the game server has the login server check them. */
 @Builder(toBuilder = true)
 public record SessionKey(int loginOk1, int loginOk2, int playOk1, int playOk2) {}

@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
@@ -48,7 +49,6 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelected;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
@@ -108,13 +108,13 @@ public class CharacterSelect extends ClientPacket {
                 // Should always be null.
                 // But if not then this is repeated packet and nothing should be done here.
                 if (client.getPlayer() == null) {
-                    final CharacterInfoHolder info = client.getCharSelection(charSlot);
+                    final CharacterSummary info = client.getCharSelection(charSlot);
                     if (info == null) {
                         return;
                     }
 
                     // Disconnect offline trader.
-                    final Player player = World.getPlayer(info.getObjectId());
+                    final Player player = World.getPlayer(info.objectId());
                     if (player != null) {
                         if (OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS && player.isAutoPlaying()) {
                             OfflinePlayTable.getInstance().removeOfflinePlay(player);
@@ -125,8 +125,7 @@ public class CharacterSelect extends ClientPacket {
 
                     // Banned?
                     if (PunishmentManager.getInstance()
-                                    .hasPunishment(
-                                            info.getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.BAN) //
+                                    .hasPunishment(info.objectId(), PunishmentAffect.CHARACTER, PunishmentType.BAN) //
                             || PunishmentManager.getInstance()
                                     .hasPunishment(
                                             client.getAccountId(), PunishmentAffect.ACCOUNT, PunishmentType.BAN) //
@@ -137,12 +136,12 @@ public class CharacterSelect extends ClientPacket {
                     }
 
                     // Selected character is banned (compatibility with previous versions).
-                    if (info.getAccessLevel() < 0) {
+                    if (info.accessLevel() < 0) {
                         client.close(ServerClose.STATIC_PACKET);
                         return;
                     }
 
-                    if (client.getCharSelection(charSlot).getAccessLevel() < 100) {
+                    if (client.getCharSelection(charSlot).accessLevel() < 100) {
                         if ((player != null)
                                 && player.hasPremiumStatus()
                                 && (DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP > 0)
@@ -180,7 +179,7 @@ public class CharacterSelect extends ClientPacket {
 
                     if (FactionSystemConfig.FACTION_SYSTEM_ENABLED
                             && FactionSystemConfig.FACTION_BALANCE_ONLINE_PLAYERS) {
-                        if (info.isGood()
+                        if (info.good()
                                 && (World.getGoodPlayersCount()
                                         >= (World.getEvilPlayersCount()
                                                 + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
@@ -192,7 +191,7 @@ public class CharacterSelect extends ClientPacket {
                             return;
                         }
 
-                        if (info.isEvil()
+                        if (info.evil()
                                 && (World.getEvilPlayersCount()
                                         >= (World.getGoodPlayersCount()
                                                 + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {

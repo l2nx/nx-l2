@@ -28,6 +28,7 @@ package app.l2nx.highfive.login.command;
 
 import app.l2nx.engine.core.session.Session;
 import app.l2nx.engine.core.session.command.SessionCommandHandler;
+import app.l2nx.highfive.character.command.ListCharacters;
 import app.l2nx.highfive.login.LoginPort;
 import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.system.OnlineAccounts;

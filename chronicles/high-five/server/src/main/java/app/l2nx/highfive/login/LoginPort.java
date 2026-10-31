@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.login;
 
+import app.l2nx.highfive.session.SessionKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;

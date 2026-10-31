@@ -16,6 +16,8 @@ import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.engine.core.session.command.CommandHandler;
 import app.l2nx.engine.core.session.command.CommandRegistry;
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.engine.core.session.command.SessionCommandHandler;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.config.NetworkProperties;
@@ -52,6 +54,8 @@ import org.slf4j.LoggerFactory;
 class SessionTest {
     record Step(int value) implements Command {}
 
+    record Enter(int value) implements Command {}
+
     private final class Bound implements Runnable, ContextBound {
         private final AtomicBoolean present;
         private final String name;
@@ -80,6 +84,7 @@ class SessionTest {
     record Move(int value) implements CoalescableCommand {}
 
     private final List<String> log = new CopyOnWriteArrayList<>();
+    private final AtomicReference<String> hero = new AtomicReference<>();
     private final Queue<Runnable> drains = new ArrayDeque<>();
     private final AtomicLong nanos = new AtomicLong();
     private final FakeTransport transport = new FakeTransport();
@@ -168,7 +173,7 @@ class SessionTest {
     @Nested
     class Flood {
         @Test
-        void offer_shouldRefuse_whenQueueIsFull_whileTheBucketHasTokens() {
+        void offer_shouldRefuse_whenQueueIsFullAndTheBucketHasTokens() {
             final Session session = session(limits(2, 16, 1_000, 1_000));
 
             assertThat(session.offer(session.input(new Step(1)))).isTrue();
@@ -182,7 +187,7 @@ class SessionTest {
         }
 
         @Test
-        void offer_shouldRefuse_whenTheBucketIsEmpty_whileTheQueueHasRoom() {
+        void offer_shouldRefuse_whenTheBucketIsEmptyAndTheQueueHasRoom() {
             final Session session = session(limits(64, 16, 2, 2));
             assertThat(session.offer(session.input(new Step(1)))).isTrue();
             assertThat(session.offer(session.input(new Step(2)))).isTrue();
@@ -195,7 +200,7 @@ class SessionTest {
         }
 
         @Test
-        void offerInternal_shouldBypassAnEmptyBucket_andHopToTheTransport() {
+        void offerInternal_shouldBypassAnEmptyBucketAndHopToTheTransport() {
             final Session session = session(limits(64, 16, 1, 1));
             session.offer(session.input(new Step(1)));
             runDrains();
@@ -224,7 +229,7 @@ class SessionTest {
         }
 
         @Test
-        void offer_shouldRateLimit_atTheHighestPacketsPerSecondTheSettingsAllow() {
+        void offer_shouldRateLimit_whenSettingsAllowTheHighestPacketsPerSecond() {
             final Session session = session(Session.Limits.of(NetworkProperties.defaults().toBuilder()
                     .packetsPerSecond(1_000_000_000)
                     .build()));
@@ -269,7 +274,7 @@ class SessionTest {
     @Nested
     class Context {
         @Test
-        void drain_shouldJudgeAnItemsContext_afterTheItemQueuedBeforeItRan() {
+        void drain_shouldJudgeAnItemsContext_whenTheItemQueuedBeforeItRan() {
             final Session session = session(limits(256, 16, 200, 256));
             final AtomicBoolean selected = new AtomicBoolean();
 
@@ -285,7 +290,7 @@ class SessionTest {
         }
 
         @Test
-        void drain_shouldRejectAndCountAnItem_whoseContextIsMissing() {
+        void drain_shouldRejectAndCountAnItem_whenItsContextIsMissing() {
             final Session session = session(limits(256, 16, 200, 256));
 
             session.offer(session.input(new Bound(new AtomicBoolean(), "enter")));
@@ -302,7 +307,41 @@ class SessionTest {
         }
 
         @Test
-        void execute_shouldDiscardWithoutCounting_anItemThatRacedTheClose() {
+        void drain_shouldResolveACommandsContext_whenTheItemQueuedBeforeItRan() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input((Runnable) () -> hero.set("hero")));
+            session.offer(session.input(new Enter(1)));
+            runDrains();
+
+            assertThat(log).containsExactly("enter 1 as hero");
+            assertThat(rejected()).isZero();
+        }
+
+        @Test
+        void drain_shouldRejectAndCountACommand_whenItsContextIsMissing() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Enter(1)));
+            session.offer(session.input(new Step(2)));
+            runDrains();
+
+            assertThat(log).containsExactly("step 2");
+            assertThat(registry.get(SessionMetrics.REJECTED)
+                            .tag("type", Enter.class.getName())
+                            .tag("context", "CHARACTER")
+                            .counter()
+                            .count())
+                    .isEqualTo(1);
+            assertThat(registry.find(SessionMetrics.COMMAND)
+                            .tag("type", Enter.class.getName())
+                            .timer())
+                    .as("a rejected command never ran")
+                    .isNull();
+        }
+
+        @Test
+        void execute_shouldDiscardWithoutCountingAnItem_whenItRacedTheClose() {
             final Session session = session(limits(256, 16, 200, 256));
             session.offer(session.input(new Bound(new AtomicBoolean(), "enter")));
             final Message taken = session.poll();
@@ -324,7 +363,7 @@ class SessionTest {
     @Nested
     class Lifecycle {
         @Test
-        void setState_shouldNotifyTransport_andRefuseIllegalMoves() {
+        void setState_shouldNotifyTransportAndRefuseIllegalMoves() {
             final Session session = session(limits(256, 16, 200, 256));
 
             session.setState(SessionState.AUTHED);
@@ -349,7 +388,7 @@ class SessionTest {
         }
 
         @Test
-        void setState_shouldBeASilentNoOp_onceClosing() {
+        void setState_shouldBeASilentNoOp_whenClosing() {
             final Session session = session(limits(256, 16, 200, 256));
             session.setState(SessionState.AUTHED);
             session.close();
@@ -377,7 +416,7 @@ class SessionTest {
         }
 
         @Test
-        void offer_shouldAcceptAndDropInput_afterTheClose() {
+        void offer_shouldAcceptAndDropInput_whenTheSessionIsClosed() {
             final Session session = session(limits(256, 16, 200, 256));
             session.close();
             runDrains();
@@ -429,7 +468,7 @@ class SessionTest {
         }
 
         @Test
-        void pass_shouldRunAtMostPacketsPerPass_fromAnAuthedSession() {
+        void pass_shouldRunAtMostPacketsPerPass_whenTheSessionIsAuthed() {
             session.setState(SessionState.AUTHED);
             for (int i = 1; i <= 20; i++) {
                 session.offer(session.input(new Step(i)));
@@ -507,7 +546,7 @@ class SessionTest {
     @Nested
     class DrainAbandoned {
         @Test
-        void drainAbandoned_shouldClearTheSignal_andWarnNamingTheSession_whenThePoolClosesBeforeTheDrainStarts() {
+        void drainAbandoned_shouldClearTheSignalAndWarnNamingTheSession_whenThePoolClosesBeforeTheDrainStarts() {
             final Logger sessionLog = (Logger) LoggerFactory.getLogger(Session.class);
             final ListAppender<ILoggingEvent> logs = new ListAppender<>();
             logs.start();
@@ -543,7 +582,7 @@ class SessionTest {
     @Nested
     class Failures {
         @Test
-        void drain_shouldReportAFailedItem_andRunTheRest() {
+        void drain_shouldReportAFailedItemAndRunTheRest() {
             final Session session = session(limits(256, 16, 200, 256));
 
             session.offer(session.input(new Failing()));
@@ -586,7 +625,7 @@ class SessionTest {
         }
 
         @Test
-        void drain_shouldForgiveFailures_afterTheWindow() {
+        void drain_shouldForgiveFailures_whenTheWindowPassed() {
             final Session session = session(
                     limits(256, 16, 200, 256).toBuilder().failureLimit(2).build());
             session.offer(session.input(new Failing()));
@@ -625,7 +664,7 @@ class SessionTest {
         }
 
         @Test
-        void offer_shouldRecordTheQueueDepth_afterEachEnqueue() {
+        void offer_shouldRecordTheQueueDepth_whenEachItemIsEnqueued() {
             final Session session = session(limits(256, 16, 200, 256));
 
             for (int i = 1; i <= 3; i++) {
@@ -680,7 +719,7 @@ class SessionTest {
                 limits,
                 pool,
                 authedScheduler,
-                dispatcher(List.of(steps(command -> log.add("step " + command.value())), moves)),
+                dispatcher(List.of(steps(command -> log.add("step " + command.value())), moves, enters())),
                 metrics,
                 transport,
                 time,
@@ -703,6 +742,31 @@ class SessionTest {
             @Override
             public void handle(Session session, Step command) {
                 body.accept(command);
+            }
+        };
+    }
+
+    private ContextCommandHandler<String, Enter> enters() {
+        final ContextResolver<String> selected = new ContextResolver<>() {
+            @Override
+            public String name() {
+                return "CHARACTER";
+            }
+
+            @Override
+            public String resolve(Session session) {
+                return hero.get();
+            }
+        };
+        return new ContextCommandHandler<>() {
+            @Override
+            public ContextResolver<String> context() {
+                return selected;
+            }
+
+            @Override
+            public void handle(String context, Enter command) {
+                log.add("enter " + command.value() + " as " + context);
             }
         };
     }

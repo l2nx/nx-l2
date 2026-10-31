@@ -6,6 +6,7 @@ package app.l2nx.highfive.network.protocol.p267;
 
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.login.command.Authenticate;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.InboundDecoder;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
@@ -19,6 +20,9 @@ import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestDeleteBookMa
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestModifyBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestSaveBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBookMark;
+import app.l2nx.highfive.network.protocol.p267.decoder.LoginDecoders;
+import app.l2nx.highfive.session.GameContext;
+import app.l2nx.protocol.game.p267.clientpackets.GameClientOpcode;
 import io.netty.buffer.ByteBuf;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +52,11 @@ public final class P267Inbound {
         <C extends Command> void command(int opcode, Class<C> type, InboundDecoder decoder) {
             table.command(opcode, type, decoder);
         }
+
+        /** The login: the only command read before authentication. */
+        <C extends Command> void preAuthCommand(int opcode, Class<C> type, InboundDecoder decoder) {
+            table.preAuthCommand(opcode, type, decoder);
+        }
     }
 
     static OpcodeTable build() {
@@ -59,14 +68,14 @@ public final class P267Inbound {
             final RouteKind kind = packet.implemented() ? RouteKind.LEGACY : RouteKind.IGNORE;
             final InboundDecoder decoder =
                     packet.implemented() ? legacy(packet::newPacket) : unimplemented(packet.name());
-            if (packet.getContext() == LegacyContext.LOGIN) {
-                table.preAuthRoute(packet.getPacketId(), kind, decoder);
-            } else {
-                table.route(packet.getPacketId(), kind, decoder);
+            if (packet.getContext() == GameContext.LOGIN) {
+                throw new IllegalStateException(
+                        packet + ": only the Authenticate command is read before authentication");
             }
+            table.route(packet.getPacketId(), kind, decoder);
         }
         for (ExClientPackets packet : ExClientPackets.values()) {
-            if (packet.getContext() == LegacyContext.LOGIN) {
+            if (packet.getContext() == GameContext.LOGIN) {
                 throw new IllegalStateException(packet + ": an extended packet is never read before authentication");
             }
             if (packet.getPacketId() == BOOKMARK) {
@@ -81,7 +90,9 @@ public final class P267Inbound {
         return table.build();
     }
 
-    private static void commands(Routes routes) {}
+    private static void commands(Routes routes) {
+        routes.preAuthCommand(GameClientOpcode.AUTH_LOGIN.opcode(), Authenticate.class, LoginDecoders::authLogin);
+    }
 
     private static InboundDecoder legacy(Supplier<? extends ClientPacket> supplier) {
         return (frame, connection) -> {

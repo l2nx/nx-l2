@@ -12,9 +12,9 @@ import static org.mockito.Mockito.verify;
 
 import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.session.SessionKey;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ class LinkLostHandlerTest {
     @Nested
     class Handle {
         @Test
-        void handle_shouldRefuseEveryPendingAuthentication_byItsRequest() {
+        void handle_shouldRefuseEveryPendingAuthenticationByItsRequest() {
             final UUID alice = accounts.awaitAuthentication("alice", mock(GameClient.class), KEY);
             final UUID bob = accounts.awaitAuthentication("bob", mock(GameClient.class), KEY);
 
@@ -55,7 +55,7 @@ class LinkLostHandlerTest {
         }
 
         @Test
-        void handle_shouldFailEveryPendingPasswordChange_byItsRequest() {
+        void handle_shouldFailEveryPendingPasswordChangeByItsRequest() {
             final UUID requestId = accounts.awaitPasswordChange(mock(GameClient.class));
 
             handler.handle(new LinkLost());

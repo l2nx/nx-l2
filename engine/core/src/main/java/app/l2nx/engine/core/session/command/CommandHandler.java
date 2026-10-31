@@ -4,4 +4,5 @@
  */
 package app.l2nx.engine.core.session.command;
 
-public sealed interface CommandHandler<C extends Command> permits SessionCommandHandler, ServiceCommandHandler {}
+public sealed interface CommandHandler<C extends Command>
+        permits SessionCommandHandler, ServiceCommandHandler, ContextCommandHandler {}

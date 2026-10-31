@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.AllowedPlayerRacesConfig;
@@ -58,7 +59,6 @@ import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharCreateFail;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharCreateOk;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import app.l2nx.protocol.game.p267.serverpackets.reason.CharCreateFailReason;
 import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
@@ -327,7 +327,6 @@ public class CharacterCreate extends ClientPacket {
         newChar.setOnlineStatus(true, false);
         Disconnection.of(client, newChar).storeAndDelete();
 
-        final CharSelectionInfo cl = new CharSelectionInfo(client);
-        client.setCharSelection(cl.getCharInfo());
+        CharacterService.getInstance().refreshSlots(client);
     }
 }

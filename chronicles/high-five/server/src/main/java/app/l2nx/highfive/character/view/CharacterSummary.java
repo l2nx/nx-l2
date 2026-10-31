@@ -20,177 +20,67 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.holders;
+package app.l2nx.highfive.character.view;
 
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.Sex;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
-import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.List;
+import lombok.Builder;
 
 /**
- * Used to Store data sent to Client for Character.<br>
- * Selection screen.
- * @version $Revision: 1.2.2.2.2.4 $ $Date: 2005/03/27 15:29:33 $
+ * A character as the selection screen shows it.
+ *
+ * @param deleteTimer the epoch millisecond the character is deleted at, {@code 0} when it is not marked
+ * @param lastAccess the epoch millisecond of its last login, {@code 0} for never
+ * @param paperdoll indexed by paperdoll slot ({@code Inventory.PAPERDOLL_*}); an empty slot is all zeros
  */
-public class CharacterInfoHolder {
-    @Getter
-    @Setter
-    private String name;
-
-    @Getter
-    @Setter
-    private int objectId = 0;
-
-    @Getter
-    @Setter
-    private long exp = 0;
-
-    @Getter
-    @Setter
-    private long sp = 0;
-
-    @Getter
-    @Setter
-    private int clanId = 0;
-
-    @Getter
-    @Setter
-    private int race = 0;
-
-    @Getter
-    @Setter
-    private int classId = 0;
-
-    @Getter
-    @Setter
-    private int baseClassId = 0;
-
-    @Getter
-    @Setter
-    private long deleteTimer = 0;
-
-    @Getter
-    @Setter
-    private long lastAccess = 0;
-
-    @Getter
-    @Setter
-    private int face = 0;
-
-    @Getter
-    @Setter
-    private int hairStyle = 0;
-
-    @Getter
-    @Setter
-    private int hairColor = 0;
-
-    @Getter
-    @Setter
-    private int sex = 0;
-
-    @Getter
-    @Setter
-    private int level = 1;
-
-    @Getter
-    @Setter
-    private int maxHp = 0;
-
-    @Getter
-    @Setter
-    private double currentHp = 0;
-
-    @Getter
-    @Setter
-    private int maxMp = 0;
-
-    @Getter
-    @Setter
-    private double currentMp = 0;
-
-    private final int[][] paperdoll;
-
-    @Getter
-    @Setter
-    private int karma = 0;
-
-    @Getter
-    @Setter
-    private int pkKills = 0;
-
-    @Getter
-    @Setter
-    private int pvPKills = 0;
-
-    @Getter
-    @Setter
-    private int augmentationId = 0;
-
-    @Getter
-    @Setter
-    private int x = 0;
-
-    @Getter
-    @Setter
-    private int y = 0;
-
-    @Getter
-    @Setter
-    private int z = 0;
-
-    @Getter
-    @Setter
-    private String htmlPrefix = null;
-
-    @Getter
-    private boolean good = false;
-
-    @Getter
-    private boolean evil = false;
-
-    @Getter
-    @Setter
-    private int vitalityPoints = 0;
-
-    @Getter
-    @Setter
-    private int accessLevel = 0;
-
-    /**
-     * Constructor for CharSelectInfoPackage.
-     * @param objectId character object Id.
-     * @param name the character's name.
-     */
-    public CharacterInfoHolder(int objectId, String name) {
-        setObjectId(objectId);
-        this.name = name;
-        paperdoll = PlayerInventory.restoreVisibleInventory(objectId);
+@Builder(toBuilder = true)
+public record CharacterSummary(
+        int objectId,
+        String name,
+        int accessLevel,
+        int level,
+        long exp,
+        long sp,
+        int maxHp,
+        double currentHp,
+        int maxMp,
+        double currentMp,
+        int karma,
+        int pkKills,
+        int pvpKills,
+        int face,
+        int hairStyle,
+        int hairColor,
+        Sex sex,
+        Race race,
+        int clanId,
+        int classId,
+        int baseClassId,
+        int x,
+        int y,
+        int z,
+        boolean good,
+        boolean evil,
+        int vitalityPoints,
+        int augmentationId,
+        long deleteTimer,
+        long lastAccess,
+        List<PaperdollSlot> paperdoll) {
+    public CharacterSummary {
+        paperdoll = List.copyOf(paperdoll);
     }
 
-    public void setGood() {
-        good = true;
-        evil = false;
+    public int paperdollItemId(int slot) {
+        return paperdoll.get(slot).itemId();
     }
 
-    public void setEvil() {
-        good = false;
-        evil = true;
+    public int enchantEffect() {
+        return paperdoll.get(Inventory.PAPERDOLL_RHAND).enchantLevel();
     }
 
-    public int getPaperdollObjectId(int slot) {
-        return paperdoll[slot][0];
-    }
-
-    public int getPaperdollItemId(int slot) {
-        return paperdoll[slot][1];
-    }
-
-    public int getEnchantEffect() {
-        if (paperdoll[Inventory.PAPERDOLL_RHAND][2] > 0) {
-            return paperdoll[Inventory.PAPERDOLL_RHAND][2];
-        }
-
-        return paperdoll[Inventory.PAPERDOLL_RHAND][2];
-    }
+    /** @param itemId the item id the client draws, which transmogrification may change */
+    @Builder(toBuilder = true)
+    public record PaperdollSlot(int objectId, int itemId, int enchantLevel) {}
 }

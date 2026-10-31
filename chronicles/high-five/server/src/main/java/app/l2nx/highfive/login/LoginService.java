@@ -28,8 +28,9 @@ package app.l2nx.highfive.login;
 
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
+import app.l2nx.highfive.login.view.AuthenticationFailed;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail;
+import app.l2nx.highfive.session.SessionKey;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,7 @@ public class LoginService {
     }
 
     public void failAuthentication(String login, GameClient client) {
-        client.close(LoginFail.systemErrorLoginLater());
+        client.port().emitAndClose(AuthenticationFailed.INSTANCE);
         logout(login, null);
     }
 

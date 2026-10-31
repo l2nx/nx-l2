@@ -21,7 +21,6 @@ import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage.MessageCase;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.ListingAttribute;
 import app.l2nx.highfive.login.ListingStatus;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.login.command.AuthenticationResult;
 import app.l2nx.highfive.login.command.KickAccount;
 import app.l2nx.highfive.login.command.LinkLost;
@@ -29,6 +28,7 @@ import app.l2nx.highfive.login.command.PasswordChangeResult;
 import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.network.config.NetworkProperties;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -191,25 +191,28 @@ class LoginServerLinkTest {
         ServerConfig.SERVER_ID = savedServerId;
     }
 
-    @Test
-    void start_shouldRegisterFirst_withTheServerIniData() throws Exception {
-        link.start();
+    @Nested
+    class Start {
+        @Test
+        void start_shouldRegisterFirstWithTheServerIniData() throws Exception {
+            link.start();
 
-        final GsLinkProto.GameServerMessage actual =
-                loginServer.nextConnection().received().next();
+            final GsLinkProto.GameServerMessage actual =
+                    loginServer.nextConnection().received().next();
 
-        assertThat(actual.getRegister())
-                .isEqualTo(GsLinkProto.Register.newBuilder()
-                        .setServerId(1)
-                        .setAcceptAlternativeId(true)
-                        .setHexId(ByteString.copyFrom(HEX_ID))
-                        .setChronicle(LoginServerLink.CHRONICLE)
-                        .setPort(7777)
-                        .setMaxPlayers(100)
-                        .addAddresses(GsLinkProto.GameServerAddress.newBuilder()
-                                .setSubnet("0.0.0.0/0")
-                                .setAddress("127.0.0.1"))
-                        .build());
+            assertThat(actual.getRegister())
+                    .isEqualTo(GsLinkProto.Register.newBuilder()
+                            .setServerId(1)
+                            .setAcceptAlternativeId(true)
+                            .setHexId(ByteString.copyFrom(HEX_ID))
+                            .setChronicle(LoginServerLink.CHRONICLE)
+                            .setPort(7777)
+                            .setMaxPlayers(100)
+                            .addAddresses(GsLinkProto.GameServerAddress.newBuilder()
+                                    .setSubnet("0.0.0.0/0")
+                                    .setAddress("127.0.0.1"))
+                            .build());
+        }
     }
 
     @Nested
@@ -290,7 +293,7 @@ class LoginServerLinkTest {
         }
 
         @Test
-        void onNext_shouldSubmitAKickInAWorldPass_andOtherMessagesOnTheLinkThread(Loop world) throws Exception {
+        void onNext_shouldSubmitAKickInAWorldPassAndOtherMessagesOnTheLinkThread(Loop world) throws Exception {
             link.start();
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
@@ -405,146 +408,168 @@ class LoginServerLinkTest {
         }
     }
 
-    @Test
-    void authenticate_shouldReportTheLinkDown_whenNoStreamIsOpen() {
-        assertThat(link.authenticate(REQUEST, "player", KEY)).isFalse();
-        assertThat(link.changePassword(REQUEST, FIRST, "Hero", "old", "new")).isFalse();
+    @Nested
+    class Authenticate {
+        @Test
+        void authenticate_shouldReportTheLinkDown_whenNoStreamIsOpen() {
+            assertThat(link.authenticate(REQUEST, "player", KEY)).isFalse();
+            assertThat(link.changePassword(REQUEST, FIRST, "Hero", "old", "new"))
+                    .isFalse();
+        }
+
+        @Test
+        void authenticate_shouldReportTheLinkDownAndLeaveRegisterFirst_whenTheStreamOpens() throws Exception {
+            connectEntered = new CountDownLatch(1);
+            connectReleased = new CountDownLatch(1);
+            final Thread starting = Thread.ofPlatform().start(link::start);
+            assertThat(connectEntered.await(5, TimeUnit.SECONDS)).isTrue();
+
+            final boolean actual = link.authenticate(REQUEST, "player", KEY);
+
+            connectReleased.countDown();
+            starting.join(TimeUnit.SECONDS.toMillis(5));
+            assertThat(actual).isFalse();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            assertThat(connection.received().next().hasRegister()).isTrue();
+            assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
+            final GsLinkProto.Authenticate authenticate =
+                    connection.received().next().getAuthenticate();
+            assertThat(authenticate.getLogin()).isEqualTo("player");
+            assertThat(authenticate.getRequestId()).isEqualTo(REQUEST.toString());
+        }
     }
 
-    @Test
-    void authenticate_shouldReportTheLinkDown_whileTheStreamOpens_andLeaveRegisterFirst() throws Exception {
-        connectEntered = new CountDownLatch(1);
-        connectReleased = new CountDownLatch(1);
-        final Thread starting = Thread.ofPlatform().start(link::start);
-        assertThat(connectEntered.await(5, TimeUnit.SECONDS)).isTrue();
+    @Nested
+    class Stream {
+        @Test
+        void stream_shouldReportTheLinkLost_whenItEndsAfterAnAuthenticateWentOut() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
+            assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
+            connection.received().next();
 
-        final boolean actual = link.authenticate(REQUEST, "player", KEY);
+            connection.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));
 
-        connectReleased.countDown();
-        starting.join(TimeUnit.SECONDS.toMillis(5));
-        assertThat(actual).isFalse();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        assertThat(connection.received().next().hasRegister()).isTrue();
-        assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
-        final GsLinkProto.Authenticate authenticate =
-                connection.received().next().getAuthenticate();
-        assertThat(authenticate.getLogin()).isEqualTo("player");
-        assertThat(authenticate.getRequestId()).isEqualTo(REQUEST.toString());
+            awaitCommands(1);
+            assertThat(commands).containsExactly(new LinkLost());
+        }
+
+        @Test
+        void stream_shouldRegisterWithTheGrantedId_whenTheLoginServerEndsIt() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection first = loginServer.nextConnection();
+            first.received().next();
+            first.responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setRegistrationResult(
+                                    GsLinkProto.RegistrationResult.newBuilder().setServerId(5))
+                            .build());
+            awaitCommands(1);
+
+            first.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));
+
+            assertThat(loginServer
+                            .nextConnection()
+                            .received()
+                            .next()
+                            .getRegister()
+                            .getServerId())
+                    .isEqualTo(5);
+        }
+
+        @Test
+        void stream_shouldBeReopenedAndRegisterAgain_whenTheLoginServerEndsIt() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection first = loginServer.nextConnection();
+            first.received().next();
+
+            first.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));
+
+            assertThat(loginServer.nextConnection().received().next().hasRegister())
+                    .isTrue();
+        }
     }
 
-    @Test
-    void stream_shouldReportTheLinkLost_whenItEndsAfterAnAuthenticateWentOut() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
-        assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
-        connection.received().next();
+    @Nested
+    class Shutdown {
+        @Test
+        void shutdown_shouldSendTheLogoutsThenDownThenEndTheStreamAndTheChannel() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
+            link.accountLeft(FIRST);
+            link.accountLeft(SECOND);
 
-        connection.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));
+            link.shutdown();
 
-        awaitCommands(1);
-        assertThat(commands).containsExactly(new LinkLost());
+            assertThat(connection.received().next().getAccountLeft().getAccountId())
+                    .isEqualTo(FIRST.toString());
+            assertThat(connection.received().next().getAccountLeft().getAccountId())
+                    .isEqualTo(SECOND.toString());
+            assertThat(connection.received().next().getPublishListing().getStatus())
+                    .isEqualTo(GsLinkProto.ListingStatus.LISTING_STATUS_DOWN);
+            assertThat(connection.received().awaitEnd().getCode()).isEqualTo(Status.Code.OK);
+            assertThat(channel.isTerminated()).isTrue();
+            assertThat(loginServer.hasNoMoreConnections()).isTrue();
+            assertThat(commands)
+                    .as("the link ends on its own shutdown, nothing is lost")
+                    .isEmpty();
+        }
+
+        @Test
+        void shutdown_shouldStopWaiting_whenTheShutdownTimeoutIsSpent() throws Exception {
+            loginServer.setEndsItsSide(false);
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
+            scheduler.setClock(spentAfterFirstRead(SHUTDOWN_TIMEOUT));
+
+            assertTimeoutPreemptively(SHUTDOWN_TIMEOUT.dividedBy(2), link::shutdown);
+
+            assertThat(connection.received().next().getPublishListing().getStatus())
+                    .isEqualTo(GsLinkProto.ListingStatus.LISTING_STATUS_DOWN);
+            assertThat(channel.isShutdown()).isTrue();
+        }
     }
 
-    @Test
-    void stream_shouldRegisterWithTheGrantedId_afterTheLoginServerEndsIt() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection first = loginServer.nextConnection();
-        first.received().next();
-        first.responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setRegistrationResult(
-                                GsLinkProto.RegistrationResult.newBuilder().setServerId(5))
-                        .build());
-        awaitCommands(1);
+    @Nested
+    class PublishListing {
+        @Test
+        void publishListing_shouldSendOnlyTheGivenAttributes() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
 
-        first.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));
+            link.publishListing(Map.of(ListingAttribute.MAX_PLAYERS, 250, ListingAttribute.SQUARE_BRACKET, 1));
 
-        assertThat(loginServer.nextConnection().received().next().getRegister().getServerId())
-                .isEqualTo(5);
-    }
+            final GsLinkProto.PublishListing actual =
+                    connection.received().next().getPublishListing();
+            assertThat(actual.getMaxPlayers()).isEqualTo(250);
+            assertThat(actual.getSquareBracket()).isTrue();
+            assertThat(actual.hasStatus()).isFalse();
+            assertThat(actual.hasAge()).isFalse();
+        }
 
-    @Test
-    void stream_shouldBeReopenedAndRegisterAgain_whenTheLoginServerEndsIt() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection first = loginServer.nextConnection();
-        first.received().next();
+        @ParameterizedTest(name = "{0}")
+        @EnumSource(ListingStatus.class)
+        void publishListing_shouldSendTheProtoStatusForEachListingStatus(ListingStatus status) throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
 
-        first.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));
+            link.publishListing(Map.of(ListingAttribute.STATUS, status.code()));
 
-        assertThat(loginServer.nextConnection().received().next().hasRegister()).isTrue();
-    }
+            assertThat(connection.received().next().getPublishListing().getStatus())
+                    .isEqualTo(GsLinkProto.ListingStatus.valueOf("LISTING_STATUS_" + status.name()));
+        }
 
-    @Test
-    void shutdown_shouldSendTheLogoutsThenDown_thenEndTheStreamAndTheChannel() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
-        link.accountLeft(FIRST);
-        link.accountLeft(SECOND);
-
-        link.shutdown();
-
-        assertThat(connection.received().next().getAccountLeft().getAccountId()).isEqualTo(FIRST.toString());
-        assertThat(connection.received().next().getAccountLeft().getAccountId()).isEqualTo(SECOND.toString());
-        assertThat(connection.received().next().getPublishListing().getStatus())
-                .isEqualTo(GsLinkProto.ListingStatus.LISTING_STATUS_DOWN);
-        assertThat(connection.received().awaitEnd().getCode()).isEqualTo(Status.Code.OK);
-        assertThat(channel.isTerminated()).isTrue();
-        assertThat(loginServer.hasNoMoreConnections()).isTrue();
-        assertThat(commands)
-                .as("the link ends on its own shutdown, nothing is lost")
-                .isEmpty();
-    }
-
-    @Test
-    void shutdown_shouldStopWaiting_whenTheShutdownTimeoutIsSpent() throws Exception {
-        loginServer.setEndsItsSide(false);
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
-        scheduler.setClock(spentAfterFirstRead(SHUTDOWN_TIMEOUT));
-
-        assertTimeoutPreemptively(SHUTDOWN_TIMEOUT.dividedBy(2), link::shutdown);
-
-        assertThat(connection.received().next().getPublishListing().getStatus())
-                .isEqualTo(GsLinkProto.ListingStatus.LISTING_STATUS_DOWN);
-        assertThat(channel.isShutdown()).isTrue();
-    }
-
-    @Test
-    void publishListing_shouldSendOnlyTheGivenAttributes() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
-
-        link.publishListing(Map.of(ListingAttribute.MAX_PLAYERS, 250, ListingAttribute.SQUARE_BRACKET, 1));
-
-        final GsLinkProto.PublishListing actual = connection.received().next().getPublishListing();
-        assertThat(actual.getMaxPlayers()).isEqualTo(250);
-        assertThat(actual.getSquareBracket()).isTrue();
-        assertThat(actual.hasStatus()).isFalse();
-        assertThat(actual.hasAge()).isFalse();
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @EnumSource(ListingStatus.class)
-    void publishListing_shouldSendTheProtoStatus_forEachListingStatus(ListingStatus status) throws Exception {
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
-
-        link.publishListing(Map.of(ListingAttribute.STATUS, status.code()));
-
-        assertThat(connection.received().next().getPublishListing().getStatus())
-                .isEqualTo(GsLinkProto.ListingStatus.valueOf("LISTING_STATUS_" + status.name()));
-    }
-
-    @Test
-    void publishListing_shouldThrow_whenTheStatusCodeIsUnknown() {
-        assertThatThrownBy(() -> link.publishListing(Map.of(ListingAttribute.STATUS, 99)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("99");
+        @Test
+        void publishListing_shouldThrow_whenTheStatusCodeIsUnknown() {
+            assertThatThrownBy(() -> link.publishListing(Map.of(ListingAttribute.STATUS, 99)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("99");
+        }
     }
 
     private void holdConnect() {

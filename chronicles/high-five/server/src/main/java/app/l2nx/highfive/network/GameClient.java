@@ -26,6 +26,7 @@ package app.l2nx.highfive.network;
 import app.l2nx.engine.core.session.Session;
 import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.engine.core.session.outbound.ClientPort;
+import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
@@ -35,14 +36,13 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
-import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.security.SecondaryPasswordAuth;
+import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.highfive.util.FloodProtectors;
 import app.l2nx.network.channel.OutboundQueue;
 import java.net.InetSocketAddress;
@@ -100,7 +100,7 @@ public class GameClient {
     @Setter
     private volatile ClientHardwareInfoHolder hardwareInfo;
 
-    private volatile List<CharacterInfoHolder> charSlotMapping;
+    private volatile List<CharacterSummary> charSlotMapping;
 
     @Getter
     @Setter
@@ -327,17 +327,17 @@ public class GameClient {
         return player;
     }
 
-    public void setCharSelection(List<CharacterInfoHolder> characters) {
+    public void setCharSelection(List<CharacterSummary> characters) {
         charSlotMapping = characters;
     }
 
-    public CharacterInfoHolder getCharSelection(int slot) {
-        final List<CharacterInfoHolder> slots = charSlotMapping;
+    public CharacterSummary getCharSelection(int slot) {
+        final List<CharacterSummary> slots = charSlotMapping;
         return ((slots == null) || (slot < 0) || (slot >= slots.size())) ? null : slots.get(slot);
     }
 
     private int getObjectIdForSlot(int characterSlot) {
-        final CharacterInfoHolder info = getCharSelection(characterSlot);
+        final CharacterSummary info = getCharSelection(characterSlot);
         if (info == null) {
             log.warn(
                     "{} tried to delete Character in slot {} but no characters exits at that slot.",
@@ -346,7 +346,7 @@ public class GameClient {
             return -1;
         }
 
-        return info.getObjectId();
+        return info.objectId();
     }
 
     public void setClientTracert(int[][] tracert) {

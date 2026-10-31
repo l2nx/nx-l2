@@ -5,17 +5,18 @@
 package app.l2nx.highfive.login;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.FakeLoginPort.Call;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
+import app.l2nx.highfive.login.view.AuthenticationFailed;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail;
+import app.l2nx.highfive.session.SessionKey;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -37,7 +38,7 @@ class LoginServiceTest {
     @Nested
     class Authenticate {
         @Test
-        void authenticate_shouldAskTheLoginServer_andKeepTheClientWaiting() {
+        void authenticate_shouldAskTheLoginServerAndKeepTheClientWaiting() {
             service.authenticate("alice", client, KEY);
 
             final UUID requestId = accounts.pendingAuthentications().getFirst();
@@ -46,13 +47,15 @@ class LoginServiceTest {
         }
 
         @Test
-        void authenticate_shouldCloseTheClient_andFreeItsLogin_whenTheLoginServerIsUnreachable() {
+        void authenticate_shouldCloseTheClientAndFreeItsLogin_whenTheLoginServerIsUnreachable() {
+            final ClientPort clientPort = mock(ClientPort.class);
+            when(client.port()).thenReturn(clientPort);
             port.setLinkUp(false);
             service.reserveLogin("alice", client);
 
             service.authenticate("alice", client, KEY);
 
-            verify(client).close(any(LoginFail.class));
+            verify(clientPort).emitAndClose(AuthenticationFailed.INSTANCE);
             verify(client).disconnect();
             assertThat(accounts.pendingAuthentications()).isEmpty();
             assertThat(service.reserveLogin("alice", client)).isTrue();
@@ -115,7 +118,7 @@ class LoginServiceTest {
     @Nested
     class LogoutClient {
         @Test
-        void logout_shouldFreeTheClientsLoginAndAccount_andTellTheLoginServer() {
+        void logout_shouldFreeTheClientsLoginAndAccountAndTellTheLoginServer() {
             final UUID accountId = holdAlice();
 
             service.logout(client);
@@ -199,7 +202,7 @@ class LoginServiceTest {
         }
 
         @Test
-        void setAge_shouldStoreTheAge_andPublishItsCode() {
+        void setAge_shouldStoreTheAgeAndPublishItsCode() {
             final int age = ServerConfig.SERVER_LIST_AGE;
             final int type = ServerConfig.SERVER_LIST_TYPE;
             try {

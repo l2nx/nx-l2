@@ -25,13 +25,13 @@ package app.l2nx.highfive.network.protocol.p267.clientpackets;
 import app.l2nx.engine.core.session.ContextBound;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.LegacyContext;
+import app.l2nx.highfive.session.GameContext;
 
 /**
  * A legacy route: read on the IO thread, run from the session queue in order with the commands.
  */
 public abstract class ClientPacket extends IncomingPacket<GameClient> implements ContextBound {
-    private LegacyContext context = LegacyContext.WORLD;
+    private GameContext context = GameContext.WORLD;
 
     @Override
     protected final boolean read() {
@@ -56,7 +56,7 @@ public abstract class ClientPacket extends IncomingPacket<GameClient> implements
 
     protected abstract void runImpl();
 
-    final void requireContext(LegacyContext context) {
+    final void requireContext(GameContext context) {
         this.context = context;
     }
 

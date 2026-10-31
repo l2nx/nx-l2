@@ -26,12 +26,12 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.character.CharacterService;
+import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerRestore;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.holders.CharacterInfoHolder;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 
 /**
  * @version $Revision: 1.4.2.1.2.2 $ $Date: 2005/03/27 15:29:29 $
@@ -53,16 +53,14 @@ public class CharacterRestore extends ClientPacket {
         }
 
         client.restore(charSlot);
-        final CharSelectionInfo cl = new CharSelectionInfo(client, 0);
-        client.sendPacket(cl);
-        client.setCharSelection(cl.getCharInfo());
+        CharacterService.getInstance().showCharacterList(client, 0);
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_RESTORE)) {
-            final CharacterInfoHolder charInfo = client.getCharSelection(charSlot);
+            final CharacterSummary charInfo = client.getCharSelection(charSlot);
             EventDispatcher.getInstance()
                     .notifyEvent(OnPlayerRestore.builder()
-                            .objectId(charInfo.getObjectId())
-                            .name(charInfo.getName())
+                            .objectId(charInfo.objectId())
+                            .name(charInfo.name())
                             .client(client)
                             .build());
         }

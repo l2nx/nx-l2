@@ -23,7 +23,7 @@
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.DevelopmentConfig;
-import app.l2nx.highfive.network.protocol.p267.LegacyContext;
+import app.l2nx.highfive.session.GameContext;
 import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +33,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public enum ExClientPackets {
-    REQUEST_GOTO_LOBBY(0x36, RequestGotoLobby::new, LegacyContext.LOBBY),
-    REQUEST_EX_2ND_PASSWORD_CHECK(0x93, RequestEx2ndPasswordCheck::new, LegacyContext.LOBBY),
-    REQUEST_EX_2ND_PASSWORD_VERIFY(0x94, RequestEx2ndPasswordVerify::new, LegacyContext.LOBBY),
-    REQUEST_EX_2ND_PASSWORD_REQ(0x95, RequestEx2ndPasswordReq::new, LegacyContext.LOBBY),
-    REQUEST_MANOR_LIST(0x01, RequestManorList::new, LegacyContext.CHARACTER),
+    REQUEST_GOTO_LOBBY(0x36, RequestGotoLobby::new, GameContext.LOBBY),
+    REQUEST_EX_2ND_PASSWORD_CHECK(0x93, RequestEx2ndPasswordCheck::new, GameContext.LOBBY),
+    REQUEST_EX_2ND_PASSWORD_VERIFY(0x94, RequestEx2ndPasswordVerify::new, GameContext.LOBBY),
+    REQUEST_EX_2ND_PASSWORD_REQ(0x95, RequestEx2ndPasswordReq::new, GameContext.LOBBY),
+    REQUEST_MANOR_LIST(0x01, RequestManorList::new, GameContext.CHARACTER),
     REQUEST_PROCEDURE_CROP_LIST(0x02, RequestProcureCropList::new),
     REQUEST_SET_SEED(0x03, RequestSetSeed::new),
     REQUEST_SET_CROP(0x04, RequestSetCrop::new),
@@ -69,7 +69,7 @@ public enum ExClientPackets {
     REQUEST_EX_RQ_ITEM_LINK(0x1E, RequestExRqItemLink::new),
     CANNOT_MOVE_ANYMORE_AIR_SHIP(0x1F, null),
     MOVE_TO_LOCATION_IN_AIR_SHIP(0x20, MoveToLocationInAirShip::new),
-    REQUEST_KEY_MAPPING(0x21, RequestKeyMapping::new, LegacyContext.CHARACTER),
+    REQUEST_KEY_MAPPING(0x21, RequestKeyMapping::new, GameContext.CHARACTER),
     REQUEST_SAVE_KEY_MAPPING(0x22, RequestSaveKeyMapping::new),
     REQUEST_EX_REMOVE_ITEM_ATTRIBUTE(0x23, RequestExRemoveItemAttribute::new),
     REQUEST_SAVE_INVENTORY_ORDER(0x24, RequestSaveInventoryOrder::new),
@@ -95,7 +95,7 @@ public enum ExClientPackets {
     REQUEST_INFO_ITEM_AUCTION(0x3A, RequestInfoItemAuction::new),
     REQUEST_EX_CHANGE_NAME(0x3B, RequestExChangeName::new),
     REQUEST_ALL_CASTLE_INFO(0x3C, RequestAllCastleInfo::new),
-    REQUEST_ALL_FORTRESS_INFO(0x3D, RequestAllFortressInfo::new, LegacyContext.CHARACTER),
+    REQUEST_ALL_FORTRESS_INFO(0x3D, RequestAllFortressInfo::new, GameContext.CHARACTER),
     REQUEST_ALL_AGIT_INGO(0x3e, RequestAllAgitInfo::new),
     REQUEST_FORTRESS_SIEGE_INFO(0x3F, RequestFortressSiegeInfo::new),
     REQUEST_GET_BOSS_RECORD(0x40, RequestGetBossRecord::new),
@@ -176,7 +176,7 @@ public enum ExClientPackets {
     REQUEST_BR_LECTURE_MARK(0x90, null),
     REQUEST_GOODS_INVENTORY_INFO(0x91, null),
     REQUEST_USE_GOODS_INVENTORY_ITEM(0x92, null),
-    REQUEST_HARDWARE_INFO(0x96, RequestHardWareInfo::new, LegacyContext.ACCOUNT),
+    REQUEST_HARDWARE_INFO(0x96, RequestHardWareInfo::new, GameContext.ACCOUNT),
     EX_MAX(0x97, null);
 
     @Getter
@@ -186,13 +186,13 @@ public enum ExClientPackets {
     private final boolean implemented;
 
     @Getter
-    private final LegacyContext context;
+    private final GameContext context;
 
     ExClientPackets(int packetId, Supplier<ClientPacket> packetSupplier) {
-        this(packetId, packetSupplier, LegacyContext.WORLD);
+        this(packetId, packetSupplier, GameContext.WORLD);
     }
 
-    ExClientPackets(int packetId, Supplier<ClientPacket> packetSupplier, LegacyContext context) {
+    ExClientPackets(int packetId, Supplier<ClientPacket> packetSupplier, GameContext context) {
         // Packet id is an unsigned short.
         if (packetId > 0xFFFF) {
             throw new IllegalArgumentException("Packet id must not be bigger than 0xFFFF");
