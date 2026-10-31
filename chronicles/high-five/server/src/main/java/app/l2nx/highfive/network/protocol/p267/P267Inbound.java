@@ -4,7 +4,6 @@
  */
 package app.l2nx.highfive.network.protocol.p267;
 
-import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.highfive.character.command.CreateCharacter;
 import app.l2nx.highfive.character.command.DeleteCharacter;
 import app.l2nx.highfive.character.command.EnterWorld;
@@ -54,27 +53,9 @@ public final class P267Inbound {
 
     private P267Inbound() {}
 
-    /** Registration of the ported packets; lives only while {@link #build()} runs. */
-    static final class Routes {
-        private final OpcodeTable.Builder table;
-
-        private Routes(OpcodeTable.Builder table) {
-            this.table = table;
-        }
-
-        <C extends Command> void command(int opcode, Class<C> type, InboundDecoder decoder) {
-            table.command(opcode, type, decoder);
-        }
-
-        /** The login: the only command read before authentication. */
-        <C extends Command> void preAuthCommand(int opcode, Class<C> type, InboundDecoder decoder) {
-            table.preAuthCommand(opcode, type, decoder);
-        }
-    }
-
     static OpcodeTable build() {
         final OpcodeTable.Builder table = OpcodeTable.builder(EX_PREFIX);
-        commands(new Routes(table));
+        commands(table);
         // The client's answer to NetPing only proves the connection alive; any read already resets the idle timer.
         table.route(NET_PING_ANSWER, RouteKind.CONNECTION, PING_ANSWER);
         for (ClientPackets packet : ClientPackets.values()) {
@@ -103,26 +84,26 @@ public final class P267Inbound {
         return table.build();
     }
 
-    private static void commands(Routes routes) {
-        routes.preAuthCommand(GameClientOpcode.AUTH_LOGIN.opcode(), Authenticate.class, LoginDecoders::authLogin);
-        routes.command(
+    private static void commands(OpcodeTable.Builder table) {
+        table.preAuthCommand(GameClientOpcode.AUTH_LOGIN.opcode(), Authenticate.class, LoginDecoders::authLogin);
+        table.command(
                 GameClientOpcode.CHARACTER_SELECT.opcode(), SelectCharacter.class, CharacterDecoders::characterSelect);
-        routes.command(
+        table.command(
                 GameClientOpcode.CHARACTER_CREATE.opcode(), CreateCharacter.class, CharacterDecoders::characterCreate);
-        routes.command(
+        table.command(
                 GameClientOpcode.CHARACTER_DELETE.opcode(), DeleteCharacter.class, CharacterDecoders::characterDelete);
-        routes.command(
+        table.command(
                 GameClientOpcode.CHARACTER_RESTORE.opcode(),
                 RestoreCharacter.class,
                 CharacterDecoders::characterRestore);
-        routes.command(GameClientOpcode.REQUEST_RESTART.opcode(), Restart.class, CharacterDecoders::restart);
-        routes.command(GameClientOpcode.ENTER_WORLD.opcode(), EnterWorld.class, CharacterDecoders::enterWorld);
-        routes.command(GameClientOpcode.MOVE_TO_LOCATION.opcode(), MoveTo.class, MovementDecoders::moveToLocation);
-        routes.command(
+        table.command(GameClientOpcode.REQUEST_RESTART.opcode(), Restart.class, CharacterDecoders::restart);
+        table.command(GameClientOpcode.ENTER_WORLD.opcode(), EnterWorld.class, CharacterDecoders::enterWorld);
+        table.command(GameClientOpcode.MOVE_TO_LOCATION.opcode(), MoveTo.class, MovementDecoders::moveToLocation);
+        table.command(
                 GameClientOpcode.VALIDATE_POSITION.opcode(), ReportPosition.class, MovementDecoders::validatePosition);
-        routes.command(
+        table.command(
                 GameClientOpcode.CANNOT_MOVE_ANYMORE.opcode(), MoveBlocked.class, MovementDecoders::cannotMoveAnymore);
-        routes.command(GameClientOpcode.SAY2.opcode(), SendChat.class, ChatDecoders::say2);
+        table.command(GameClientOpcode.SAY2.opcode(), SendChat.class, ChatDecoders::say2);
     }
 
     private static InboundDecoder legacy(Supplier<? extends ClientPacket> supplier) {
