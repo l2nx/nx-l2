@@ -58,7 +58,6 @@ lists what is open.
 - [#84](https://github.com/l2nx/nx-l2/issues/84) Game server loses its login registration (hexid.txt) on every installDist
 - [#88](https://github.com/l2nx/nx-l2/issues/88) Layered rate limit for the login and game client protocols
 - [#89](https://github.com/l2nx/nx-l2/issues/89) Harden the network connection lifecycle: late init, idle, close reasons, write errors, shutdown deadline
-- [#90](https://github.com/l2nx/nx-l2/issues/90) Clean up libs/network: module boundaries, shared L2 pipeline, login transport leftovers and statics
 - [#93](https://github.com/l2nx/nx-l2/issues/93) Make the login side of the GS-link thread-safe and keep database work off the stream
 - [#94](https://github.com/l2nx/nx-l2/issues/94) Harden GS-link failure handling: reconnect classification, malformed messages, shutdown, buffering, tests
 - [#97](https://github.com/l2nx/nx-l2/issues/97) Bound the world lifecycle waits and merge the two game server lifecycles
@@ -89,6 +88,8 @@ lists what is open.
 
 ## Done
 
+- [#130](https://github.com/l2nx/nx-l2/issues/130) Underground Coliseum leaves the restore location set after the match
+- [#90](https://github.com/l2nx/nx-l2/issues/90) Clean up libs/network: module boundaries, shared L2 pipeline, login transport leftovers and statics
 - [#91](https://github.com/l2nx/nx-l2/issues/91) Port the first client slice end to end before growing the port framework
 - [#80](https://github.com/l2nx/nx-l2/issues/80) Restart into offline trade disconnects the trader just created when OfflineDisconnectSameAccount is on
 - [#79](https://github.com/l2nx/nx-l2/issues/79) Alliance chat ignores the block list
