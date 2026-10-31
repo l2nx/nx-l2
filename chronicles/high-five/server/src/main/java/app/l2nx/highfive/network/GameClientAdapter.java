@@ -7,6 +7,7 @@ package app.l2nx.highfive.network;
 import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.engine.core.session.outbound.LegacyPacket;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
+import app.l2nx.engine.core.session.outbound.spi.SharedFrameEmitter;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.codec.Frames;
@@ -17,7 +18,7 @@ import io.netty.buffer.ByteBuf;
  * Serializes through the connection's adapter on the calling thread; before the handshake chose an adapter there is
  * nothing a client could read, so output is dropped.
  */
-public final class GameClientAdapter implements ClientPort {
+public final class GameClientAdapter implements ClientPort, SharedFrameEmitter {
     private final GameConnection connection;
 
     public GameClientAdapter(GameConnection connection) {

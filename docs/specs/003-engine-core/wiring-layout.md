@@ -149,6 +149,9 @@ Ports exist only at the outer edges that are a network or another process. Game 
 | database   | —                   | `@Repository` class in `<slice>/repository/` | the repository itself                        |
 | Kafka      | command and handler | a port in the owning slice                   | the L2NX adapter module (stage 5)            |
 
+`ClientPort` carries view events and legacy packets only; a protocol adapter's port may also implement
+`SharedFrameEmitter` (`session/outbound/spi`), through which `Audience` serializes a broadcast once per audience.
+
 - **Everything that enters the game is a command,** whatever its source; there are no inbound port interfaces. A
   command is named as an intent (`KickAccount`, `SendChat`); the answer to a request the game made is a noun
   (`AuthenticationResult`). Its handler is `<Command>Handler`.

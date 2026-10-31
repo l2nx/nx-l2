@@ -4,6 +4,7 @@
  */
 package app.l2nx.engine.core.session.outbound;
 
+import app.l2nx.engine.core.session.outbound.spi.SharedFrameEmitter;
 import app.l2nx.network.codec.Frames;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -58,7 +59,7 @@ public class AudienceBenchmark {
         Audience.emit(event, ports);
     }
 
-    private static final class SinkPort implements ClientPort {
+    private static final class SinkPort implements ClientPort, SharedFrameEmitter {
         private final Object key;
 
         SinkPort(Object key) {

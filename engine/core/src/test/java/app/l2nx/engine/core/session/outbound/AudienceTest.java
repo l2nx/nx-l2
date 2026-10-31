@@ -6,6 +6,7 @@ package app.l2nx.engine.core.session.outbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.l2nx.engine.core.session.outbound.spi.SharedFrameEmitter;
 import app.l2nx.network.codec.Frames;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -61,7 +62,32 @@ class AudienceTest {
         assertThat(port.emitted).isEmpty();
     }
 
-    private static class RecordingPort implements ClientPort {
+    @Test
+    void emit_shouldCallEmitOnEachPort_whenAPortHasNoSharedFrames() {
+        final List<ViewEvent> emitted = new ArrayList<>();
+        final ClientPort plain = new ClientPort() {
+            @Override
+            public void emit(ViewEvent event) {
+                emitted.add(event);
+            }
+
+            @Override
+            public void emitAndClose(ViewEvent event) {}
+
+            @Override
+            public void legacy(LegacyPacket packet) {}
+
+            @Override
+            public void legacyAndClose(LegacyPacket packet) {}
+        };
+        final Said said = new Said("hi");
+
+        Audience.emit(said, List.of(plain, plain));
+
+        assertThat(emitted).containsExactly(said, said);
+    }
+
+    private static class RecordingPort implements ClientPort, SharedFrameEmitter {
         private final Object key;
         private final List<ByteBuf> serialized;
         private final List<ByteBuf> shared = new ArrayList<>();

@@ -138,7 +138,8 @@ included, since selecting, creating and entering load and create world objects
   never covers the length bytes.
 - **Serialized once per audience.** A view event for many sessions is serialized once per
   `(adapter, viewer variant)`; a mapper declares whether its output depends on the viewer (relation, karma colour,
-  attackable flag) and how viewers group. Each session receives a retained duplicate.
+  attackable flag) and how viewers group. Each session receives a retained duplicate. This goes through the adapter
+  SPI `SharedFrameEmitter`; game code sees only `ClientPort`.
 - **Buffer ownership:** the emitter holds one reference and releases it after the fan-out; each queued duplicate is
   released by the encoder after writing, or by the outbound drain or the close path when the channel closes, the write fails or
   the event loop rejects the task during shutdown.
