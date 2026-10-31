@@ -5,6 +5,10 @@
 package app.l2nx.highfive.network.protocol.p267;
 
 import app.l2nx.engine.core.session.command.Command;
+import app.l2nx.highfive.character.command.CreateCharacter;
+import app.l2nx.highfive.character.command.DeleteCharacter;
+import app.l2nx.highfive.character.command.RestoreCharacter;
+import app.l2nx.highfive.character.command.SelectCharacter;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.login.command.Authenticate;
 import app.l2nx.highfive.network.GameConnection;
@@ -20,6 +24,7 @@ import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestDeleteBookMa
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestModifyBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestSaveBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBookMark;
+import app.l2nx.highfive.network.protocol.p267.decoder.CharacterDecoders;
 import app.l2nx.highfive.network.protocol.p267.decoder.LoginDecoders;
 import app.l2nx.highfive.session.GameContext;
 import app.l2nx.protocol.game.p267.clientpackets.GameClientOpcode;
@@ -92,6 +97,16 @@ public final class P267Inbound {
 
     private static void commands(Routes routes) {
         routes.preAuthCommand(GameClientOpcode.AUTH_LOGIN.opcode(), Authenticate.class, LoginDecoders::authLogin);
+        routes.command(
+                GameClientOpcode.CHARACTER_SELECT.opcode(), SelectCharacter.class, CharacterDecoders::characterSelect);
+        routes.command(
+                GameClientOpcode.CHARACTER_CREATE.opcode(), CreateCharacter.class, CharacterDecoders::characterCreate);
+        routes.command(
+                GameClientOpcode.CHARACTER_DELETE.opcode(), DeleteCharacter.class, CharacterDecoders::characterDelete);
+        routes.command(
+                GameClientOpcode.CHARACTER_RESTORE.opcode(),
+                RestoreCharacter.class,
+                CharacterDecoders::characterRestore);
     }
 
     private static InboundDecoder legacy(Supplier<? extends ClientPacket> supplier) {

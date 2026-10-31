@@ -24,43 +24,48 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.character.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerRestore;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.session.GameContexts;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-/**
- * @version $Revision: 1.4.2.1.2.2 $ $Date: 2005/03/27 15:29:29 $
- */
-public class CharacterRestore extends ClientPacket {
-    // cd
-    private int charSlot;
+@Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class RestoreCharacterHandler implements ContextCommandHandler<GameClient, RestoreCharacter> {
+    private static final int FIRST_SLOT = 0;
+
+    private final CharacterService characters;
 
     @Override
-    protected void readImpl() {
-        charSlot = readInt();
+    public ContextResolver<GameClient> context() {
+        return GameContexts.LOBBY;
     }
 
     @Override
-    protected void runImpl() {
-        final GameClient client = getClient();
+    public void handle(GameClient client, RestoreCharacter command) {
         if (!client.getFloodProtectors().canSelectCharacter()) {
             return;
         }
 
-        client.restore(charSlot);
-        CharacterService.getInstance().showCharacterList(client, 0);
+        client.restore(command.slot());
+        characters.showCharacterList(client, FIRST_SLOT);
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_RESTORE)) {
-            final CharacterSummary charInfo = client.getCharSelection(charSlot);
+            final CharacterSummary info = client.getCharSelection(command.slot());
             EventDispatcher.getInstance()
                     .notifyEvent(OnPlayerRestore.builder()
-                            .objectId(charInfo.objectId())
-                            .name(charInfo.name())
+                            .objectId(info.objectId())
+                            .name(info.name())
                             .client(client)
                             .build());
         }

@@ -24,9 +24,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.character.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.highfive.character.CharacterService;
+import app.l2nx.highfive.character.CreateFailure;
+import app.l2nx.highfive.character.view.CharacterCreateFailed;
+import app.l2nx.highfive.character.view.CharacterCreated;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.AllowedPlayerRacesConfig;
@@ -57,83 +62,73 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerCreate;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharCreateFail;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharCreateOk;
-import app.l2nx.protocol.game.p267.serverpackets.reason.CharCreateFailReason;
+import app.l2nx.highfive.session.GameContexts;
 import java.util.Collection;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Mobius
  */
 @Slf4j
-public class CharacterCreate extends ClientPacket {
-
+@Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class CreateCharacterHandler implements ContextCommandHandler<GameClient, CreateCharacter> {
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
-    // cSdddddddddddd
-    private String name;
-    private boolean female;
-    private int classId;
-    private byte hairStyle;
-    private byte hairColor;
-    private byte face;
+    private final CharacterService characters;
 
     @Override
-    protected void readImpl() {
-        name = readString();
-        readInt(); // race
-        female = readInt() != 0;
-        classId = readInt();
-        readInt(); // _int
-        readInt(); // _str
-        readInt(); // _con
-        readInt(); // _men
-        readInt(); // _dex
-        readInt(); // _wit
-        hairStyle = (byte) readInt();
-        hairColor = (byte) readInt();
-        face = (byte) readInt();
+    public ContextResolver<GameClient> context() {
+        return GameContexts.LOBBY;
     }
 
     @Override
-    protected void runImpl() {
-        final GameClient client = getClient();
+    public void handle(GameClient client, CreateCharacter command) {
+        final String name = command.name();
+        final boolean female = command.female();
+        final int classId = command.classId();
+        // The byte casts keep the Mobius range checks below exact for out-of-range client values.
+        final byte hairStyle = (byte) command.hairStyle();
+        final byte hairColor = (byte) command.hairColor();
+        final byte face = (byte) command.face();
 
         // Last Verified: May 30, 2009 - Gracia Final - Players are able to create characters with names consisting of
         // as little as 1,2,3 letter/number combinations.
-        if (name.isEmpty() || (name.length() > 16)) {
-            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_16_ENG_CHARS));
+        if (name.isEmpty() || (name.length() > CharacterService.MAX_NAME_LENGTH)) {
+            client.port().emit(new CharacterCreateFailed(CreateFailure.NAME_TOO_LONG));
             return;
         }
 
         if (PlayerConfig.FORBIDDEN_NAMES.length > 0) {
             for (String st : PlayerConfig.FORBIDDEN_NAMES) {
                 if (name.toLowerCase().contains(st.toLowerCase())) {
-                    client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_INCORRECT_NAME));
+                    client.port().emit(new CharacterCreateFailed(CreateFailure.INCORRECT_NAME));
                     return;
                 }
             }
         }
 
         if (FakePlayerData.getInstance().getProperName(name) != null) {
-            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_INCORRECT_NAME));
+            client.port().emit(new CharacterCreateFailed(CreateFailure.INCORRECT_NAME));
             return;
         }
 
         // Last Verified: May 30, 2009 - Gracia Final.
         if (!StringUtils.isAlphanumeric(name) || !isValidName(name)) {
-            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_INCORRECT_NAME));
+            client.port().emit(new CharacterCreateFailed(CreateFailure.INCORRECT_NAME));
             return;
         }
 
         if ((face > 2) || (face < 0)) {
             log.warn(
                     "Character Creation Failure: Character face {} is invalid. Possible client hack. {}", face, client);
-            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+            client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
             return;
         }
 
@@ -142,7 +137,7 @@ public class CharacterCreate extends ClientPacket {
                     "Character Creation Failure: Character hair style {} is invalid. Possible client hack. {}",
                     hairStyle,
                     client);
-            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+            client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
             return;
         }
 
@@ -151,7 +146,7 @@ public class CharacterCreate extends ClientPacket {
                     "Character Creation Failure: Character hair color {} is invalid. Possible client hack. {}",
                     hairColor,
                     client);
-            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+            client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
             return;
         }
 
@@ -165,16 +160,16 @@ public class CharacterCreate extends ClientPacket {
             if ((CharInfoTable.getInstance().getAccountCharacterCount(client.getAccountId())
                             >= ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT)
                     && (ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT != 0)) {
-                client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_TOO_MANY_CHARACTERS));
+                client.port().emit(new CharacterCreateFailed(CreateFailure.TOO_MANY_CHARACTERS));
                 return;
             } else if (CharInfoTable.getInstance().doesCharNameExist(name)) {
-                client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_NAME_ALREADY_EXISTS));
+                client.port().emit(new CharacterCreateFailed(CreateFailure.NAME_ALREADY_EXISTS));
                 return;
             }
 
             template = PlayerTemplateData.getInstance().getTemplate(classId);
             if ((template == null) || (PlayerClass.getPlayerClass(classId).level() > 0)) {
-                client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                 return;
             }
 
@@ -183,42 +178,42 @@ public class CharacterCreate extends ClientPacket {
             switch (template.getRace()) {
                 case HUMAN: {
                     if (!AllowedPlayerRacesConfig.ALLOW_HUMAN) {
-                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                        client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case ELF: {
                     if (!AllowedPlayerRacesConfig.ALLOW_ELF) {
-                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                        client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case DARK_ELF: {
                     if (!AllowedPlayerRacesConfig.ALLOW_DARKELF) {
-                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                        client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case ORC: {
                     if (!AllowedPlayerRacesConfig.ALLOW_ORC) {
-                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                        client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case DWARF: {
                     if (!AllowedPlayerRacesConfig.ALLOW_DWARF) {
-                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                        client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case KAMAEL: {
                     if (!AllowedPlayerRacesConfig.ALLOW_KAMAEL) {
-                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
+                        client.port().emit(new CharacterCreateFailed(CreateFailure.CREATION_FAILED));
                         return;
                     }
                     break;
@@ -235,7 +230,7 @@ public class CharacterCreate extends ClientPacket {
         // newChar.setMaxLoad(template.getBaseLoad());
 
         initNewChar(client, newChar);
-        client.sendPacket(CharCreateOk.STATIC_PACKET);
+        client.port().emit(CharacterCreated.INSTANCE);
 
         ACCOUNTING_LOG.info("Created new character, {}, {}", newChar, client);
     }
@@ -327,6 +322,6 @@ public class CharacterCreate extends ClientPacket {
         newChar.setOnlineStatus(true, false);
         Disconnection.of(client, newChar).storeAndDelete();
 
-        CharacterService.getInstance().refreshSlots(client);
+        characters.refreshSlots(client);
     }
 }

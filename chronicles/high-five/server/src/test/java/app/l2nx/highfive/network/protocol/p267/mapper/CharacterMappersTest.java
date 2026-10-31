@@ -9,8 +9,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.session.outbound.ViewEvent;
+import app.l2nx.highfive.character.CreateFailure;
+import app.l2nx.highfive.character.DeleteFailure;
+import app.l2nx.highfive.character.view.CharacterCreateFailed;
+import app.l2nx.highfive.character.view.CharacterCreated;
+import app.l2nx.highfive.character.view.CharacterDeleteFailed;
+import app.l2nx.highfive.character.view.CharacterDeleted;
 import app.l2nx.highfive.character.view.CharacterListShown;
+import app.l2nx.highfive.character.view.CharacterSelected;
 import app.l2nx.highfive.character.view.CharacterSummary;
+import app.l2nx.highfive.character.view.ServerClosed;
+import app.l2nx.highfive.character.view.WorldLeft;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
@@ -19,8 +29,18 @@ import app.l2nx.highfive.entity.actor.enums.player.Sex;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.login.view.AuthenticationFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.network.codec.Frames;
+import app.l2nx.protocol.game.p267.serverpackets.CharCreateFail;
+import app.l2nx.protocol.game.p267.serverpackets.CharCreateOk;
+import app.l2nx.protocol.game.p267.serverpackets.CharDeleteFail;
+import app.l2nx.protocol.game.p267.serverpackets.CharDeleteSuccess;
+import app.l2nx.protocol.game.p267.serverpackets.CharSelected;
 import app.l2nx.protocol.game.p267.serverpackets.CharSelectionInfo;
+import app.l2nx.protocol.game.p267.serverpackets.LeaveWorld;
 import app.l2nx.protocol.game.p267.serverpackets.LoginFail;
+import app.l2nx.protocol.game.p267.serverpackets.ServerClose;
+import app.l2nx.protocol.game.p267.serverpackets.reason.CharCreateFailReason;
+import app.l2nx.protocol.game.p267.serverpackets.reason.CharDeleteFailReason;
 import app.l2nx.protocol.game.p267.serverpackets.reason.LoginFailReason;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -35,6 +55,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 
 @ExtendWith(ClockBridgeExtension.class)
@@ -112,6 +134,150 @@ class CharacterMappersTest {
                                         slot().deleteSeconds(90).active(false).build(),
                                         slot().deleteSeconds(-1).active(true).build())));
             }
+        }
+    }
+
+    @Nested
+    class SelectionEventsMapping {
+        @Test
+        void characterCreated_shouldBeCharCreateOk() {
+            assertThat(new CharacterCreatedMapper().map(CharacterCreated.INSTANCE, null))
+                    .isEqualTo(CharCreateOk.INSTANCE);
+        }
+
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource({
+            "CREATION_FAILED, REASON_CREATION_FAILED",
+            "TOO_MANY_CHARACTERS, REASON_TOO_MANY_CHARACTERS",
+            "NAME_ALREADY_EXISTS, REASON_NAME_ALREADY_EXISTS",
+            "NAME_TOO_LONG, REASON_16_ENG_CHARS",
+            "INCORRECT_NAME, REASON_INCORRECT_NAME"
+        })
+        void characterCreateFailed_shouldCarryTheClientReason(CreateFailure failure, CharCreateFailReason expected) {
+            assertThat(new CharacterCreateFailedMapper().map(new CharacterCreateFailed(failure), null))
+                    .isEqualTo(new CharCreateFail(expected));
+        }
+
+        @Test
+        void characterDeleted_shouldBeCharDeleteSuccess() {
+            assertThat(new CharacterDeletedMapper().map(CharacterDeleted.INSTANCE, null))
+                    .isEqualTo(CharDeleteSuccess.INSTANCE);
+        }
+
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource({
+            "CLAN_MEMBER, REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER",
+            "CLAN_LEADER, REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED"
+        })
+        void characterDeleteFailed_shouldCarryTheClientReason(DeleteFailure failure, CharDeleteFailReason expected) {
+            assertThat(new CharacterDeleteFailedMapper().map(new CharacterDeleteFailed(failure), null))
+                    .isEqualTo(new CharDeleteFail(expected));
+        }
+
+        @Test
+        void serverClosedAndWorldLeft_shouldBeTheirFixedPackets() {
+            assertThat(new ServerClosedMapper().map(ServerClosed.INSTANCE, null))
+                    .isEqualTo(ServerClose.INSTANCE);
+            assertThat(new WorldLeftMapper().map(WorldLeft.INSTANCE, null)).isEqualTo(LeaveWorld.INSTANCE);
+        }
+
+        @Test
+        void characterSelected_shouldCarryEveryValueOfTheEvent() {
+            final CharacterSelected event = CharacterSelected.builder()
+                    .name("Alice")
+                    .playerHandle(0x10000001)
+                    .title("Knight")
+                    .playOk1(7)
+                    .clanId(0)
+                    .female(true)
+                    .race(Race.ELF)
+                    .classId(18)
+                    .x(-71338)
+                    .y(258271)
+                    .z(-3104)
+                    .currentHp(80.5)
+                    .currentMp(30.25)
+                    .sp(1234L)
+                    .exp(5000L)
+                    .level(20)
+                    .karma(0)
+                    .pkKills(1)
+                    .intelligence(21)
+                    .strength(40)
+                    .constitution(43)
+                    .mentality(25)
+                    .dexterity(30)
+                    .wit(11)
+                    .gameMinute(615)
+                    .build();
+
+            assertThat(new CharacterSelectedMapper().map(event, null))
+                    .isEqualTo(CharSelected.builder()
+                            .name("Alice")
+                            .objectId(0x10000001)
+                            .title("Knight")
+                            .playOk1(7)
+                            .clanId(0)
+                            .female(true)
+                            .race(Race.ELF.ordinal())
+                            .classId(18)
+                            .x(-71338)
+                            .y(258271)
+                            .z(-3104)
+                            .currentHp(80.5)
+                            .currentMp(30.25)
+                            .sp(1234)
+                            .exp(5000L)
+                            .level(20)
+                            .karma(0)
+                            .pkKills(1)
+                            .intelligence(21)
+                            .strength(40)
+                            .constitution(43)
+                            .mentality(25)
+                            .dexterity(30)
+                            .wit(11)
+                            .gameMinute(615)
+                            .build());
+        }
+
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource({
+            "CHARACTER_CREATED, 0f01000000",
+            "CHARACTER_CREATE_FAILED, 1003000000",
+            "CHARACTER_DELETED, 1d",
+            "CHARACTER_DELETE_FAILED, 1e03000000",
+            "SERVER_CLOSED, 20",
+            "WORLD_LEFT, 84"
+        })
+        void serialize_shouldWriteTheFrameThroughTheAdapterTable(SelectionEvent event, String expected) {
+            assertThat(payload(event.event)).isEqualTo(expected);
+        }
+    }
+
+    private enum SelectionEvent {
+        CHARACTER_CREATED(CharacterCreated.INSTANCE),
+        CHARACTER_CREATE_FAILED(new CharacterCreateFailed(CreateFailure.NAME_TOO_LONG)),
+        CHARACTER_DELETED(CharacterDeleted.INSTANCE),
+        CHARACTER_DELETE_FAILED(new CharacterDeleteFailed(DeleteFailure.CLAN_LEADER)),
+        SERVER_CLOSED(ServerClosed.INSTANCE),
+        WORLD_LEFT(WorldLeft.INSTANCE);
+
+        private final ViewEvent event;
+
+        SelectionEvent(ViewEvent event) {
+            this.event = event;
+        }
+    }
+
+    /** The payload behind the frame's length header, as lower-case hex. */
+    private static String payload(ViewEvent event) {
+        final ByteBuf frame = P267Mappers.serialize(event, null, UnpooledByteBufAllocator.DEFAULT);
+        try {
+            return HexFormat.of()
+                    .formatHex(ByteBufUtil.getBytes(frame, Frames.HEADER, frame.readableBytes() - Frames.HEADER));
+        } finally {
+            frame.release();
         }
     }
 

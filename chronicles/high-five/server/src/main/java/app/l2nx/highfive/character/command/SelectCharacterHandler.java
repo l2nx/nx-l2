@@ -24,9 +24,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.character.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
+import app.l2nx.highfive.character.view.CharacterSelected;
 import app.l2nx.highfive.character.view.CharacterSummary;
+import app.l2nx.highfive.character.view.ServerClosed;
+import app.l2nx.highfive.character.view.WorldLeft;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
@@ -49,48 +54,28 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelected;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.SSQInfo;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerClose;
+import app.l2nx.highfive.session.GameContexts;
+import app.l2nx.highfive.session.LegacyNotices;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-/**
- * @version $Revision: 1.5.2.1.2.5 $ $Date: 2005/03/27 15:29:30 $
- */
-public class CharacterSelect extends ClientPacket {
-
+@Component
+class SelectCharacterHandler implements ContextCommandHandler<GameClient, SelectCharacter> {
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
-
-    // cd
-    private int charSlot;
-
-    @SuppressWarnings("unused")
-    private int unk1; // new in C4
-
-    @SuppressWarnings("unused")
-    private int unk2; // new in C4
-
-    @SuppressWarnings("unused")
-    private int unk3; // new in C4
-
-    @SuppressWarnings("unused")
-    private int unk4; // new in C4
+    private static final int MINUTES_PER_DAY = 24 * 60;
+    private static final String IP_RESTRICTION = "data/html/mods/IPRestriction.htm";
+    private static final String FACTION_LIMIT = "data/html/mods/Faction/ExceededOnlineLimit.htm";
 
     @Override
-    protected void readImpl() {
-        charSlot = readInt();
-        unk1 = readShort();
-        unk2 = readInt();
-        unk3 = readInt();
-        unk4 = readInt();
+    public ContextResolver<GameClient> context() {
+        return GameContexts.LOBBY;
     }
 
     @Override
-    protected void runImpl() {
-        final GameClient client = getClient();
+    public void handle(GameClient client, SelectCharacter command) {
         if (!client.getFloodProtectors().canSelectCharacter()) {
             return;
         }
@@ -101,157 +86,12 @@ public class CharacterSelect extends ClientPacket {
             return;
         }
 
-        // We should always be able to acquire the lock.
-        // But if we can't lock then nothing should be done (i.e. repeated packet).
+        // A lock that cannot be taken means a repeated packet: nothing to do.
         if (client.getPlayerLock().tryLock()) {
             try {
-                // Should always be null.
-                // But if not then this is repeated packet and nothing should be done here.
+                // A player already set means a second select queued behind the first one.
                 if (client.getPlayer() == null) {
-                    final CharacterSummary info = client.getCharSelection(charSlot);
-                    if (info == null) {
-                        return;
-                    }
-
-                    // Disconnect offline trader.
-                    final Player player = World.getPlayer(info.objectId());
-                    if (player != null) {
-                        if (OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS && player.isAutoPlaying()) {
-                            OfflinePlayTable.getInstance().removeOfflinePlay(player);
-                        }
-
-                        Disconnection.of(player).storeAndDelete();
-                    }
-
-                    // Banned?
-                    if (PunishmentManager.getInstance()
-                                    .hasPunishment(info.objectId(), PunishmentAffect.CHARACTER, PunishmentType.BAN) //
-                            || PunishmentManager.getInstance()
-                                    .hasPunishment(
-                                            client.getAccountId(), PunishmentAffect.ACCOUNT, PunishmentType.BAN) //
-                            || PunishmentManager.getInstance()
-                                    .hasPunishment(client.getIp(), PunishmentAffect.IP, PunishmentType.BAN)) {
-                        client.close(ServerClose.STATIC_PACKET);
-                        return;
-                    }
-
-                    // Selected character is banned (compatibility with previous versions).
-                    if (info.accessLevel() < 0) {
-                        client.close(ServerClose.STATIC_PACKET);
-                        return;
-                    }
-
-                    if (client.getCharSelection(charSlot).accessLevel() < 100) {
-                        if ((player != null)
-                                && player.hasPremiumStatus()
-                                && (DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP > 0)
-                                && !AntiFeedManager.getInstance()
-                                        .tryAddPlayer(
-                                                AntiFeedManager.OFFLINE_PLAY,
-                                                player,
-                                                DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP)) {
-                            final NpcHtmlMessage msg = new NpcHtmlMessage();
-                            msg.setFile(null, "data/html/mods/IPRestriction.htm");
-                            msg.replace(
-                                    "%max%",
-                                    String.valueOf(AntiFeedManager.getInstance()
-                                            .getLimit(
-                                                    client,
-                                                    DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP)));
-                            client.sendPacket(msg);
-                            return;
-                        } else if ((DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP > 0)
-                                && !AntiFeedManager.getInstance()
-                                        .tryAddClient(
-                                                AntiFeedManager.GAME_ID,
-                                                client,
-                                                DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP)) {
-                            final NpcHtmlMessage msg = new NpcHtmlMessage();
-                            msg.setFile(null, "data/html/mods/IPRestriction.htm");
-                            msg.replace(
-                                    "%max%",
-                                    String.valueOf(AntiFeedManager.getInstance()
-                                            .getLimit(client, DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP)));
-                            client.sendPacket(msg);
-                            return;
-                        }
-                    }
-
-                    if (FactionSystemConfig.FACTION_SYSTEM_ENABLED
-                            && FactionSystemConfig.FACTION_BALANCE_ONLINE_PLAYERS) {
-                        if (info.good()
-                                && (World.getGoodPlayersCount()
-                                        >= (World.getEvilPlayersCount()
-                                                + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
-                            final NpcHtmlMessage msg = new NpcHtmlMessage();
-                            msg.setFile(null, "data/html/mods/Faction/ExceededOnlineLimit.htm");
-                            msg.replace("%more%", FactionSystemConfig.FACTION_GOOD_TEAM_NAME);
-                            msg.replace("%less%", FactionSystemConfig.FACTION_EVIL_TEAM_NAME);
-                            client.sendPacket(msg);
-                            return;
-                        }
-
-                        if (info.evil()
-                                && (World.getEvilPlayersCount()
-                                        >= (World.getGoodPlayersCount()
-                                                + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
-                            final NpcHtmlMessage msg = new NpcHtmlMessage();
-                            msg.setFile(null, "data/html/mods/Faction/ExceededOnlineLimit.htm");
-                            msg.replace("%more%", FactionSystemConfig.FACTION_EVIL_TEAM_NAME);
-                            msg.replace("%less%", FactionSystemConfig.FACTION_GOOD_TEAM_NAME);
-                            client.sendPacket(msg);
-                            return;
-                        }
-                    }
-
-                    // Load up character from disk.
-                    final Player cha = client.load(charSlot);
-                    if (cha == null) {
-                        return; // handled in GameClient
-                    }
-
-                    CharInfoTable.getInstance().addName(cha);
-
-                    // Prevent instant disappear of invisible GMs on login.
-                    if (cha.isGM()
-                            && GeneralConfig.GM_STARTUP_INVISIBLE
-                            && AdminData.getInstance().hasAccess("admin_invisible", cha.getAccessLevel())) {
-                        cha.setInvisible(true);
-                    }
-
-                    // Restore player location.
-                    final PlayerVariables vars = cha.getVariables();
-                    final String restore = vars.getString(PlayerVariables.RESTORE_LOCATION, "");
-                    if (!restore.isEmpty()) {
-                        final String[] split = restore.split(";");
-                        cha.setXYZ(Integer.parseInt(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
-                        vars.remove(PlayerVariables.RESTORE_LOCATION);
-                    }
-
-                    cha.setClient(client);
-                    client.setPlayer(cha);
-                    cha.setOnlineStatus(true, true);
-
-                    if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_SELECT, Containers.Players())) {
-                        final TerminateReturn terminate = EventDispatcher.getInstance()
-                                .notifyEvent(
-                                        OnPlayerSelect.builder()
-                                                .player(cha)
-                                                .objectId(cha.getObjectId())
-                                                .name(cha.getName())
-                                                .client(client)
-                                                .build(),
-                                        Containers.Players(),
-                                        TerminateReturn.class);
-                        if ((terminate != null) && terminate.terminate()) {
-                            Disconnection.of(cha).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-                            return;
-                        }
-                    }
-
-                    client.sendPacket(new SSQInfo());
-                    client.sendPacket(
-                            new CharSelected(cha, client.getSessionId().playOk1()));
+                    select(client, command.slot());
                 }
             } finally {
                 client.getPlayerLock().unlock();
@@ -259,5 +99,151 @@ public class CharacterSelect extends ClientPacket {
 
             ACCOUNTING_LOG.info("Logged in, {}", client);
         }
+    }
+
+    private static void select(GameClient client, int slot) {
+        final CharacterSummary info = client.getCharSelection(slot);
+        if (info == null) {
+            return;
+        }
+
+        final Player player = World.getPlayer(info.objectId());
+        if (player != null) {
+            if (OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS && player.isAutoPlaying()) {
+                OfflinePlayTable.getInstance().removeOfflinePlay(player);
+            }
+
+            Disconnection.of(player).storeAndDelete();
+        }
+
+        if (PunishmentManager.getInstance()
+                        .hasPunishment(info.objectId(), PunishmentAffect.CHARACTER, PunishmentType.BAN)
+                || PunishmentManager.getInstance()
+                        .hasPunishment(client.getAccountId(), PunishmentAffect.ACCOUNT, PunishmentType.BAN)
+                || PunishmentManager.getInstance()
+                        .hasPunishment(client.getIp(), PunishmentAffect.IP, PunishmentType.BAN)) {
+            client.port().emitAndClose(ServerClosed.INSTANCE);
+            return;
+        }
+
+        // A negative access level is the ban of earlier versions.
+        if (info.accessLevel() < 0) {
+            client.port().emitAndClose(ServerClosed.INSTANCE);
+            return;
+        }
+
+        if (info.accessLevel() < 100) {
+            if ((player != null)
+                    && player.hasPremiumStatus()
+                    && (DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP > 0)
+                    && !AntiFeedManager.getInstance()
+                            .tryAddPlayer(
+                                    AntiFeedManager.OFFLINE_PLAY,
+                                    player,
+                                    DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP)) {
+                LegacyNotices.htmlFile(
+                        client,
+                        IP_RESTRICTION,
+                        Map.of(
+                                "%max%",
+                                String.valueOf(AntiFeedManager.getInstance()
+                                        .getLimit(
+                                                client,
+                                                DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP))));
+                return;
+            } else if ((DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP > 0)
+                    && !AntiFeedManager.getInstance()
+                            .tryAddClient(
+                                    AntiFeedManager.GAME_ID,
+                                    client,
+                                    DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP)) {
+                LegacyNotices.htmlFile(
+                        client,
+                        IP_RESTRICTION,
+                        Map.of(
+                                "%max%",
+                                String.valueOf(AntiFeedManager.getInstance()
+                                        .getLimit(client, DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP))));
+                return;
+            }
+        }
+
+        if (FactionSystemConfig.FACTION_SYSTEM_ENABLED && FactionSystemConfig.FACTION_BALANCE_ONLINE_PLAYERS) {
+            if (info.good()
+                    && (World.getGoodPlayersCount()
+                            >= (World.getEvilPlayersCount()
+                                    + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
+                LegacyNotices.htmlFile(
+                        client,
+                        FACTION_LIMIT,
+                        Map.of(
+                                "%more%", FactionSystemConfig.FACTION_GOOD_TEAM_NAME,
+                                "%less%", FactionSystemConfig.FACTION_EVIL_TEAM_NAME));
+                return;
+            }
+
+            if (info.evil()
+                    && (World.getEvilPlayersCount()
+                            >= (World.getGoodPlayersCount()
+                                    + FactionSystemConfig.FACTION_BALANCE_PLAYER_EXCEED_LIMIT))) {
+                LegacyNotices.htmlFile(
+                        client,
+                        FACTION_LIMIT,
+                        Map.of(
+                                "%more%", FactionSystemConfig.FACTION_EVIL_TEAM_NAME,
+                                "%less%", FactionSystemConfig.FACTION_GOOD_TEAM_NAME));
+                return;
+            }
+        }
+
+        final Player cha = client.load(slot);
+        if (cha == null) {
+            return;
+        }
+
+        CharInfoTable.getInstance().addName(cha);
+
+        // Invisible GMs must not appear for a moment on login.
+        if (cha.isGM()
+                && GeneralConfig.GM_STARTUP_INVISIBLE
+                && AdminData.getInstance().hasAccess("admin_invisible", cha.getAccessLevel())) {
+            cha.setInvisible(true);
+        }
+
+        final PlayerVariables vars = cha.getVariables();
+        final String restore = vars.getString(PlayerVariables.RESTORE_LOCATION, null);
+        if (restore != null) {
+            final String[] split = restore.split(";");
+            cha.setXYZ(Integer.parseInt(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
+            vars.remove(PlayerVariables.RESTORE_LOCATION);
+        }
+
+        cha.setClient(client);
+        client.setPlayer(cha);
+        cha.setOnlineStatus(true, true);
+
+        if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_SELECT, Containers.Players())) {
+            final TerminateReturn terminate = EventDispatcher.getInstance()
+                    .notifyEvent(
+                            OnPlayerSelect.builder()
+                                    .player(cha)
+                                    .objectId(cha.getObjectId())
+                                    .name(cha.getName())
+                                    .client(client)
+                                    .build(),
+                            Containers.Players(),
+                            TerminateReturn.class);
+            if ((terminate != null) && terminate.terminate()) {
+                Disconnection.of(cha).storeAndCloseWith(WorldLeft.INSTANCE);
+                return;
+            }
+        }
+
+        LegacyNotices.sevenSignsSky(client);
+        client.port()
+                .emit(CharacterSelected.of(
+                        cha,
+                        client.getSessionId().playOk1(),
+                        GameTimeTaskManager.getInstance().getGameTime() % MINUTES_PER_DAY));
     }
 }

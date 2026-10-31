@@ -1193,6 +1193,9 @@ app.l2nx.highfive.security.SecondaryPasswordAuth references app.l2nx.highfive.ne
 app.l2nx.highfive.security.SecondaryPasswordAuth references app.l2nx.highfive.network.protocol.p267.serverpackets.Ex2ndPasswordCheck
 app.l2nx.highfive.security.SecondaryPasswordAuth references app.l2nx.highfive.network.protocol.p267.serverpackets.Ex2ndPasswordVerify
 app.l2nx.highfive.security.SecondaryPasswordAuth references app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld
+app.l2nx.highfive.session.LegacyNotices references app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractHtmlPacket
+app.l2nx.highfive.session.LegacyNotices references app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage
+app.l2nx.highfive.session.LegacyNotices references app.l2nx.highfive.network.protocol.p267.serverpackets.SSQInfo
 app.l2nx.highfive.taskmanagers.AttackStanceTaskManager references app.l2nx.highfive.network.protocol.p267.serverpackets.AutoAttackStop
 app.l2nx.highfive.taskmanagers.GameTimeTaskManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.taskmanagers.MessageDeletionTaskManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage

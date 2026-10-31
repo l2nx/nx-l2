@@ -24,79 +24,66 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.character.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.highfive.character.CharacterService;
+import app.l2nx.highfive.character.DeleteFailure;
+import app.l2nx.highfive.character.view.CharacterDeleteFailed;
+import app.l2nx.highfive.character.view.CharacterDeleted;
 import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.mechanics.events.Containers;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerDelete;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteFail;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteSuccess;
-import app.l2nx.protocol.game.p267.serverpackets.reason.CharDeleteFailReason;
+import app.l2nx.highfive.session.GameContexts;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-/**
- * @version $Revision: 1.8.2.1.2.3 $ $Date: 2005/03/27 15:29:30 $
- */
 @Slf4j
-public class CharacterDelete extends ClientPacket {
-    // cd
-    private int charSlot;
+@Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class DeleteCharacterHandler implements ContextCommandHandler<GameClient, DeleteCharacter> {
+    private static final int FIRST_SLOT = 0;
+
+    private final CharacterService characters;
 
     @Override
-    protected void readImpl() {
-        charSlot = readInt();
+    public ContextResolver<GameClient> context() {
+        return GameContexts.LOBBY;
     }
 
     @Override
-    protected void runImpl() {
-        final GameClient client = getClient();
-
-        // if (!client.getFloodProtectors().canSelectCharacter())
-        // {
-        // sendPacket(new CharDeleteFail(CharDeleteFailReason.REASON_DELETION_FAILED));
-        // return;
-        // }
-
+    public void handle(GameClient client, DeleteCharacter command) {
         try {
-            switch (client.markToDeleteChar(charSlot)) {
-                default:
-                case -1: // Error
-                {
-                    break;
-                }
-                case 0: // Success!
-                {
-                    client.sendPacket(new CharDeleteSuccess());
+            switch (client.markToDeleteChar(command.slot())) {
+                case 0 -> {
+                    client.port().emit(CharacterDeleted.INSTANCE);
                     if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_DELETE, Containers.Players())) {
-                        final CharacterSummary charInfo = client.getCharSelection(charSlot);
+                        final CharacterSummary info = client.getCharSelection(command.slot());
                         EventDispatcher.getInstance()
                                 .notifyEvent(
                                         OnPlayerDelete.builder()
-                                                .objectId(charInfo.objectId())
-                                                .name(charInfo.name())
+                                                .objectId(info.objectId())
+                                                .name(info.name())
                                                 .client(client)
                                                 .build(),
                                         Containers.Players());
                     }
-                    break;
                 }
-                case 1: {
-                    client.sendPacket(new CharDeleteFail(CharDeleteFailReason.REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER));
-                    break;
-                }
-                case 2: {
-                    client.sendPacket(new CharDeleteFail(CharDeleteFailReason.REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED));
-                    break;
-                }
+                case 1 -> client.port().emit(new CharacterDeleteFailed(DeleteFailure.CLAN_MEMBER));
+                case 2 -> client.port().emit(new CharacterDeleteFailed(DeleteFailure.CLAN_LEADER));
+                default -> {}
             }
-        } catch (Exception e) {
-            log.warn("{}: {}", getClass().getSimpleName(), e.getMessage());
+        } catch (RuntimeException e) {
+            // The list below must still be shown, or the client keeps waiting on the selection screen.
+            log.warn("Character deletion failed for {}: {}", client, e.getMessage());
         }
 
-        CharacterService.getInstance().showCharacterList(client, 0);
+        characters.showCharacterList(client, FIRST_SLOT);
     }
 }
