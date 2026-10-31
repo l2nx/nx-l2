@@ -88,7 +88,6 @@ lists what is open.
 - [#118](https://github.com/l2nx/nx-l2/issues/118) Bring specs and comments in line with the code
 - [#119](https://github.com/l2nx/nx-l2/issues/119) Add slice and domain-event to the glossary and settle term mismatches
 - [#123](https://github.com/l2nx/nx-l2/issues/123) Loop wakes up to 15 ms late on Windows and counts on-time timers as overdue
-- [#124](https://github.com/l2nx/nx-l2/issues/124) Load bot hanging in connect is counted as neither timeout nor stopped
 
 ## Done
 
