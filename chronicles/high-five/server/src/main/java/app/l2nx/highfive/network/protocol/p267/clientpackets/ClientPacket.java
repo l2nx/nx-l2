@@ -43,15 +43,7 @@ public abstract class ClientPacket extends IncomingPacket<GameClient> implements
 
     @Override
     public void run() {
-        try {
-            runImpl();
-        } catch (RuntimeException e) {
-            // A player left half-entered cannot play on; the session drain still reports the failure.
-            if (this instanceof EnterWorld) {
-                getClient().closeNow();
-            }
-            throw e;
-        }
+        runImpl();
     }
 
     protected abstract void runImpl();

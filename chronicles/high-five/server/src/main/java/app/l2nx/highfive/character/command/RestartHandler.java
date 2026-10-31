@@ -24,9 +24,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.character.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
+import app.l2nx.highfive.action.view.ActionCancelled;
 import app.l2nx.highfive.character.CharacterService;
+import app.l2nx.highfive.character.view.RestartAnswered;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
 import app.l2nx.highfive.data.xml.MapRegionData;
@@ -39,122 +43,122 @@ import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.RestartResponse;
+import app.l2nx.highfive.session.GameContexts;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-/**
- * @version $Revision: 1.11.2.1.2.4 $ $Date: 2005/03/27 15:29:30 $
- */
 @Slf4j
-public class RequestRestart extends ClientPacket {
-
+@Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class RestartHandler implements ContextCommandHandler<Player, Restart> {
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
-    @Override
-    protected void readImpl() {}
+    private final CharacterService characters;
 
     @Override
-    protected void runImpl() {
-        final Player player = getPlayer();
-        if (player == null) {
-            return;
-        }
+    public ContextResolver<Player> context() {
+        return GameContexts.WORLD;
+    }
 
+    @Override
+    public void handle(Player player, Restart command) {
         if ((player.getActiveEnchantItemId() != Player.ID_NONE)
                 || (player.getActiveEnchantAttrItemId() != Player.ID_NONE)) {
-            player.sendPacket(RestartResponse.valueOf(false));
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            refuse(player);
             return;
         }
 
         if (player.isChangingClass()) {
             log.warn("{} tried to restart during class change.", player);
-            player.sendPacket(RestartResponse.valueOf(false));
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            refuse(player);
             return;
         }
 
         if (player.isInStoreMode()) {
             player.sendMessage("Cannot restart while trading.");
-            player.sendPacket(RestartResponse.valueOf(false));
+            player.getPort().emit(RestartAnswered.REFUSED);
             return;
         }
 
         if (AttackStanceTaskManager.getInstance().hasAttackStanceTask(player)
                 && !(player.isGM() && GeneralConfig.GM_RESTART_FIGHTING)) {
-            player.sendPacket(SystemMessageId.YOU_CANNOT_RESTART_WHILE_IN_COMBAT);
-            player.sendPacket(RestartResponse.valueOf(false));
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(MessageShown.of(MessageKey.CANNOT_RESTART_IN_COMBAT));
+            refuse(player);
             return;
         }
 
-        // Prevent player from restarting if they are a festival participant and it is in progress,
-        // otherwise notify party members that the player is no longer a participant.
         if (player.isFestivalParticipant()) {
             if (SevenSignsFestival.getInstance().isFestivalInitialized()) {
                 player.sendMessage("You cannot restart while you are a participant in a festival.");
-                player.sendPacket(RestartResponse.valueOf(false));
-                player.sendPacket(ActionFailed.STATIC_PACKET);
+                refuse(player);
                 return;
             }
 
             final Party playerParty = player.getParty();
             if (playerParty != null) {
-                player.getParty().broadcastString(player.getName() + " has been removed from the upcoming festival.");
+                playerParty.broadcastString(player.getName() + " has been removed from the upcoming festival.");
             }
         }
 
         if (!player.canLogout()) {
-            player.sendPacket(RestartResponse.valueOf(false));
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            refuse(player);
             return;
         }
 
-        // Remove player from boss zone.
         player.removeFromBossZone();
 
-        // Unregister from olympiad.
         if (OlympiadManager.getInstance().isRegistered(player)) {
             OlympiadManager.getInstance().unRegisterNoble(player);
         }
 
         if (!GeneralConfig.RESTORE_PLAYER_INSTANCE) {
-            final int instanceId = player.getInstanceId();
-            if (instanceId > 0) {
-                final Instance world = InstanceManager.getInstance().getInstance(instanceId);
-                if (world != null) {
-                    player.setInstanceId(0);
-                    Location location = world.getExitLoc();
-                    if (location == null) {
-                        location = MapRegionData.getInstance().getTeleToLocation(player, TeleportWhereType.TOWN);
-                    }
-
-                    player.getVariables()
-                            .set(
-                                    PlayerVariables.RESTORE_LOCATION,
-                                    location.getX() + ";" + location.getY() + ";" + location.getZ());
-                    world.removePlayer(player.getObjectId());
-                }
-            }
+            leaveInstance(player);
         }
 
-        final GameClient client = getClient();
+        final GameClient client = player.getClient();
         if (OfflineTraderTable.getInstance().enteredOfflineMode(player)) {
+            // The client is detached now: Mobius's answer and list were dropped unwritten.
             ACCOUNTING_LOG.info("Entered offline mode, {}", client);
-        } else {
-            Disconnection.of(client, player).storeAndDelete();
+            return;
         }
 
-        client.sendPacket(RestartResponse.valueOf(true));
+        Disconnection.of(client, player).storeAndDelete();
+        // The disconnection unbinds the player from the client, so the answer goes through the client's own port.
+        client.port().emit(RestartAnswered.ACCEPTED);
+        characters.showCharacterList(client);
+    }
 
-        // Send character list.
-        CharacterService.getInstance().showCharacterList(client);
+    private static void refuse(Player player) {
+        player.getPort().emit(RestartAnswered.REFUSED);
+        player.getPort().emit(ActionCancelled.INSTANCE);
+    }
+
+    private static void leaveInstance(Player player) {
+        final int instanceId = player.getInstanceId();
+        if (instanceId <= 0) {
+            return;
+        }
+        final Instance world = InstanceManager.getInstance().getInstance(instanceId);
+        if (world == null) {
+            return;
+        }
+        player.setInstanceId(0);
+        Location location = world.getExitLoc();
+        if (location == null) {
+            location = MapRegionData.getInstance().getTeleToLocation(player, TeleportWhereType.TOWN);
+        }
+
+        player.getVariables()
+                .set(PlayerVariables.RESTORE_LOCATION, location.getX() + ";" + location.getY() + ";" + location.getZ());
+        world.removePlayer(player.getObjectId());
     }
 }

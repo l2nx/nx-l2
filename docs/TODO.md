@@ -90,6 +90,7 @@ lists what is open.
 
 ## Done
 
+- [#127](https://github.com/l2nx/nx-l2/issues/127) Restart into offline trade disconnects the new offline trader
 - [#112](https://github.com/l2nx/nx-l2/issues/112) Read server meters through Prometheus and record the actual meter window
 - [#92](https://github.com/l2nx/nx-l2/issues/92) Bind PlayOk to the game server the player selected
 - [#95](https://github.com/l2nx/nx-l2/issues/95) Split account and registration logic out of GameServerLink

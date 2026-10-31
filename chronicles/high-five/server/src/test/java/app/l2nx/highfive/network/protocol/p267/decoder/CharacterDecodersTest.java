@@ -8,16 +8,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.highfive.character.command.CreateCharacter;
 import app.l2nx.highfive.character.command.DeleteCharacter;
+import app.l2nx.highfive.character.command.EnterWorld;
+import app.l2nx.highfive.character.command.Restart;
 import app.l2nx.highfive.character.command.RestoreCharacter;
 import app.l2nx.highfive.character.command.SelectCharacter;
 import app.l2nx.protocol.game.p267.clientpackets.CharacterCreate;
 import app.l2nx.protocol.game.p267.clientpackets.CharacterDelete;
 import app.l2nx.protocol.game.p267.clientpackets.CharacterRestore;
 import app.l2nx.protocol.game.p267.clientpackets.CharacterSelect;
+import app.l2nx.protocol.game.p267.clientpackets.RequestRestart;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +42,7 @@ class CharacterDecodersTest {
     @Nested
     class CharacterCreateDecoding {
         @Test
-        void characterCreate_shouldKeepNameSexClassAndLooks_andDropRaceAndStats() {
+        void characterCreate_shouldKeepNameSexClassAndLooksAndDropRaceAndStats() {
             final CharacterCreate packet = CharacterCreate.builder()
                     .name("Hero")
                     .race(1)
@@ -67,7 +73,7 @@ class CharacterDecodersTest {
         }
 
         @Test
-        void characterCreate_shouldKeepAnEmptyName_forTheHandlerToAnswer() {
+        void characterCreate_shouldKeepAnEmptyNameForTheHandlerToAnswer() {
             final CharacterCreate packet = CharacterCreate.builder().name("").build();
 
             final Object actual = decode(packet::encode, body -> CharacterDecoders.characterCreate(body, null));
@@ -95,7 +101,39 @@ class CharacterDecodersTest {
         }
     }
 
-    /** Encodes like the client, then hands the decoder the body behind the opcode, as the opcode table does. */
+    @Nested
+    class WorldEntryDecoding {
+        @Test
+        void enterWorld_shouldCopyTheRouteAsUnsignedOctets() {
+            final byte[] trace = new byte[20];
+            for (int i = 0; i < trace.length; i++) {
+                trace[i] = (byte) (200 + i - (i > 10 ? 100 : 0));
+            }
+
+            final EnterWorld actual = (EnterWorld) decode(
+                    new app.l2nx.protocol.game.p267.clientpackets.EnterWorld(trace)::encode,
+                    body -> CharacterDecoders.enterWorld(body, null));
+
+            assertThat(actual)
+                    .isEqualTo(new EnterWorld(Stream.of(
+                                    "200.201.202.203",
+                                    "204.205.206.207",
+                                    "208.209.210.111",
+                                    "112.113.114.115",
+                                    "116.117.118.119")
+                            .map(literal -> (Inet4Address) InetAddress.ofLiteral(literal))
+                            .toList()));
+        }
+
+        @Test
+        void restart_shouldNeedNoPayload() {
+            final Object actual =
+                    decode(RequestRestart.INSTANCE::encode, body -> CharacterDecoders.restart(body, null));
+
+            assertThat(actual).isEqualTo(Restart.INSTANCE);
+        }
+    }
+
     private static Object decode(Consumer<ByteBuf> encoder, Function<ByteBuf, Object> decoder) {
         final ByteBuf frame = Unpooled.buffer();
         try {

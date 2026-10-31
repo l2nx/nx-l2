@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -45,7 +45,6 @@ import app.l2nx.highfive.data.xml.EnchantItemGroupsData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
-import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
 import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
@@ -128,46 +127,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Enter World Packet Handler
- * <p>
- * <p>
- * 0000: 03
- * <p>
- * packet format rev87 bddddbdcccccccccccccccccccc
- * <p>
- */
+/** Puts a selected character into the world: the legacy sends of the slices that have not moved yet. */
 @Slf4j
-public class EnterWorld extends ClientPacket {
+public final class PlayerWorldEntry {
     private static final Map<String, ClientHardwareInfoHolder> TRACE_HWINFO = new ConcurrentHashMap<>();
 
-    private final int[][] tracert = new int[5][4];
+    private PlayerWorldEntry() {}
 
-    @Override
-    protected void readImpl() {
-        readBytes(32); // Unknown Byte Array
-        readInt(); // Unknown Value
-        readInt(); // Unknown Value
-        readInt(); // Unknown Value
-        readInt(); // Unknown Value
-        readBytes(32); // Unknown Byte Array
-        readInt(); // Unknown Value
-        for (int i = 0; i < 5; i++) {
-            for (int o = 0; o < 4; o++) {
-                tracert[i][o] = readUnsignedByte();
-            }
-        }
-    }
-
-    @Override
-    protected void runImpl() {
-        final GameClient client = getClient();
-        final Player player = client.getPlayer();
-        if (player == null) {
-            log.warn("EnterWorld failed! player returned 'null'.");
-            Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-            return;
-        }
+    /** {@code tracert} is the route the client traced: five hops of four octets. */
+    public static void enter(Player player, int[][] tracert) {
+        final GameClient client = player.getClient();
         if (player.hasEnteredWorld()) {
             return;
         }
@@ -784,7 +753,7 @@ public class EnterWorld extends ClientPacket {
         }
     }
 
-    private void notifyClanMembers(Player player) {
+    private static void notifyClanMembers(Player player) {
         final Clan clan = player.getClan();
         if (clan != null) {
             clan.getClanMember(player.getObjectId()).setPlayer(player);
@@ -796,7 +765,7 @@ public class EnterWorld extends ClientPacket {
         }
     }
 
-    private void notifySponsorOrApprentice(Player player) {
+    private static void notifySponsorOrApprentice(Player player) {
         if (player.getSponsor() != 0) {
             final Player sponsor = World.getPlayer(player.getSponsor());
             if (sponsor != null) {

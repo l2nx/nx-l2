@@ -30,6 +30,7 @@ import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.engine.core.clock.GameClock;
+import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.PlayerAI;
@@ -3944,6 +3945,12 @@ public class Player extends Playable {
         if (client != null) {
             client.sendPacket(packet);
         }
+    }
+
+    /** {@link ClientPort#DETACHED} without a connected client: offline trade and offline play write nothing. */
+    public ClientPort getPort() {
+        final GameClient current = client;
+        return ((current == null) || current.isDetached()) ? ClientPort.DETACHED : current.port();
     }
 
     /**

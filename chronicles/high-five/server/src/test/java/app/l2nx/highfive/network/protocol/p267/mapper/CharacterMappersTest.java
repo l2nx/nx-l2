@@ -19,6 +19,7 @@ import app.l2nx.highfive.character.view.CharacterDeleted;
 import app.l2nx.highfive.character.view.CharacterListShown;
 import app.l2nx.highfive.character.view.CharacterSelected;
 import app.l2nx.highfive.character.view.CharacterSummary;
+import app.l2nx.highfive.character.view.RestartAnswered;
 import app.l2nx.highfive.character.view.ServerClosed;
 import app.l2nx.highfive.character.view.WorldLeft;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
@@ -38,6 +39,7 @@ import app.l2nx.protocol.game.p267.serverpackets.CharSelected;
 import app.l2nx.protocol.game.p267.serverpackets.CharSelectionInfo;
 import app.l2nx.protocol.game.p267.serverpackets.LeaveWorld;
 import app.l2nx.protocol.game.p267.serverpackets.LoginFail;
+import app.l2nx.protocol.game.p267.serverpackets.RestartResponse;
 import app.l2nx.protocol.game.p267.serverpackets.ServerClose;
 import app.l2nx.protocol.game.p267.serverpackets.reason.CharCreateFailReason;
 import app.l2nx.protocol.game.p267.serverpackets.reason.CharDeleteFailReason;
@@ -46,7 +48,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HexFormat;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -70,7 +74,7 @@ class CharacterMappersTest {
     @Nested
     class AuthenticationFailedMapping {
         @Test
-        void map_shouldBeLoginFail_systemErrorLoginLater() {
+        void map_shouldBeLoginFailWithSystemErrorLoginLater() {
             assertThat(new AuthenticationFailedMapper().map(AuthenticationFailed.INSTANCE, null))
                     .isEqualTo(new LoginFail(LoginFailReason.SYSTEM_ERROR_LOGIN_LATER));
         }
@@ -80,7 +84,6 @@ class CharacterMappersTest {
             final ByteBuf frame =
                     P267Mappers.serialize(AuthenticationFailed.INSTANCE, null, UnpooledByteBufAllocator.DEFAULT);
             try {
-                // The frame keeps the 2 length bytes in front of the payload.
                 assertThat(HexFormat.of().formatHex(ByteBufUtil.getBytes(frame, 2, frame.readableBytes() - 2)))
                         .isEqualTo("0a" + "01000000");
             } finally {
@@ -140,7 +143,7 @@ class CharacterMappersTest {
     @Nested
     class SelectionEventsMapping {
         @Test
-        void characterCreated_shouldBeCharCreateOk() {
+        void map_shouldBeCharCreateOk_whenTheCharacterIsCreated() {
             assertThat(new CharacterCreatedMapper().map(CharacterCreated.INSTANCE, null))
                     .isEqualTo(CharCreateOk.INSTANCE);
         }
@@ -153,13 +156,14 @@ class CharacterMappersTest {
             "NAME_TOO_LONG, REASON_16_ENG_CHARS",
             "INCORRECT_NAME, REASON_INCORRECT_NAME"
         })
-        void characterCreateFailed_shouldCarryTheClientReason(CreateFailure failure, CharCreateFailReason expected) {
+        void map_shouldCarryTheClientReason_whenTheCharacterCreateFailed(
+                CreateFailure failure, CharCreateFailReason expected) {
             assertThat(new CharacterCreateFailedMapper().map(new CharacterCreateFailed(failure), null))
                     .isEqualTo(new CharCreateFail(expected));
         }
 
         @Test
-        void characterDeleted_shouldBeCharDeleteSuccess() {
+        void map_shouldBeCharDeleteSuccess_whenTheCharacterIsDeleted() {
             assertThat(new CharacterDeletedMapper().map(CharacterDeleted.INSTANCE, null))
                     .isEqualTo(CharDeleteSuccess.INSTANCE);
         }
@@ -169,20 +173,21 @@ class CharacterMappersTest {
             "CLAN_MEMBER, REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER",
             "CLAN_LEADER, REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED"
         })
-        void characterDeleteFailed_shouldCarryTheClientReason(DeleteFailure failure, CharDeleteFailReason expected) {
+        void map_shouldCarryTheClientReason_whenTheCharacterDeleteFailed(
+                DeleteFailure failure, CharDeleteFailReason expected) {
             assertThat(new CharacterDeleteFailedMapper().map(new CharacterDeleteFailed(failure), null))
                     .isEqualTo(new CharDeleteFail(expected));
         }
 
         @Test
-        void serverClosedAndWorldLeft_shouldBeTheirFixedPackets() {
+        void map_shouldBeTheirFixedPackets_whenTheServerClosedOrTheWorldLeft() {
             assertThat(new ServerClosedMapper().map(ServerClosed.INSTANCE, null))
                     .isEqualTo(ServerClose.INSTANCE);
             assertThat(new WorldLeftMapper().map(WorldLeft.INSTANCE, null)).isEqualTo(LeaveWorld.INSTANCE);
         }
 
         @Test
-        void characterSelected_shouldCarryEveryValueOfTheEvent() {
+        void map_shouldCarryEveryValueOfTheEvent_whenTheCharacterIsSelected() {
             final CharacterSelected event = CharacterSelected.builder()
                     .name("Alice")
                     .playerHandle(0x10000001)
@@ -255,6 +260,23 @@ class CharacterMappersTest {
         }
     }
 
+    @Nested
+    class RestartAnsweredMapping {
+        @Test
+        void map_shouldCarryTheAnswer() {
+            final RestartAnsweredMapper mapper = new RestartAnsweredMapper();
+
+            assertThat(mapper.map(RestartAnswered.ACCEPTED, null)).isEqualTo(new RestartResponse(true));
+            assertThat(mapper.map(RestartAnswered.REFUSED, null)).isEqualTo(new RestartResponse(false));
+        }
+
+        @Test
+        void serialize_shouldWriteTheRestartResponseFrame() {
+            assertThat(payload(RestartAnswered.ACCEPTED)).isEqualTo("7101000000");
+            assertThat(payload(RestartAnswered.REFUSED)).isEqualTo("7100000000");
+        }
+    }
+
     private enum SelectionEvent {
         CHARACTER_CREATED(CharacterCreated.INSTANCE),
         CHARACTER_CREATE_FAILED(new CharacterCreateFailed(CreateFailure.NAME_TOO_LONG)),
@@ -270,7 +292,6 @@ class CharacterMappersTest {
         }
     }
 
-    /** The payload behind the frame's length header, as lower-case hex. */
     private static String payload(ViewEvent event) {
         final ByteBuf frame = P267Mappers.serialize(event, null, UnpooledByteBufAllocator.DEFAULT);
         try {
@@ -282,12 +303,20 @@ class CharacterMappersTest {
     }
 
     /** A weapon enchanted to 300 (the client shows at most 127) and a chest piece. */
-    private static int[][] paperdoll() {
-        final int[][] paperdoll = new int[Inventory.PAPERDOLL_TOTALSLOTS][3];
-        paperdoll[Inventory.PAPERDOLL_RHAND][0] = 0x10000002;
-        paperdoll[Inventory.PAPERDOLL_RHAND][1] = 2369;
-        paperdoll[Inventory.PAPERDOLL_RHAND][2] = 300;
-        paperdoll[Inventory.PAPERDOLL_CHEST][1] = 1146;
+    private static List<CharacterSummary.PaperdollSlot> paperdoll() {
+        final List<CharacterSummary.PaperdollSlot> paperdoll = new ArrayList<>(Collections.nCopies(
+                Inventory.PAPERDOLL_TOTALSLOTS,
+                CharacterSummary.PaperdollSlot.builder().build()));
+        paperdoll.set(
+                Inventory.PAPERDOLL_RHAND,
+                CharacterSummary.PaperdollSlot.builder()
+                        .objectId(0x10000002)
+                        .itemId(2369)
+                        .enchantLevel(300)
+                        .build());
+        paperdoll.set(
+                Inventory.PAPERDOLL_CHEST,
+                CharacterSummary.PaperdollSlot.builder().itemId(1146).build());
         return paperdoll;
     }
 
@@ -325,8 +354,7 @@ class CharacterMappersTest {
 
     private static CharSelectionInfo.Slot.SlotBuilder slot() {
         final List<Integer> items = Arrays.stream(ServerPacket.paperdollOrder())
-                .map(slot -> paperdoll()[slot][1])
-                .boxed()
+                .mapToObj(slot -> paperdoll().get(slot).itemId())
                 .toList();
         return CharSelectionInfo.Slot.builder()
                 .name("Alice")

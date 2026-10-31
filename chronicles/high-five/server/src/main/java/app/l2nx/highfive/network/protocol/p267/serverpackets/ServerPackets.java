@@ -135,7 +135,6 @@ public enum ServerPackets {
     GET_ON_VEHICLE(0x6E),
     GET_OFF_VEHICLE(0x6F),
     TRADE_REQUEST(0x70),
-    RESTART_RESPONSE(0x71),
     MOVE_TO_PAWN(0x72),
     SSQ_INFO(0x73),
     GAME_GUARD_QUERY(0x74),
@@ -528,7 +527,6 @@ public enum ServerPackets {
         writeId(buffer);
     }
 
-    /** Logs the packet when server packet debugging is on; packets that write through a wire record call it. */
     public void debug(ServerPacket packet) {
         if (DevelopmentConfig.DEBUG_SERVER_PACKETS) {
             final String name = packet.getClass().getSimpleName();

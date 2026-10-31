@@ -29,7 +29,8 @@ public final class P267Mappers {
             new CharacterDeletedMapper(),
             new CharacterDeleteFailedMapper(),
             new ServerClosedMapper(),
-            new WorldLeftMapper());
+            new WorldLeftMapper(),
+            new RestartAnsweredMapper());
 
     private static final Set<Class<? extends ViewEvent>> DROPPED = Set.of();
 

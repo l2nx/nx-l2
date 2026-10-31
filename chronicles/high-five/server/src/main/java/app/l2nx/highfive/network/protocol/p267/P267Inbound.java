@@ -7,6 +7,8 @@ package app.l2nx.highfive.network.protocol.p267;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.highfive.character.command.CreateCharacter;
 import app.l2nx.highfive.character.command.DeleteCharacter;
+import app.l2nx.highfive.character.command.EnterWorld;
+import app.l2nx.highfive.character.command.Restart;
 import app.l2nx.highfive.character.command.RestoreCharacter;
 import app.l2nx.highfive.character.command.SelectCharacter;
 import app.l2nx.highfive.config.DevelopmentConfig;
@@ -107,6 +109,8 @@ public final class P267Inbound {
                 GameClientOpcode.CHARACTER_RESTORE.opcode(),
                 RestoreCharacter.class,
                 CharacterDecoders::characterRestore);
+        routes.command(GameClientOpcode.REQUEST_RESTART.opcode(), Restart.class, CharacterDecoders::restart);
+        routes.command(GameClientOpcode.ENTER_WORLD.opcode(), EnterWorld.class, CharacterDecoders::enterWorld);
     }
 
     private static InboundDecoder legacy(Supplier<? extends ClientPacket> supplier) {

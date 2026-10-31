@@ -93,7 +93,6 @@ class P267InboundRoutesTest {
                         Map.entry("REQUEST_EX_2ND_PASSWORD_CHECK", GameContext.LOBBY),
                         Map.entry("REQUEST_EX_2ND_PASSWORD_VERIFY", GameContext.LOBBY),
                         Map.entry("REQUEST_EX_2ND_PASSWORD_REQ", GameContext.LOBBY),
-                        Map.entry("ENTER_WORLD", GameContext.CHARACTER),
                         Map.entry("REQUEST_KEY_MAPPING", GameContext.CHARACTER),
                         Map.entry("REQUEST_MANOR_LIST", GameContext.CHARACTER),
                         Map.entry("REQUEST_ALL_FORTRESS_INFO", GameContext.CHARACTER),
