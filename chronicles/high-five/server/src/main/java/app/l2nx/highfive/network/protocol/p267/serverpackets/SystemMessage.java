@@ -303,7 +303,6 @@ public class SystemMessage extends ServerPacket {
         toWire(client).write(buffer.buffer());
     }
 
-    /** The message as this viewer's client shows it: one localized text when its language has a localisation. */
     public app.l2nx.protocol.game.p267.serverpackets.SystemMessage toWire(GameClient viewer) {
         final String lang = language(viewer);
         if (lang != null) {
@@ -330,8 +329,7 @@ public class SystemMessage extends ServerPacket {
         return new app.l2nx.protocol.game.p267.serverpackets.SystemMessage(systemMessageId.getId(), wire);
     }
 
-    /** {@code null} when the viewer reads the default language or localisation is off. */
-    public static String language(GameClient viewer) {
+    private static String language(GameClient viewer) {
         if (!MultilingualSupportConfig.MULTILANG_ENABLE || (viewer == null)) {
             return null;
         }

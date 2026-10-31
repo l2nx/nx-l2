@@ -6,10 +6,6 @@ package app.l2nx.engine.core.session.outbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.engine.core.session.outbound.spi.SharedFrameEmitter;
-import app.l2nx.network.codec.Frames;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,68 +14,9 @@ class AudienceTest {
     record Said(String text) implements ViewEvent {}
 
     @Test
-    void emit_shouldSerializeOncePerKeyAndShareDuplicates() {
-        final List<ByteBuf> serialized = new ArrayList<>();
-        final RecordingPort a = new RecordingPort("v1", serialized);
-        final RecordingPort b = new RecordingPort("v1", serialized);
-        final RecordingPort c = new RecordingPort("v2", serialized);
-
-        Audience.emit(new Said("hi"), List.of(a, b, c));
-
-        assertThat(serialized).hasSize(2);
-        assertThat(a.shared).hasSize(1);
-        assertThat(b.shared.getFirst().unwrap()).isSameAs(a.shared.getFirst().unwrap());
-        assertThat(serialized.get(0).refCnt()).as("v1 frame, held by a and b").isEqualTo(2);
-        assertThat(serialized.get(1).refCnt()).as("v2 frame, held by c").isEqualTo(1);
-        a.release();
-        b.release();
-        c.release();
-        assertThat(serialized).allSatisfy(frame -> assertThat(frame.refCnt()).isZero());
-    }
-
-    @Test
-    void emit_shouldFallBackToEmit_whenPortDoesNotShare() {
-        final RecordingPort port = new RecordingPort(null, new ArrayList<>());
-
-        Audience.emit(new Said("hi"), List.of(port));
-
-        assertThat(port.emitted).hasSize(1);
-        assertThat(port.shared).isEmpty();
-    }
-
-    @Test
-    void emit_shouldSendNothing_whenTheMapperDropsTheEvent() {
-        final RecordingPort port = new RecordingPort("v1", new ArrayList<>()) {
-            @Override
-            public ByteBuf serialize(ViewEvent event) {
-                return null;
-            }
-        };
-
-        Audience.emit(new Said("hi"), List.of(port));
-
-        assertThat(port.shared).isEmpty();
-        assertThat(port.emitted).isEmpty();
-    }
-
-    @Test
-    void emit_shouldCallEmitOnEachPort_whenAPortHasNoSharedFrames() {
+    void emit_shouldEmitOncePerEntry_whenAPortIsListedTwice() {
         final List<ViewEvent> emitted = new ArrayList<>();
-        final ClientPort plain = new ClientPort() {
-            @Override
-            public void emit(ViewEvent event) {
-                emitted.add(event);
-            }
-
-            @Override
-            public void emitAndClose(ViewEvent event) {}
-
-            @Override
-            public void legacy(LegacyPacket packet) {}
-
-            @Override
-            public void legacyAndClose(LegacyPacket packet) {}
-        };
+        final ClientPort plain = new RecordingPort(emitted);
         final Said said = new Said("hi");
 
         Audience.emit(said, List.of(plain, plain));
@@ -87,17 +24,20 @@ class AudienceTest {
         assertThat(emitted).containsExactly(said, said);
     }
 
-    private static class RecordingPort implements ClientPort, SharedFrameEmitter {
-        private final Object key;
-        private final List<ByteBuf> serialized;
-        private final List<ByteBuf> shared = new ArrayList<>();
-        private final List<ViewEvent> emitted = new ArrayList<>();
+    @Test
+    void emit_shouldDeliverTheEventToEveryPort() {
+        final List<ViewEvent> first = new ArrayList<>();
+        final List<ViewEvent> second = new ArrayList<>();
+        final List<ViewEvent> third = new ArrayList<>();
+        final Said said = new Said("hi");
 
-        RecordingPort(Object key, List<ByteBuf> serialized) {
-            this.key = key;
-            this.serialized = serialized;
-        }
+        Audience.emit(said, List.of(new RecordingPort(first), new RecordingPort(second), new RecordingPort(third)));
 
+        assertThat(List.of(first, second, third))
+                .allSatisfy(events -> assertThat(events).containsExactly(said));
+    }
+
+    private record RecordingPort(List<ViewEvent> emitted) implements ClientPort {
         @Override
         public void emit(ViewEvent event) {
             emitted.add(event);
@@ -111,26 +51,5 @@ class AudienceTest {
 
         @Override
         public void legacyAndClose(LegacyPacket packet) {}
-
-        @Override
-        public Object audienceKey(ViewEvent event) {
-            return key;
-        }
-
-        @Override
-        public ByteBuf serialize(ViewEvent event) {
-            final ByteBuf frame = Unpooled.buffer(4).writeInt(1);
-            serialized.add(frame);
-            return frame;
-        }
-
-        @Override
-        public void sendShared(ByteBuf frame) {
-            shared.add(Frames.share(frame));
-        }
-
-        void release() {
-            shared.forEach(ByteBuf::release);
-        }
     }
 }

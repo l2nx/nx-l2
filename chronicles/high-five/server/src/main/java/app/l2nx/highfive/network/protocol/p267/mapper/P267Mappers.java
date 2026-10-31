@@ -6,7 +6,6 @@ package app.l2nx.highfive.network.protocol.p267.mapper;
 
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 import io.netty.buffer.ByteBuf;
@@ -70,14 +69,5 @@ public final class P267Mappers {
             packet.write(frame);
             return true;
         });
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Object audienceKey(P267Adapter adapter, ViewEvent event, GameClient viewer) {
-        final OutboundMapper<ViewEvent> mapper = (OutboundMapper<ViewEvent>) BY_TYPE.get(event.getClass());
-        if (mapper == null) {
-            return null;
-        }
-        return mapper.viewerDependent() ? List.of(adapter, mapper.variant(event, viewer)) : adapter;
     }
 }

@@ -16,20 +16,12 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 import java.util.List;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Resolves the NPC and skill a parameter names and fills the legacy system message builder with them, so its High Five
- * parameter rules (NPC id offset, server-side NPC, item and skill names, localisation) apply; then maps its wire
- * record. The localized text makes the bytes depend on the viewer's language.
- */
+/** Fills the legacy system message builder so its High Five parameter rules (NPC id offset, localisation) apply. */
 @Slf4j
 public final class MessageShownMapper implements OutboundMapper<MessageShown> {
     private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
-
-    // The language the legacy writer treats as the default: every viewer reading it shares one frame.
-    private static final String DEFAULT_LANGUAGE = "en";
 
     @Override
     public Class<MessageShown> eventType() {
@@ -39,16 +31,6 @@ public final class MessageShownMapper implements OutboundMapper<MessageShown> {
     @Override
     public GameServerPacket map(MessageShown event, GameClient viewer) {
         return map(P267Messages.id(event.key()), event.params(), viewer);
-    }
-
-    @Override
-    public boolean viewerDependent() {
-        return true;
-    }
-
-    @Override
-    public Object variant(MessageShown event, GameClient viewer) {
-        return Objects.requireNonNullElse(SystemMessage.language(viewer), DEFAULT_LANGUAGE);
     }
 
     static GameServerPacket map(SystemMessageId id, List<MessageParam> params, GameClient viewer) {

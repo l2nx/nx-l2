@@ -7,10 +7,8 @@ package app.l2nx.highfive.network;
 import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.engine.core.session.outbound.LegacyPacket;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
-import app.l2nx.engine.core.session.outbound.spi.SharedFrameEmitter;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.network.channel.Connections;
-import app.l2nx.network.codec.Frames;
 import app.l2nx.network.metrics.model.Direction;
 import io.netty.buffer.ByteBuf;
 
@@ -18,7 +16,7 @@ import io.netty.buffer.ByteBuf;
  * Serializes through the connection's adapter on the calling thread; before the handshake chose an adapter there is
  * nothing a client could read, so output is dropped.
  */
-public final class GameClientAdapter implements ClientPort, SharedFrameEmitter {
+public final class GameClientAdapter implements ClientPort {
     private final GameConnection connection;
 
     public GameClientAdapter(GameConnection connection) {
@@ -61,21 +59,9 @@ public final class GameClientAdapter implements ClientPort, SharedFrameEmitter {
         connection.outbound().sendAndClose(frame);
     }
 
-    @Override
-    public Object audienceKey(ViewEvent event) {
-        final GameProtocolAdapter adapter = connection.adapter();
-        return adapter == null ? null : adapter.audienceKey(event, connection.client());
-    }
-
-    @Override
-    public ByteBuf serialize(ViewEvent event) {
+    private ByteBuf serialize(ViewEvent event) {
         final GameProtocolAdapter adapter = connection.adapter();
         return adapter == null ? null : adapter.serialize(event, connection.client(), connection.alloc());
-    }
-
-    @Override
-    public void sendShared(ByteBuf frame) {
-        connection.outbound().send(Frames.share(frame));
     }
 
     private ByteBuf serializeLegacy(LegacyPacket packet) {

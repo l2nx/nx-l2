@@ -40,9 +40,6 @@ public interface GameProtocolAdapter {
 
     ByteBuf serializeLegacy(LegacyPacket packet, GameClient viewer, ByteBufAllocator alloc);
 
-    /** Viewers with equal keys get identical bytes; {@code null} disables sharing for this event. */
-    Object audienceKey(ViewEvent event, GameClient viewer);
-
     List<OpcodeTable.Route> inboundRoutes();
 
     Set<Class<? extends ViewEvent>> mappedEvents();

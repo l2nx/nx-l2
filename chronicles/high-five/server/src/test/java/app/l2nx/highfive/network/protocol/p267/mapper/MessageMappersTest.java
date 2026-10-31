@@ -5,6 +5,7 @@
 package app.l2nx.highfive.network.protocol.p267.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -28,12 +29,15 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 
 class MessageMappersTest {
@@ -55,7 +59,7 @@ class MessageMappersTest {
     @Nested
     class MessageShownMapping {
         @Test
-        void map_shouldBeTheSystemMessageOfTheKey_withoutParameters() {
+        void map_shouldBeTheSystemMessageOfTheKey_whenThereAreNoParameters() {
             final MessageShown event = MessageShown.of(MessageKey.CANNOT_RESTART_IN_COMBAT);
 
             assertThat(new MessageShownMapper().map(event, null))
@@ -73,26 +77,21 @@ class MessageMappersTest {
         }
 
         // S1_2 ("$s1") takes one parameter, so filling it never grows a shared message id's parameter count.
-        @Test
-        void map_shouldTurnText_intoATextParameter() {
-            assertThat(MessageShownMapper.map(SystemMessageId.S1_2, List.of(new MessageParam.Text("x")), null))
-                    .isEqualTo(
-                            new SystemMessage(SystemMessageId.S1_2.getId(), List.of(new SystemMessageParam.Text("x"))));
+        @ParameterizedTest
+        @MethodSource("parameters")
+        void map_shouldTurnTheParameterIntoItsWireParameter(MessageParam param, SystemMessageParam expected) {
+            assertThat(MessageShownMapper.map(SystemMessageId.S1_2, List.of(param), null))
+                    .isEqualTo(new SystemMessage(SystemMessageId.S1_2.getId(), List.of(expected)));
         }
 
-        @Test
-        void map_shouldTurnANumber_intoALongNumberParameter() {
-            assertThat(MessageShownMapper.map(SystemMessageId.S1_2, List.of(new MessageParam.Numeric(5)), null))
-                    .isEqualTo(new SystemMessage(
-                            SystemMessageId.S1_2.getId(), List.of(new SystemMessageParam.LongNumber(5))));
-        }
-
-        @Test
-        void map_shouldTurnAPlayerName_intoAPlayerNameParameter() {
-            assertThat(MessageShownMapper.map(
-                            SystemMessageId.S1_2, List.of(new MessageParam.PlayerName("Alice")), null))
-                    .isEqualTo(new SystemMessage(
-                            SystemMessageId.S1_2.getId(), List.of(new SystemMessageParam.PlayerName("Alice"))));
+        static Stream<Arguments> parameters() {
+            return Stream.of(
+                    argumentSet("text", new MessageParam.Text("x"), new SystemMessageParam.Text("x")),
+                    argumentSet("number", new MessageParam.Numeric(5), new SystemMessageParam.LongNumber(5)),
+                    argumentSet(
+                            "player name",
+                            new MessageParam.PlayerName("Alice"),
+                            new SystemMessageParam.PlayerName("Alice")));
         }
 
         @Test
@@ -104,14 +103,8 @@ class MessageMappersTest {
                     .isEqualTo("62" + littleEndian(SystemMessageId.YOU_CANNOT_RESTART_WHILE_IN_COMBAT.getId())
                             + "00000000");
         }
-
-        @Test
-        void mapper_shouldDependOnTheViewer() {
-            assertThat(new MessageShownMapper().viewerDependent()).isTrue();
-        }
     }
 
-    // S1_2 takes one parameter, so each case fills it once.
     @Nested
     class TemplateParameters {
         private static final int ID = 20;
@@ -235,10 +228,13 @@ class MessageMappersTest {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(MessageKey.class)
-    void everyKey_shouldMapToAHighFiveMessage(MessageKey key) {
-        assertThat(P267Messages.id(key)).isNotNull();
+    @Nested
+    class Id {
+        @ParameterizedTest
+        @EnumSource(MessageKey.class)
+        void id_shouldMapEveryKeyToAHighFiveMessage(MessageKey key) {
+            assertThat(P267Messages.id(key)).isNotNull();
+        }
     }
 
     private static String payload(ByteBuf frame) {

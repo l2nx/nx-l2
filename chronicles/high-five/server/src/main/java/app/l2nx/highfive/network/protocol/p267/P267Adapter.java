@@ -90,11 +90,6 @@ public final class P267Adapter implements GameProtocolAdapter {
     }
 
     @Override
-    public Object audienceKey(ViewEvent event, GameClient viewer) {
-        return P267Mappers.audienceKey(this, event, viewer);
-    }
-
-    @Override
     public List<OpcodeTable.Route> inboundRoutes() {
         return inbound.routes();
     }

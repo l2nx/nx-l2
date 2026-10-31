@@ -30,8 +30,9 @@ dependencies {
     testImplementation(libs.liquibase.core)
     testRuntimeOnly(libs.postgresql)
 
-    jmhImplementation(testFixtures(project(":engine:core")))
     jmhImplementation(platform(libs.spring.boot.dependencies))
+    jmhImplementation(testFixtures(project(":libs:network")))
+    jmhImplementation(testFixtures(project(":engine:core")))
     jmhImplementation(libs.mockito.core)
 }
 

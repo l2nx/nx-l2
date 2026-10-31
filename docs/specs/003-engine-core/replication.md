@@ -58,8 +58,8 @@ Mobius has no known lists: visibility is computed per query by scanning neighbou
 
 - **Events and legacy packets emitted earlier in the pass are buffered per session** and released by the
   replication phase in emission order, after the spawns of the pass; the phase then schedules each connection's
-  outbound drain once, so a pass ends with one flush per connection. Serialization once per audience, encryption on the
-  IO thread and buffer ownership are [spec 008 §6](../008-network.md#6-outbound-path).
+  outbound drain once, so a pass ends with one flush per connection. Serialization per session, encryption on the IO
+  thread and buffer ownership are [spec 008 §6](../008-network.md#6-outbound-path).
 
 ## 7. Movement contract
 

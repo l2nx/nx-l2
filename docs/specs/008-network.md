@@ -136,10 +136,12 @@ included, since selecting, creating and entering load and create world objects
 - **One frame encoder** finishes the frame on the IO thread: encrypts in place and fills in the length when the
   buffer is not shared (reference count 1); copies first and then does the same when it is shared. The game cipher
   never covers the length bytes.
-- **Serialized once per audience.** A view event for many sessions is serialized once per
-  `(adapter, viewer variant)`; a mapper declares whether its output depends on the viewer (relation, karma colour,
-  attackable flag) and how viewers group. Each session receives a retained duplicate. This goes through the adapter
-  SPI `SharedFrameEmitter`; game code sees only `ClientPort`.
+- **Serialized per session.** Each session's port serializes a view event for its own client; sharing one frame
+  across an audience measured no gain for chat (`ChatBroadcastBenchmark`: one shout line to N p267 connections from
+  `Audience.emit` through the production encoder, JDK 25 in `eclipse-temurin:25-jdk`, Ryzen 5 5600X, two runs of
+  2 forks, 5×1 s warmup, 10×1 s measurement; shared vs per-session, µs/op per run: 200 viewers × 105 characters
+  402/397 vs 361/360, 50 × 16 47.2/44.5 vs 43.7/42.4, 1 × 16 1.20/1.17 vs 1.08/1.09; at 200 viewers shared allocated
+  about 49 KB/op, per-session 15–36 KB/op), and E8 replication decides again with its own benchmark.
 - **Buffer ownership:** the emitter holds one reference and releases it after the fan-out; each queued duplicate is
   released by the encoder after writing, or by the outbound drain or the close path when the channel closes, the write fails or
   the event loop rejects the task during shutdown.

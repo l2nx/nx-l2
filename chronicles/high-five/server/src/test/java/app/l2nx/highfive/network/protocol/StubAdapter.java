@@ -95,11 +95,6 @@ public class StubAdapter implements GameProtocolAdapter {
     }
 
     @Override
-    public Object audienceKey(ViewEvent event, GameClient viewer) {
-        return this;
-    }
-
-    @Override
     public List<OpcodeTable.Route> inboundRoutes() {
         return table.routes();
     }
