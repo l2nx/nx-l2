@@ -9,6 +9,12 @@
       "matchManagers": ["gradle"],
       "matchPackageNames": ["com.google.protobuf:protoc", "io.grpc:protoc-gen-grpc-java"],
       "enabled": false
+    },
+    {
+      "description": "Prometheus stays on its LTS line (3.13 until the next LTS on prometheus.io/docs/introduction/release-cycle); raise the bound with the next LTS",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["prom/prometheus"],
+      "allowedVersions": "<3.14"
     }
   ]
 }
