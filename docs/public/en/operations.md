@@ -359,14 +359,15 @@ Compose; run them as distributions until then.
 
 The process never restarts itself. It exits with a code, and the supervisor decides.
 
-| Exit code | Meaning                               | Supervisor       |
-| --------- | ------------------------------------- | ---------------- |
-| 0         | stopped on purpose (shutdown)         | does not restart |
-| 1         | startup failure or crash              | restarts         |
-| 2         | restart requested (command, schedule) | restarts         |
-| 143       | stopped by SIGTERM                    | does not restart |
+| Exit code | Meaning                                  | Supervisor       |
+| --------- | ---------------------------------------- | ---------------- |
+| 0         | stopped on purpose (shutdown)            | does not restart |
+| 1         | startup failure or crash                 | restarts         |
+| 2         | restart requested (command, schedule)    | restarts         |
+| 3         | out of memory (`ExitOnOutOfMemoryError`) | restarts         |
+| 143       | stopped by SIGTERM                       | does not restart |
 
-Docker: `--restart on-failure` (or `restart: on-failure` in Compose) restarts on 1 and 2 and leaves `docker stop`
+Docker: `--restart on-failure` (or `restart: on-failure` in Compose) restarts on 1, 2 and 3 and leaves `docker stop`
 alone.
 
 systemd:

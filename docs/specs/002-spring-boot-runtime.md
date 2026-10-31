@@ -103,10 +103,12 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
 | 0    | stopped on purpose (shutdown) | does not restart |
 | 1    | startup failure or crash      | restarts         |
 | 2    | restart requested             | restarts         |
+| 3    | out of memory                 | restarts         |
 | 143  | stopped by SIGTERM (128 + 15) | does not restart |
 
 The process never restarts itself: the Mobius singletons hold static state, so a fresh context in the same JVM
-is not possible. Restarting is the supervisor's job: `restart: on-failure` in Compose, `Restart=on-failure` with
+is not possible. Both servers run with `-XX:+ExitOnOutOfMemoryError` (code 3): after an `OutOfMemoryError` the JVM
+state is unknown, and a login server that survived one kept its port open while refusing clients. Restarting is the supervisor's job: `restart: on-failure` in Compose, `Restart=on-failure` with
 `RestartForceExitStatus=2` and `SuccessExitStatus=143` in systemd. A JVM stopped by SIGTERM exits with 143; `docker stop`
 and `systemctl stop` are not restarted.
 

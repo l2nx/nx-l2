@@ -35,9 +35,12 @@ gitProperties {
     failOnNoGitDirectory = false
 }
 
+// After an OutOfMemoryError the process is in an unknown state (a listener may survive and refuse clients),
+// so it exits with code 3 and the supervisor restarts it.
 val jvmFlags = listOf(
     "-Dfile.encoding=UTF-8",
     "-Djava.awt.headless=true",
+    "-XX:+ExitOnOutOfMemoryError",
 )
 
 application {
