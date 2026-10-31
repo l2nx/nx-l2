@@ -13,6 +13,9 @@ import app.l2nx.highfive.character.command.RestoreCharacter;
 import app.l2nx.highfive.character.command.SelectCharacter;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.login.command.Authenticate;
+import app.l2nx.highfive.movement.command.MoveBlocked;
+import app.l2nx.highfive.movement.command.MoveTo;
+import app.l2nx.highfive.movement.command.ReportPosition;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.InboundDecoder;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
@@ -28,6 +31,7 @@ import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestSaveBookMark
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBookMark;
 import app.l2nx.highfive.network.protocol.p267.decoder.CharacterDecoders;
 import app.l2nx.highfive.network.protocol.p267.decoder.LoginDecoders;
+import app.l2nx.highfive.network.protocol.p267.decoder.MovementDecoders;
 import app.l2nx.highfive.session.GameContext;
 import app.l2nx.protocol.game.p267.clientpackets.GameClientOpcode;
 import io.netty.buffer.ByteBuf;
@@ -111,6 +115,11 @@ public final class P267Inbound {
                 CharacterDecoders::characterRestore);
         routes.command(GameClientOpcode.REQUEST_RESTART.opcode(), Restart.class, CharacterDecoders::restart);
         routes.command(GameClientOpcode.ENTER_WORLD.opcode(), EnterWorld.class, CharacterDecoders::enterWorld);
+        routes.command(GameClientOpcode.MOVE_TO_LOCATION.opcode(), MoveTo.class, MovementDecoders::moveToLocation);
+        routes.command(
+                GameClientOpcode.VALIDATE_POSITION.opcode(), ReportPosition.class, MovementDecoders::validatePosition);
+        routes.command(
+                GameClientOpcode.CANNOT_MOVE_ANYMORE.opcode(), MoveBlocked.class, MovementDecoders::cannotMoveAnymore);
     }
 
     private static InboundDecoder legacy(Supplier<? extends ClientPacket> supplier) {

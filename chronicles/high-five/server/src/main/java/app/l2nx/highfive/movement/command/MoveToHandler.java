@@ -20,8 +20,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.movement.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
+import app.l2nx.highfive.action.view.ActionCancelled;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.DoorData;
@@ -33,72 +36,64 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerMoveRequest;
 import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
+import app.l2nx.highfive.movement.MoveInput;
+import app.l2nx.highfive.session.GameContexts;
+import org.springframework.stereotype.Component;
 
-public class MoveToLocation extends ClientPacket {
-    private int targetX;
-    private int targetY;
-    private int targetZ;
-    private int originX;
-    private int originY;
-    private int originZ;
-    private int movementMode;
+@Component
+class MoveToHandler implements ContextCommandHandler<Player, MoveTo> {
+    private static final int KEYBOARD_SYNC_RANGE_SQ = 1_000 * 1_000;
+    private static final int MAX_MOVE_RANGE_SQ = 9_900 * 9_900;
+    private static final int TELE_MODE_ONCE = 1;
+    private static final int TELE_MODE_ZONE_BUILD = 3;
 
     @Override
-    protected void readImpl() {
-        targetX = readInt();
-        targetY = readInt();
-        targetZ = readInt();
-        originX = readInt();
-        originY = readInt();
-        originZ = readInt();
-        movementMode = readInt(); // is 0 if cursor keys are used 1 if mouse is used
+    public ContextResolver<Player> context() {
+        return GameContexts.WORLD;
     }
 
     @Override
-    protected void runImpl() {
-        final Player player = getPlayer();
-        if (player == null) {
-            return;
-        }
-
+    public void handle(Player player, MoveTo command) {
         if (player.isOverloaded()) {
-            player.sendPacket(SystemMessageId.YOU_CANNOT_MOVE_YOU_ARE_TOO_ENCUMBERED);
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(MessageShown.of(MessageKey.CANNOT_MOVE_TOO_ENCUMBERED));
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
         if ((PlayerConfig.PLAYER_MOVEMENT_BLOCK_TIME > 0)
                 && !player.isGM()
                 && (player.getNotMoveUntil() > ClockBridge.gameMillis())) {
-            player.sendPacket(SystemMessageId.YOU_CANNOT_MOVE_WHILE_SPEAKING_TO_AN_NPC_ONE_MOMENT_PLEASE);
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(MessageShown.of(MessageKey.CANNOT_MOVE_WHILE_SPEAKING_TO_NPC));
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
-        if ((targetX == originX) && (targetY == originY) && (targetZ == originZ)) {
+        final int targetX = command.targetX();
+        final int targetY = command.targetY();
+        final int targetZ = command.targetZ();
+        if ((targetX == command.originX()) && (targetY == command.originY()) && (targetZ == command.originZ())) {
             player.stopMove(player.getLocation());
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
-        // Check if target location is obstructed.
         if (GeoEngine.getInstance()
                 .isCompletelyBlocked(GeoEngine.getGeoX(targetX), GeoEngine.getGeoY(targetY), targetZ)) {
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
-        // Check for possible door logout and move over exploit. Also checked at ValidatePosition.
+        // A door between the last server position and the current one is the door logout exploit.
         if (DoorData.getInstance()
                 .checkIfDoorsBetween(player.getLastServerPosition(), player.getLocation(), player.getInstanceId())) {
             player.stopMove(player.getLastServerPosition());
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
-        if (movementMode == 1) {
+        if (command.input() == MoveInput.MOUSE) {
             player.setCursorKeyMovement(false);
 
             if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_MOVE_REQUEST, player)) {
@@ -108,21 +103,20 @@ public class MoveToLocation extends ClientPacket {
                                 player,
                                 TerminateReturn.class);
                 if ((terminate != null) && terminate.terminate()) {
-                    player.sendPacket(ActionFailed.STATIC_PACKET);
+                    player.getPort().emit(ActionCancelled.INSTANCE);
                     return;
                 }
             }
-        } else // 0
-        {
+        } else {
             if (!PlayerConfig.ENABLE_KEYBOARD_MOVEMENT && !player.inObserverMode()) {
                 return;
             }
 
-            final int dx = originX - player.getX();
-            final int dy = originY - player.getY();
-            if (((dx * dx) + (dy * dy)) < 1000000) // 1000 distance ^2
-            {
-                player.setSyncedXYZ(originX, originY, originZ);
+            // In double: an int square wraps, so an origin 65536 away would pass as near and teleport the player.
+            final double dx = (double) command.originX() - player.getX();
+            final double dy = (double) command.originY() - player.getY();
+            if (((dx * dx) + (dy * dy)) < KEYBOARD_SYNC_RANGE_SQ) {
+                player.setSyncedXYZ(command.originX(), command.originY(), command.originZ());
             }
 
             player.setCursorKeyMovement(true);
@@ -131,41 +125,35 @@ public class MoveToLocation extends ClientPacket {
 
         final int teleMode = player.getTeleMode();
         if (teleMode > 0) {
-            if (teleMode == 3) // Admin zone build.
-            {
+            if (teleMode == TELE_MODE_ZONE_BUILD) {
                 ZoneBuildManager.getInstance().addPoint(player, new Location(targetX, targetY, targetZ));
-                player.sendPacket(ActionFailed.STATIC_PACKET);
+                player.getPort().emit(ActionCancelled.INSTANCE);
                 return;
             }
 
-            if (teleMode == 1) {
+            if (teleMode == TELE_MODE_ONCE) {
                 player.setTeleMode(0);
             }
 
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(ActionCancelled.INSTANCE);
             player.teleToLocation(new Location(targetX, targetY, targetZ));
             return;
         }
 
-        // Can't move if character is confused.
         if (player.isOutOfControl()) {
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
-        // Can't move if character is trying to move a huge distance.
-        final double dx = targetX - player.getX();
-        final double dy = targetY - player.getY();
-        if (((dx * dx) + (dy * dy)) > 98010000) // 9900 distance ^2
-        {
-            player.sendPacket(ActionFailed.STATIC_PACKET);
+        final double dx = (double) targetX - player.getX();
+        final double dy = (double) targetY - player.getY();
+        if (((dx * dx) + (dy * dy)) > MAX_MOVE_RANGE_SQ) {
+            player.getPort().emit(ActionCancelled.INSTANCE);
             return;
         }
 
-        // Finally move to the target location.
         player.getAI().setIntentionMoveTo(new Location(targetX, targetY, targetZ));
 
-        // Mobius: Check spawn protections.
         player.onActionRequest();
     }
 }

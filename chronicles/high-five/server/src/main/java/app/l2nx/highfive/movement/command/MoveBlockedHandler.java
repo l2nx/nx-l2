@@ -20,37 +20,27 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.movement.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.session.GameContexts;
+import org.springframework.stereotype.Component;
 
-/**
- * @version $Revision: 1.1.2.1.2.4 $ $Date: 2005/03/27 15:29:30 $
- */
-public class CannotMoveAnymore extends ClientPacket {
-    private int x;
-    private int y;
-    private int z;
-    private int heading;
-
+@Component
+class MoveBlockedHandler implements ContextCommandHandler<Player, MoveBlocked> {
     @Override
-    protected void readImpl() {
-        x = readInt();
-        y = readInt();
-        z = readInt();
-        heading = readInt();
+    public ContextResolver<Player> context() {
+        return GameContexts.WORLD;
     }
 
     @Override
-    protected void runImpl() {
-        final Player player = getPlayer();
-        if (player == null) {
-            return;
-        }
-
+    public void handle(Player player, MoveBlocked command) {
         if (player.getAI() != null) {
-            player.getAI().notifyActionArrivedBlocked(new Location(x, y, z, heading));
+            player.getAI()
+                    .notifyActionArrivedBlocked(new Location(command.x(), command.y(), command.z(), command.heading()));
         }
     }
 }

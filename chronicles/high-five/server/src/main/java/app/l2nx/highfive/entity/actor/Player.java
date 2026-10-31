@@ -3929,6 +3929,23 @@ public class Player extends Playable {
     }
 
     /**
+     * Ports of the players who see this one by the legacy visibility of {@link World}, the audience
+     * {@code broadcastPacket} reaches; the replication phase replaces it.
+     */
+    public List<ClientPort> observerPorts(boolean includeSelf) {
+        final List<ClientPort> ports = new ArrayList<>();
+        if (includeSelf) {
+            ports.add(getPort());
+        }
+        World.forEachVisibleObject(this, Player.class, player -> {
+            if (isVisibleFor(player)) {
+                ports.add(player.getPort());
+            }
+        });
+        return ports;
+    }
+
+    /**
      * @return the Alliance Identifier of the Player.
      */
     @Override
