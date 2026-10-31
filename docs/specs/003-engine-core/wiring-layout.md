@@ -91,13 +91,19 @@ The chronicle server (`app.l2nx.highfive`) is cut by feature, not by technical l
 app.l2nx.highfive
   entity      facades (Player, Npc, Item, ...) and templates
   network     pipeline, protocol registry, protocol/<id>/ adapters (packets), gslink/; no game logic
-  session     shared session kernel: the command handler base, legacy notices
+  session     shared session kernel: `GameContext` and `GameContexts` (the game contexts and their resolvers),
+              `LegacyNotices`, `SessionKey`
   login       the game server's side of the login server: online accounts, server listing, LoginPort
-  movement    the periodic systems `player-movement` and `npc-movement`, the root bridge `Movement` for legacy callers
+  character   character list, selection, creation, deletion, restore, restart and enter world: commands and view events
+  movement    the periodic systems `player-movement` and `npc-movement`, the root bridge `Movement` for legacy callers;
+              move commands and position view events
+  message     system message keys and parameters, the `MessageShown` view event
+  action      the `ActionCancelled` view event
+  chat        chat commands, rules and delivery, the `ChatMessage` view event
   partition   the world partition: world load and shutdown hook, `WorldSystem` (how a slice installs its periodic
               systems into the world loop), the static bridges of legacy code to the world loop and to background tasks
   combat  skill  effect  ai  item  trade  mail  auction
-  clan  party  siege  olympiad  quest  chat  reflection  ...
+  clan  party  siege  olympiad  quest  reflection  ...
 ```
 
 - **A slice owns** its components and systems, its static data loader and registry, its commands and their
@@ -126,7 +132,7 @@ app.l2nx.highfive.<slice>
 - **`view/` is what an adapter may read:** the view events and the read-only views a mapper reads to serialize them.
   Components in `model/` implement those view interfaces; they are mutable and owned by their system, so no adapter
   reaches them.
-- **Domain events come with their first consumer.** A slice gets an `event/` package and the `DomainEvent` marker when
+- **Domain events come with their first consumer.** A slice gets an `event/` package, and the engine a `DomainEvent` marker, when
   another slice reacts to one of its facts; the event is published synchronously inside the partition through
   Spring's `ApplicationEventPublisher`. Until then slices call each other's root API. The Mobius `On*` records of
   `EventDispatcher` stay scripting hooks (several carry a veto or a filter the caller waits for) and migrate to

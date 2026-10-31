@@ -100,7 +100,7 @@ Game connection, in order:
    adapter's immutable table, one route per opcode. The decoder wraps the decoded command or legacy packet in the
    session's queue item itself, and the session handler offers that item as is: one allocation per packet. What an
    item needs from the game (a selected character, a character in the world) is checked when it runs (§8 Session
-   states), never here. It only parses: strings are read with a length bound, values it keeps are copied, and the
+   states), never here. It only parses: a decoder caps a string unless the handler answers any length (a login is capped; a character name, a chat text and a whisper target are bounded by the frame alone, so the handler can answer them), values it keeps are copied, and the
    frame is released before the command is enqueued; commands never hold a `ByteBuf`.
    - An unknown opcode is counted and dropped, logged rate-limited, never with a stack trace.
    - A known opcode without a handler is counted as `ignored` and dropped.
@@ -214,10 +214,10 @@ flowchart LR
     Then the handler's `handleWithoutSession` runs on the sender's lane, so a push such as a kick still frees the
     login-side state of an account that has no live session.
     A client command that needs a game context (a selected character, a character in the world) gets it the way
-    Spring MVC gets a handler argument from an argument resolver: its handler declares the context in its signature
-    and the dispatcher resolves it from the session just before the call. A missing context rejects the command as
-    for a legacy packet (§8 Session states); finer conditions stay the handler's own checks. The resolver comes with
-    the first handler that takes a context.
+    Spring MVC gets a handler argument from an argument resolver: its handler is a `ContextCommandHandler` that
+    names a `ContextResolver` and takes the resolved context as the first argument, and the dispatcher resolves it from
+    the session just before the call (High Five: `GameContexts`, over `session/GameContext`). A missing context rejects the command as
+    for a legacy packet (§8 Session states); finer conditions stay the handler's own checks.
   - **Global service** (`ServiceCommandHandler<C>`, `handle(C)`): runs on the serial lane of the service that owns
     the state (the GS-link stream for the `login` slice, §10; a service inbox from E9). No session is involved.
   - **Partition:** a world command not bound to a session, introduced with the world partition (E6).
@@ -247,7 +247,7 @@ partition inbox, so it sees every change made by the items queued before it (a p
 close is discarded uncounted like the rest of the queue. Commands the server addresses to a session itself carry no
 context and always run.
 
-Legacy packets declare their context in the High Five opcode enums (`LegacyContext`), read from the client's game
+Legacy packets declare their context in the High Five opcode enums (`session/GameContext`), read from the client's game
 state: `LOGIN` (the login, read before authentication and run only until an account is authenticated), `ACCOUNT` (an authenticated account), `LOBBY` (the selection
 screen: no character selected), `CHARACTER` (a selected character, while the world loads or in it) and `WORLD`
 (after `EnterWorld`), the default. The list of packets that run before the world follows what the real client
@@ -288,11 +288,11 @@ Each packet layout exists once, in `protocols/`, and serves both sides: the serv
 (MCProtocolLib, Velocity); a schema with generated codecs (Kaitai Struct, a DSL) does not fit Lineage 2's
 conditional fields and nested loops and has no Java writer.
 
-- **The record is its own codec.** A wire record holds the layout only: fields in wire order, strings with their
-  bound, wire enums (reason codes) as values of the protocol, no game types. A client packet has
+- **The record is its own codec.** A wire record holds the layout only: fields in wire order, strings with the
+  cap their decoder applies (none when the handler answers any length), wire enums (reason codes) as values of the protocol, no game types. A client packet has
   `static decode(ByteBuf)` (server) and `encode(ByteBuf)` (load bot); a server packet has `write(ByteBuf)`
   (server) and `static read(ByteBuf)` (load bot). Codecs are pure: no state, no clock, no I/O; decoding follows
-  §5 (bounded strings, values copied, a short frame is a `PacketDecodeException`).
+  §5 (capped strings, values copied, a short frame is a `PacketDecodeException`).
 - **Opcodes** are constants of the protocol module; which packet a side accepts in which state is that side's
   decision, not the codec's.
 - **Keys and framing of a protocol** (static keys, the `Init` XOR pass, the credentials block and the scrambled RSA

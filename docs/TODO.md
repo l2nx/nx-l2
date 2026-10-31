@@ -42,6 +42,8 @@ lists what is open.
 - [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
 - [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
 - [#68](https://github.com/l2nx/nx-l2/issues/68) E0: load harness in a separate process, gate of the E6 cutover ([spec 009](specs/009-load-harness.md))
+- E0 / relay: real-client checks of the first slice that need a second client (observer movement, party, clan and
+  alliance chat between players, GM snoop, kick by a second login, 20-client load): the first-slice acceptance (stage 4)
 - [#69](https://github.com/l2nx/nx-l2/issues/69) JDBC runs on the world loop until write-behind (E4)
 - [#70](https://github.com/l2nx/nx-l2/issues/70) AdminPForge: forge a client packet through the player's adapter
 - [#71](https://github.com/l2nx/nx-l2/issues/71) Load scenario replaying recorded sessions
