@@ -4,12 +4,11 @@
  */
 package app.l2nx.network.codec;
 
-import app.l2nx.network.crypt.GameFrameCipher;
+import app.l2nx.network.crypt.GameXorCipher;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.XorChecksum;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -113,21 +112,37 @@ public class FrameEncoderBenchmark {
         return switch (name) {
             case "none" -> FrameCipher.NONE;
             case "blowfish" -> new BlowfishChecksumCipher();
-            case "game" -> {
-                final GameFrameCipher game = new GameFrameCipher();
-                game.setKey(new byte[16]);
-                // Encoding the key packet turns the XOR on, as on a real connection.
-                final ByteBuf keyFrame = Unpooled.buffer(1).writeByte(0);
-                game.encrypt(keyFrame, 0, 1);
-                keyFrame.release();
-                yield game;
-            }
+            case "game" -> new GameXorShape();
             default -> throw new IllegalArgumentException(name);
         };
     }
 
     private ByteBuf frame() {
         return Frames.allocate(ALLOC, payload + 16).writeZero(payload);
+    }
+
+    static final class GameXorShape implements FrameCipher {
+        private final GameXorCipher xor = new GameXorCipher();
+
+        GameXorShape() {
+            xor.setKey(new byte[16]);
+        }
+
+        @Override
+        public int encryptedLength(int payloadLength) {
+            return payloadLength;
+        }
+
+        @Override
+        public void encrypt(ByteBuf buf, int index, int payloadLength) {
+            xor.encrypt(buf, index, payloadLength);
+        }
+
+        @Override
+        public boolean decrypt(ByteBuf buf, int index, int length) {
+            xor.decrypt(buf, index, length);
+            return true;
+        }
     }
 
     /** The login session cipher's shape, without depending on the login module. */

@@ -32,6 +32,7 @@ on a target path reach 2016 without `--follow`.
 | `java/*/l2jmobius/log/formatter/{Accounting,Enchant,ItemLog}Formatter.java`        | `chronicles/high-five/server/src/main/java/app/l2nx/highfive/log/formatter/` |
 | `java/*/l2jmobius/loginserver/`                                                    | `login/server/src/main/java/app/l2nx/login/`                                 |
 | `java/*/l2jmobius/loginserver/network/` (packet layouts, reasons, key scrambling)  | `protocols/login/c621/src/main/java/app/l2nx/protocol/login/c621/`           |
+| `java/*/l2jmobius/gameserver/network/` (game packet layouts, keys)                 | `protocols/game/p267/src/main/java/app/l2nx/protocol/game/p267/`             |
 | `java/*/l2jmobius/tools/`                                                          | `login/server/src/main/java/app/l2nx/login/tools/`                           |
 | `java/*/l2jmobius/commons/`                                                        | `libs/commons/src/main/java/app/l2nx/commons/`                               |
 | `java/*/l2jmobius/log/` (rest)                                                     | `libs/commons/src/main/java/app/l2nx/commons/log/`                           |

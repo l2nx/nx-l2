@@ -4,7 +4,7 @@
  */
 package app.l2nx.protocol.login.c621.clientpackets;
 
-import app.l2nx.protocol.login.c621.CodeTable;
+import app.l2nx.network.codec.CodeTable;
 
 public enum LoginClientOpcode {
     REQUEST_AUTH_LOGIN(0x00),

@@ -15,13 +15,14 @@ import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.guard.ConnectionDeadlines;
 import app.l2nx.network.channel.guard.IdlePolicy;
 import app.l2nx.network.config.NetworkProperties;
-import app.l2nx.network.crypt.GameFrameCipher;
 import app.l2nx.network.test.TestChannels;
+import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class GameConnectionTest {
@@ -48,41 +49,50 @@ class GameConnectionTest {
         channel.finishAndReleaseAll();
     }
 
-    @Test
-    void authed_shouldStopTheAuthDeadline() {
-        connection.stateChanged(SessionState.CONNECTED, SessionState.AUTHED);
+    @Nested
+    class Authed {
+        @Test
+        void authed_shouldStopTheAuthDeadline() {
+            connection.stateChanged(SessionState.CONNECTED, SessionState.AUTHED);
 
-        channel.advanceTimeBy(properties.authTimeout().toSeconds(), TimeUnit.SECONDS);
-        channel.runScheduledPendingTasks();
+            channel.advanceTimeBy(properties.authTimeout().toSeconds(), TimeUnit.SECONDS);
+            channel.runScheduledPendingTasks();
 
-        assertThat(Connections.closeReason(channel)).isNotEqualTo(CloseReason.TIMEOUT);
+            assertThat(Connections.closeReason(channel)).isNotEqualTo(CloseReason.TIMEOUT);
+        }
+
+        @Test
+        void authed_shouldPingOnReadIdle_whenOnTheCharacterSelectionScreen() {
+            connection.stateChanged(SessionState.CONNECTED, SessionState.AUTHED);
+
+            idleFor(properties.pingInterval().toSeconds());
+
+            assertThat(channel.isOpen()).isTrue();
+            assertThat(pingOpcode()).isEqualTo(0xD9);
+        }
     }
 
-    @Test
-    void authed_shouldPingOnReadIdle_onTheCharacterSelectionScreen() {
-        connection.stateChanged(SessionState.CONNECTED, SessionState.AUTHED);
+    @Nested
+    class Connected {
+        @Test
+        void connected_shouldNotPing() {
+            idleFor(properties.pingInterval().toSeconds());
 
-        idleFor(properties.pingInterval().toSeconds());
-
-        assertThat(channel.isOpen()).isTrue();
-        assertThat(pingOpcode()).isEqualTo(0xD9);
+            assertThat((Object) channel.readOutbound()).isNull();
+        }
     }
 
-    @Test
-    void connected_shouldNotPing() {
-        idleFor(properties.pingInterval().toSeconds());
+    @Nested
+    class Execute {
+        @Test
+        void execute_shouldRunTheTaskOnTheEventLoop() {
+            final boolean[] ran = new boolean[1];
 
-        assertThat((Object) channel.readOutbound()).isNull();
-    }
+            connection.execute(() -> ran[0] = channel.eventLoop().inEventLoop());
+            channel.runPendingTasks();
 
-    @Test
-    void execute_shouldRunTheTaskOnTheEventLoop() {
-        final boolean[] ran = new boolean[1];
-
-        connection.execute(() -> ran[0] = channel.eventLoop().inEventLoop());
-        channel.runPendingTasks();
-
-        assertThat(ran[0]).isTrue();
+            assertThat(ran[0]).isTrue();
+        }
     }
 
     private void idleFor(long seconds) {

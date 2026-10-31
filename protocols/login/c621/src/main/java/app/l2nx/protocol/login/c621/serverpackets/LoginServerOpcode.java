@@ -4,7 +4,7 @@
  */
 package app.l2nx.protocol.login.c621.serverpackets;
 
-import app.l2nx.protocol.login.c621.CodeTable;
+import app.l2nx.network.codec.CodeTable;
 
 public enum LoginServerOpcode {
     INIT(0x00),

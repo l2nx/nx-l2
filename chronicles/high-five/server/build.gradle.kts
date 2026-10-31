@@ -7,6 +7,7 @@ plugins {
 dependencies {
     api(project(":libs:boot"))
     api(project(":libs:network"))
+    api(project(":protocols:game:p267"))
     implementation(project(":libs:database"))
     implementation(project(":libs:gslink"))
     implementation(project(":libs:logging"))

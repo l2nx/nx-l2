@@ -2,10 +2,11 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.network.crypt;
+package app.l2nx.protocol.game.p267.crypt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.l2nx.network.crypt.GameXorCipher;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -62,6 +63,46 @@ class GameFrameCipherTest {
 
         assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
         frame.release();
+    }
+
+    @Test
+    void client_shouldEncryptFromTheFirstFrame_afterTheKeyArrived() {
+        final GameFrameCipher cipher = GameFrameCipher.client();
+        cipher.setKey(KEY);
+
+        final GameXorCipher server = new GameXorCipher();
+        server.setKey(KEY);
+        final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+        cipher.encrypt(frame, 0, 3);
+
+        assertThat(cipher.isEnabled()).isTrue();
+        server.decrypt(frame, 0, 3);
+        assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
+        frame.release();
+    }
+
+    @Test
+    void client_shouldReadTheServersFirstEncryptedFrame() {
+        final GameFrameCipher server = new GameFrameCipher();
+        server.setKey(KEY);
+        roundTrip(server, true);
+        final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+        server.encrypt(frame, 0, 3);
+        final GameFrameCipher client = GameFrameCipher.client();
+        client.setKey(KEY);
+
+        assertThat(client.decrypt(frame, 0, 3)).isTrue();
+
+        assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
+        frame.release();
+    }
+
+    @Test
+    void client_shouldPassFramesClear_untilAKeyIsSet() {
+        final GameFrameCipher cipher = GameFrameCipher.client();
+
+        assertThat(roundTrip(cipher, true)).containsExactly(9, 8, 7);
+        assertThat(roundTrip(cipher, false)).containsExactly(9, 8, 7);
     }
 
     private static byte[] roundTrip(GameFrameCipher cipher, boolean encrypt) {

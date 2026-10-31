@@ -14,7 +14,7 @@ import app.l2nx.highfive.network.protocol.p267.clientpackets.ExClientPackets;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestBookMarkSlotInfo;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestItemList;
 import app.l2nx.network.config.NetworkProperties;
-import app.l2nx.network.crypt.GameFrameCipher;
+import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;

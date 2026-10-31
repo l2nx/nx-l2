@@ -4,11 +4,11 @@
  */
 package app.l2nx.protocol.login.c621.serverpackets;
 
-import static app.l2nx.protocol.login.c621.GoldenBytes.bytes;
-import static app.l2nx.protocol.login.c621.GoldenBytes.hex;
-import static app.l2nx.protocol.login.c621.GoldenBytes.pattern;
-import static app.l2nx.protocol.login.c621.GoldenBytes.read;
-import static app.l2nx.protocol.login.c621.GoldenBytes.written;
+import static app.l2nx.network.test.GoldenBytes.bytes;
+import static app.l2nx.network.test.GoldenBytes.hex;
+import static app.l2nx.network.test.GoldenBytes.pattern;
+import static app.l2nx.network.test.GoldenBytes.read;
+import static app.l2nx.network.test.GoldenBytes.written;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;

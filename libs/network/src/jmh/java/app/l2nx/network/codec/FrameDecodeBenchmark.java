@@ -4,7 +4,6 @@
  */
 package app.l2nx.network.codec;
 
-import app.l2nx.network.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
@@ -43,12 +42,7 @@ public class FrameDecodeBenchmark {
     @Setup
     public void setUp(Blackhole blackhole) {
         sink = blackhole;
-        final GameFrameCipher cipher = new GameFrameCipher();
-        cipher.setKey(new byte[16]);
-        // The first outbound frame is the key packet, sent in clear; encrypting one turns the XOR on.
-        final ByteBuf keyPacket = PooledByteBufAllocator.DEFAULT.buffer(1).writeByte(0);
-        cipher.encrypt(keyPacket, 0, 1);
-        keyPacket.release();
+        final FrameCipher cipher = new FrameEncoderBenchmark.GameXorShape();
         channel = new EmbeddedChannel(
                 Frames.decoder(16 * 1024), new CipherDecoder(cipher), new ChannelInboundHandlerAdapter() {
                     @Override

@@ -15,7 +15,7 @@ import app.l2nx.network.channel.guard.ConnectionDeadlines;
 import app.l2nx.network.channel.guard.EventLoopTasks;
 import app.l2nx.network.channel.guard.IdlePolicy;
 import app.l2nx.network.config.NetworkProperties;
-import app.l2nx.network.crypt.GameFrameCipher;
+import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.local.SynchronizationStrategy;
 import io.netty.buffer.ByteBufAllocator;

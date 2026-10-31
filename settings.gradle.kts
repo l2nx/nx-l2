@@ -14,6 +14,7 @@ rootProject.name = "nx-l2"
 include(":libs:boot", ":libs:database", ":libs:gslink", ":libs:logging", ":libs:network")
 include(":engine:core")
 include(":protocols:login:c621")
+include(":protocols:game:p267")
 include(":login:server", ":login:boot")
 include(":tools:load:core", ":tools:load:protocol-p267", ":tools:load:app")
 

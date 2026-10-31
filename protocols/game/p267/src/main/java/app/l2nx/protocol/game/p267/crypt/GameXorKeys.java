@@ -20,15 +20,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.network.crypt;
+package app.l2nx.protocol.game.p267.crypt;
 
 import java.security.SecureRandom;
 
-/**
- * Session key generator for {@link GameXorCipher}.
- * @author BazookaRpm
- */
-public class GameXorKeys {
+public final class GameXorKeys {
     private static final int KEY_LENGTH_BYTES = 16;
     private static final int RANDOM_PREFIX_LENGTH = 8;
 
@@ -40,10 +36,18 @@ public class GameXorKeys {
 
     private GameXorKeys() {}
 
-    /** Returns 8 random bytes followed by the fixed 8-byte tail. */
     public static byte[] getRandomKey() {
+        final byte[] sent = new byte[RANDOM_PREFIX_LENGTH];
+        KEY_RANDOM.nextBytes(sent);
+        return fromSent(sent);
+    }
+
+    public static byte[] fromSent(byte[] sent) {
+        if ((sent == null) || (sent.length != RANDOM_PREFIX_LENGTH)) {
+            throw new IllegalArgumentException("The key packet carries " + RANDOM_PREFIX_LENGTH + " key bytes");
+        }
         final byte[] key = new byte[KEY_LENGTH_BYTES];
-        KEY_RANDOM.nextBytes(key);
+        System.arraycopy(sent, 0, key, 0, RANDOM_PREFIX_LENGTH);
         System.arraycopy(KEY_TAIL_BYTES, 0, key, RANDOM_PREFIX_LENGTH, KEY_TAIL_BYTES.length);
         return key;
     }

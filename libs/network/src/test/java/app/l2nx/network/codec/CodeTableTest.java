@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.protocol.login.c621;
+package app.l2nx.network.codec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -52,7 +52,7 @@ class CodeTableTest {
 
         @ParameterizedTest(name = "{0}")
         @EnumSource(Sparse.class)
-        void of_shouldFindTheConstant_upToTheLargestCode(Sparse value) {
+        void of_shouldFindTheConstantUpToTheLargestCode(Sparse value) {
             assertThat(table.of(value.code)).isEqualTo(value);
         }
 
@@ -64,9 +64,9 @@ class CodeTableTest {
     }
 
     @Nested
-    class Construct {
+    class Constructor {
         @Test
-        void codeTable_shouldRefuse_whenTwoConstantsShareACode() {
+        void constructor_shouldRefuse_whenTwoConstantsShareACode() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new CodeTable<>(Shared.values(), value -> value.code))
                     .withMessageContaining("FIRST")
@@ -74,7 +74,7 @@ class CodeTableTest {
         }
 
         @Test
-        void codeTable_shouldRefuse_whenACodeIsNegative() {
+        void constructor_shouldRefuse_whenACodeIsNegative() {
             assertThatIllegalArgumentException()
                     .isThrownBy(() -> new CodeTable<>(Negative.values(), value -> value.code))
                     .withMessageContaining("BELOW");

@@ -302,8 +302,8 @@ conditional fields and nested loops and has no Java writer.
   in `Init` (`c621`); a game protocol is `protocols/game/p<version>`, named by the first protocol version its client
   sends (`p267` for 267 to 273; later `p140`, `p557`). Its server adapter carries the same id
   (`network/protocol/p267`).
-- **Modules:** `protocols/login/c621` and `protocols/game/p267`. `p267` codecs come with the first migrated slices;
-  until then its XOR keys and frame cipher stay in `libs/network`.
+- **Modules:** `protocols/login/c621` and `protocols/game/p267`, which holds the keys and the frame cipher of the
+  High Five client in both directions and, from the first migrated slices on, its codecs.
 
 ### Legacy routes during the migration
 
