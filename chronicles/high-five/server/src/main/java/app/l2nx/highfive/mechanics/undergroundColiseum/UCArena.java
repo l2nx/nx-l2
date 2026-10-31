@@ -342,8 +342,11 @@ public class UCArena {
                         UCTeam.resPlayer(player);
                     }
 
-                    final String restore = player.getVariables().getString(PlayerVariables.RESTORE_LOCATION, null);
+                    final PlayerVariables variables = player.getVariables();
+                    final String restore = variables.getString(PlayerVariables.RESTORE_LOCATION, null);
                     if (restore != null) {
+                        // Left set, the next character selection would put the player back on this spot.
+                        variables.remove(PlayerVariables.RESTORE_LOCATION);
                         final String[] split = restore.split(";");
                         player.teleToLocation(
                                 Integer.parseInt(split[0]),

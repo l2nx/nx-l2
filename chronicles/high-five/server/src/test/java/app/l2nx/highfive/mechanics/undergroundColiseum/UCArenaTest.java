@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.engine.core.loop.Loop;
@@ -18,6 +20,7 @@ import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.NpcStringId;
@@ -142,6 +145,28 @@ class UCArenaTest {
             assertThat(shownAt).containsExactly(0L, 30_000L);
             assertThat(world.timers(TimeBase.GAME).size()).isEqualTo(idleTimers);
             assertThat(arena.isBattleNow()).isFalse();
+        }
+    }
+
+    @Nested
+    class RemoveTeams {
+        @Test
+        void removeTeams_shouldReturnTheMemberToTheSavedSpotAndForgetIt_whenARestoreLocationIsSet() {
+            final PlayerVariables variables = member.getVariables();
+            when(variables.getString(PlayerVariables.RESTORE_LOCATION, null)).thenReturn("10;20;30");
+
+            arena.removeTeams();
+
+            verify(member).teleToLocation(10, 20, 30, true);
+            verify(variables).remove(PlayerVariables.RESTORE_LOCATION);
+        }
+
+        @Test
+        void removeTeams_shouldSendTheMemberToTown_whenNoRestoreLocationIsSet() {
+            arena.removeTeams();
+
+            verify(member).teleToLocation(TeleportWhereType.TOWN);
+            verify(member.getVariables(), never()).remove(PlayerVariables.RESTORE_LOCATION);
         }
     }
 
