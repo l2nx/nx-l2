@@ -19,9 +19,12 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
+import app.l2nx.highfive.chat.ChatRules;
+import app.l2nx.highfive.chat.ChatService;
+import app.l2nx.highfive.chat.ChatType;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
-import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import app.l2nx.highfive.data.xml.FakePlayerData;
 import app.l2nx.highfive.entity.World;
@@ -29,9 +32,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.handler.IChatHandler;
 import app.l2nx.highfive.managers.FakePlayerChatManager;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 
 /**
  * Tell Chat Handler.
@@ -43,14 +45,12 @@ public class ChatWhisper implements IChatHandler {
     @Override
     public void onChat(ChatType type, Player activeChar, String target, String text) {
         if (activeChar.isChatBanned() && GeneralConfig.BAN_CHAT_CHANNELS.contains(type)) {
-            activeChar.sendPacket(
-                    SystemMessageId
-                            .CHATTING_IS_CURRENTLY_PROHIBITED_IF_YOU_TRY_TO_CHAT_BEFORE_THE_PROHIBITION_IS_REMOVED_THE_PROHIBITION_TIME_WILL_INCREASE_EVEN_FURTHER);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED_EXTENDED));
             return;
         }
 
         if (GeneralConfig.JAIL_DISABLE_CHAT && activeChar.isJailed() && !activeChar.isGM()) {
-            activeChar.sendPacket(SystemMessageId.CHATTING_IS_CURRENTLY_PROHIBITED);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED));
             return;
         }
 
@@ -64,13 +64,16 @@ public class ChatWhisper implements IChatHandler {
             if (FakePlayerData.getInstance().isTalkable(target)) {
                 if (FakePlayersConfig.FAKE_PLAYER_CHAT) {
                     final String name = FakePlayerData.getInstance().getProperName(target);
-                    activeChar.sendPacket(new CreatureSay(activeChar, type, "->" + name, text));
+                    ChatService.getInstance()
+                            .deliver(
+                                    activeChar,
+                                    ChatService.message(activeChar, type, text).echoTo(name));
                     FakePlayerChatManager.getInstance().manageChat(activeChar, name, text);
                 } else {
-                    activeChar.sendPacket(SystemMessageId.THAT_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
+                    activeChar.getPort().emit(MessageShown.of(MessageKey.MESSAGE_REFUSAL_MODE));
                 }
             } else {
-                activeChar.sendPacket(SystemMessageId.THAT_PLAYER_IS_NOT_ONLINE);
+                activeChar.getPort().emit(MessageShown.of(MessageKey.PLAYER_NOT_ONLINE));
             }
             return;
         }
@@ -83,7 +86,7 @@ public class ChatWhisper implements IChatHandler {
             }
 
             if (receiver.isChatBanned()) {
-                activeChar.sendPacket(SystemMessageId.THAT_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
+                activeChar.getPort().emit(MessageShown.of(MessageKey.MESSAGE_REFUSAL_MODE));
                 return;
             }
 
@@ -92,9 +95,7 @@ public class ChatWhisper implements IChatHandler {
                 return;
             }
 
-            if (FactionSystemConfig.FACTION_SYSTEM_ENABLED
-                    && FactionSystemConfig.FACTION_SPECIFIC_CHAT
-                    && ((activeChar.isGood() && receiver.isEvil()) || (activeChar.isEvil() && receiver.isGood()))) {
+            if (ChatRules.opposingFactions(activeChar, receiver)) {
                 activeChar.sendMessage("Player belongs to the opposing faction.");
                 return;
             }
@@ -105,13 +106,15 @@ public class ChatWhisper implements IChatHandler {
                     activeChar.addSilenceModeExcluded(receiver.getObjectId());
                 }
 
-                receiver.sendPacket(new CreatureSay(activeChar, type, activeChar.getName(), text));
-                activeChar.sendPacket(new CreatureSay(activeChar, type, "->" + receiver.getName(), text));
+                final ChatMessage message = ChatService.message(activeChar, type, text);
+                final ChatService chat = ChatService.getInstance();
+                chat.deliver(receiver, message);
+                chat.deliver(activeChar, message.echoTo(receiver.getName()));
             } else {
-                activeChar.sendPacket(SystemMessageId.THAT_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
+                activeChar.getPort().emit(MessageShown.of(MessageKey.MESSAGE_REFUSAL_MODE));
             }
         } else {
-            activeChar.sendPacket(SystemMessageId.THAT_PLAYER_IS_NOT_ONLINE);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.PLAYER_NOT_ONLINE));
         }
     }
 

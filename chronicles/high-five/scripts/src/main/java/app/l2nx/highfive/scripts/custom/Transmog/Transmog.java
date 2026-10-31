@@ -27,6 +27,7 @@
 package app.l2nx.highfive.scripts.custom.Transmog;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.custom.TransmogConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -45,7 +46,6 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlaye
 import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.util.ArrayList;

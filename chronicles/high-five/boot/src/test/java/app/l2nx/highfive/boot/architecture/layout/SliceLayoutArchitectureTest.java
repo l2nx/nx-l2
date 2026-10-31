@@ -52,6 +52,9 @@ class SliceLayoutArchitectureTest {
     static final ArchRule slicesWithoutNetwork = RULES.slicesWithoutNetwork();
 
     @ArchTest
+    static final ArchRule chatChannelsWithoutNetwork = RULES.chatChannelsWithoutNetwork();
+
+    @ArchTest
     static final ArchRule noImplOrGateway = RULES.noImplOrGateway();
 
     // Legacy code breaks this; src/test/archunit-store holds its violations and may only shrink.

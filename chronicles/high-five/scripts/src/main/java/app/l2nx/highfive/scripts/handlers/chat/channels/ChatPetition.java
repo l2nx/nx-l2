@@ -19,12 +19,13 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IChatHandler;
 import app.l2nx.highfive.managers.PetitionManager;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 
 /**
  * Petition chat handler.
@@ -38,19 +39,17 @@ public class ChatPetition implements IChatHandler {
     @Override
     public void onChat(ChatType type, Player activeChar, String target, String text) {
         if (activeChar.isChatBanned() && GeneralConfig.BAN_CHAT_CHANNELS.contains(type)) {
-            activeChar.sendPacket(
-                    SystemMessageId
-                            .CHATTING_IS_CURRENTLY_PROHIBITED_IF_YOU_TRY_TO_CHAT_BEFORE_THE_PROHIBITION_IS_REMOVED_THE_PROHIBITION_TIME_WILL_INCREASE_EVEN_FURTHER);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED_EXTENDED));
             return;
         }
 
         if (GeneralConfig.JAIL_DISABLE_CHAT && activeChar.isJailed() && !activeChar.isGM()) {
-            activeChar.sendPacket(SystemMessageId.CHATTING_IS_CURRENTLY_PROHIBITED);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED));
             return;
         }
 
         if (!PetitionManager.getInstance().isPlayerInConsultation(activeChar)) {
-            activeChar.sendPacket(SystemMessageId.YOU_ARE_CURRENTLY_NOT_IN_A_PETITION_CHAT);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.NOT_IN_PETITION_CHAT));
             return;
         }
 

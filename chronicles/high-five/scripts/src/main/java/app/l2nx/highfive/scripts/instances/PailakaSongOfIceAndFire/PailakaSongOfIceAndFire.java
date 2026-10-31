@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.PailakaSongOfIceAndFire;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.mechanics.script.InstanceScript;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Pailaka Song of Ice and Fire Instance zone.

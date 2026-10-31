@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.OptionData;
@@ -44,7 +45,6 @@ import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;

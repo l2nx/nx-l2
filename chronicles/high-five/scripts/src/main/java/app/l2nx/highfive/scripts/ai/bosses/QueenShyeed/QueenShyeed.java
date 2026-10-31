@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.QueenShyeed;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.managers.GlobalVariablesManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Queen Shyeed AI

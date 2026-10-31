@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PvpConfig;
 import app.l2nx.highfive.config.custom.FindPvpConfig;
@@ -30,7 +31,6 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import java.util.HashMap;
 import java.util.Map;

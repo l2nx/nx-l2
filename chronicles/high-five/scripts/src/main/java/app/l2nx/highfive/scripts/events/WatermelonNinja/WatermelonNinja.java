@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.events.WatermelonNinja;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -30,7 +31,6 @@ import app.l2nx.highfive.entity.actor.instance.Monster;
 import app.l2nx.highfive.entity.item.holders.ItemChanceHolder;
 import app.l2nx.highfive.mechanics.script.LongTimeEvent;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
 import app.l2nx.highfive.util.ArrayUtil;

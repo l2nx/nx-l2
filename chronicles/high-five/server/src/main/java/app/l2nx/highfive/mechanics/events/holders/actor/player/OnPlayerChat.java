@@ -19,10 +19,10 @@
  */
 package app.l2nx.highfive.mechanics.events.holders.actor.player;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
-import app.l2nx.highfive.network.enums.ChatType;
 import lombok.Builder;
 
 /**

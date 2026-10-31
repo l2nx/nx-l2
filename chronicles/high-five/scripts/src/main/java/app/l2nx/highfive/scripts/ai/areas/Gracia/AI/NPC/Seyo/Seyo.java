@@ -19,11 +19,11 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.AI.NPC.Seyo;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Seyo AI.

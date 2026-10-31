@@ -27,6 +27,7 @@
 package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -89,7 +90,6 @@ import app.l2nx.highfive.mechanics.variables.AccountVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
@@ -121,32 +121,38 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.UserInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import java.net.Inet4Address;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
-/** Puts a selected character into the world: the legacy sends of the slices that have not moved yet. */
 @Slf4j
 public final class PlayerWorldEntry {
     private static final Map<String, ClientHardwareInfoHolder> TRACE_HWINFO = new ConcurrentHashMap<>();
 
     private PlayerWorldEntry() {}
 
-    /** {@code tracert} is the route the client traced: five hops of four octets. */
-    public static void enter(Player player, int[][] tracert) {
+    public static void enter(Player player, List<Inet4Address> route) {
         final GameClient client = player.getClient();
         if (player.hasEnteredWorld()) {
             return;
         }
 
-        final String[] adress = new String[5];
-        for (int i = 0; i < 5; i++) {
-            adress[i] = tracert[i][0] + "." + tracert[i][1] + "." + tracert[i][2] + "." + tracert[i][3];
+        // The legacy client state and hardware-info comparison read each hop as unsigned octets.
+        final int[][] tracert = new int[route.size()][];
+        for (int i = 0; i < tracert.length; i++) {
+            final byte[] octets = route.get(i).getAddress();
+            tracert[i] = new int[octets.length];
+            for (int j = 0; j < octets.length; j++) {
+                tracert[i][j] = octets[j] & 0xFF;
+            }
         }
 
-        LoginService.getInstance().reportRoute(client.getAccountId(), List.of(adress));
+        final List<String> addresses =
+                route.stream().map(Inet4Address::getHostAddress).toList();
+        LoginService.getInstance().reportRoute(client.getAccountId(), addresses);
         client.setClientTracert(tracert);
 
         player.sendPacket(new UserInfo(player));

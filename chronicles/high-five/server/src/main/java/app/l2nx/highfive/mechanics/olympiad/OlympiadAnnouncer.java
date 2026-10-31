@@ -19,11 +19,11 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * @author DS

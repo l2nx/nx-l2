@@ -22,13 +22,13 @@
  */
 package app.l2nx.highfive.scripts.custom.FactionSystem;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 
 /**

@@ -28,6 +28,8 @@ package app.l2nx.highfive.entity.clan;
 
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 
+import app.l2nx.highfive.chat.ChatService;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
@@ -62,7 +64,6 @@ import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExSubPledgeSkillAdd;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeReceiveSubPledgeCreated;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate;
@@ -1096,12 +1097,26 @@ public class Clan {
         }
     }
 
-    public void broadcastCSToOnlineMembers(CreatureSay packet, Player broadcaster) {
+    public void broadcastChatToOnlineMembers(ChatMessage message, Player sender) {
+        ChatService.getInstance().deliverAll(onlineMembersAccepting(sender), message);
+    }
+
+    public void broadcastChatToOnlineAllyMembers(ChatMessage message, Player sender) {
+        final List<Player> receivers = new ArrayList<>();
+        for (Clan clan : ClanTable.getInstance().getClanAllies(getAllyId())) {
+            receivers.addAll(clan.onlineMembersAccepting(sender));
+        }
+        ChatService.getInstance().deliverAll(receivers, message);
+    }
+
+    private List<Player> onlineMembersAccepting(Player sender) {
+        final List<Player> receivers = new ArrayList<>();
         for (ClanMember member : members.values()) {
-            if ((member != null) && member.isOnline() && !BlockList.isBlocked(member.getPlayer(), broadcaster)) {
-                member.getPlayer().sendPacket(packet);
+            if ((member != null) && member.isOnline() && !BlockList.isBlocked(member.getPlayer(), sender)) {
+                receivers.add(member.getPlayer());
             }
         }
+        return receivers;
     }
 
     public void broadcastToOtherOnlineMembers(ServerPacket packet, Player player) {

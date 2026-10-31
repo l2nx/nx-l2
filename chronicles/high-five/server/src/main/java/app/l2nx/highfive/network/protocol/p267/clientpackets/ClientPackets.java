@@ -83,7 +83,6 @@ public enum ClientPackets {
     REQUEST_WITH_DRAWAL_PARTY(0x44, RequestWithDrawalParty::new),
     REQUEST_OUST_PARTY_MEMBER(0x45, RequestOustPartyMember::new),
     REQUEST_TARGET_CANCELD(0x48, RequestTargetCanceld::new),
-    SAY2(0x49, Say2::new),
     REQUEST_PLEDGE_MEMBER_LIST(0x4D, RequestPledgeMemberList::new),
     REQUEST_MAGIC_LIST(0x4F, null),
     REQUEST_SKILL_LIST(0x50, RequestSkillList::new),

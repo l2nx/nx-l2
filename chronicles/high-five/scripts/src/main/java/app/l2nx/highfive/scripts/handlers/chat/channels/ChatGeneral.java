@@ -19,17 +19,21 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
+import app.l2nx.highfive.chat.ChatRules;
+import app.l2nx.highfive.chat.ChatService;
+import app.l2nx.highfive.chat.ChatType;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.handler.IChatHandler;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.handler.VoicedCommandHandler;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -67,9 +71,7 @@ public class ChatGeneral implements IChatHandler {
 
         if (!vcdUsed) {
             if (activeChar.isChatBanned() && GeneralConfig.BAN_CHAT_CHANNELS.contains(type)) {
-                activeChar.sendPacket(
-                        SystemMessageId
-                                .CHATTING_IS_CURRENTLY_PROHIBITED_IF_YOU_TRY_TO_CHAT_BEFORE_THE_PROHIBITION_IS_REMOVED_THE_PROHIBITION_TIME_WILL_INCREASE_EVEN_FURTHER);
+                activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED_EXTENDED));
                 return;
             }
 
@@ -79,29 +81,21 @@ public class ChatGeneral implements IChatHandler {
                 return;
             }
 
-            final CreatureSay cs =
-                    new CreatureSay(activeChar, type, activeChar.getAppearance().getVisibleName(), text);
-            final CreatureSay csRandom = new CreatureSay(
-                    activeChar, type, activeChar.getAppearance().getVisibleName(), ChatRandomizer.randomize(text));
+            final ChatMessage message =
+                    ChatService.message(activeChar, activeChar.getAppearance().getVisibleName(), type, text);
+            final ChatMessage randomized =
+                    message.toBuilder().text(ChatRandomizer.randomize(text)).build();
+            final List<Player> plain = new ArrayList<>();
+            final List<Player> opposing = new ArrayList<>();
             World.forEachVisibleObjectInRange(activeChar, Player.class, 1250, player -> {
                 if ((player != null) && !BlockList.isBlocked(player, activeChar)) {
-                    if (FactionSystemConfig.FACTION_SYSTEM_ENABLED) {
-                        if (FactionSystemConfig.FACTION_SPECIFIC_CHAT) {
-                            if ((activeChar.isGood() && player.isEvil()) || (activeChar.isEvil() && player.isGood())) {
-                                player.sendPacket(csRandom);
-                            } else {
-                                player.sendPacket(cs);
-                            }
-                        } else {
-                            player.sendPacket(cs);
-                        }
-                    } else {
-                        player.sendPacket(cs);
-                    }
+                    (ChatRules.opposingFactions(activeChar, player) ? opposing : plain).add(player);
                 }
             });
-
-            activeChar.sendPacket(cs);
+            plain.add(activeChar);
+            final ChatService chat = ChatService.getInstance();
+            chat.deliverAll(plain, message);
+            chat.deliverAll(opposing, randomized);
         }
     }
 

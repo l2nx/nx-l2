@@ -22,12 +22,13 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
+import app.l2nx.highfive.chat.ChatService;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IChatHandler;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 
 /**
  * Alliance Chat Handler.
@@ -46,20 +47,16 @@ public class ChatAlliance implements IChatHandler {
         }
 
         if (activeChar.isChatBanned() && GeneralConfig.BAN_CHAT_CHANNELS.contains(type)) {
-            activeChar.sendPacket(
-                    SystemMessageId
-                            .CHATTING_IS_CURRENTLY_PROHIBITED_IF_YOU_TRY_TO_CHAT_BEFORE_THE_PROHIBITION_IS_REMOVED_THE_PROHIBITION_TIME_WILL_INCREASE_EVEN_FURTHER);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED_EXTENDED));
             return;
         }
 
         if (GeneralConfig.JAIL_DISABLE_CHAT && activeChar.isJailed() && !activeChar.isGM()) {
-            activeChar.sendPacket(SystemMessageId.CHATTING_IS_CURRENTLY_PROHIBITED);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED));
             return;
         }
 
-        activeChar
-                .getClan()
-                .broadcastToOnlineAllyMembers(new CreatureSay(activeChar, type, activeChar.getName(), text));
+        activeChar.getClan().broadcastChatToOnlineAllyMembers(ChatService.message(activeChar, type, text), activeChar);
     }
 
     @Override

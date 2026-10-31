@@ -17,58 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.enums;
-
-import lombok.Getter;
+package app.l2nx.highfive.chat;
 
 /**
+ * Chat channels; each protocol adapter maps a channel to its client's code.
  * @author St3eT
  */
 public enum ChatType {
-    GENERAL(0),
-    SHOUT(1),
-    WHISPER(2),
-    PARTY(3),
-    CLAN(4),
-    GM(5),
-    PETITION_PLAYER(6),
-    PETITION_GM(7),
-    TRADE(8),
-    ALLIANCE(9),
-    ANNOUNCEMENT(10),
-    BOAT(11),
-    FRIEND(12),
-    MSNCHAT(13),
-    PARTYMATCH_ROOM(14),
-    PARTYROOM_COMMANDER(15),
-    PARTYROOM_ALL(16),
-    HERO_VOICE(17),
-    CRITICAL_ANNOUNCE(18),
-    SCREEN_ANNOUNCE(19),
-    BATTLEFIELD(20),
-    MPCC_ROOM(21),
-    NPC_GENERAL(22),
-    NPC_SHOUT(23);
-
-    @Getter
-    private final int clientId;
-
-    private ChatType(int clientId) {
-        this.clientId = clientId;
-    }
-
-    /**
-     * Finds the {@code ChatType} by its clientId
-     * @param clientId the clientId
-     * @return the {@code ChatType} if it is found, {@code null} otherwise.
-     */
-    public static ChatType findByClientId(int clientId) {
-        for (ChatType chatType : values()) {
-            if (chatType.getClientId() == clientId) {
-                return chatType;
-            }
-        }
-
-        return null;
-    }
+    GENERAL,
+    SHOUT,
+    WHISPER,
+    PARTY,
+    CLAN,
+    GM,
+    PETITION_PLAYER,
+    PETITION_GM,
+    TRADE,
+    ALLIANCE,
+    ANNOUNCEMENT,
+    BOAT,
+    FRIEND,
+    MSNCHAT,
+    PARTYMATCH_ROOM,
+    PARTYROOM_COMMANDER,
+    PARTYROOM_ALL,
+    HERO_VOICE,
+    CRITICAL_ANNOUNCE,
+    SCREEN_ANNOUNCE,
+    BATTLEFIELD,
+    MPCC_ROOM,
+    NPC_GENERAL,
+    NPC_SHOUT
 }

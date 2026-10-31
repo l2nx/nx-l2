@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.PlainsOfDion;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -26,7 +27,6 @@ import app.l2nx.highfive.entity.actor.instance.Monster;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.util.ArrayUtil;
 
 /**

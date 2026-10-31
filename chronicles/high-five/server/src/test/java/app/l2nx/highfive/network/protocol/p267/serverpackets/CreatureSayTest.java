@@ -8,8 +8,8 @@ import static app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessag
 import static app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessageTest.d;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import org.junit.jupiter.api.Test;
 
 class CreatureSayTest {

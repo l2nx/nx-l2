@@ -19,12 +19,12 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.AI.NPC.GeneralDilios;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import java.util.Collections;
 import java.util.Set;

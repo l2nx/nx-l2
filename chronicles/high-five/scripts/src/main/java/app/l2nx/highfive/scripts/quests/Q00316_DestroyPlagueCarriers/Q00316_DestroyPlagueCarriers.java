@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00316_DestroyPlagueCarriers;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
@@ -26,7 +27,6 @@ import app.l2nx.highfive.entity.item.holders.ItemHolder;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import java.util.HashMap;
 import java.util.Map;

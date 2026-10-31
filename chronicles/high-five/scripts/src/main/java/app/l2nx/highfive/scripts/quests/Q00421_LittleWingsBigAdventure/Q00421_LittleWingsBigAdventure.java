@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00421_LittleWingsBigAdventure;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -33,7 +34,6 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;

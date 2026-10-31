@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.AnomicFoundry;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

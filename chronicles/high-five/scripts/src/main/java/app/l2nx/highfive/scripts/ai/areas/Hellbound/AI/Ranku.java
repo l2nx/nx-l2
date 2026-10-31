@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -27,7 +28,6 @@ import app.l2nx.highfive.entity.actor.instance.Monster;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 

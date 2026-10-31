@@ -22,8 +22,11 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.chat.ChatType;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.protocol.p267.P267ChatTypes;
+import app.l2nx.highfive.network.protocol.p267.mapper.ChatMessageMapper;
 import app.l2nx.network.codec.PacketWriter;
 
 public class Snoop extends ServerPacket {
@@ -32,6 +35,10 @@ public class Snoop extends ServerPacket {
     private final ChatType type;
     private final String speaker;
     private final String msg;
+
+    public Snoop(int id, String name, ChatMessage message) {
+        this(id, name, message.type(), ChatMessageMapper.speaker(message), message.text());
+    }
 
     public Snoop(int id, String name, ChatType type, String speaker, String msg) {
         convoId = id;
@@ -47,7 +54,7 @@ public class Snoop extends ServerPacket {
         buffer.writeInt(convoId);
         buffer.writeString(name);
         buffer.writeInt(0); // ??
-        buffer.writeInt(type.getClientId());
+        buffer.writeInt(P267ChatTypes.channel(type).code());
         buffer.writeString(speaker);
         buffer.writeString(msg);
     }

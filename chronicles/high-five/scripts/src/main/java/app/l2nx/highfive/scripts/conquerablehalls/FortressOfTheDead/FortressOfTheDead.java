@@ -19,13 +19,13 @@
  */
 package app.l2nx.highfive.scripts.conquerablehalls.FortressOfTheDead;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.util.HashMap;

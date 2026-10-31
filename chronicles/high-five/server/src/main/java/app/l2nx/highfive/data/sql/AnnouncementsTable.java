@@ -23,12 +23,12 @@
  */
 package app.l2nx.highfive.data.sql;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.announce.Announcement;
 import app.l2nx.highfive.mechanics.announce.AnnouncementType;
 import app.l2nx.highfive.mechanics.announce.AutoAnnouncement;
 import app.l2nx.highfive.mechanics.announce.IAnnouncement;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.repository.world.AnnouncementRepository;
 import app.l2nx.highfive.repository.world.model.AnnouncementRow;

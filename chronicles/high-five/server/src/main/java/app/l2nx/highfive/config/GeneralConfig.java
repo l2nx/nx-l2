@@ -22,9 +22,9 @@
  */
 package app.l2nx.highfive.config;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.enums.player.ChatBroadcastType;
 import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
-import app.l2nx.highfive.network.enums.ChatType;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;

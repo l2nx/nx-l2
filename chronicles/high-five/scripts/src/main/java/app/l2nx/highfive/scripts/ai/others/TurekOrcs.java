@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.ai.others;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -27,7 +28,6 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Turek Orcs AI - flee and return with assistance

@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.handler;
 
-import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.chat.ChatType;
 import java.util.EnumMap;
 import java.util.Map;
 

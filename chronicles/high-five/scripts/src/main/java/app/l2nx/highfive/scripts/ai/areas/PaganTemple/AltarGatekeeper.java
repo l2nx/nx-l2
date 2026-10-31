@@ -22,11 +22,11 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.PaganTemple;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Altar Gatekeeper retail door-state announcer for Pagan Temple altar 3rd floor (32051).<br>

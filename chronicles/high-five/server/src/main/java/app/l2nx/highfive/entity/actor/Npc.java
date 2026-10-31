@@ -23,6 +23,7 @@
 package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -98,7 +99,6 @@ import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.variables.NpcVariables;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExChangeNpcState;

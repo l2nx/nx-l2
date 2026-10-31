@@ -45,6 +45,9 @@ public final class P267Messages {
         table.put(
                 MessageKey.ACCOUNT_LOGGED_IN_ELSEWHERE,
                 SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT);
+        table.put(MessageKey.MESSAGE_REFUSAL_MODE, SystemMessageId.THAT_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
+        table.put(MessageKey.PLAYER_NOT_ONLINE, SystemMessageId.THAT_PLAYER_IS_NOT_ONLINE);
+        table.put(MessageKey.NOT_IN_PETITION_CHAT, SystemMessageId.YOU_ARE_CURRENTLY_NOT_IN_A_PETITION_CHAT);
         for (MessageKey key : MessageKey.values()) {
             if (table.get(key) == null) {
                 throw new IllegalStateException("No High Five message for " + key);

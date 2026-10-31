@@ -19,11 +19,12 @@
  */
 package app.l2nx.highfive.entity.groups;
 
+import app.l2nx.highfive.chat.ChatService;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.ArrayList;
@@ -135,14 +136,15 @@ public abstract class AbstractPlayerGroup {
         broadcastPacket(new SystemMessage(text));
     }
 
-    public void broadcastCreatureSay(CreatureSay msg, Player broadcaster) {
-        forEachMember(m -> {
-            if ((m != null) && !BlockList.isBlocked(m, broadcaster)) {
-                m.sendPacket(msg);
+    public void broadcastChat(ChatMessage message, Player sender) {
+        final List<Player> receivers = new ArrayList<>();
+        forEachMember(member -> {
+            if ((member != null) && !BlockList.isBlocked(member, sender)) {
+                receivers.add(member);
             }
-
             return true;
         });
+        ChatService.getInstance().deliverAll(receivers, message);
     }
 
     /**

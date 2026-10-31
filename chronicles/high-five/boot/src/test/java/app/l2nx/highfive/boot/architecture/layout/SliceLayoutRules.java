@@ -37,7 +37,8 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class SliceLayoutRules {
     public static final String CHRONICLE_ROOT = "app.l2nx.highfive";
-    static final List<String> MIGRATED = List.of("login", "movement", "partition", "message", "action", "character");
+    static final List<String> MIGRATED =
+            List.of("login", "movement", "partition", "message", "action", "character", "chat");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
 
     /**
@@ -225,6 +226,18 @@ public final class SliceLayoutRules {
                 .dependOnClassesThat()
                 .resideInAnyPackage(internalPackages())
                 .as("code outside a slice does not reach its internal packages")
+                .allowEmptyShould(true);
+    }
+
+    // The converted chat channel scripts deliver through ChatService; they are not a slice, so only this rule holds
+    // them.
+    ArchRule chatChannelsWithoutNetwork() {
+        return noClasses()
+                .that()
+                .resideInAPackage(root + ".scripts.handlers.chat.channels..")
+                .should()
+                .dependOnClassesThat(resideInAPackage(root + ".network..").and(not(LEGACY_NETWORK_FACADES)))
+                .as("chat channel scripts do not depend on network")
                 .allowEmptyShould(true);
     }
 

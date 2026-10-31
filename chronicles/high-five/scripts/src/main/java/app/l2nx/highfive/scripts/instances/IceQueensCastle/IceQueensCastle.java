@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.IceQueensCastle;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
 import app.l2nx.highfive.scripts.quests.Q10285_MeetingSirra.Q10285_MeetingSirra;
 

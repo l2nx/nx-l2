@@ -23,6 +23,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.AdminData;
@@ -30,7 +31,6 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.petition.Petition;
 import app.l2nx.highfive.mechanics.petition.PetitionState;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;

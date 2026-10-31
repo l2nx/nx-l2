@@ -90,6 +90,7 @@ lists what is open.
 
 ## Done
 
+- [#128](https://github.com/l2nx/nx-l2/issues/128) Alliance chat reached players who block the sender
 - [#127](https://github.com/l2nx/nx-l2/issues/127) Restart into offline trade disconnects the new offline trader
 - [#112](https://github.com/l2nx/nx-l2/issues/112) Read server meters through Prometheus and record the actual meter window
 - [#92](https://github.com/l2nx/nx-l2/issues/92) Bind PlayOk to the game server the player selected

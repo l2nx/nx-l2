@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.SSQLibraryOfSages;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -26,7 +27,6 @@ import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.mechanics.script.InstanceScript;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Library of Sages instance zone.

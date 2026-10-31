@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.others.Minigame;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
@@ -34,7 +35,6 @@ import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;

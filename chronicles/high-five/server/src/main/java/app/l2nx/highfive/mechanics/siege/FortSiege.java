@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -48,7 +49,6 @@ import app.l2nx.highfive.mechanics.events.holders.sieges.fort.OnFortSiegeFinish;
 import app.l2nx.highfive.mechanics.events.holders.sieges.fort.OnFortSiegeStart;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;

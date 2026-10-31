@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.others.MercenaryCaptain;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.xml.MultisellData;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -27,7 +28,6 @@ import app.l2nx.highfive.managers.TerritoryWarManager.Territory;
 import app.l2nx.highfive.managers.TerritoryWarManager.TerritoryNPCSpawn;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowDominionRegistry;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.HashMap;

@@ -35,7 +35,8 @@ class SliceLayoutRulesTest {
             Map.entry("noImplOrGateway", SliceLayoutRules::noImplOrGateway),
             Map.entry("slicesWithoutNetwork", SliceLayoutRules::slicesWithoutNetwork),
             Map.entry("networkUsesSliceApi", SliceLayoutRules::networkUsesSliceApi),
-            Map.entry("legacyUsesSliceApi", SliceLayoutRules::legacyUsesSliceApi));
+            Map.entry("legacyUsesSliceApi", SliceLayoutRules::legacyUsesSliceApi),
+            Map.entry("chatChannelsWithoutNetwork", SliceLayoutRules::chatChannelsWithoutNetwork));
 
     static Set<String> rules() {
         return RULES.keySet();

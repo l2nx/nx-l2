@@ -352,7 +352,6 @@ app.l2nx.highfive.entity.actor.tasks.player.VitalityTask references app.l2nx.hig
 app.l2nx.highfive.entity.actor.tasks.player.WaterTask references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.entity.actor.transform.Transform references app.l2nx.highfive.network.protocol.p267.serverpackets.ExBasicActionList
 app.l2nx.highfive.entity.actor.transform.TransformTemplate references app.l2nx.highfive.network.protocol.p267.serverpackets.ExBasicActionList
-app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
 app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.ExSubPledgeSkillAdd
 app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeReceiveSubPledgeCreated
 app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate
@@ -364,7 +363,6 @@ app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol
 app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket
 app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate
 app.l2nx.highfive.entity.clan.Clan references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
-app.l2nx.highfive.entity.groups.AbstractPlayerGroup references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
 app.l2nx.highfive.entity.groups.AbstractPlayerGroup references app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket
 app.l2nx.highfive.entity.groups.AbstractPlayerGroup references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.entity.groups.CommandChannel references app.l2nx.highfive.network.protocol.p267.serverpackets.ExCloseMPCC
@@ -817,18 +815,6 @@ app.l2nx.highfive.scripts.handlers.bypass.npc.TerritoryStatus references app.l2n
 app.l2nx.highfive.scripts.handlers.bypass.npc.TutorialClose references app.l2nx.highfive.network.protocol.p267.serverpackets.TutorialCloseHtml
 app.l2nx.highfive.scripts.handlers.bypass.npc.Wear references app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed
 app.l2nx.highfive.scripts.handlers.bypass.npc.Wear references app.l2nx.highfive.network.protocol.p267.serverpackets.ShopPreviewList
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatAlliance references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatBattlefield references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatClan references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatGeneral references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatHeroVoice references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatParty references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatPartyMatchRoom references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatPartyRoomAll references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatPartyRoomCommander references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatShout references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatTrade references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
-app.l2nx.highfive.scripts.handlers.chat.channels.ChatWhisper references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
 app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminAdmin references app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage
 app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminBuffs references app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage
 app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminBuffs references app.l2nx.highfive.network.protocol.p267.serverpackets.SkillCoolTime

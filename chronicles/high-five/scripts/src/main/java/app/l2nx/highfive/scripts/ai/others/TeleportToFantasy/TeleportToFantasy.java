@@ -22,11 +22,11 @@
  */
 package app.l2nx.highfive.scripts.ai.others.TeleportToFantasy;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.network.enums.ChatType;
 import java.util.HashMap;
 import java.util.Map;
 

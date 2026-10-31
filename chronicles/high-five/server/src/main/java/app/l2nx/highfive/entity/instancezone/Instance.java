@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.instancezone;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.InstanceReenterTimeHolder;
@@ -34,7 +35,6 @@ import app.l2nx.highfive.entity.actor.templates.DoorTemplate;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;

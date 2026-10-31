@@ -36,6 +36,8 @@ import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.PlayerAI;
 import app.l2nx.highfive.ai.SummonAI;
 import app.l2nx.highfive.cache.RelationCache;
+import app.l2nx.highfive.chat.ChatType;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
@@ -278,7 +280,6 @@ import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.HtmlActionScope;
 import app.l2nx.highfive.network.holders.RequestPartner;
 import app.l2nx.highfive.network.holders.TradeList;
@@ -393,6 +394,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -3928,10 +3930,6 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Ports of the players who see this one by the legacy visibility of {@link World}, the audience
-     * {@code broadcastPacket} reaches; the replication phase replaces it.
-     */
     public List<ClientPort> observerPorts(boolean includeSelf) {
         final List<ClientPort> ports = new ArrayList<>();
         if (includeSelf) {
@@ -9505,16 +9503,23 @@ public class Player extends Playable {
     }
 
     public void broadcastSnoop(ChatType type, String name, String text, CreatureSay cs) {
-        if (snoopListener.isEmpty()) {
-            return;
+        if (!snoopListener.isEmpty()) {
+            snoop(new Snoop(getObjectId(), getName(), type, name, text), port -> port.legacy(cs));
         }
+    }
 
-        final Snoop sn = new Snoop(getObjectId(), getName(), type, name, text);
-        for (Player pci : snoopListener) {
-            if (pci != null) {
-                pci.sendPacket(cs);
-                pci.sendPacket(sn);
-            }
+    public void broadcastSnoop(ChatMessage message) {
+        if (!snoopListener.isEmpty()) {
+            snoop(new Snoop(getObjectId(), getName(), message), port -> port.emit(message));
+        }
+    }
+
+    // The snooper's port runs no send-time side effect, so two GMs snooping each other cannot loop.
+    private void snoop(Snoop line, Consumer<ClientPort> forward) {
+        for (Player snooper : snoopListener) {
+            final ClientPort port = snooper.getPort();
+            forward.accept(port);
+            port.legacy(line);
         }
     }
 

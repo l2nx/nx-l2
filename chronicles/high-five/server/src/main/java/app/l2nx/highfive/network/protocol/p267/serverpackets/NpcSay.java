@@ -19,13 +19,14 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.NpcStringId.NSLocalisation;
-import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.protocol.p267.P267ChatTypes;
 import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -115,7 +116,7 @@ public class NpcSay extends ServerPacket {
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.NPC_SAY.writeId(this, buffer);
         buffer.writeInt(objectId);
-        buffer.writeInt(textType.getClientId());
+        buffer.writeInt(P267ChatTypes.channel(textType).code());
         buffer.writeInt(npcId);
 
         // Localisation related.

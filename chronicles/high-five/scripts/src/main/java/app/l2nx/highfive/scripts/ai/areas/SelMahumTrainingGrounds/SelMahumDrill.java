@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.ai.areas.SelMahumTrainingGrounds;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.util.ArrayUtil;
 import lombok.AccessLevel;
 import lombok.Getter;

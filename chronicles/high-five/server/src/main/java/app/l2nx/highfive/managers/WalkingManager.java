@@ -20,6 +20,7 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.holders.NpcRoutesHolder;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -34,7 +35,6 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveNodeArrived;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.io.File;
 import java.util.ArrayList;

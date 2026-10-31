@@ -22,14 +22,14 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.protocol.p267.P267ChatTypes;
 import app.l2nx.network.codec.PacketWriter;
-import app.l2nx.protocol.game.p267.ChatChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +82,7 @@ public class CreatureSay extends ServerPacket {
         ServerPackets.SAY2.debug(this);
         app.l2nx.protocol.game.p267.serverpackets.CreatureSay.builder()
                 .senderId(sender == null ? 0 : sender.getObjectId())
-                .channel(ChatChannel.of(chatType.getClientId()))
+                .channel(P267ChatTypes.channel(chatType))
                 .senderName(senderName)
                 .senderNameId(charId)
                 .messageId(messageId)

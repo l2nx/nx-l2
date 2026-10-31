@@ -20,8 +20,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.p267.clientpackets;
+package app.l2nx.highfive.chat.command;
 
+import app.l2nx.engine.core.session.command.ContextCommandHandler;
+import app.l2nx.engine.core.session.command.ContextResolver;
+import app.l2nx.highfive.action.view.ActionCancelled;
+import app.l2nx.highfive.character.CharacterService;
+import app.l2nx.highfive.character.view.WorldLeft;
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.WalkerBotProtectionConfig;
@@ -37,124 +43,113 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerChat;
 import app.l2nx.highfive.mechanics.events.returns.ChatFilterReturn;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
+import app.l2nx.highfive.session.GameContexts;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-/**
- * @version $Revision: 1.16.2.12.2.7 $ $Date: 2005/04/11 10:06:11 $
- */
 @Slf4j
-public class Say2 extends ClientPacket {
-
+@Component
+class SendChatHandler implements ContextCommandHandler<Player, SendChat> {
     private static final Logger CHAT_LOG = LoggerFactory.getLogger("chat");
 
-    private static final String[] WALKER_COMMAND_LIST = {
-        "USESKILL",
-        "USEITEM",
-        "BUYITEM",
-        "SELLITEM",
-        "SAVEITEM",
-        "LOADITEM",
-        "MSG",
-        "DELAY",
-        "LABEL",
-        "JMP",
-        "CALL",
-        "RETURN",
-        "MOVETO",
-        "NPCSEL",
-        "NPCDLG",
-        "DLGSEL",
-        "CHARSTATUS",
-        "POSOUTRANGE",
-        "POSINRANGE",
-        "GOHOME",
-        "SAY",
-        "EXIT",
-        "PAUSE",
-        "STRINDLG",
-        "STRNOTINDLG",
-        "CHANGEWAITTYPE",
-        "FORCEATTACK",
-        "ISMEMBER",
-        "REQUESTJOINPARTY",
-        "REQUESTOUTPARTY",
-        "QUITPARTY",
-        "MEMBERSTATUS",
-        "CHARBUFFS",
-        "ITEMCOUNT",
-        "FOLLOWTELEPORT"
-    };
+    // The High Five client caps typed chat at 105 characters (verified on retail High Five 4); a longer line is
+    // forged, except with item links, which add their markup to the text.
+    private static final int MAX_TEXT = 105;
+    private static final int MAX_TEXT_WITH_ITEM_LINK = 500;
+    // Cap for GMs, who skip the client limits; each line is copied once per receiver.
+    private static final int MAX_GM_TEXT = 2048;
+    private static final char ITEM_LINK = 8;
 
-    private String text;
-    private int type;
-    private String target;
+    private static final Set<String> WALKER_COMMANDS = Set.of(
+            "USESKILL",
+            "USEITEM",
+            "BUYITEM",
+            "SELLITEM",
+            "SAVEITEM",
+            "LOADITEM",
+            "MSG",
+            "DELAY",
+            "LABEL",
+            "JMP",
+            "CALL",
+            "RETURN",
+            "MOVETO",
+            "NPCSEL",
+            "NPCDLG",
+            "DLGSEL",
+            "CHARSTATUS",
+            "POSOUTRANGE",
+            "POSINRANGE",
+            "GOHOME",
+            "SAY",
+            "EXIT",
+            "PAUSE",
+            "STRINDLG",
+            "STRNOTINDLG",
+            "CHANGEWAITTYPE",
+            "FORCEATTACK",
+            "ISMEMBER",
+            "REQUESTJOINPARTY",
+            "REQUESTOUTPARTY",
+            "QUITPARTY",
+            "MEMBERSTATUS",
+            "CHARBUFFS",
+            "ITEMCOUNT",
+            "FOLLOWTELEPORT");
 
     @Override
-    protected void readImpl() {
-        text = readString();
-        type = readInt();
-        target = (type == ChatType.WHISPER.getClientId()) ? readString() : null;
+    public ContextResolver<Player> context() {
+        return GameContexts.WORLD;
     }
 
     @Override
-    protected void runImpl() {
-        final Player player = getPlayer();
-        if (player == null) {
-            return;
-        }
-
-        ChatType chatType = ChatType.findByClientId(type);
+    public void handle(Player player, SendChat command) {
+        ChatType chatType = command.type();
+        String text = command.text();
+        final String target = command.target();
         if (chatType == null) {
-            log.warn("Say2: Invalid type: {} Player : {} text: {}", type, player.getName(), text);
-            player.sendPacket(ActionFailed.STATIC_PACKET);
-            Disconnection.of(player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
+            log.warn("Disconnecting {}: chat on a channel the client does not have", player.getName());
+            player.getPort().emit(ActionCancelled.INSTANCE);
+            Disconnection.of(player).storeAndCloseWith(WorldLeft.INSTANCE);
             return;
         }
 
         if (text.isEmpty()) {
             log.warn("{}: sending empty text. Possible packet hack!", player.getName());
-            player.sendPacket(ActionFailed.STATIC_PACKET);
-            Disconnection.of(player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
+            player.getPort().emit(ActionCancelled.INSTANCE);
+            Disconnection.of(player).storeAndCloseWith(WorldLeft.INSTANCE);
             return;
         }
 
-        // Even though the client can handle more characters than it's current limit allows, an overflow (critical
-        // error) happens if you pass a huge (1000+) message.
-        // July 11, 2011 - Verified on High Five 4 official client as 105.
-        // Allow higher limit if player shift some item (text is longer then).
-        if (!player.isGM()
-                && (((text.indexOf(8) >= 0) && (text.length() > 500))
-                        || ((text.indexOf(8) < 0) && (text.length() > 105)))) {
-            player.sendPacket(
-                    SystemMessageId
-                            .WHEN_A_USER_S_KEYBOARD_INPUT_EXCEEDS_A_CERTAIN_CUMULATIVE_SCORE_A_CHAT_BAN_WILL_BE_APPLIED_THIS_IS_DONE_TO_DISCOURAGE_SPAMMING_PLEASE_AVOID_POSTING_THE_SAME_MESSAGE_MULTIPLE_TIMES_DURING_A_SHORT_PERIOD);
+        final boolean itemLink = text.indexOf(ITEM_LINK) >= 0;
+        final int maxText = player.isGM() ? MAX_GM_TEXT : (itemLink ? MAX_TEXT_WITH_ITEM_LINK : MAX_TEXT);
+        if (text.length() > maxText) {
+            player.getPort().emit(MessageShown.of(MessageKey.CHAT_INPUT_SPAM_BAN));
             return;
         }
 
-        if (WalkerBotProtectionConfig.L2WALKER_PROTECTION && (chatType == ChatType.WHISPER) && checkBot(text)) {
+        if (WalkerBotProtectionConfig.L2WALKER_PROTECTION && (chatType == ChatType.WHISPER) && isWalkerCommand(text)) {
             PunishmentManager.handleIllegalPlayerAction(
                     player, "Client Emulator Detect: " + player + " using L2Walker.", GeneralConfig.DEFAULT_PUNISH);
             return;
         }
 
         if (player.isCursedWeaponEquipped() && ((chatType == ChatType.TRADE) || (chatType == ChatType.SHOUT))) {
-            player.sendPacket(SystemMessageId.SHOUT_AND_TRADE_CHATTING_CANNOT_BE_USED_WHILE_POSSESSING_A_CURSED_WEAPON);
+            player.getPort().emit(MessageShown.of(MessageKey.CANNOT_SHOUT_WITH_CURSED_WEAPON));
             return;
         }
 
         if (player.isChatBanned() && (text.charAt(0) != '.')) {
             if (player.getEffectList().getFirstEffect(EffectType.CHAT_BLOCK) != null) {
-                player.sendPacket(
-                        SystemMessageId.YOU_HAVE_BEEN_REPORTED_AS_AN_ILLEGAL_PROGRAM_USER_SO_CHATTING_IS_NOT_ALLOWED);
+                player.getPort().emit(MessageShown.of(MessageKey.CHAT_BLOCKED_ILLEGAL_PROGRAM));
             } else if (GeneralConfig.BAN_CHAT_CHANNELS.contains(chatType)) {
-                player.sendPacket(SystemMessageId.CHATTING_IS_CURRENTLY_PROHIBITED);
+                player.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED));
             }
             return;
         }
@@ -173,25 +168,22 @@ public class Say2 extends ClientPacket {
             chatType = ChatType.PETITION_GM;
         }
 
+        if ((chatType == ChatType.WHISPER)
+                && (target != null)
+                && (target.length() > CharacterService.MAX_NAME_LENGTH)) {
+            player.getPort().emit(MessageShown.of(MessageKey.PLAYER_NOT_ONLINE));
+            return;
+        }
+
         if (GeneralConfig.LOG_CHAT) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append(chatType.name());
-            sb.append(" [");
-            sb.append(player);
             if (chatType == ChatType.WHISPER) {
-                sb.append(" to ");
-                sb.append(target);
-                sb.append("] ");
-                sb.append(text);
-                CHAT_LOG.info(sb.toString());
+                CHAT_LOG.info("{} [{} to {}] {}", chatType.name(), player, target, text);
             } else {
-                sb.append("] ");
-                sb.append(text);
-                CHAT_LOG.info(sb.toString());
+                CHAT_LOG.info("{} [{}] {}", chatType.name(), player, text);
             }
         }
 
-        if ((text.indexOf(8) >= 0) && !parseAndPublishItem(player)) {
+        if (itemLink && !publishLinkedItems(player, text)) {
             return;
         }
 
@@ -210,73 +202,70 @@ public class Say2 extends ClientPacket {
             }
         }
 
-        // Say Filter implementation
         if (GeneralConfig.USE_SAY_FILTER) {
-            checkText();
+            text = filtered(text);
         }
 
         final IChatHandler handler = ChatHandler.getInstance().getHandler(chatType);
         if (handler != null) {
             handler.onChat(chatType, player, target, text);
         } else {
-            log.info("No handler registered for ChatType: {} Player: {}", type, player);
+            log.info("No handler registered for ChatType: {} Player: {}", chatType, player);
         }
     }
 
-    private boolean checkBot(String text) {
-        for (String botCommand : WALKER_COMMAND_LIST) {
-            if (text.startsWith(botCommand)) {
+    private static boolean isWalkerCommand(String text) {
+        for (String command : WALKER_COMMANDS) {
+            if (text.startsWith(command)) {
                 return true;
             }
         }
-
         return false;
     }
 
-    private void checkText() {
+    private static String filtered(String text) {
         String filteredText = text;
         for (String pattern : ServerConfig.FILTER_LIST) {
             filteredText = filteredText.replaceAll("(?i)" + pattern, GeneralConfig.CHAT_FILTER_CHARS);
         }
-
-        text = filteredText;
+        return filteredText;
     }
 
-    private boolean parseAndPublishItem(Player owner) {
-        int pos1 = -1;
-        while ((pos1 = text.indexOf(8, pos1)) > -1) {
-            int pos = text.indexOf("ID=", pos1);
+    /** Publishes every item the text links; a link to an item the player does not own refuses the whole line. */
+    private static boolean publishLinkedItems(Player owner, String text) {
+        int linkStart = -1;
+        while ((linkStart = text.indexOf(ITEM_LINK, linkStart)) > -1) {
+            int pos = text.indexOf("ID=", linkStart);
             if (pos == -1) {
                 return false;
             }
 
-            final StringBuilder result = new StringBuilder(9);
             pos += 3;
-            while (Character.isDigit(text.charAt(pos))) {
-                result.append(text.charAt(pos++));
+            final int digits = pos;
+            while ((pos < text.length()) && Character.isDigit(text.charAt(pos))) {
+                pos++;
             }
-
-            final int id = Integer.parseInt(result.toString());
-            final WorldObject item = World.findObject(id);
-            if (item instanceof Item) {
-                if (owner.getInventory().getItemByObjectId(id) == null) {
-                    log.info("{} trying publish item which does not own! ID:{}", owner.getClient(), id);
-                    return false;
-                }
-
-                ((Item) item).publish();
-            } else {
+            final long parsed = (pos == digits) || ((pos - digits) > 10) ? -1 : Long.parseLong(text, digits, pos, 10);
+            if ((parsed < 0) || (parsed > Integer.MAX_VALUE)) {
                 return false;
             }
+            final int id = (int) parsed;
+            final WorldObject item = World.findObject(id);
+            if (!(item instanceof Item linked)) {
+                return false;
+            }
+            if (owner.getInventory().getItemByObjectId(id) == null) {
+                log.info("{} trying publish item which does not own! ID:{}", owner.getClient(), id);
+                return false;
+            }
+            linked.publish();
 
-            pos1 = text.indexOf(8, pos) + 1;
-            if (pos1 == 0) // Missing ending tag.
-            {
+            linkStart = text.indexOf(ITEM_LINK, pos) + 1;
+            if (linkStart == 0) {
                 log.info("{} sent invalid publish item msg! ID:{}", owner.getClient(), id);
                 return false;
             }
         }
-
         return true;
     }
 }

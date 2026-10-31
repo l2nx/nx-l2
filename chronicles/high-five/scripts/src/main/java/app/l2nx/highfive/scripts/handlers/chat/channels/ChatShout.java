@@ -19,17 +19,21 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
+import app.l2nx.highfive.chat.ChatRules;
+import app.l2nx.highfive.chat.ChatService;
+import app.l2nx.highfive.chat.ChatType;
+import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.ChatBroadcastType;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.handler.IChatHandler;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Shout chat handler.
@@ -43,14 +47,12 @@ public class ChatShout implements IChatHandler {
     @Override
     public void onChat(ChatType type, Player activeChar, String target, String text) {
         if (activeChar.isChatBanned() && GeneralConfig.BAN_CHAT_CHANNELS.contains(type)) {
-            activeChar.sendPacket(
-                    SystemMessageId
-                            .CHATTING_IS_CURRENTLY_PROHIBITED_IF_YOU_TRY_TO_CHAT_BEFORE_THE_PROHIBITION_IS_REMOVED_THE_PROHIBITION_TIME_WILL_INCREASE_EVEN_FURTHER);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED_EXTENDED));
             return;
         }
 
         if (GeneralConfig.JAIL_DISABLE_CHAT && activeChar.isJailed() && !activeChar.isGM()) {
-            activeChar.sendPacket(SystemMessageId.CHATTING_IS_CURRENTLY_PROHIBITED);
+            activeChar.getPort().emit(MessageShown.of(MessageKey.CHAT_PROHIBITED));
             return;
         }
 
@@ -59,50 +61,34 @@ public class ChatShout implements IChatHandler {
             return;
         }
 
-        final CreatureSay cs = new CreatureSay(activeChar, type, activeChar.getName(), text);
+        final ChatMessage message = ChatService.message(activeChar, type, text);
         if ((GeneralConfig.DEFAULT_GLOBAL_CHAT == ChatBroadcastType.ON)
                 || ((GeneralConfig.DEFAULT_GLOBAL_CHAT == ChatBroadcastType.GM) && activeChar.isGM())) {
             final int region = MapRegionData.getInstance().getMapRegionLocId(activeChar);
+            final List<Player> receivers = new ArrayList<>();
             for (Player player : World.getPlayers()) {
                 if ((region == MapRegionData.getInstance().getMapRegionLocId(player))
                         && !BlockList.isBlocked(player, activeChar)
                         && (player.getInstanceId() == activeChar.getInstanceId())
-                        && !BlockList.isBlocked(activeChar, player)) {
-                    if (FactionSystemConfig.FACTION_SYSTEM_ENABLED) {
-                        if (FactionSystemConfig.FACTION_SPECIFIC_CHAT) {
-                            if ((activeChar.isGood() && player.isGood()) || (activeChar.isEvil() && player.isEvil())) {
-                                player.sendPacket(cs);
-                            }
-                        } else {
-                            player.sendPacket(cs);
-                        }
-                    } else {
-                        player.sendPacket(cs);
-                    }
+                        && !BlockList.isBlocked(activeChar, player)
+                        && ChatRules.sameFactionOrNone(activeChar, player)) {
+                    receivers.add(player);
                 }
             }
+            ChatService.getInstance().deliverAll(receivers, message);
         } else if (GeneralConfig.DEFAULT_GLOBAL_CHAT == ChatBroadcastType.GLOBAL) {
             if (!activeChar.isGM()
                     && !activeChar.getClient().getFloodProtectors().canUseGlobalChat()) {
                 activeChar.sendMessage("Do not spam shout channel.");
                 return;
             }
-
+            final List<Player> receivers = new ArrayList<>();
             for (Player player : World.getPlayers()) {
-                if (!BlockList.isBlocked(player, activeChar)) {
-                    if (FactionSystemConfig.FACTION_SYSTEM_ENABLED) {
-                        if (FactionSystemConfig.FACTION_SPECIFIC_CHAT) {
-                            if ((activeChar.isGood() && player.isGood()) || (activeChar.isEvil() && player.isEvil())) {
-                                player.sendPacket(cs);
-                            }
-                        } else {
-                            player.sendPacket(cs);
-                        }
-                    } else {
-                        player.sendPacket(cs);
-                    }
+                if (!BlockList.isBlocked(player, activeChar) && ChatRules.sameFactionOrNone(activeChar, player)) {
+                    receivers.add(player);
                 }
             }
+            ChatService.getInstance().deliverAll(receivers, message);
         }
     }
 

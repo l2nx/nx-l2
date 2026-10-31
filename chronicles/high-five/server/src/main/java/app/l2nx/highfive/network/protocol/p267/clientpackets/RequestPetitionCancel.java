@@ -19,12 +19,12 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.PetitionManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
