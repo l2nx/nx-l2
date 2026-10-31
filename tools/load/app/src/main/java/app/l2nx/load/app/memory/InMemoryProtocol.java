@@ -19,7 +19,9 @@ import java.util.EnumSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 
-/** A run on this network-free server stand-in measures the generator's own overhead. */
+/**
+ * A network-free server stand-in: a run on it measures the generator's own overhead.
+ */
 @RequiredArgsConstructor
 public final class InMemoryProtocol implements ClientProtocol {
     public static final String ID = "in-memory";
@@ -41,6 +43,11 @@ public final class InMemoryProtocol implements ClientProtocol {
     @Override
     public LoadBotState lastState() {
         return LoadBotState.IN_GAME;
+    }
+
+    @Override
+    public boolean hasServer() {
+        return false;
     }
 
     @Override

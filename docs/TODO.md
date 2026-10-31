@@ -87,10 +87,12 @@ lists what is open.
 - [#117](https://github.com/l2nx/nx-l2/issues/117) Isolate and de-mock the Mobius batch tests
 - [#118](https://github.com/l2nx/nx-l2/issues/118) Bring specs and comments in line with the code
 - [#119](https://github.com/l2nx/nx-l2/issues/119) Add slice and domain-event to the glossary and settle term mismatches
-- [#120](https://github.com/l2nx/nx-l2/issues/120) Flaky tools/load tests assert timing-dependent exact counts
+- [#123](https://github.com/l2nx/nx-l2/issues/123) Loop wakes up to 15 ms late on Windows and counts on-time timers as overdue
+- [#124](https://github.com/l2nx/nx-l2/issues/124) Load bot hanging in connect is counted as neither timeout nor stopped
 
 ## Done
 
+- [#120](https://github.com/l2nx/nx-l2/issues/120) Flaky tools/load tests assert timing-dependent exact counts
 - [#85](https://github.com/l2nx/nx-l2/issues/85) LoadCommandRunnerTest fails when no roaming action falls into the short steady window
 - [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
 - [#60](https://github.com/l2nx/nx-l2/issues/60) Event item cleanup can delete rows of a container that loads during it

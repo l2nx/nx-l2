@@ -20,22 +20,23 @@ E6 (world partition as single writer). Issue: [#68](https://github.com/l2nx/nx-l
 - **Each packet layout exists once.** Server and load bot share the wire codecs of `protocols/`; no layout is
   written twice and cross-checked.
 - **Standard methodology:** latency from the intended send time (coordinated omission, HdrHistogram), a fixed
-  population acting at a fixed rate, warm-up excluded, server meters read per window from Prometheus, repeated runs,
-  a run invalid when the generator itself is saturated.
+  population acting at a fixed rate, warm-up excluded, server meters queried from Prometheus over the measured phase
+  with the PromQL a dashboard uses, repeated runs, a run invalid when the generator itself is saturated.
 - **Load bots do not replace players.** They give a repeatable regression gate; real dynamics come from recorded
   sessions (§10) and play tests.
 
 ## 2. Layout
 
-| Module                     | Holds                                                                                                                                                  |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `protocols/login/c621`     | login protocol revision c621: wire records and codecs, frame cipher, credentials block                                                                 |
-| `protocols/game/p267`      | game protocol of the High Five client (267–273): wire records and codecs                                                                               |
-| `tools/load/core`          | load bot model, the `ClientProtocol` port, action scheduler, injection profiles, latency recording, Prometheus window reading, report, gate            |
-| `tools/load/protocol-<id>` | client adapter of one client: wire records to intents and observations; `protocol-p267` pairs `login/c621` with `game/p267`                            |
-| `tools/load/app`           | Spring Boot command-line application: settings, load scenarios, seeding, the commands `run`, `gate`, `seed`, `db-create`, `db-snapshot` and `db-reset` |
+| Module                     | Holds                                                                                                                                                                                                             |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocols/login/c621`     | login protocol revision c621: wire records and codecs, frame cipher, credentials block                                                                                                                            |
+| `protocols/game/p267`      | game protocol of the High Five client (267–273): wire records and codecs                                                                                                                                          |
+| `tools/load/core`          | load bot model, the `ClientProtocol` and `ServerMeterWindow` ports, action scheduler, injection profiles, latency recording, report, gate                                                                         |
+| `tools/load/protocol-<id>` | client adapter of one client: wire records to intents and observations; `protocol-p267` pairs `login/c621` with `game/p267`                                                                                       |
+| `tools/load/app`           | Spring Boot command-line application: settings, load scenarios, seeding, the Prometheus client and the PromQL of the server values, the commands `run`, `gate`, `seed`, `db-create`, `db-snapshot` and `db-reset` |
 
-`tools/load/core` depends on neither Spring nor a chronicle nor `protocols/*`; the report and the gate are pure code there, so the command-line application only wires them. Server, login server, load bots and
+`tools/load/core` depends on neither Spring nor a chronicle nor `protocols/*`; the report and the gate are pure code
+there; Prometheus, `RestClient` and the commands belong to the application. Server, login server, load bots and
 PostgreSQL run as separate processes.
 
 ## 3. Wire codecs
@@ -62,13 +63,18 @@ CLOSING → STOPPED`, the same for every protocol; `STOPPED` without a logout is
 - **Lifecycle steps** are timed like intents: each state records the time spent in it, from entering it to entering
   the next. `LOGIN_CONNECT` is entered at the load bot's intended start, so a slow connect is not hidden by a late
   start (coordinated omission); the final state has no row.
-- **Intents** (sent): `Login`, `SelectServer`, `SelectCharacter`, `EnterWorld`, `MoveTo`, `Attack`, `UseSkill`,
-  `Say`, `ResurrectAtRestartPoint`, `Logout`.
-- **Observations** (kept): its own object id, position, HP and MP, alive or dead; the visible objects as
-  `object id → kind, position, team, dead`. Only what scenarios need.
+- **Intents** (sent): `Login`, `SelectServer`, `SelectCharacter`, `EnterWorld`, `Logout` (lifecycle, P1–P2);
+  `MoveTo`, `Say` (`load-roam`, P2). `Attack`, `UseSkill` and `ResurrectAtRestartPoint` come with the combat codecs
+  in P3 and are not in the code before.
+- **Observations** (kept): its own object id and position (`Entered`, the echo of its own `ObjectMoved`; P2); the
+  visible objects as `object id → kind, position, team, dead` (`ObjectSeen`, `ObjectGone`, `ObjectMoved` of others)
+  and its own HP and MP (`StatusChanged`), in the model for `load-pve` and `load-crowd-pvp` (P3); alive or dead
+  (`Died`) comes with P3 and is not in the code before. Only what scenarios need.
 - **Acknowledgement:** the client adapter names the observation that confirms each intent (`MoveTo` the echo of its
-  own movement, `Attack` the attack packet, `UseSkill` the start of the cast, `Say` the chat echo). An intent without
-  it within its timeout is recorded as a timeout.
+  own movement, `Say` the chat echo; from P3 `Attack` the attack packet, `UseSkill` the start of the cast). An intent
+  without it within its timeout is recorded as a timeout.
+- **Behaviour without actions:** a scenario's behaviour may have no action schedule; its load bots stay in the game
+  until the ramp-down (`load-login-storm` with the final state `IN_GAME`).
 - **A capability set per adapter:** the intents it expresses and the furthest lifecycle state it reaches. A run whose
   scenario needs more fails before any load bot starts; an intent a protocol cannot express is reported by the
   adapter, and a scenario skips the step or fails with that reason.
@@ -127,43 +133,97 @@ server's registration on the login server, so `l2nx.load.p267.server-id` names t
 
 ## 7. Measurement and report
 
-**Server meters:** the harness scrapes `/actuator/prometheus` every second in the Prometheus protobuf exposition
-format, which Actuator serves on request, and parses it with classes generated from the Prometheus `metrics.proto`
-(client_model), vendored unchanged: the Prometheus Java client has no parser of its text format. Values are computed
-over the measured phase from the deltas between its first and last scrape; the text format is fetched verbatim at the
-window's start and end for the report.
+**Server meters:** the compose profile `load` runs Prometheus (`l2nx-prometheus` on `127.0.0.1:9090`, config
+`docker/prometheus/prometheus.yml`, 30 days of retention) scraping the management ports of the game and login servers
+every second as the jobs `game` and `login`. The harness finds it through `l2nx.load.prometheus.url` and
+`l2nx.load.prometheus.targets[]` (`job`, as in the Prometheus config, and `metrics-url`, the server's
+`/actuator/prometheus` as the harness reaches it). A `run` needs it: before any load bot starts, Prometheus must
+answer `/-/ready`, its clock (`vector(time())`) must lie within `l2nx.load.prometheus.max-clock-skew` (default 1 s, one
+scrape) of the harness's clock read around the query, since the harness takes the window on its own clock and
+Prometheus evaluates it on the Docker VM's, every configured target's job must have an active target in
+`/api/v1/targets` (its `scrapeInterval`, the longest of the job's targets, is kept for the run) and `up{job="<job>"}`
+must be 1, or the run fails at once with the reason (both clock readings for a skew). A protocol states whether a
+server stands behind it (`ClientProtocol.hasServer`): the `in-memory` protocol has none and reads no server meters;
+`seed` reads none either. After the measured phase the harness waits up to 10 s until Prometheus has ingested a scrape
+of every target at or after the window's end, then evaluates each value below through `/api/v1/query` with
+`time=<window end>` and the range `R` = the window in milliseconds, the precision of `time`, so every range and
+`offset` is exactly `[Rms]`. Prometheus takes each end of the window from the latest sample at or before it, so the
+counted interval may begin and end up to one scrape interval before the window. These are the expressions a dashboard
+over the same window uses, so the report and the dashboard agree; the window (start, end, `R`, the interval actually
+queried) is in `summary.json`, so any value can be re-evaluated while Prometheus keeps the data. An answer without the
+Prometheus JSON envelope (a proxy, a wrong URL) fails the query with its status and URL.
 
-| Meter                                                            | Taken as                                                             |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `l2nx.engine.pass` (percentile histogram)                        | p50, p99, max per `loop` from bucket deltas                          |
-| `l2nx.engine.pass.phase`                                         | mean per phase from sum and count deltas                             |
-| `l2nx.engine.pass.over.budget`, `failures`, `timers.overdue`     | deltas                                                               |
-| `l2nx.engine.jdbc.on.loop` (added by E6)                         | delta per `loop`                                                     |
-| `l2nx.engine.inbox.depth`                                        | max and p99 of the per-second samples                                |
-| `l2nx.session.queue.depth` (percentile histogram, added by E6)   | p99 from bucket deltas, max                                          |
-| `l2nx.legacy.task`, `l2nx.legacy.task.lag`, `l2nx.legacy.packet` | mean per type; p99 and max where a histogram is published; before E6 |
-| `jvm.gc.pause`, `process.cpu.usage`, `jvm.threads.live`          | p99, mean, max                                                       |
+**Counters** (every `_count`, `_sum`, `_total` and `_bucket` below) are read as the exact difference between the
+sample at the window's end and the sample at its start, written `Δ(c)` = `(c - ((c offset Rms) or (c * 0)))`. The
+subtraction and the `or` match on the full label set, so every series is paired with its own start sample before the
+`sum by`; a series registered inside the window (`l2nx.engine.jdbc.on.loop` on a loop's first JDBC call, a new GC
+cause, a new legacy packet type) has no start sample and counts from 0, where `increase` would drop it. Counter resets
+are not handled: the servers do not restart within a run.
+
+**Maxima** (pass, session queue depth, GC pause) come from Micrometer's decaying `_max` gauge, which may still hold an
+observation from up to two minutes before the window. The harness caps the gauge's maximum over the range at the upper
+bound of the highest bucket that gained observations in the window (the smallest `le` whose `Δ` reaches that of
+`+Inf`, from the bucket query in the table) and reports no maximum when the window has no observation (`Δ` of `+Inf`
+is 0) or the meter has no buckets. All three meters are percentile histograms: the pass timer and the session queue
+depth by their builders, `jvm.gc.pause` through `management.metrics.distribution.percentiles-histogram` in
+`l2nx-defaults.yaml`.
+
+| Meter                                                        | Report value                                           | PromQL (`R` ms, at the window end)                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `l2nx.engine.pass` (percentile histogram)                    | passes, p50, p99, max per `loop`                       | `sum by (loop) Δ(l2nx_engine_pass_seconds_count)`; `histogram_quantile(0.5, sum by (loop, le) Δ(l2nx_engine_pass_seconds_bucket))` and the same with `0.99`; max: `max by (loop) (max_over_time(l2nx_engine_pass_seconds_max[Rms]))` capped by `sum by (loop, le) Δ(l2nx_engine_pass_seconds_bucket)`                                                                                                                       |
+| `l2nx.engine.pass.phase`                                     | mean per `loop` and phase                              | `sum by (loop, phase) Δ(l2nx_engine_pass_phase_seconds_sum) / sum by (loop, phase) Δ(l2nx_engine_pass_phase_seconds_count)`                                                                                                                                                                                                                                                                                                 |
+| `l2nx.engine.pass.over.budget`, `failures`, `timers.overdue` | count per `loop`                                       | `sum by (loop) Δ(l2nx_engine_pass_over_budget_total)`, the same for `l2nx_engine_failures_total` and `l2nx_engine_timers_overdue_total`                                                                                                                                                                                                                                                                                     |
+| `l2nx.engine.jdbc.on.loop`                                   | calls per `loop`                                       | `sum by (loop) Δ(l2nx_engine_jdbc_on_loop_seconds_count)`                                                                                                                                                                                                                                                                                                                                                                   |
+| `l2nx.engine.inbox.depth`                                    | max and p99 of the per-second samples                  | `max by (loop) (max_over_time(l2nx_engine_inbox_depth[Rms]))`; `max by (loop) (quantile_over_time(0.99, l2nx_engine_inbox_depth[Rms]))`                                                                                                                                                                                                                                                                                     |
+| `l2nx.session.queue.depth` (percentile histogram)            | p99, max                                               | `histogram_quantile(0.99, sum by (le) Δ(l2nx_session_queue_depth_bucket))`; max: `max(max_over_time(l2nx_session_queue_depth_max[Rms]))` capped by `sum by (le) Δ(l2nx_session_queue_depth_bucket)`                                                                                                                                                                                                                         |
+| `l2nx.legacy.packet`                                         | mean per packet class (`type`)                         | `sum by (type) Δ(l2nx_legacy_packet_seconds_sum) / sum by (type) Δ(l2nx_legacy_packet_seconds_count)`                                                                                                                                                                                                                                                                                                                       |
+| `jvm.gc.pause`, `process.cpu.usage`, `jvm.threads.live`      | per job: GC p99, mean, max; CPU mean; live threads max | `histogram_quantile(0.99, sum by (job, le) Δ(jvm_gc_pause_seconds_bucket))`; `sum by (job) Δ(jvm_gc_pause_seconds_sum) / sum by (job) Δ(jvm_gc_pause_seconds_count)`; max: `max by (job) (max_over_time(jvm_gc_pause_seconds_max[Rms]))` capped by `sum by (job, le) Δ(jvm_gc_pause_seconds_bucket)`; `avg by (job) (avg_over_time(process_cpu_usage[Rms]))`; `max by (job) (max_over_time(jvm_threads_live_threads[Rms]))` |
+
+Engine rows come from the game server only, which alone runs the loops; JVM and process rows are reported per job.
+
+**Grafana is not in the profile `load`:** a value of `summary.json` is checked by evaluating the same expression in
+the Prometheus UI (`http://127.0.0.1:9090/query`, evaluation time = the window end).
+
+**Native Linux Docker:** the servers bind `127.0.0.1` (`server.address` in `l2nx-defaults.yaml`), and on native Linux
+`host.docker.internal` resolves through `host-gateway` to the Docker bridge address, so Prometheus cannot reach them.
+The profile works as is on Docker Desktop. On native Linux both servers run with `--server.address=0.0.0.0` (the
+management ports then need the host firewall) or with the bridge address, the same address set in each target's
+`metrics-url`.
 
 **Generator self-check:** the harness measures its own event loop lag (scheduled against actual action time). A p99
-lag above 10 ms marks the run invalid: the generator, not the server, was saturated. The check is on the measured lag,
-not on the operating system, so a host whose timers cannot fire on time (Windows, 15.6 ms timer granularity by
-default) produces invalid runs by itself.
+lag above 10 ms (the default limit) marks the run invalid: the generator, not the server, was saturated. The check is
+on the measured lag, not on the operating system, so a host whose timers cannot fire on time produces invalid runs by
+itself: on Windows the 15.6 ms timer tick puts the generator lag p99 over the default limit, so even `in-memory` runs
+come out `INVALID` there. The same tick delays the server's own loop on Windows
+([#123](https://github.com/l2nx/nx-l2/issues/123)).
 
 **Profiling** (`--profile`): JFR on the server for the steady window through `jcmd <pid> JFR.start`, the recording
 kept with the run; async-profiler in wall-clock mode when installed.
 
 **Report** in `build/load/<run>/`: `summary.json` (scenario, its measured phase and final state, the number of load bots that reached it, seed, N, windows, server commit, environment, client
-p50, p99, p99.9 and max per intent and per lifecycle step, timeout, rejection and stopped shares, the server values above), an `.hgrm` per
-intent and per lifecycle step, `server-metrics-start.prom` and `server-metrics-end.prom` with the raw window scrapes, and a table on the
-console. A boundary scrape that fails after its retries leaves the server values out; the gate then fails criteria 1
-and 2 for missing meters instead of the run losing its client results.
+p50, p99, p99.9 and max per intent and per lifecycle step, timeout, rejection and stopped shares, the server window
+`serverWindow` and the server values above), an `.hgrm` per intent and per lifecycle step,
+`server-metrics-<job>-start.prom` and `server-metrics-<job>-end.prom`, the text exposition of each server fetched at
+the window's start and end and kept raw for a later look (the numbers come from Prometheus; a failed fetch only loses
+its file), and a table on the console. When Prometheus has no scrape at or after the window's end in time, or a query
+fails, the server values are left out and the window stays in `summary.json`; the gate then fails criteria 1 and 2
+for missing meters instead of the run losing its client results.
+The server values are also left out when any target's `up` fell below 1 or has no series from one scrape before the
+window's start to its end (`min_over_time(up{job="<job>"}[(R+S)ms])`, `S` the job's scrape interval), because a
+failed scrape at the start leaves a stale marker where `offset` looks for the start sample, and `Δ` would then count
+the whole accumulated counter.
+The wait for the window's end retries a poll only on an I/O error or a 5xx answer; a refused query ends it at once and
+leaves the server values out with the cause in the log. A measured ramp that has not ended by the drain (a load bot
+still arriving) leaves them out too, with a warning, since its window would run on over the drain; the client results
+stay, as they count every arrival by its intended start.
 
-**Start:** `./gradlew :tools:load:app:bootRun --args='run --l2nx.load.protocol=p267 --l2nx.load.scenario=load-crowd-pvp --l2nx.load.bots=500 --l2nx.load.seed=42'` or the jar;
-settings are `@ConfigurationProperties`. A database is prepared once with `db-create`, the servers started with the
-profiles `load,load-seed`, `seed`, the servers stopped and `db-snapshot`; before every run `db-reset` with the servers
-down, then the servers with the profile `load` and `run`. The injection profile leaves the last load bot the ramp-down
-and drain time to reach its final state; a run ends as soon as every load bot is done. `seed` writes no report. A compose profile `load` adds Prometheus and Grafana with a committed
-dashboard for watching a run live; the report never depends on it.
+**Start:** `docker compose --profile load up -d` (the database and Prometheus), then
+`./gradlew :tools:load:app:bootRun --args='run --l2nx.load.protocol=p267 --l2nx.load.scenario=load-crowd-pvp --l2nx.load.bots=500 --l2nx.load.seed=42'`
+or the jar; settings are `@ConfigurationProperties`. A database is prepared once with `db-create`, the servers
+started with the profiles `load,load-seed`, `seed`, the servers stopped and `db-snapshot`; before every run
+`db-reset` with the servers down, then the servers with the profile `load` and `run`. The injection profile leaves
+the last load bot the ramp-down and drain time to reach its final state; a run ends as soon as every load bot is
+done. `seed` writes no report.
 
 ## 8. E6 gate
 
@@ -204,13 +264,17 @@ The `gate` command compares the reports of a scenario with its baseline:
 - **Codecs:** golden tests in `protocols/*` (§3).
 - **Client adapter:** intent → expected frame bytes; golden server frames → expected observations; every intent has
   an acknowledgement.
-- **Core** on an in-memory `ClientProtocol` and Netty `EmbeddedEventLoop`: latency taken from the intended time,
-  including a stalled fake server (a 2 s stall must show in the latency); injection profile phases; the invalid mark
-  on generator lag.
-- **Window reading:** quantiles from bucket deltas against HdrHistogram on known data.
+- **Core** on a fake `ClientProtocol` with fault injection (`FakeProtocol`, test code of `tools/load/core`: stalls,
+  slow answers, rejections, decode failures, drops, refused identities) and Netty `EmbeddedEventLoop`: latency taken
+  from the intended time, including a stalled fake server (a 2 s stall must show in the latency); injection profile
+  phases; the invalid mark on generator lag. The runnable `in-memory` protocol of the application
+  (`InMemoryProtocol`) measures the generator's own overhead and drives the application's tests; core cannot depend
+  on it, and it injects no faults.
+- **Server meters:** the PromQL text of every value, the mapping of recorded `/api/v1/query` and `/api/v1/targets` answers, and one
+  Testcontainers test where a real Prometheus scrapes a stub endpoint and the harness reads known quantiles back.
 - **Gate:** report fixtures for pass, fail, invalid and too few runs.
 - **One integration test:** Testcontainers PostgreSQL, login and game servers in the test context, 20 load bots in
-  `load-roam` for 30 s; all reach `IN_GAME`, no errors, window scrapes taken.
+  `load-roam` for 30 s; all reach `IN_GAME`, no errors, window snapshots written.
 
 **Before the gate is trusted** (once, results in `load-baseline.md`):
 
@@ -221,13 +285,13 @@ The `gate` command compares the reports of a scenario with its baseline:
 
 ## 10. Stages
 
-| #   | Delivers                                                                                                                                                                                                                                          | Needs                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| P0  | `tools/load/core`, window reading, gate, `app` on an in-memory protocol                                                                                                                                                                           | —                        |
-| P1  | login part of `protocol-p267` (the whole `c621` exchange up to `PlayOk`); lifecycle steps, measured phase and final state in the core; the `load` profiles of the login server and the database commands; `load-login-storm` up to `GAME_CONNECT` | `protocols/login/c621`   |
-| P2  | game part: entering the world, `load-roam`, the integration test                                                                                                                                                                                  | first `game/p267` codecs |
-| P3  | combat codecs (§3), `load-pve`, `load-crowd-pvp`, the compose profile `load` with cpusets and the environment check, the trust checks, the legacy baseline (also E1's baseline repeated with bots), reading `l2nx.engine.jdbc.on.loop`            | P2                       |
-| P4  | dev portal page (§11)                                                                                                                                                                                                                             | P3 numbers               |
+| #   | Delivers                                                                                                                                                                                                                                                                                                                      | Needs                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| P0  | `tools/load/core`, gate, `app` on an in-memory protocol                                                                                                                                                                                                                                                                       | —                        |
+| P1  | login part of `protocol-p267` (the whole `c621` exchange up to `PlayOk`); lifecycle steps, measured phase and final state in the core; the `load` profiles of the login server and the database commands; `load-login-storm` up to `GAME_CONNECT`; server meters from Prometheus (the compose profile `load` with Prometheus) | `protocols/login/c621`   |
+| P2  | game part: entering the world, `load-roam`, the integration test                                                                                                                                                                                                                                                              | first `game/p267` codecs |
+| P3  | combat codecs (§3), `load-pve`, `load-crowd-pvp`, the compose profile `load` gains the servers, the harness and PostgreSQL with cpusets, Grafana with a dashboard, and the environment check; the trust checks, the legacy baseline (also E1's baseline repeated with bots)                                                   | P2                       |
+| P4  | dev portal page (§11)                                                                                                                                                                                                                                                                                                         | P3 numbers               |
 
 ## 11. Dev portal page
 

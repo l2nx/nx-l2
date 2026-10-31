@@ -98,25 +98,16 @@ curl -s http://127.0.0.1:8777/actuator/prometheus | grep '^l2nx_legacy_packet_se
 
 1. `docker compose up -d db`, then `./gradlew :login:boot:run` and `./gradlew :chronicles:high-five:boot:run`; wait
    for `curl -s http://127.0.0.1:8777/actuator/health/readiness` to report `UP`.
-2. Start a throwaway Prometheus that scrapes the game server every 5 s. `prometheus.yml` (not committed):
-
-   ```yaml
-   global:
-     scrape_interval: 5s
-   scrape_configs:
-     - job_name: l2nx-game
-       metrics_path: /actuator/prometheus
-       static_configs:
-         - targets: ["127.0.0.1:8777"]
-   ```
+2. Start the Prometheus of the compose profile `load`, which scrapes the game server (job `game`) and the login server
+   (job `login`) every second:
 
    ```sh
-   docker run --rm --network host -v "$PWD/prometheus.yml:/etc/prometheus/prometheus.yml:ro" prom/prometheus:v3.5.0
+   docker compose --profile load up -d prometheus
    ```
 
-   `--network host` works on Linux and on Docker Desktop with host networking enabled. Otherwise publish
-   `-p 127.0.0.1:9090:9090` and set the target to `host.docker.internal:8777`. Check that the target is `UP` on
-   `http://127.0.0.1:9090/targets`.
+   Check that the `game` target is `UP` on `http://127.0.0.1:9090/targets`. On native Linux Docker the servers must
+   listen on an address the container reaches ([spec 009 §7](../specs/009-load-harness.md#7-measurement-and-report)).
+   A family the login server publishes too, such as the JVM meters, needs `job="game"` in its selector.
 
 3. Idle window: 10 minutes after readiness with no player online.
 4. Play window: 15 minutes with a real client: log in, enter the world, walk across a town and a hunting zone, fight

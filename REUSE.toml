@@ -33,11 +33,11 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 L2NX contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
-# Vendored unchanged from github.com/prometheus/client_model; its header carries no SPDX tags.
+# Prometheus API answers recorded verbatim for the load harness tests; JSON takes no comment header.
 [[annotations]]
-path = ["tools/load/core/src/main/proto/io/prometheus/client/metrics.proto"]
-precedence = "closest"
-SPDX-FileCopyrightText = "2013 The Prometheus Authors"
+path = ["tools/load/app/src/test/resources/prometheus/*.json"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 L2NX contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]

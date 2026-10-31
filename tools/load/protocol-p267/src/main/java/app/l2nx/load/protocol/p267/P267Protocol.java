@@ -58,6 +58,11 @@ public final class P267Protocol implements ClientProtocol {
     }
 
     @Override
+    public boolean hasServer() {
+        return true;
+    }
+
+    @Override
     public IoHandlerFactory ioHandlerFactory() {
         return transport.ioHandlerFactory();
     }

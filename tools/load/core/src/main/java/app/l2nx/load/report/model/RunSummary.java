@@ -15,7 +15,9 @@ import lombok.Builder;
 
 /**
  * @param reachedFinalState counted over the whole run, not only the measured phase
- * @param server {@code null} when the run read no server meters (an in-memory protocol)
+ * @param serverWindow {@code null} when the run read no server meters
+ * @param server {@code null} when the run read no server meters or they could not be queried; then
+ *     {@code serverWindow} still names the window
  */
 @Builder(toBuilder = true)
 public record RunSummary(
@@ -38,6 +40,7 @@ public record RunSummary(
         double rejectedShare,
         double stoppedShare,
         int reachedFinalState,
+        ServerWindow serverWindow,
         ServerStats server) {
 
     public RunSummary {

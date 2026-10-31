@@ -35,8 +35,6 @@ import org.springframework.validation.annotation.Validated;
  * @param protocol id of the client protocol {@code run} and {@code seed} connect with; {@code null} is allowed for the
  *     commands that connect no load bot
  * @param eventLoopThreads {@code null} takes every core the process may use
- * @param prometheusUrl the server's {@code /actuator/prometheus}; {@code null} reads no server meters
- * @param scrapeTimeout limit of the connect and of every request to {@code prometheusUrl}
  * @param serverCommit commit of the server under load, {@code null} when not given
  * @param cpuAffinity CPU affinity of the processes as the start script set it, {@code null} when not given
  */
@@ -54,8 +52,6 @@ public record LoadProperties(
         long seed,
         @Positive Integer eventLoopThreads,
         @NotNull @DurationMin(nanos = 0, inclusive = false) Duration intentTimeout,
-        URI prometheusUrl,
-        @NotNull @DurationMin(nanos = 0, inclusive = false) Duration scrapeTimeout,
         @NotNull Path outputDir,
         String serverCommit,
         String cpuAffinity,
@@ -63,6 +59,7 @@ public record LoadProperties(
         @NotNull @Valid LoginStorm loginStorm,
         @NotNull @Valid InMemory inMemory,
         @NotNull @Valid P267 p267,
+        @NotNull @Valid Prometheus prometheus,
         @NotNull @Valid Database database,
         @NotNull @Valid @DefaultValue Gate gate) {
 
@@ -71,6 +68,11 @@ public record LoadProperties(
         protocol = StringUtils.trimToNull(protocol);
         serverCommit = StringUtils.trimToNull(serverCommit);
         cpuAffinity = StringUtils.trimToNull(cpuAffinity);
+    }
+
+    private static boolean distinct(List<String> values) {
+        final List<String> present = values.stream().filter(Objects::nonNull).toList();
+        return present.stream().distinct().count() == present.size();
     }
 
     /** Spaces may belong to a password: only a blank one means none, any other is kept as given. */
@@ -124,8 +126,42 @@ public record LoadProperties(
             Duration connectTimeout) {}
 
     /**
-     * The database the servers under load run on and its template, for the {@code db-*} commands.
+     * Read by every {@code run} except on a protocol without a server ({@code ClientProtocol.hasServer}).
      *
+     * @param targets the scrape jobs of {@code docker/prometheus/prometheus.yml}; each must be up before a run starts
+     * @param maxClockSkew limit of the difference between the harness's clock and Prometheus's, checked before a run
+     *     starts: the window is taken on the one and evaluated on the other
+     */
+    @Builder(toBuilder = true)
+    public record Prometheus(
+            @NotNull URI url,
+            @NotEmpty List<@NotNull @Valid Target> targets,
+            @NotNull @DurationMin(nanos = 0) Duration maxClockSkew) {
+        // A null target or job is reported by its own constraint.
+        @AssertTrue(message = "l2nx.load.prometheus.targets must not repeat a job")
+        public boolean isJobsDistinct() {
+            return targets == null
+                    || distinct(targets.stream()
+                            .filter(Objects::nonNull)
+                            .map(Target::job)
+                            .toList());
+        }
+    }
+
+    /**
+     * @param job the job name in the Prometheus config; a PromQL label value, so a plain identifier
+     * @param metricsUrl the server's actuator endpoint as the harness reaches it, for the raw window snapshots
+     */
+    @Builder(toBuilder = true)
+    public record Target(
+            @NotNull @Pattern(regexp = "[a-z][a-z0-9_]*") String job,
+            @NotNull URI metricsUrl) {
+        public Target {
+            job = StringUtils.trimToNull(job);
+        }
+    }
+
+    /**
      * @param adminUrl JDBC URL of a database other than {@code name} and {@code template} to run the commands from, such
      *     as the maintenance database {@code postgres}
      * @param user a role allowed to create databases; {@code null} takes the URL's or the driver's default
@@ -164,15 +200,14 @@ public record LoadProperties(
                     || !DatabaseCommands.TemplateNames.of(template).contains(name);
         }
 
+        // A null schema or name is reported by its own constraint.
         @AssertTrue(message = "l2nx.load.database.schemas must not repeat a schema")
         public boolean isSchemasDistinct() {
             return schemas == null
-                    || schemas.stream()
-                                    .filter(Objects::nonNull)
-                                    .map(Schema::name)
-                                    .distinct()
-                                    .count()
-                            == schemas.size();
+                    || distinct(schemas.stream()
+                            .filter(Objects::nonNull)
+                            .map(Schema::name)
+                            .toList());
         }
     }
 

@@ -52,12 +52,12 @@ class LatencyRecorderTest {
     class Histograms {
         @Test
         void histogram_shouldKeepEveryValue_whenReadRepeatedly() {
-            recorder.recordAcknowledged(IntentKind.ATTACK, 1_000);
-            recorder.histogram(IntentKind.ATTACK);
-            recorder.recordAcknowledged(IntentKind.ATTACK, 2_000);
+            recorder.recordAcknowledged(IntentKind.MOVE_TO, 1_000);
+            recorder.histogram(IntentKind.MOVE_TO);
+            recorder.recordAcknowledged(IntentKind.MOVE_TO, 2_000);
 
-            assertThat(recorder.histogram(IntentKind.ATTACK).getTotalCount()).isEqualTo(2);
-            assertThat(recorder.histogram(IntentKind.ATTACK).getTotalCount()).isEqualTo(2);
+            assertThat(recorder.histogram(IntentKind.MOVE_TO).getTotalCount()).isEqualTo(2);
+            assertThat(recorder.histogram(IntentKind.MOVE_TO).getTotalCount()).isEqualTo(2);
         }
     }
 
@@ -65,11 +65,11 @@ class LatencyRecorderTest {
     class Errors {
         @Test
         void recordError_shouldCountPerKind() {
-            recorder.recordError(IntentKind.USE_SKILL);
-            recorder.recordError(IntentKind.USE_SKILL);
+            recorder.recordError(IntentKind.SAY);
+            recorder.recordError(IntentKind.SAY);
 
-            assertThat(recorder.errors(IntentKind.USE_SKILL)).isEqualTo(2);
-            assertThat(recorder.errors(IntentKind.ATTACK)).isZero();
+            assertThat(recorder.errors(IntentKind.SAY)).isEqualTo(2);
+            assertThat(recorder.errors(IntentKind.MOVE_TO)).isZero();
         }
     }
 }

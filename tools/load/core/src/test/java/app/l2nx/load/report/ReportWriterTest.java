@@ -15,9 +15,11 @@ import app.l2nx.load.injection.InjectionProfile;
 import app.l2nx.load.report.model.IntentStats;
 import app.l2nx.load.report.model.InvalidReason;
 import app.l2nx.load.report.model.LoopStats;
+import app.l2nx.load.report.model.ProcessStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.ServerWindow;
 import app.l2nx.load.report.model.StepStats;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.io.IOException;
@@ -57,7 +59,7 @@ class ReportWriterTest {
 
         @Test
         void write_shouldWriteSummaryWithIsoTimesAndWithoutNulls() throws IOException {
-            var directory = writer.write(root, summary(), Map.of(), Map.of(), null, null);
+            var directory = writer.write(root, summary(), Map.of(), Map.of(), Map.of());
 
             var actual = Files.readString(directory.resolve(ReportWriter.SUMMARY_FILE));
 
@@ -76,7 +78,7 @@ class ReportWriterTest {
             var histogram = new Histogram(3);
             histogram.recordValue(Duration.ofMillis(12).toNanos());
 
-            var directory = writer.write(root, summary(), Map.of(IntentKind.MOVE_TO, histogram), Map.of(), null, null);
+            var directory = writer.write(root, summary(), Map.of(IntentKind.MOVE_TO, histogram), Map.of(), Map.of());
 
             var actual = Files.readString(directory.resolve("move_to.hgrm"));
             assertThat(actual).contains("Value     Percentile").contains("12.0").contains("#[Max     =       12.0");
@@ -90,12 +92,7 @@ class ReportWriterTest {
             step.recordValue(Duration.ofMillis(250).toNanos());
 
             var directory = writer.write(
-                    root,
-                    summary(),
-                    Map.of(IntentKind.LOGIN, intent),
-                    Map.of(LoadBotState.LOGIN_AUTH, step),
-                    null,
-                    null);
+                    root, summary(), Map.of(IntentKind.LOGIN, intent), Map.of(LoadBotState.LOGIN_AUTH, step), Map.of());
 
             assertThat(directory.resolve("login.hgrm")).exists();
             var actual = Files.readString(directory.resolve(ReportWriter.stepHistogramFile(LoadBotState.LOGIN_AUTH)));
@@ -104,22 +101,33 @@ class ReportWriterTest {
         }
 
         @Test
-        void write_shouldWriteScrapesVerbatim_whenTaken() throws IOException {
-            var start = "# TYPE l2nx_engine_pass_seconds histogram\nl2nx_engine_pass_seconds_count 1\n";
-            var end = "l2nx_engine_pass_seconds_count 2\n";
+        void write_shouldWriteSnapshotsVerbatimUnderTheirNames_whenTaken() throws IOException {
+            var gameStart = "# TYPE l2nx_engine_pass_seconds histogram\nl2nx_engine_pass_seconds_count 1\n";
+            var loginEnd = "jvm_threads_live_threads 42\n";
 
-            var directory = writer.write(root, summary(), Map.of(), Map.of(), start, end);
+            var directory = writer.write(
+                    root,
+                    summary(),
+                    Map.of(),
+                    Map.of(),
+                    Map.of(
+                            ReportWriter.metricsFile("game", "start"),
+                            gameStart,
+                            ReportWriter.metricsFile("login", "end"),
+                            loginEnd));
 
-            assertThat(directory.resolve(ReportWriter.METRICS_START_FILE)).hasContent(start);
-            assertThat(directory.resolve(ReportWriter.METRICS_END_FILE)).hasContent(end);
+            assertThat(ReportWriter.metricsFile("game", "start")).isEqualTo("server-metrics-game-start.prom");
+            assertThat(directory.resolve("server-metrics-game-start.prom")).hasContent(gameStart);
+            assertThat(directory.resolve("server-metrics-login-end.prom")).hasContent(loginEnd);
         }
 
         @Test
-        void write_shouldSkipScrapeFiles_whenNotTaken() throws IOException {
-            var directory = writer.write(root, summary(), Map.of(), Map.of(), null, null);
+        void write_shouldWriteNoSnapshotFile_whenNoneTaken() throws IOException {
+            var directory = writer.write(root, summary(), Map.of(), Map.of(), Map.of());
 
-            assertThat(directory.resolve(ReportWriter.METRICS_START_FILE)).doesNotExist();
-            assertThat(directory.resolve(ReportWriter.METRICS_END_FILE)).doesNotExist();
+            try (var files = Files.list(directory)) {
+                assertThat(files.map(file -> file.getFileName().toString())).noneMatch(name -> name.endsWith(".prom"));
+            }
         }
     }
 
@@ -129,7 +137,7 @@ class ReportWriterTest {
         @Test
         void readSummary_shouldReturnWrittenSummary() throws IOException {
             var expected = summary();
-            var directory = writer.write(root, expected, Map.of(), Map.of(), null, null);
+            var directory = writer.write(root, expected, Map.of(), Map.of(), Map.of());
 
             var actual = writer.readSummary(directory.resolve(ReportWriter.SUMMARY_FILE));
 
@@ -138,8 +146,8 @@ class ReportWriterTest {
 
         @Test
         void readSummary_shouldKeepNullServer_whenRunReadNoServerMeters() throws IOException {
-            var expected = summary().toBuilder().server(null).build();
-            var directory = writer.write(root, expected, Map.of(), Map.of(), null, null);
+            var expected = summary().toBuilder().serverWindow(null).server(null).build();
+            var directory = writer.write(root, expected, Map.of(), Map.of(), Map.of());
 
             var actual = writer.readSummary(directory.resolve(ReportWriter.SUMMARY_FILE));
 
@@ -163,10 +171,12 @@ class ReportWriterTest {
                     .containsPattern("MOVE_TO\\s+1000\\s+997\\s+2\\s+1\\s+4\\.00\\s+11\\.50\\s+20\\.00\\s+25\\.00")
                     .containsPattern("lifecycle step\\s+count")
                     .containsPattern("LOGIN_AUTH\\s+20\\s+3\\.00\\s+40\\.00\\s+60\\.00\\s+61\\.00")
-                    .containsPattern("world-0\\s+6000\\s+5\\.000\\s+20\\.000\\s+-\\s+3")
-                    .contains("GC pause p99 3.000 ms mean 1.200 ms max - ms")
-                    .contains("l2nx_legacy_task_seconds{type=\"ai\"} mean 0.500 ms p99 5.000 ms max 7.000 ms")
-                    .contains("l2nx_legacy_packet_seconds{type=\"move\"} mean 0.100 ms p99 - ms max - ms");
+                    .containsPattern("world-0\\s+6000\\s+5\\.000\\s+20\\.000\\s+-\\s+3\\s+0\\s+0\\s+7\\s+12\\.000")
+                    .contains("server window 2026-10-21T08:16:30Z .. 2026-10-21T08:21:30Z (300000 ms)")
+                    .contains("game: GC pause p99 3.000 ms mean 1.200 ms max - ms, CPU mean 0.350, live threads max"
+                            + " 64.000")
+                    .contains("login: GC pause p99 - ms mean - ms max - ms, CPU mean 0.050, live threads max -")
+                    .contains("MoveBackwardToLocation mean 0.100 ms");
         }
 
         @Test
@@ -179,7 +189,10 @@ class ReportWriterTest {
 
             var actual = writer.consoleTable(invalid);
 
-            assertThat(actual).contains(": INVALID [GENERATOR_LAG]").contains("server meters: none");
+            assertThat(actual)
+                    .contains(": INVALID [GENERATOR_LAG]")
+                    .contains("server window 2026-10-21T08:16:30Z")
+                    .contains("server meters: none");
         }
     }
 
@@ -264,6 +277,7 @@ class ReportWriterTest {
                 .rejectedShare(0.001)
                 .stoppedShare(0)
                 .reachedFinalState(20)
+                .serverWindow(ServerWindow.of(STARTED_AT.plusSeconds(60), STARTED_AT.plusSeconds(360)))
                 .server(ServerStats.builder()
                         .loops(Map.of(
                                 "world-0",
@@ -272,21 +286,22 @@ class ReportWriterTest {
                                         .passP50Millis(5.0)
                                         .passP99Millis(20.0)
                                         .overBudget(3)
+                                        .jdbcOnLoop(7)
                                         .phaseMeanMillis(Map.of("input", 0.4, "tick", 2.5))
                                         .inboxDepthMax(12.0)
                                         .inboxDepthP99(4.0)
                                         .build()))
-                        .legacyMeanMillis(Map.of(
-                                "l2nx_legacy_task_seconds{type=\"ai\"}",
-                                0.5,
-                                "l2nx_legacy_packet_seconds{type=\"move\"}",
-                                0.1))
-                        .legacyP99Millis(Map.of("l2nx_legacy_task_seconds{type=\"ai\"}", 5.0))
-                        .legacyMaxMillis(Map.of("l2nx_legacy_task_seconds{type=\"ai\"}", 7.0))
-                        .gcPauseP99Millis(3.0)
-                        .gcPauseMeanMillis(1.2)
-                        .processCpuMean(0.35)
-                        .threadsLiveMax(64.0)
+                        .legacyPacketMeanMillis(Map.of("MoveBackwardToLocation", 0.1))
+                        .processes(Map.of(
+                                "game",
+                                ProcessStats.builder()
+                                        .gcPauseP99Millis(3.0)
+                                        .gcPauseMeanMillis(1.2)
+                                        .cpuMean(0.35)
+                                        .threadsLiveMax(64.0)
+                                        .build(),
+                                "login",
+                                ProcessStats.builder().cpuMean(0.05).build()))
                         .build())
                 .build();
     }

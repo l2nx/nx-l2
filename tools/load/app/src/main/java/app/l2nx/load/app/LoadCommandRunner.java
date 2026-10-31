@@ -5,6 +5,8 @@
 package app.l2nx.load.app;
 
 import app.l2nx.load.app.database.DatabaseCommands;
+import app.l2nx.load.app.prometheus.PrometheusClient;
+import app.l2nx.load.app.prometheus.PrometheusServerMeters;
 import app.l2nx.load.app.scenario.LoginStormLoadScenario;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotState;
@@ -13,8 +15,6 @@ import app.l2nx.load.gate.model.GateThresholds;
 import app.l2nx.load.gate.model.GateVerdict;
 import app.l2nx.load.injection.InjectionProfile;
 import app.l2nx.load.latency.LatencyRecorder;
-import app.l2nx.load.prometheus.PrometheusMeterWindow;
-import app.l2nx.load.prometheus.PrometheusScraper;
 import app.l2nx.load.protocol.ClientProtocol;
 import app.l2nx.load.report.ReportWriter;
 import app.l2nx.load.report.model.RunSummary;
@@ -69,6 +69,7 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
     private final List<LoadScenario> scenarios;
     private final List<ClientProtocolFactory> protocols;
     private final DatabaseCommands database;
+    private final PrometheusClient prometheus;
     private final ReportWriter reportWriter = new ReportWriter();
     private int exitCode;
 
@@ -105,30 +106,21 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         final ClientProtocol protocol = protocol(RUN);
         final RunSettings settings = settings(scenario, protocol);
         final LatencyRecorder latencies = new LatencyRecorder();
-        try (PrometheusScraper scraper = settings.prometheusUrl() == null
-                ? null
-                : new PrometheusScraper(settings.prometheusUrl(), properties.scrapeTimeout())) {
-            final PrometheusMeterWindow window = scraper == null ? null : new PrometheusMeterWindow(scraper);
-            final RunSummary summary =
-                    new LoadRun().execute(settings, scenario, protocol, identities(), latencies, window);
-            final Path directory = write(
-                    summary,
-                    latencies,
-                    window == null ? null : window.getStartText(),
-                    window == null ? null : window.getEndText());
-            System.out.print(reportWriter.consoleTable(summary));
-            log.info("Report of run {} written to {}", summary.runId(), directory);
-        }
+        final PrometheusServerMeters meters =
+                protocol.hasServer() ? new PrometheusServerMeters(prometheus, properties.prometheus()) : null;
+        final RunSummary summary = new LoadRun().execute(settings, scenario, protocol, identities(), latencies, meters);
+        final Path directory = write(summary, latencies, meters == null ? Map.of() : meters.snapshots());
+        System.out.print(reportWriter.consoleTable(summary));
+        log.info("Report of run {} written to {}", summary.runId(), directory);
     }
 
     /** @throws IllegalStateException when a load bot did not log in */
     private void seed() throws InterruptedException {
         final LoadScenario scenario = new LoginStormLoadScenario(SEED_FINAL_STATE);
         final ClientProtocol protocol = protocol(SEED);
-        final RunSettings settings =
-                settings(scenario, protocol).toBuilder().prometheusUrl(null).build();
-        final RunSummary summary =
-                new LoadRun().execute(settings, scenario, protocol, identities(), new LatencyRecorder(), null);
+        // Seeding is not measured: the servers run with the profile load-seed.
+        final RunSummary summary = new LoadRun()
+                .execute(settings(scenario, protocol), scenario, protocol, identities(), new LatencyRecorder(), null);
         System.out.print(reportWriter.consoleTable(summary));
         final int failed = properties.bots() - summary.reachedFinalState();
         if (failed > 0) {
@@ -165,7 +157,6 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
                         .build())
                 .seed(properties.seed())
                 .intentTimeout(properties.intentTimeout())
-                .prometheusUrl(properties.prometheusUrl())
                 .serverCommit(properties.serverCommit())
                 .cpuAffinity(properties.cpuAffinity());
         if (properties.eventLoopThreads() != null) {
@@ -174,7 +165,7 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         return settings.build();
     }
 
-    private Path write(RunSummary summary, LatencyRecorder latencies, String startText, String endText)
+    private Path write(RunSummary summary, LatencyRecorder latencies, Map<String, String> metricsSnapshots)
             throws IOException {
         final Path directory = properties.outputDir().resolve(summary.runId());
         // The run id has a one-second resolution: a second run of the same seed within it would overwrite the first.
@@ -189,7 +180,7 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         for (LoadBotState state : summary.steps().keySet()) {
             stepHistograms.put(state, latencies.stepHistogram(state));
         }
-        return reportWriter.write(properties.outputDir(), summary, histograms, stepHistograms, startText, endText);
+        return reportWriter.write(properties.outputDir(), summary, histograms, stepHistograms, metricsSnapshots);
     }
 
     private void gate(ApplicationArguments args) throws IOException {

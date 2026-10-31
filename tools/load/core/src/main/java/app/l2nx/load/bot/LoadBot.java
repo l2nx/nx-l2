@@ -14,7 +14,6 @@ import app.l2nx.load.bot.intent.SelectServer;
 import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
-import app.l2nx.load.bot.observation.Died;
 import app.l2nx.load.bot.observation.Entered;
 import app.l2nx.load.bot.observation.ObjectGone;
 import app.l2nx.load.bot.observation.ObjectMoved;
@@ -98,7 +97,6 @@ public final class LoadBot implements LoadBotView {
     private Position position;
     private int hp;
     private int mp;
-    private boolean dead;
 
     /** @param onStopped called once, on the event loop, when the load bot reached {@code STOPPED} */
     public LoadBot(
@@ -216,11 +214,6 @@ public final class LoadBot implements LoadBotView {
     }
 
     @Override
-    public boolean dead() {
-        return dead;
-    }
-
-    @Override
     public Collection<ObjectSeen> visibleObjects() {
         return visibleView;
     }
@@ -329,10 +322,14 @@ public final class LoadBot implements LoadBotView {
         try {
             if (behaviour == null) {
                 behaviour = scenario.behaviour(this);
-                schedule = behaviour.schedule();
+                schedule = behaviour.schedule().orElse(null);
             }
         } catch (RuntimeException e) {
             fail(e);
+            return;
+        }
+        // Without a schedule the load bot only waits for its leave task.
+        if (schedule == null) {
             return;
         }
         // A fresh phase after every entry: the time spent outside the game is not owed as a burst of actions.
@@ -525,7 +522,6 @@ public final class LoadBot implements LoadBotView {
             case Entered entered -> {
                 selfObjectId = entered.selfObjectId();
                 position = entered.position();
-                dead = false;
             }
             case ObjectSeen seen -> visible.put(seen.objectId(), seen);
             case ObjectGone gone -> visible.remove(gone.objectId());
@@ -542,18 +538,6 @@ public final class LoadBot implements LoadBotView {
             case StatusChanged status -> {
                 hp = status.hp();
                 mp = status.mp();
-                if (hp > 0) {
-                    dead = false;
-                }
-            }
-            case Died died -> {
-                if (died.objectId() == selfObjectId) {
-                    dead = true;
-                } else {
-                    visible.computeIfPresent(
-                            died.objectId(),
-                            (id, seen) -> seen.toBuilder().dead(true).build());
-                }
             }
         }
     }

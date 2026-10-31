@@ -1,6 +1,5 @@
 plugins {
     id("nx-l2.java-conventions")
-    alias(libs.plugins.protobuf)
 }
 
 dependencies {
@@ -8,11 +7,4 @@ dependencies {
     api(libs.hdrhistogram)
     api(libs.jackson.databind)
     implementation(libs.fastutil)
-    implementation(libs.protobuf.java)
-}
-
-protobuf {
-    protoc {
-        artifact = libs.protoc.asProvider().get().toString()
-    }
 }

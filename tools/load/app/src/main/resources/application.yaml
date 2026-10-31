@@ -4,6 +4,10 @@
 spring:
   application:
     name: load
+  http:
+    clients:
+      connect-timeout: 2s
+      read-timeout: 10s
   main:
     web-application-type: none
     banner-mode: off
@@ -11,8 +15,7 @@ spring:
     exclude:
       # It builds a server's event loops; load bots run on the harness's own group.
       - app.l2nx.network.NetworkAutoConfiguration
-      # The database commands open plain JDBC connections, the admin database's included, and want no pool; the
-      # starter reaches the classpath with the database test fixtures.
+      # The database commands open plain JDBC connections and want no pool; the starter arrives with the test fixtures.
       - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
 
 l2nx:
@@ -24,7 +27,6 @@ l2nx:
     ramp-down: 10s
     seed: 1
     intent-timeout: 5s
-    scrape-timeout: 10s
     output-dir: build/load
     accounts:
       prefix: load
@@ -39,6 +41,16 @@ l2nx:
       login-port: 2106
       server-id: 1
       connect-timeout: 5s
+    # The Prometheus of `docker compose --profile load up -d`; jobs as in docker/prometheus/prometheus.yml.
+    prometheus:
+      url: http://127.0.0.1:9090
+      # One 1 s scrape: a smaller skew moves each window edge by at most one scrape, the resolution the window has anyway.
+      max-clock-skew: 1s
+      targets:
+        - job: game
+          metrics-url: http://127.0.0.1:8777/actuator/prometheus
+        - job: login
+          metrics-url: http://127.0.0.1:8106/actuator/prometheus
     # The l2nx-db container of compose.yaml; the server roles come from docker/postgres-init.sql.
     database:
       admin-url: jdbc:postgresql://localhost:5432/postgres

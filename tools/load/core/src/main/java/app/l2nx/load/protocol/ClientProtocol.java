@@ -20,6 +20,9 @@ public interface ClientProtocol {
     /** A scenario whose final state lies beyond it does not start: every load bot would stop on an error. */
     LoadBotState lastState();
 
+    /** {@code false} for a stand-in with no server behind it: a run on it has no server meters to read. */
+    boolean hasServer();
+
     /** Must match the channel class the adapter connects with. */
     IoHandlerFactory ioHandlerFactory();
 

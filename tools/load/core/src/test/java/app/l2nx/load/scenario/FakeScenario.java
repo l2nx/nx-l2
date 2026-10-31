@@ -13,6 +13,7 @@ import app.l2nx.load.bot.model.Position;
 import app.l2nx.load.scenario.model.ActionSchedule;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -21,6 +22,7 @@ public final class FakeScenario implements LoadScenario {
     private final Runnable onAction;
     private MeasuredPhase measuredPhase = MeasuredPhase.STEADY;
     private LoadBotState finalState = LoadBotState.IN_GAME;
+    private boolean idle;
 
     public FakeScenario(Duration interval, Duration jitter) {
         this(interval, jitter, () -> {});
@@ -33,6 +35,11 @@ public final class FakeScenario implements LoadScenario {
 
     public FakeScenario measuredPhase(MeasuredPhase phase) {
         measuredPhase = phase;
+        return this;
+    }
+
+    public FakeScenario idle() {
+        idle = true;
         return this;
     }
 
@@ -63,10 +70,13 @@ public final class FakeScenario implements LoadScenario {
 
     @Override
     public LoadBehaviour behaviour(LoadBotView bot) {
+        if (idle) {
+            return LoadBehaviour.idle();
+        }
         return new LoadBehaviour() {
             @Override
-            public ActionSchedule schedule() {
-                return schedule;
+            public Optional<ActionSchedule> schedule() {
+                return Optional.of(schedule);
             }
 
             @Override

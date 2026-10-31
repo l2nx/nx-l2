@@ -5,14 +5,11 @@
 package app.l2nx.load.run;
 
 import app.l2nx.load.injection.InjectionProfile;
-import java.net.URI;
 import java.time.Duration;
 import lombok.Builder;
 
 /**
  * @param intentTimeout an intent not acknowledged within it from its intended time counts as a timeout
- * @param prometheusUrl the server's Prometheus endpoint; {@code null} reads no server meters, such as on an in-memory
- *     protocol
  */
 @Builder(toBuilder = true)
 public record RunSettings(
@@ -22,8 +19,6 @@ public record RunSettings(
         long seed,
         int eventLoopThreads,
         Duration intentTimeout,
-        URI prometheusUrl,
-        Duration scrapeInterval,
         Duration maxGeneratorLagP99,
         double maxStoppedShare,
         String serverCommit,
@@ -38,7 +33,6 @@ public record RunSettings(
             throw new IllegalArgumentException("Event loop threads must be positive: " + eventLoopThreads);
         }
         requirePositive("intent timeout", intentTimeout);
-        requirePositive("scrape interval", scrapeInterval);
         requirePositive("maximum generator lag p99", maxGeneratorLagP99);
         if (!(maxStoppedShare >= 0 && maxStoppedShare <= 1)) {
             throw new IllegalArgumentException("The maximum stopped share must be within [0, 1]: " + maxStoppedShare);
@@ -55,7 +49,6 @@ public record RunSettings(
         return builder()
                 .eventLoopThreads(Runtime.getRuntime().availableProcessors())
                 .intentTimeout(Duration.ofSeconds(5))
-                .scrapeInterval(Duration.ofSeconds(1))
                 .maxGeneratorLagP99(Duration.ofMillis(10))
                 .maxStoppedShare(0.01);
     }

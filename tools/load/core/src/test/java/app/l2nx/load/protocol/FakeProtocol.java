@@ -26,6 +26,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 import java.util.function.LongSupplier;
 
+/**
+ * Core test double: scripted answers with fault injection (stalls, slow answers, rejections, decode failures, drops,
+ * refused identities). {@code InMemoryProtocol} in {@code tools/load/app} is the runnable protocol; core cannot depend
+ * on it.
+ */
 public final class FakeProtocol implements ClientProtocol {
     public static final Position SPAWN =
             Position.builder().x(100).y(200).z(-300).build();
@@ -125,6 +130,11 @@ public final class FakeProtocol implements ClientProtocol {
     @Override
     public LoadBotState lastState() {
         return lastState;
+    }
+
+    @Override
+    public boolean hasServer() {
+        return false;
     }
 
     @Override

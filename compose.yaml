@@ -20,6 +20,24 @@ services:
       - l2nx-db-data:/var/lib/postgresql
       - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/nx-l2.sql:ro
 
+  prometheus:
+    image: prom/prometheus:v3.13.5
+    container_name: l2nx-prometheus
+    profiles: [load]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    ports:
+      - "127.0.0.1:9090:9090"
+    # Docker Desktop resolves the name itself; on Linux it maps to the host gateway.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - l2nx-prometheus-data:/prometheus
+
 volumes:
   l2nx-db-data:
     name: l2nx-db-pg-data
+  l2nx-prometheus-data:
+    name: l2nx-prometheus-data

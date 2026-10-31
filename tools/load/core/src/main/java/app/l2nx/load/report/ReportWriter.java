@@ -10,6 +10,7 @@ import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateVerdict;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.ServerWindow;
 import app.l2nx.load.report.model.StepStats;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.IOException;
@@ -24,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import org.HdrHistogram.Histogram;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.cfg.DateTimeFeature;
@@ -33,8 +33,6 @@ import tools.jackson.databind.json.JsonMapper;
 public final class ReportWriter {
 
     public static final String SUMMARY_FILE = "summary.json";
-    public static final String METRICS_START_FILE = "server-metrics-start.prom";
-    public static final String METRICS_END_FILE = "server-metrics-end.prom";
 
     private static final DateTimeFormatter RUN_ID_TIME =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneOffset.UTC);
@@ -42,6 +40,8 @@ public final class ReportWriter {
     private static final String NONE = "-";
     private static final String HISTOGRAM_EXTENSION = ".hgrm";
     private static final String STEP_HISTOGRAM_PREFIX = "step-";
+    private static final String METRICS_PREFIX = "server-metrics-";
+    private static final String METRICS_EXTENSION = ".prom";
 
     private final JsonMapper jsonMapper = JsonMapper.builder()
             .changeDefaultPropertyInclusion(inclusion -> inclusion
@@ -59,16 +59,14 @@ public final class ReportWriter {
     /**
      * @param histograms recorded in nanoseconds; written in milliseconds
      * @param stepHistograms recorded in nanoseconds; written in milliseconds
-     * @param metricsStartText {@code null} writes no file
-     * @param metricsEndText {@code null} writes no file
+     * @param metricsSnapshots file name to verbatim text, named by {@link #metricsFile}; an empty map writes none
      */
     public Path write(
             Path root,
             RunSummary summary,
             Map<IntentKind, Histogram> histograms,
             Map<LoadBotState, Histogram> stepHistograms,
-            String metricsStartText,
-            String metricsEndText)
+            Map<String, String> metricsSnapshots)
             throws IOException {
         var directory = Files.createDirectories(root.resolve(Objects.requireNonNull(summary.runId(), "runId")));
         jsonMapper.writeValue(directory.resolve(SUMMARY_FILE), summary);
@@ -78,8 +76,9 @@ public final class ReportWriter {
         for (var entry : stepHistograms.entrySet()) {
             writeHistogram(directory.resolve(stepHistogramFile(entry.getKey())), entry.getValue());
         }
-        writeText(directory.resolve(METRICS_START_FILE), metricsStartText);
-        writeText(directory.resolve(METRICS_END_FILE), metricsEndText);
+        for (var entry : metricsSnapshots.entrySet()) {
+            Files.writeString(directory.resolve(entry.getKey()), entry.getValue(), StandardCharsets.UTF_8);
+        }
         return directory;
     }
 
@@ -94,6 +93,10 @@ public final class ReportWriter {
     /** Prefixed, so a state never shares a file with an intent kind of the same name. */
     public static String stepHistogramFile(LoadBotState state) {
         return STEP_HISTOGRAM_PREFIX + state.name().toLowerCase(Locale.ROOT) + HISTOGRAM_EXTENSION;
+    }
+
+    public static String metricsFile(String job, String boundary) {
+        return METRICS_PREFIX + job + "-" + boundary + METRICS_EXTENSION;
     }
 
     public String consoleTable(RunSummary summary) {
@@ -163,7 +166,7 @@ public final class ReportWriter {
         }
         out.append('\n');
         appendSteps(out, summary.steps());
-        appendServer(out, summary.server());
+        appendServer(out, summary.serverWindow(), summary.server());
         return out.toString();
     }
 
@@ -209,14 +212,17 @@ public final class ReportWriter {
         out.append('\n');
     }
 
-    private static void appendServer(StringBuilder out, ServerStats server) {
+    private static void appendServer(StringBuilder out, ServerWindow window, ServerStats server) {
+        if (window != null) {
+            line(out, "server window %s .. %s (%d ms)", window.start(), window.end(), window.rangeMillis());
+        }
         if (server == null) {
             line(out, "server meters: none");
             return;
         }
         line(
                 out,
-                "%-16s %10s %9s %9s %9s %11s %9s %9s %9s",
+                "%-16s %10s %9s %9s %9s %11s %9s %9s %9s %9s",
                 "loop",
                 "passes",
                 "p50 ms",
@@ -225,12 +231,13 @@ public final class ReportWriter {
                 "over budget",
                 "failures",
                 "overdue",
+                "jdbc",
                 "inbox max");
         if (server.loops() != null) {
             new TreeMap<>(server.loops())
                     .forEach((loop, stats) -> line(
                             out,
-                            "%-16s %10d %9s %9s %9s %11d %9d %9d %9s",
+                            "%-16s %10d %9s %9s %9s %11d %9d %9d %9d %9s",
                             loop,
                             stats.passes(),
                             number(stats.passP50Millis()),
@@ -239,33 +246,29 @@ public final class ReportWriter {
                             stats.overBudget(),
                             stats.failures(),
                             stats.timersOverdue(),
+                            stats.jdbcOnLoop(),
                             number(stats.inboxDepthMax())));
         }
         line(
                 out,
-                "session queue depth p99 %s max %s, GC pause p99 %s ms mean %s ms max %s ms, process CPU mean %s,"
-                        + " live threads max %s",
+                "session queue depth p99 %s max %s",
                 number(server.sessionQueueDepthP99()),
-                number(server.sessionQueueDepthMax()),
-                number(server.gcPauseP99Millis()),
-                number(server.gcPauseMeanMillis()),
-                number(server.gcPauseMaxMillis()),
-                number(server.processCpuMean()),
-                number(server.threadsLiveMax()));
-        var legacyMean = server.legacyMeanMillis() == null ? Map.<String, Double>of() : server.legacyMeanMillis();
-        var legacyP99 = server.legacyP99Millis() == null ? Map.<String, Double>of() : server.legacyP99Millis();
-        var legacyMax = server.legacyMaxMillis() == null ? Map.<String, Double>of() : server.legacyMaxMillis();
-        var legacyMeters = new TreeSet<>(legacyMean.keySet());
-        legacyMeters.addAll(legacyP99.keySet());
-        legacyMeters.addAll(legacyMax.keySet());
-        for (var meter : legacyMeters) {
-            line(
-                    out,
-                    "%s mean %s ms p99 %s ms max %s ms",
-                    meter,
-                    number(legacyMean.get(meter)),
-                    number(legacyP99.get(meter)),
-                    number(legacyMax.get(meter)));
+                number(server.sessionQueueDepthMax()));
+        if (server.processes() != null) {
+            new TreeMap<>(server.processes())
+                    .forEach((job, process) -> line(
+                            out,
+                            "%s: GC pause p99 %s ms mean %s ms max %s ms, CPU mean %s, live threads max %s",
+                            job,
+                            number(process.gcPauseP99Millis()),
+                            number(process.gcPauseMeanMillis()),
+                            number(process.gcPauseMaxMillis()),
+                            number(process.cpuMean()),
+                            number(process.threadsLiveMax())));
+        }
+        if (server.legacyPacketMeanMillis() != null) {
+            new TreeMap<>(server.legacyPacketMeanMillis())
+                    .forEach((type, mean) -> line(out, "%s mean %s ms", type, number(mean)));
         }
     }
 
@@ -275,12 +278,6 @@ public final class ReportWriter {
             if (out.checkError()) {
                 throw new IOException("Failed to write " + file);
             }
-        }
-    }
-
-    private static void writeText(Path file, String text) throws IOException {
-        if (text != null) {
-            Files.writeString(file, text, StandardCharsets.UTF_8);
         }
     }
 

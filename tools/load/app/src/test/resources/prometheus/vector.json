@@ -1,0 +1,1 @@
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"handler":"/metrics"},"value":[1793404298.361,"0.099"]},{"metric":{"handler":"/api/v1/labels"},"value":[1793404298.361,"NaN"]},{"metric":{"handler":"/api/v1/query"},"value":[1793404298.361,"0.099"]},{"metric":{"handler":"/api/v1/status/buildinfo"},"value":[1793404298.361,"NaN"]}]}}

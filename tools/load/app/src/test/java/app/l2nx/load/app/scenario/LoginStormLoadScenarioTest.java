@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.scenario.LoadBehaviour;
 import app.l2nx.load.scenario.model.MeasuredPhase;
-import java.util.SplittableRandom;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,11 +41,10 @@ class LoginStormLoadScenarioTest {
     @Nested
     class Behaviour {
         @Test
-        void next_shouldSkipEverySlot() {
+        void schedule_shouldBeEmpty() {
             final LoadBehaviour behaviour = new LoginStormLoadScenario(LoadBotState.IN_GAME).behaviour(null);
-            final SplittableRandom random = new SplittableRandom(1);
 
-            assertThat(behaviour.next(null, random)).isNull();
+            assertThat(behaviour.schedule()).isEmpty();
         }
     }
 }

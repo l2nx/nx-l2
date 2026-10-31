@@ -26,8 +26,6 @@ public interface LoadBotView {
 
     int mp();
 
-    boolean dead();
-
     /** Visible world objects with their latest position and state; a live, unmodifiable view. */
     Collection<ObjectSeen> visibleObjects();
 }

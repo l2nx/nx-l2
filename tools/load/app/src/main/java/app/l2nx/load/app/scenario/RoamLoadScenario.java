@@ -16,6 +16,7 @@ import app.l2nx.load.scenario.model.ActionSchedule;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 import org.springframework.stereotype.Component;
@@ -54,8 +55,8 @@ public final class RoamLoadScenario implements LoadScenario {
 
     private record Roam(Position home) implements LoadBehaviour {
         @Override
-        public ActionSchedule schedule() {
-            return SCHEDULE;
+        public Optional<ActionSchedule> schedule() {
+            return Optional.of(SCHEDULE);
         }
 
         @Override

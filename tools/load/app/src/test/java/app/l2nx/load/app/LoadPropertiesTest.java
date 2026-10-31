@@ -7,7 +7,12 @@ package app.l2nx.load.app;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.load.bot.model.LoadBotState;
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +66,52 @@ class LoadPropertiesTest {
     }
 
     @Nested
+    class Prometheus {
+        private static final URI METRICS = URI.create("http://127.0.0.1:8777/actuator/prometheus");
+
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource({"game login, true", "game game, false", "game, true"})
+        void isJobsDistinct_shouldRefuse_whenAJobRepeats(String jobs, boolean expected) {
+            final LoadProperties.Prometheus actual = LoadProperties.Prometheus.builder()
+                    .url(URI.create("http://127.0.0.1:9090"))
+                    .targets(Stream.of(jobs.split(" "))
+                            .map(job -> new LoadProperties.Target(job, METRICS))
+                            .toList())
+                    .build();
+
+            assertThat(actual.isJobsDistinct()).isEqualTo(expected);
+        }
+
+        @Test
+        void isJobsDistinct_shouldAccept_whenTargetsOrJobsAreMissing() {
+            final LoadProperties.Prometheus actual = LoadProperties.Prometheus.builder()
+                    .url(URI.create("http://127.0.0.1:9090"))
+                    .targets(Arrays.asList(
+                            new LoadProperties.Target("game", METRICS),
+                            null,
+                            new LoadProperties.Target(" ", METRICS),
+                            new LoadProperties.Target(null, METRICS)))
+                    .build();
+
+            assertThat(actual.isJobsDistinct())
+                    .as("a missing target or job is reported by its own constraint")
+                    .isTrue();
+        }
+
+        @ParameterizedTest(name = "[{0}] -> {1}")
+        @CsvSource({"game, true", "game_2, true", "Game-1, false", "1game, false"})
+        void validate_shouldTakeOnlyAPlainIdentifierAsJob(String job, boolean expected) {
+            try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+                final boolean actual = factory.getValidator()
+                        .validate(new LoadProperties.Target(job, METRICS))
+                        .isEmpty();
+
+                assertThat(actual).as("a PromQL label value").isEqualTo(expected);
+            }
+        }
+    }
+
+    @Nested
     class Database {
         @ParameterizedTest(name = "{0} from {1} -> {2}")
         @CsvSource({
@@ -82,6 +133,14 @@ class LoadPropertiesTest {
             assertThat(database("l2nx_load", "l2nx_load_template", List.of("login", "login"))
                             .isSchemasDistinct())
                     .isFalse();
+        }
+
+        @Test
+        void isSchemasDistinct_shouldAccept_whenSchemaNamesAreMissing() {
+            assertThat(database("l2nx_load", "l2nx_load_template", Arrays.asList("login", null, null))
+                            .isSchemasDistinct())
+                    .as("a missing name is reported by its own constraint")
+                    .isTrue();
         }
 
         @Test

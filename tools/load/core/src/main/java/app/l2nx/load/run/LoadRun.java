@@ -17,6 +17,7 @@ import app.l2nx.load.report.model.InvalidReason;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.ServerWindow;
 import app.l2nx.load.scenario.LoadScenario;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
@@ -56,10 +57,10 @@ public final class LoadRun {
     }
 
     /**
-     * @param serverMeters reads the server meters; required when {@code settings.prometheusUrl()} is set, ignored
-     *     otherwise
+     * @param serverMeters {@code null} reads no server meters, such as on the in-memory protocol
      * @throws IllegalArgumentException before anything starts, when the protocol, identities, settings or injection
      *     profile do not fit the scenario
+     * @throws IllegalStateException before anything starts, when the server meters could not be read
      */
     public RunSummary execute(
             RunSettings settings,
@@ -69,9 +70,13 @@ public final class LoadRun {
             LatencyRecorder latencies,
             ServerMeterWindow serverMeters)
             throws InterruptedException {
-        check(settings, scenario, protocol, serverMeters);
+        check(settings, scenario, protocol);
         final int bots = settings.injection().bots();
         final List<LoadBotIdentity> botIdentities = identities(bots, protocol, identities);
+        if (serverMeters != null) {
+            // Before any load bot exists: a run whose server meters cannot be read is not worth starting.
+            serverMeters.checkReady();
+        }
         final Instant startedAt = wallClock.instant();
         final RunTimeline timeline = new RunTimeline(settings.injection(), scenario.measuredPhase(), clock);
         final GeneratorLagMonitor lag = new GeneratorLagMonitor();
@@ -85,6 +90,7 @@ public final class LoadRun {
                 protocol.id(),
                 bots,
                 settings.seed());
+        ServerWindow serverWindow = null;
         ServerStats server = null;
         Throwable failure = null;
         try {
@@ -104,8 +110,20 @@ public final class LoadRun {
                 bot.start();
             }
             final long drainedAt = timeline.end() + settings.intentTimeout().toNanos() + LOGOUT_ROUND_TRIP.toNanos();
-            if (settings.prometheusUrl() != null) {
-                server = readServerMeters(timeline, settings.scrapeInterval(), serverMeters, drainedAt);
+            if (serverMeters != null) {
+                sleepUntil(timeline.measuredStart());
+                final Instant windowStart = wallClock.instant();
+                serverMeters.start();
+                final boolean measuredEnded = timeline.awaitMeasuredEnd(drainedAt);
+                serverWindow = ServerWindow.of(windowStart, wallClock.instant());
+                if (measuredEnded) {
+                    server = serverMeters.finish(serverWindow);
+                } else {
+                    // Running the window over the drain would skew server values; the client side is unaffected.
+                    log.warn(
+                            "The measured phase did not end before the drain, the report has no server meters over {}",
+                            serverWindow);
+                }
             }
             // Load bots that close on a final state before the game may all be done long before the run's end.
             if (!stopped.await(Math.max(0, drainedAt - clock.getAsLong()), TimeUnit.NANOSECONDS)) {
@@ -125,13 +143,13 @@ public final class LoadRun {
                 failure.addSuppressed(e);
             }
         }
-        final RunSummary summary = summarize(settings, scenario, protocol, startedAt, latencies, lag, loadBots, server);
+        final RunSummary summary =
+                summarize(settings, scenario, protocol, startedAt, latencies, lag, loadBots, serverWindow, server);
         log.info("Load run {} done: {} {}", summary.runId(), summary.validity(), summary.invalidReasons());
         return summary;
     }
 
-    private static void check(
-            RunSettings settings, LoadScenario scenario, ClientProtocol protocol, ServerMeterWindow serverMeters) {
+    private static void check(RunSettings settings, LoadScenario scenario, ClientProtocol protocol) {
         if (!settings.scenario().equals(scenario.id())) {
             throw new IllegalArgumentException(
                     "Settings name scenario " + settings.scenario() + ", given " + scenario.id());
@@ -152,9 +170,6 @@ public final class LoadRun {
         if (!missing.isEmpty()) {
             throw new IllegalArgumentException("Protocol " + protocol.id() + " cannot express " + missing
                     + " that scenario " + scenario.id() + " needs");
-        }
-        if (settings.prometheusUrl() != null && serverMeters == null) {
-            throw new IllegalArgumentException("A Prometheus URL is set but no server meter window is given");
         }
     }
 
@@ -177,20 +192,6 @@ public final class LoadRun {
         return checked;
     }
 
-    private ServerStats readServerMeters(
-            RunTimeline timeline, Duration scrapeInterval, ServerMeterWindow meters, long drainedAt)
-            throws InterruptedException {
-        sleepUntil(timeline.measuredStart());
-        meters.start();
-        final long interval = scrapeInterval.toNanos();
-        for (long at = timeline.measuredStart() + interval;
-                !timeline.awaitMeasuredEnd(at - drainedAt < 0 ? at : drainedAt) && at - drainedAt < 0;
-                at += interval) {
-            meters.sample();
-        }
-        return meters.finish();
-    }
-
     private void sleepUntil(long time) throws InterruptedException {
         final long delay = time - clock.getAsLong();
         if (delay > 0) {
@@ -201,7 +202,7 @@ public final class LoadRun {
     private static void shutDown(EventLoopGroup group) {
         final Future<?> terminated = group.shutdownGracefully(
                 SHUTDOWN_QUIET_PERIOD.toMillis(), SHUTDOWN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        // The quiet period may run up to the timeout, so the wait allows both plus a margin for the last tasks.
+        // The quiet period may run up to the timeout, so wait for both plus a margin.
         final long waitMillis = SHUTDOWN_QUIET_PERIOD.toMillis() + SHUTDOWN_TIMEOUT.toMillis() + 1_000;
         // The summary reads load bot state written on the event loops: it is safe only once they terminated.
         if (!terminated.awaitUninterruptibly(waitMillis)) {
@@ -217,6 +218,7 @@ public final class LoadRun {
             LatencyRecorder latencies,
             GeneratorLagMonitor lag,
             List<LoadBot> loadBots,
+            ServerWindow serverWindow,
             ServerStats server) {
         final Map<IntentKind, IntentStats> intents = latencies.stats();
         final long sent = intents.values().stream().mapToLong(IntentStats::sent).sum();
@@ -257,6 +259,7 @@ public final class LoadRun {
                 .rejectedShare(sent == 0 ? 0 : (double) errors / sent)
                 .stoppedShare(stoppedShare)
                 .reachedFinalState(reachedFinalState)
+                .serverWindow(serverWindow)
                 .server(server)
                 .build();
     }

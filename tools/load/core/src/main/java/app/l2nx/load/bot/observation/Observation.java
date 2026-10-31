@@ -4,4 +4,4 @@
  */
 package app.l2nx.load.bot.observation;
 
-public sealed interface Observation permits Entered, ObjectSeen, ObjectGone, ObjectMoved, StatusChanged, Died {}
+public sealed interface Observation permits Entered, ObjectSeen, ObjectGone, ObjectMoved, StatusChanged {}

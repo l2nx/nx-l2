@@ -10,9 +10,6 @@ public enum IntentKind {
     SELECT_CHARACTER,
     ENTER_WORLD,
     MOVE_TO,
-    ATTACK,
-    USE_SKILL,
     SAY,
-    RESURRECT_AT_RESTART_POINT,
     LOGOUT
 }

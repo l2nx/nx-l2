@@ -4,27 +4,33 @@
  */
 package app.l2nx.load.report.model;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 import lombok.Builder;
 
 /**
  * Server meters over the measured phase. A boxed value is {@code null} when the server does not expose that meter or
  * the window holds no observation of it.
  *
- * @param legacyMeanMillis legacy timers keyed by their PromQL selector
- * @param legacyP99Millis only timers that publish a histogram have an entry, under the same keys
- * @param legacyMaxMillis histogram timers only: Micrometer's decaying max still holds pre-window observations
+ * @param processes by Prometheus job, such as {@code game} and {@code login}
+ * @param legacyPacketMeanMillis by packet class ({@code type} tag)
  */
 @Builder(toBuilder = true)
 public record ServerStats(
         Map<String, LoopStats> loops,
         Double sessionQueueDepthP99,
         Double sessionQueueDepthMax,
-        Map<String, Double> legacyMeanMillis,
-        Map<String, Double> legacyP99Millis,
-        Map<String, Double> legacyMaxMillis,
-        Double gcPauseP99Millis,
-        Double gcPauseMeanMillis,
-        Double gcPauseMaxMillis,
-        Double processCpuMean,
-        Double threadsLiveMax) {}
+        Map<String, Double> legacyPacketMeanMillis,
+        Map<String, ProcessStats> processes) {
+    public ServerStats {
+        loops = sortedCopy(loops);
+        legacyPacketMeanMillis = sortedCopy(legacyPacketMeanMillis);
+        processes = sortedCopy(processes);
+    }
+
+    /** Sorted, so the report lists loops, jobs, phases and packet classes by name. */
+    static <V> Map<String, V> sortedCopy(Map<String, V> values) {
+        return values == null ? null : Collections.unmodifiableSortedMap(new TreeMap<>(values));
+    }
+}

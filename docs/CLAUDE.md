@@ -13,4 +13,4 @@ Finished one-time specs are kept in [archive/](archive/).
 | 006 | database            | 2026-10-19 | [006-database.md](specs/006-database.md)                       |
 | 007 | java conventions    | 2026-10-19 | [007-java-conventions.md](specs/007-java-conventions.md)       |
 | 008 | network             | 2026-10-20 | [008-network.md](specs/008-network.md)                         |
-| 009 | load harness        | 2026-10-21 | [009-load-harness.md](specs/009-load-harness.md)               |
+| 009 | load harness        | 2026-10-31 | [009-load-harness.md](specs/009-load-harness.md)               |

@@ -5,6 +5,7 @@
 package app.l2nx.load.app;
 
 import app.l2nx.load.app.memory.InMemoryProtocol;
+import app.l2nx.load.app.prometheus.PrometheusClient;
 import app.l2nx.load.app.scenario.LoginStormLoadScenario;
 import app.l2nx.load.protocol.p267.P267Protocol;
 import app.l2nx.load.protocol.p267.P267Settings;
@@ -13,6 +14,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestClient;
 
 @SpringBootApplication
 @ConfigurationPropertiesScan
@@ -46,5 +48,10 @@ public class LoadApplication {
                         .connectTimeout(p267.connectTimeout())
                         .build()))
                 .build();
+    }
+
+    @Bean
+    PrometheusClient prometheusClient(RestClient.Builder builder, LoadProperties properties) {
+        return new PrometheusClient(builder, properties.prometheus().url());
     }
 }

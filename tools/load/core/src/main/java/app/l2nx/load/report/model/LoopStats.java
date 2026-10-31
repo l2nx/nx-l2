@@ -17,6 +17,11 @@ public record LoopStats(
         long overBudget,
         long failures,
         long timersOverdue,
+        long jdbcOnLoop,
         Map<String, Double> phaseMeanMillis,
         Double inboxDepthMax,
-        Double inboxDepthP99) {}
+        Double inboxDepthP99) {
+    public LoopStats {
+        phaseMeanMillis = ServerStats.sortedCopy(phaseMeanMillis);
+    }
+}

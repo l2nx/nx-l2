@@ -18,7 +18,6 @@ import app.l2nx.load.bot.intent.SelectServer;
 import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
-import app.l2nx.load.bot.observation.Died;
 import app.l2nx.load.bot.observation.ObjectGone;
 import app.l2nx.load.bot.observation.ObjectMoved;
 import app.l2nx.load.bot.observation.ObjectSeen;
@@ -96,6 +95,26 @@ class LoadBotTest {
             assertThat(harness.latencies.sent(IntentKind.MOVE_TO))
                     .as("one action chain")
                     .isEqualTo(STEADY_INTENTS);
+        }
+
+        @Test
+        void enterGame_shouldSendNoScenarioIntentAndLogOutOnTime_whenTheBehaviourHasNoSchedule() {
+            final Harness harness = new Harness();
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO).idle());
+
+            harness.runToEnd();
+
+            assertThat(harness.session().sent())
+                    .containsExactly(
+                            Login.builder()
+                                    .account(bot.identity().account())
+                                    .password(bot.identity().password())
+                                    .build(),
+                            new SelectServer(),
+                            new SelectCharacter(bot.identity().characterSlot()),
+                            new EnterWorld(),
+                            new Logout());
+            assertThat(bot.stoppedOnError()).isFalse();
         }
 
         @Test
@@ -591,7 +610,6 @@ class LoadBotTest {
                             .objectId(2_000)
                             .position(elsewhere)
                             .build());
-            harness.session().emit(new Died(2_000));
             harness.session().emit(new ObjectGone(2_001));
             harness.session()
                     .emit(ObjectMoved.builder()
@@ -605,10 +623,8 @@ class LoadBotTest {
             assertThat(bot.position()).isEqualTo(there);
             assertThat(bot.hp()).isEqualTo(50);
             assertThat(bot.mp()).isEqualTo(20);
-            assertThat(bot.dead()).isFalse();
             assertThat(bot.visibleObjects())
-                    .containsExactly(
-                            monster.toBuilder().position(elsewhere).dead(true).build());
+                    .containsExactly(monster.toBuilder().position(elsewhere).build());
         }
     }
 
@@ -732,6 +748,11 @@ class LoadBotTest {
             @Override
             public LoadBotState lastState() {
                 return protocol.lastState();
+            }
+
+            @Override
+            public boolean hasServer() {
+                return protocol.hasServer();
             }
 
             @Override

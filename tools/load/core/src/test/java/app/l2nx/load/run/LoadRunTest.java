@@ -6,6 +6,7 @@ package app.l2nx.load.run;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotIdentity;
@@ -18,17 +19,19 @@ import app.l2nx.load.report.model.InvalidReason;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.ServerWindow;
 import app.l2nx.load.scenario.FakeScenario;
 import app.l2nx.load.scenario.model.MeasuredPhase;
-import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
@@ -56,7 +59,6 @@ class LoadRunTest {
             .seed(42)
             .eventLoopThreads(2)
             .intentTimeout(Duration.ofMillis(200))
-            .scrapeInterval(Duration.ofMillis(100))
             .build();
     private static final IntFunction<LoadBotIdentity> IDENTITIES = index -> LoadBotIdentity.builder()
             .index(index)
@@ -162,13 +164,14 @@ class LoadRunTest {
         }
 
         @Test
-        void execute_shouldFailBeforeStart_whenPrometheusUrlIsSetWithoutMeterWindow() {
-            final RunSettings settings = SETTINGS.toBuilder()
-                    .prometheusUrl(URI.create("http://localhost:9014/actuator/prometheus"))
-                    .build();
+        void execute_shouldFailBeforeAnyLoadBotStarts_whenServerMetersAreNotReady() {
+            final RecordingMeterWindow meters = new RecordingMeterWindow().notReady();
 
-            assertThatIllegalArgumentException()
-                    .isThrownBy(() -> execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null));
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), meters))
+                    .withMessageContaining("not ready");
+            assertThat(meters.calls).containsExactly("checkReady");
+            assertThat(protocol.sessions()).isEmpty();
         }
     }
 
@@ -206,7 +209,6 @@ class LoadRunTest {
         @Test
         void execute_shouldReportLifecycleStepsAndEndEarly_whenLoadBotsCloseOnAFinalStateInTheRamp()
                 throws InterruptedException {
-            // Only the intents up to the final state: the run's capability check needs no more.
             protocol.capabilities(Set.of(IntentKind.LOGIN, IntentKind.SELECT_SERVER, IntentKind.MOVE_TO));
             final RunSettings settings = SETTINGS.toBuilder()
                     .injection(SETTINGS.injection().toBuilder()
@@ -273,12 +275,21 @@ class LoadRunTest {
 
         @Test
         void execute_shouldReportRejectedShare_whenServerRejectsIntents() throws InterruptedException {
-            protocol.reject(20);
+            // Alternating ordinals: the share stays the same wherever the timers cut the measured phase.
+            for (int ordinal = 1; ordinal < 1_000; ordinal += 2) {
+                protocol.reject(ordinal);
+            }
 
             final RunSummary actual = execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), null);
 
             final IntentStats moves = actual.intents().get(IntentKind.MOVE_TO);
-            assertThat(moves.errors()).isEqualTo(8);
+            assertThat(moves.errors()).isPositive();
+            assertThat(moves.acknowledged() + moves.errors())
+                    .as("every counted intent is either acknowledged or rejected")
+                    .isEqualTo(moves.sent());
+            assertThat(Math.abs(moves.errors() - moves.acknowledged()))
+                    .as("alternating answers differ by at most one per load bot")
+                    .isLessThanOrEqualTo(SETTINGS.injection().bots());
             assertThat(actual.rejectedShare()).isEqualTo((double) moves.errors() / moves.sent());
             assertThat(actual.timeoutShare()).isZero();
         }
@@ -296,18 +307,40 @@ class LoadRunTest {
         }
 
         @Test
-        void execute_shouldReadServerMetersOverTheSteadyWindow_whenPrometheusUrlIsSet() throws InterruptedException {
-            final RunSettings settings = SETTINGS.toBuilder()
-                    .prometheusUrl(URI.create("http://localhost:9014/actuator/prometheus"))
-                    .build();
+        void execute_shouldQueryServerMetersOverTheSteadyWindow() throws InterruptedException {
             final RecordingMeterWindow meters = new RecordingMeterWindow();
+            final long startedAt = System.nanoTime();
 
-            final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), meters);
+            final RunSummary actual = execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), meters);
 
+            assertThat(meters.calls).containsExactly("checkReady", "start", "finish");
+            assertThat(Duration.ofNanos(meters.startedAt.get() - startedAt))
+                    .as("not before the ramp and the warm-up are over")
+                    .isGreaterThanOrEqualTo(Duration.ofMillis(100));
+            assertThat(Duration.ofNanos(meters.finishedAt.get() - startedAt))
+                    .as("not before the steady window is over")
+                    .isGreaterThanOrEqualTo(Duration.ofMillis(500));
+            final ServerWindow expected = ServerWindow.builder()
+                    .start(STARTED_AT.minusMillis(1))
+                    .end(STARTED_AT)
+                    .rangeMillis(1)
+                    .build();
+            assertThat(meters.window.get()).as("a fixed wall clock").isEqualTo(expected);
+            assertThat(actual.serverWindow()).isEqualTo(expected);
             assertThat(actual.server()).isSameAs(RecordingMeterWindow.STATS);
-            assertThat(meters.starts).hasValue(1);
-            assertThat(meters.samples).as("one per interval inside the window").hasValue(3);
-            assertThat(meters.finishes).hasValue(1);
+        }
+
+        @Test
+        void execute_shouldKeepTheClientResultsAndTheWindow_whenTheServerMetersCannotBeQueried()
+                throws InterruptedException {
+            final RecordingMeterWindow meters = new RecordingMeterWindow().unreadable();
+
+            final RunSummary actual = execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), meters);
+
+            assertThat(actual.server()).isNull();
+            assertThat(actual.serverWindow()).isEqualTo(ServerWindow.of(STARTED_AT, STARTED_AT));
+            assertThat(actual.reachedFinalState()).isEqualTo(8);
+            assertThat(actual.intents().get(IntentKind.MOVE_TO).sent()).isPositive();
         }
 
         @Test
@@ -320,7 +353,6 @@ class LoadRunTest {
                             .ramp(Duration.ofMillis(200))
                             .steady(Duration.ofSeconds(30))
                             .build())
-                    .prometheusUrl(URI.create("http://localhost:9014/actuator/prometheus"))
                     .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
             final FakeScenario scenario = new FakeScenario(INTERVAL, Duration.ZERO)
@@ -336,12 +368,36 @@ class LoadRunTest {
                     .as("past the ramp: the last load bot connects 300 ms after its start at 175 ms")
                     .isGreaterThanOrEqualTo(Duration.ofMillis(475))
                     .isLessThan(Duration.ofSeconds(10));
-            assertThat(meters.starts).hasValue(1);
-            assertThat(meters.finishes).hasValue(1);
+            assertThat(meters.calls).containsExactly("checkReady", "start", "finish");
             assertThat(actual.reachedFinalState()).isEqualTo(8);
             assertThat(actual.steps().get(LoadBotState.LOGIN_CONNECT).count())
                     .as("every arrival, though it ended after the ramp")
                     .isEqualTo(8);
+        }
+
+        @Test
+        void execute_shouldReadNoServerMetersButKeepTheWindow_whenTheRampOutlastsTheDrain()
+                throws InterruptedException {
+            protocol.capabilities(Set.of(IntentKind.LOGIN, IntentKind.SELECT_SERVER, IntentKind.MOVE_TO))
+                    .connectDelay(Duration.ofSeconds(30));
+            final RunSettings settings = SETTINGS.toBuilder()
+                    .injection(SETTINGS.injection().toBuilder()
+                            .ramp(Duration.ofMillis(200))
+                            .steady(Duration.ofMillis(50))
+                            .build())
+                    .maxGeneratorLagP99(Duration.ofMillis(100))
+                    .build();
+            final FakeScenario scenario = new FakeScenario(INTERVAL, Duration.ZERO)
+                    .measuredPhase(MeasuredPhase.RAMP)
+                    .finalState(LoadBotState.GAME_CONNECT);
+            final RecordingMeterWindow meters = new RecordingMeterWindow();
+
+            final RunSummary actual = execute(settings, scenario, meters);
+
+            assertThat(meters.calls).as("no load bot connects before the drain").containsExactly("checkReady", "start");
+            assertThat(actual.server()).isNull();
+            assertThat(actual.serverWindow()).isEqualTo(ServerWindow.of(STARTED_AT, STARTED_AT));
+            assertThat(actual.reachedFinalState()).isZero();
         }
     }
 
@@ -356,26 +412,43 @@ class LoadRunTest {
     private static final class RecordingMeterWindow implements ServerMeterWindow {
         static final ServerStats STATS = ServerStats.builder().loops(Map.of()).build();
 
-        private final AtomicInteger starts = new AtomicInteger();
-        private final AtomicInteger samples = new AtomicInteger();
-        private final AtomicInteger finishes = new AtomicInteger();
+        private final List<String> calls = new CopyOnWriteArrayList<>();
+        private final AtomicLong startedAt = new AtomicLong();
         private final AtomicLong finishedAt = new AtomicLong();
+        private final AtomicReference<ServerWindow> window = new AtomicReference<>();
+        private boolean ready = true;
+        private boolean readable = true;
+
+        RecordingMeterWindow notReady() {
+            ready = false;
+            return this;
+        }
+
+        RecordingMeterWindow unreadable() {
+            readable = false;
+            return this;
+        }
+
+        @Override
+        public void checkReady() {
+            calls.add("checkReady");
+            if (!ready) {
+                throw new IllegalStateException("Prometheus is not ready");
+            }
+        }
 
         @Override
         public void start() {
-            starts.incrementAndGet();
+            startedAt.set(System.nanoTime());
+            calls.add("start");
         }
 
         @Override
-        public void sample() {
-            samples.incrementAndGet();
-        }
-
-        @Override
-        public ServerStats finish() {
+        public ServerStats finish(ServerWindow finished) {
             finishedAt.set(System.nanoTime());
-            finishes.incrementAndGet();
-            return STATS;
+            window.set(finished);
+            calls.add("finish");
+            return readable ? STATS : null;
         }
     }
 }

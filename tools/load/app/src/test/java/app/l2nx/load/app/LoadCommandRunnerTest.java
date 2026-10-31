@@ -15,16 +15,24 @@ import app.l2nx.load.app.memory.InMemoryProtocol;
 import app.l2nx.load.app.scenario.LoginStormLoadScenario;
 import app.l2nx.load.app.scenario.RoamLoadScenario;
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.injection.InjectionProfile;
+import app.l2nx.load.protocol.ClientProtocol;
+import app.l2nx.load.protocol.ClientSession;
+import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.load.protocol.p267.P267Protocol;
 import app.l2nx.load.report.ReportWriter;
 import app.l2nx.load.report.model.IntentStats;
+import app.l2nx.load.report.model.InvalidReason;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.run.RunSettings;
 import app.l2nx.load.scenario.model.MeasuredPhase;
+import io.netty.channel.EventLoop;
+import io.netty.channel.IoHandlerFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -34,6 +42,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,6 +60,21 @@ import org.springframework.boot.SpringApplication;
 @Execution(ExecutionMode.SAME_THREAD)
 class LoadCommandRunnerTest {
     private static final Instant STARTED_AT = Instant.parse("2026-10-21T08:00:00Z");
+    // The limit every run takes: LoadCommandRunner keeps the default.
+    private static final double MAX_GENERATOR_LAG_P99_MILLIS = RunSettings.withDefaults()
+                    .scenario(RoamLoadScenario.ID)
+                    .protocol(InMemoryProtocol.ID)
+                    .injection(InjectionProfile.builder()
+                            .bots(1)
+                            .ramp(Duration.ZERO)
+                            .warmUp(Duration.ZERO)
+                            .steady(Duration.ofSeconds(1))
+                            .rampDown(Duration.ZERO)
+                            .build())
+                    .build()
+                    .maxGeneratorLagP99()
+                    .toNanos()
+            / 1_000_000.0;
 
     private final ReportWriter reportWriter = new ReportWriter();
 
@@ -61,7 +85,7 @@ class LoadCommandRunnerTest {
     @Execution(ExecutionMode.SAME_THREAD)
     class Run {
         @Test
-        void run_shouldWriteAValidReport_whenRoamingOnTheInMemoryProtocol() throws IOException {
+        void run_shouldWriteACompleteClientReport_whenRoamingOnTheInMemoryProtocol() throws IOException {
             final int exitCode = execute(
                     LoadCommandRunner.RUN,
                     "--l2nx.load.scenario=" + RoamLoadScenario.ID,
@@ -80,7 +104,19 @@ class LoadCommandRunnerTest {
             assertThat(exitCode).isZero();
             assertThat(summaries).hasSize(1);
             final RunSummary actual = reportWriter.readSummary(summaries.getFirst());
-            assertThat(actual.validity()).isEqualTo(RunValidity.VALID);
+            assertThat(actual.reachedFinalState()).isEqualTo(20);
+            assertThat(actual.stoppedShare()).isZero();
+            assertThat(actual.timeoutShare()).isZero();
+            assertThat(actual.rejectedShare()).isZero();
+            // Generator lag is the machine's timer resolution, not the harness's; the limit is tested in LoadRunTest.
+            final boolean lagged = actual.generatorLagP99Millis() > MAX_GENERATOR_LAG_P99_MILLIS;
+            assertThat(actual.invalidReasons())
+                    .as("lag p99 %s ms", actual.generatorLagP99Millis())
+                    .isEqualTo(lagged ? List.of(InvalidReason.GENERATOR_LAG) : List.of());
+            assertThat(actual.validity()).isEqualTo(lagged ? RunValidity.INVALID : RunValidity.VALID);
+            assertThat(actual.serverWindow())
+                    .as("no server behind the in-memory protocol")
+                    .isNull();
             assertThat(actual.server()).isNull();
             assertThat(actual.intents().get(IntentKind.MOVE_TO).acknowledged()).isPositive();
             assertThat(actual.intents().get(IntentKind.SAY).acknowledged()).isPositive();
@@ -89,30 +125,20 @@ class LoadCommandRunnerTest {
         }
 
         @Test
-        void run_shouldWriteTheClientReportWithoutServerMeters_whenThePrometheusEndpointIsUnreachable()
-                throws IOException {
-            final int exitCode = execute(
-                    LoadCommandRunner.RUN,
-                    "--l2nx.load.scenario=" + RoamLoadScenario.ID,
-                    "--l2nx.load.protocol=" + InMemoryProtocol.ID,
-                    "--l2nx.load.bots=5",
-                    "--l2nx.load.ramp=100ms",
-                    "--l2nx.load.warm-up=100ms",
-                    "--l2nx.load.steady=500ms",
-                    "--l2nx.load.ramp-down=100ms",
-                    "--l2nx.load.event-loop-threads=1",
-                    "--l2nx.load.prometheus-url=http://127.0.0.1:" + closedPort() + "/actuator/prometheus",
-                    "--l2nx.load.scrape-timeout=1s",
-                    "--l2nx.load.output-dir=" + root);
+        void run_shouldFailBeforeAnyLoadBotStarts_whenPrometheusIsNotReady() throws IOException {
+            final int closedPort = closedPort();
 
-            final List<Path> summaries = summaries(root);
-            assertThat(exitCode).isZero();
-            assertThat(summaries).hasSize(1);
-            final RunSummary actual = reportWriter.readSummary(summaries.getFirst());
-            assertThat(actual.server()).isNull();
-            assertThat(actual.reachedFinalState()).isEqualTo(5);
-            assertThat(summaries.getFirst().resolveSibling(ReportWriter.METRICS_START_FILE))
-                    .doesNotExist();
+            assertThatThrownBy(() -> execute(
+                            LoadCommandRunner.RUN,
+                            "--l2nx.load.scenario=" + LoginStormLoadScenario.ID,
+                            "--l2nx.load.login-storm.final-state=" + LoadBotState.GAME_CONNECT,
+                            "--l2nx.load.protocol=" + P267Protocol.ID,
+                            "--l2nx.load.bots=1",
+                            "--l2nx.load.prometheus.url=http://127.0.0.1:" + closedPort,
+                            "--l2nx.load.p267.login-port=" + closedPort,
+                            "--l2nx.load.output-dir=" + root))
+                    .hasStackTraceContaining("Prometheus at http://127.0.0.1:" + closedPort + " is not ready");
+            assertThat(summaries(root)).isEmpty();
         }
     }
 
@@ -245,9 +271,41 @@ class LoadCommandRunnerTest {
                         throw new AssertionError("The unselected protocol was built");
                     })
                     .build();
-            final LoadProperties properties = LoadProperties.builder()
+            final LoadProperties properties = withoutPrometheus(InMemoryProtocol.ID);
+            final ClientProtocolFactory selected = ClientProtocolFactory.builder()
+                    .id(InMemoryProtocol.ID)
+                    .create(() -> new InMemoryProtocol(properties))
+                    .build();
+            final LoadCommandRunner runner = new LoadCommandRunner(
+                    properties, List.of(new RoamLoadScenario()), List.of(unselected, selected), null, null);
+
+            runner.run(new DefaultApplicationArguments(LoadCommandRunner.RUN));
+
+            assertThat(summaries(root)).hasSize(1);
+        }
+
+        @Test
+        void run_shouldReadNoServerMeters_whenTheProtocolHasNoServer() throws Exception {
+            final LoadProperties properties = withoutPrometheus(StandIn.ID);
+            final ClientProtocolFactory standIn = ClientProtocolFactory.builder()
+                    .id(StandIn.ID)
+                    .create(() -> new StandIn(new InMemoryProtocol(properties)))
+                    .build();
+            final LoadCommandRunner runner =
+                    new LoadCommandRunner(properties, List.of(new RoamLoadScenario()), List.of(standIn), null, null);
+
+            runner.run(new DefaultApplicationArguments(LoadCommandRunner.RUN));
+
+            final List<Path> summaries = summaries(root);
+            assertThat(summaries).hasSize(1);
+            assertThat(reportWriter.readSummary(summaries.getFirst()).serverWindow())
+                    .isNull();
+        }
+
+        private LoadProperties withoutPrometheus(String protocol) {
+            return LoadProperties.builder()
                     .scenario(RoamLoadScenario.ID)
-                    .protocol(InMemoryProtocol.ID)
+                    .protocol(protocol)
                     .bots(2)
                     .ramp(Duration.ofMillis(50))
                     .warmUp(Duration.ZERO)
@@ -255,7 +313,6 @@ class LoadCommandRunnerTest {
                     .rampDown(Duration.ZERO)
                     .eventLoopThreads(1)
                     .intentTimeout(Duration.ofSeconds(1))
-                    .scrapeTimeout(Duration.ofSeconds(1))
                     .outputDir(root)
                     .accounts(LoadProperties.Accounts.builder()
                             .prefix("load")
@@ -266,16 +323,41 @@ class LoadCommandRunnerTest {
                             .ackLatency(Duration.ofMillis(1))
                             .build())
                     .build();
-            final ClientProtocolFactory selected = ClientProtocolFactory.builder()
-                    .id(InMemoryProtocol.ID)
-                    .create(() -> new InMemoryProtocol(properties))
-                    .build();
-            final LoadCommandRunner runner = new LoadCommandRunner(
-                    properties, List.of(new RoamLoadScenario()), List.of(unselected, selected), null);
+        }
+    }
 
-            runner.run(new DefaultApplicationArguments(LoadCommandRunner.RUN));
+    /** The in-memory protocol under another id: the runner must ask the protocol, not compare ids. */
+    private record StandIn(InMemoryProtocol delegate) implements ClientProtocol {
+        static final String ID = "stand-in";
 
-            assertThat(summaries(root)).hasSize(1);
+        @Override
+        public String id() {
+            return ID;
+        }
+
+        @Override
+        public Set<IntentKind> capabilities() {
+            return delegate.capabilities();
+        }
+
+        @Override
+        public LoadBotState lastState() {
+            return delegate.lastState();
+        }
+
+        @Override
+        public boolean hasServer() {
+            return false;
+        }
+
+        @Override
+        public IoHandlerFactory ioHandlerFactory() {
+            return delegate.ioHandlerFactory();
+        }
+
+        @Override
+        public ClientSession open(LoadBotIdentity identity, EventLoop loop, SessionListener listener) {
+            return delegate.open(identity, loop, listener);
         }
     }
 
@@ -294,7 +376,7 @@ class LoadCommandRunnerTest {
         void run_shouldRunTheDatabaseCommandOfItsName(String command) throws Exception {
             final DatabaseCommands database = mock(DatabaseCommands.class);
             final LoadCommandRunner runner =
-                    new LoadCommandRunner(LoadProperties.builder().build(), List.of(), List.of(), database);
+                    new LoadCommandRunner(LoadProperties.builder().build(), List.of(), List.of(), database, null);
 
             runner.run(new DefaultApplicationArguments(command));
 
@@ -316,11 +398,11 @@ class LoadCommandRunnerTest {
         void gate_shouldExitWithTheVerdict_whenGivenThreeReportsAndABaseline(double clientP99Millis, int expected)
                 throws IOException {
             final Path baseline = reportWriter
-                    .write(root.resolve("baseline"), summary(0, 10.0), Map.of(), Map.of(), null, null)
+                    .write(root.resolve("baseline"), summary(0, 10.0), Map.of(), Map.of(), Map.of())
                     .resolve(ReportWriter.SUMMARY_FILE);
             final Path reports = root.resolve("reports");
             for (int run = 1; run <= 3; run++) {
-                reportWriter.write(reports, summary(run, clientP99Millis), Map.of(), Map.of(), null, null);
+                reportWriter.write(reports, summary(run, clientP99Millis), Map.of(), Map.of(), Map.of());
             }
 
             // No l2nx.load.protocol: the gate connects no load bot.
