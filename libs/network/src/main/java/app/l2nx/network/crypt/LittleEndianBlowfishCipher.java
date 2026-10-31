@@ -15,8 +15,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Blowfish/ECB over little-endian 32-bit words: JCE reads block halves big-endian, so every word is byte-swapped around the JCE pass.
- * Thread-safe: each direction serializes on its own {@link Cipher}.
+ * Blowfish/ECB over little-endian 32-bit words: JCE reads block halves big-endian, so every word is byte-swapped
+ * around the JCE pass. Not thread-safe: each connection owns its instances and uses them on its event loop.
  */
 public final class LittleEndianBlowfishCipher {
     private static final String ALGORITHM = "Blowfish";
@@ -34,14 +34,6 @@ public final class LittleEndianBlowfishCipher {
         final SecretKeySpec keySpec = new SecretKeySpec(key, ALGORITHM);
         encryptCipher = newCipher(Cipher.ENCRYPT_MODE, keySpec);
         decryptCipher = newCipher(Cipher.DECRYPT_MODE, keySpec);
-    }
-
-    public void encrypt(byte[] data, int offset, int size) {
-        process(encryptCipher, Unpooled.wrappedBuffer(data), offset, size);
-    }
-
-    public void decrypt(byte[] data, int offset, int size) {
-        process(decryptCipher, Unpooled.wrappedBuffer(data), offset, size);
     }
 
     public void encrypt(ByteBuf buf, int index, int size) {
@@ -85,20 +77,16 @@ public final class LittleEndianBlowfishCipher {
         }
 
         swapWords(buf, index, size);
-        synchronized (cipher) {
-            try {
-                if (buf.hasArray()) {
-                    final int offset = buf.arrayOffset() + index;
-                    cipher.doFinal(buf.array(), offset, size, buf.array(), offset);
-                } else {
-                    final ByteBuffer region = buf.nioBuffer(index, size);
-                    // JCE ByteBuffer operations are copy-safe, so input and output may share the memory.
-                    cipher.doFinal(region, region.duplicate());
-                }
-            } catch (GeneralSecurityException e) {
-                // Unreachable: the region is block-aligned and NoPadding cannot fail on padding.
-                throw new IllegalStateException(e);
+        try {
+            if (buf.hasArray()) {
+                final int offset = buf.arrayOffset() + index;
+                cipher.doFinal(buf.array(), offset, size, buf.array(), offset);
+            } else {
+                final ByteBuffer region = buf.nioBuffer(index, size);
+                cipher.doFinal(region, region.duplicate());
             }
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
         }
         swapWords(buf, index, size);
     }

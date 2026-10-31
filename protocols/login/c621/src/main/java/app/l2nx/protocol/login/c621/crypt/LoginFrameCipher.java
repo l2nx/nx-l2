@@ -21,8 +21,6 @@ public final class LoginFrameCipher implements FrameCipher {
         (byte) 0xcc, (byte) 0x2b, (byte) 0x6c, (byte) 0x55, (byte) 0x6c, (byte) 0x6c, (byte) 0x6c, (byte) 0x6c
     };
 
-    // Shared by every connection; LittleEndianBlowfishCipher synchronizes each direction.
-    private static final LittleEndianBlowfishCipher STATIC_CIPHER = new LittleEndianBlowfishCipher(STATIC_KEY);
     private static final int BLOCK = 8;
     private static final int STATIC_HEADER = 8;
     private static final int SESSION_HEADER = 4;
@@ -44,9 +42,6 @@ public final class LoginFrameCipher implements FrameCipher {
         session = sessionKey == null ? null : new LittleEndianBlowfishCipher(sessionKey);
     }
 
-    /**
-     * @param xorKeys draws the key of the XOR pass over {@code Init}
-     */
     public static LoginFrameCipher server(byte[] sessionKey, IntSupplier xorKeys) {
         return new LoginFrameCipher(true, sessionKey, xorKeys);
     }
@@ -80,7 +75,8 @@ public final class LoginFrameCipher implements FrameCipher {
         buf.setZero(index + payloadLength, length - payloadLength);
         if (server && staticPhase) {
             RollingXor.encrypt(buf, index, length, xorKeys.getAsInt());
-            STATIC_CIPHER.encrypt(buf, index, length);
+            // Init is the connection's only frame under the static key, so its cipher lives for that frame.
+            new LittleEndianBlowfishCipher(STATIC_KEY).encrypt(buf, index, length);
             staticPhase = false;
             return;
         }
@@ -97,7 +93,7 @@ public final class LoginFrameCipher implements FrameCipher {
             if (length < MIN_INIT) {
                 return false;
             }
-            STATIC_CIPHER.decrypt(buf, index, length);
+            new LittleEndianBlowfishCipher(STATIC_KEY).decrypt(buf, index, length);
             RollingXor.decrypt(buf, index, length);
             staticPhase = false;
             return true;

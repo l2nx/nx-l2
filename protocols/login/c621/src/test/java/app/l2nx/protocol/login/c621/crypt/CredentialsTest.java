@@ -266,10 +266,38 @@ class CredentialsTest {
             "ONE_BLOCK, test1, pppppppppppppppp, true",
             "ONE_BLOCK, test1, ppppppppppppppppp, false",
             "ONE_BLOCK, 'te\0st', secret, false",
-            "ONE_BLOCK, test1, 'pw\uD800', false"
+            "ONE_BLOCK, test1, 'a\0b', false",
+            "ONE_BLOCK, test1, 'pw\uD800', false",
+            "TWO_BLOCKS, 'te\0st', 'pw\uD800', false"
         })
         void fits_shouldMatchWhatEncryptAccepts(Layout layout, String user, String password, boolean expected) {
             assertThat(credentials(user, password).fits(layout)).isEqualTo(expected);
+        }
+    }
+
+    @Nested
+    class FitsPassword {
+        @ParameterizedTest(name = "[{0}] -> {1}")
+        @CsvSource({
+            "secret, true",
+            "pppppppppppppppp, true",
+            "ppppppppppppppppp, false",
+            "пароль_пароль, false",
+            "p w, true",
+            "' secret', false",
+            "'secret ', false",
+            "'  ', false",
+            "'', false",
+            "'a\0b', false",
+            "'pw\uD800', false"
+        })
+        void fitsPassword_shouldMatchWhatDecryptReadsBack(String password, boolean expected) {
+            assertThat(Credentials.fitsPassword(password)).isEqualTo(expected);
+        }
+
+        @Test
+        void fitsPassword_shouldRefuseNull() {
+            assertThat(Credentials.fitsPassword(null)).isFalse();
         }
     }
 

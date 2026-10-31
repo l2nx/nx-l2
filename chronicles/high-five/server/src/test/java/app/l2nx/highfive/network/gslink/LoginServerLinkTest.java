@@ -5,6 +5,7 @@
 package app.l2nx.highfive.network.gslink;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -19,6 +20,7 @@ import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;
 import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage.MessageCase;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.ListingAttribute;
+import app.l2nx.highfive.login.ListingStatus;
 import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.login.command.AuthenticationResult;
 import app.l2nx.highfive.login.command.KickAccount;
@@ -65,6 +67,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -522,6 +525,26 @@ class LoginServerLinkTest {
         assertThat(actual.getSquareBracket()).isTrue();
         assertThat(actual.hasStatus()).isFalse();
         assertThat(actual.hasAge()).isFalse();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(ListingStatus.class)
+    void publishListing_shouldSendTheProtoStatus_forEachListingStatus(ListingStatus status) throws Exception {
+        link.start();
+        final FakeLoginServer.Connection connection = loginServer.nextConnection();
+        connection.received().next();
+
+        link.publishListing(Map.of(ListingAttribute.STATUS, status.code()));
+
+        assertThat(connection.received().next().getPublishListing().getStatus())
+                .isEqualTo(GsLinkProto.ListingStatus.valueOf("LISTING_STATUS_" + status.name()));
+    }
+
+    @Test
+    void publishListing_shouldThrow_whenTheStatusCodeIsUnknown() {
+        assertThatThrownBy(() -> link.publishListing(Map.of(ListingAttribute.STATUS, 99)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("99");
     }
 
     private void holdConnect() {

@@ -24,6 +24,7 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-// One context for the class, closed after the last nested class: the server keeps static state.
 // Port 0 for the GS-link: parallel sessions on one machine share 9014.
 @SpringBootTest(
         webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -46,6 +46,14 @@ class LoginApplicationTest extends BootSmokeTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private static volatile int gsLinkPort;
+    private static volatile LoginServer loginServer;
+    private static volatile LoginProperties properties;
+
+    @BeforeAll
+    static void captureServer(@Autowired LoginServer server, @Autowired LoginProperties loginProperties) {
+        loginServer = server;
+        properties = loginProperties;
+    }
 
     @Autowired
     void gsLinkPort(@LocalGrpcServerPort int port) {
@@ -68,16 +76,14 @@ class LoginApplicationTest extends BootSmokeTest {
 
         @Test
         void clientPort_shouldAcceptTcp_whenStarted() throws Exception {
-            try (Socket socket =
-                    connect(properties().client().ports().getFirst().port())) {
+            try (Socket socket = connect(properties.client().ports().getFirst().port())) {
                 assertThat(socket.isConnected()).isTrue();
             }
         }
 
         @Test
         void clientPort_shouldSendInit_whenConnected() throws Exception {
-            try (Socket socket =
-                    connect(properties().client().ports().getFirst().port())) {
+            try (Socket socket = connect(properties.client().ports().getFirst().port())) {
                 final int low = socket.getInputStream().read();
                 final int high = socket.getInputStream().read();
 
@@ -172,15 +178,11 @@ class LoginApplicationTest extends BootSmokeTest {
      */
     @AfterAll
     static void stopsCleanly() {
-        assertThat(LoginServer.getInstance().isRunning()).isFalse();
+        assertThat(loginServer.isRunning()).isFalse();
         assertThatThrownBy(() ->
-                        connect(properties().client().ports().getFirst().port()).close())
+                        connect(properties.client().ports().getFirst().port()).close())
                 .as("client port")
                 .isInstanceOf(ConnectException.class);
         assertThatThrownBy(() -> connect(gsLinkPort).close()).as("GS-link port").isInstanceOf(ConnectException.class);
-    }
-
-    private static LoginProperties properties() {
-        return LoginServer.getInstance().getProperties();
     }
 }

@@ -75,8 +75,9 @@ class LoginFrameCipherTest {
             final byte[] actual = encode(init);
 
             final byte[] expected = Arrays.copyOf(init, 192);
-            RollingXor.encrypt(expected, 0, expected.length, XOR_KEY);
-            new LittleEndianBlowfishCipher(LoginFrameCipher.STATIC_KEY).encrypt(expected, 0, expected.length);
+            RollingXor.encrypt(Unpooled.wrappedBuffer(expected), 0, expected.length, XOR_KEY);
+            new LittleEndianBlowfishCipher(LoginFrameCipher.STATIC_KEY)
+                    .encrypt(Unpooled.wrappedBuffer(expected), 0, expected.length);
             assertThat(actual).hasSize(194);
             assertThat(actual[0] & 0xFF | (actual[1] & 0xFF) << 8).isEqualTo(194);
             assertThat(Arrays.copyOfRange(actual, 2, actual.length)).isEqualTo(expected);
@@ -90,9 +91,21 @@ class LoginFrameCipherTest {
             final byte[] actual = encode(packet);
 
             final byte[] expected = Arrays.copyOf(packet, 24);
-            XorChecksum.append(expected, 0, expected.length);
-            new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(expected, 0, expected.length);
+            XorChecksum.append(Unpooled.wrappedBuffer(expected), 0, expected.length);
+            new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(Unpooled.wrappedBuffer(expected), 0, expected.length);
             assertThat(Arrays.copyOfRange(actual, 2, actual.length)).isEqualTo(expected);
+        }
+
+        @Test
+        void encrypt_shouldGiveEqualInitFrames_whenTwoServersUseTheSameXorKey() {
+            final ByteBuf first = initFrame(LoginFrameCipher.server(SESSION_KEY, () -> XOR_KEY));
+            final ByteBuf second = initFrame(LoginFrameCipher.server(SESSION_KEY, () -> XOR_KEY));
+            try {
+                assertThat(ByteBufUtil.equals(first, second)).isTrue();
+            } finally {
+                first.release();
+                second.release();
+            }
         }
 
         @Test
@@ -106,8 +119,8 @@ class LoginFrameCipherTest {
             final byte[] actual = encode(frame);
 
             final byte[] expected = Arrays.copyOf(packet, 24);
-            XorChecksum.append(expected, 0, expected.length);
-            new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(expected, 0, expected.length);
+            XorChecksum.append(Unpooled.wrappedBuffer(expected), 0, expected.length);
+            new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(Unpooled.wrappedBuffer(expected), 0, expected.length);
             assertThat(Arrays.copyOfRange(actual, 2, actual.length)).isEqualTo(expected);
         }
     }
@@ -211,8 +224,9 @@ class LoginFrameCipherTest {
 
         private byte[] staticFrame() {
             final byte[] frame = Arrays.copyOf(payload(170), 192);
-            RollingXor.encrypt(frame, 0, frame.length, XOR_KEY);
-            new LittleEndianBlowfishCipher(LoginFrameCipher.STATIC_KEY).encrypt(frame, 0, frame.length);
+            RollingXor.encrypt(Unpooled.wrappedBuffer(frame), 0, frame.length, XOR_KEY);
+            new LittleEndianBlowfishCipher(LoginFrameCipher.STATIC_KEY)
+                    .encrypt(Unpooled.wrappedBuffer(frame), 0, frame.length);
             return frame;
         }
     }
@@ -229,14 +243,21 @@ class LoginFrameCipherTest {
         return bytes;
     }
 
+    private static ByteBuf initFrame(LoginFrameCipher server) {
+        final byte[] init = payload(170);
+        final ByteBuf frame = Unpooled.buffer(192).writeBytes(init).writeZero(192 - init.length);
+        server.encrypt(frame, 0, init.length);
+        return frame;
+    }
+
     private static byte[] clientFrame(byte[] payload) {
         return clientFrame(payload, 24);
     }
 
     private static byte[] clientFrame(byte[] payload, int length) {
         final byte[] wire = Arrays.copyOf(payload, length);
-        XorChecksum.append(wire, 0, wire.length);
-        new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(wire, 0, wire.length);
+        XorChecksum.append(Unpooled.wrappedBuffer(wire), 0, wire.length);
+        new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(Unpooled.wrappedBuffer(wire), 0, wire.length);
         return wire;
     }
 

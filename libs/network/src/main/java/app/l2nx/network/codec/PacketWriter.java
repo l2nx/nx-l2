@@ -74,8 +74,4 @@ public final class PacketWriter {
     public void writeString(CharSequence text) {
         Wire.writeString(buffer, text);
     }
-
-    public void writeSizedString(CharSequence text) {
-        Wire.writeSizedString(buffer, text);
-    }
 }

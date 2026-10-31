@@ -29,11 +29,11 @@ package app.l2nx.login.protocol.c621.handler;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.protocol.login.c621.clientpackets.RequestServerList;
 import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class RequestServerListHandler {
-    private RequestServerListHandler() {}
-
-    public static void handle(LoginClient client, RequestServerList packet) {
+    public void handle(LoginClient client, RequestServerList packet) {
         if (client.getSessionKey().checkLoginPair(packet.loginOk1(), packet.loginOk2())) {
             client.sendServerList();
         } else {

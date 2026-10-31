@@ -33,15 +33,15 @@ import app.l2nx.protocol.login.c621.clientpackets.AuthGameGuard;
 import app.l2nx.protocol.login.c621.serverpackets.GGAuth;
 import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * @author BazookaRpm
  */
+@Component
 @Slf4j
 public final class AuthGameGuardHandler {
-    private AuthGameGuardHandler() {}
-
-    public static void handle(LoginClient client, AuthGameGuard packet) {
+    public void handle(LoginClient client, AuthGameGuard packet) {
         final int clientSessionId = client.getSessionId();
         if (packet.sessionId() != clientSessionId) {
             if (log.isDebugEnabled()) {

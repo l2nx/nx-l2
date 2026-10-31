@@ -8,17 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.netty.buffer.ByteBuf;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import io.netty.buffer.Unpooled;
 import java.util.Arrays;
 import java.util.HexFormat;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
@@ -50,31 +42,9 @@ class LittleEndianBlowfishCipherTest {
         void encrypt_shouldMatchGoldenVector(String key, String plain, String cipher) {
             final byte[] actual = HEX.parseHex(plain);
 
-            new LittleEndianBlowfishCipher(HEX.parseHex(key)).encrypt(actual, 0, actual.length);
+            new LittleEndianBlowfishCipher(HEX.parseHex(key)).encrypt(Unpooled.wrappedBuffer(actual), 0, actual.length);
 
             assertThat(actual).isEqualTo(HEX.parseHex(cipher));
-        }
-
-        @Test
-        void encrypt_shouldMatchGoldenVectors_whenSharedAcrossThreads() throws Exception {
-            final LittleEndianBlowfishCipher shared = new LittleEndianBlowfishCipher(KEY);
-            final List<String[]> vectors = readVectors().stream()
-                    .filter(vector -> vector[0].equals(HEX.formatHex(KEY)))
-                    .toList();
-            final List<Callable<Boolean>> tasks = IntStream.range(0, 2_000)
-                    .<Callable<Boolean>>mapToObj(i -> () -> {
-                        final String[] vector = vectors.get(i % vectors.size());
-                        final byte[] data = HEX.parseHex(vector[1]);
-                        shared.encrypt(data, 0, data.length);
-                        return Arrays.equals(data, HEX.parseHex(vector[2]));
-                    })
-                    .toList();
-
-            try (ExecutorService executor = Executors.newFixedThreadPool(8)) {
-                for (Future<Boolean> actual : executor.invokeAll(tasks)) {
-                    assertThat(actual.get()).isTrue();
-                }
-            }
         }
 
         @Test
@@ -83,12 +53,12 @@ class LittleEndianBlowfishCipherTest {
             final byte[] block = new byte[16];
             Arrays.fill(block, (byte) 0x5A);
             final byte[] expected = block.clone();
-            cipher.encrypt(expected, 0, expected.length);
+            cipher.encrypt(Unpooled.wrappedBuffer(expected), 0, expected.length);
             final byte[] actual = new byte[2 + block.length + 3];
             Arrays.fill(actual, (byte) 0x7F);
             System.arraycopy(block, 0, actual, 2, block.length);
 
-            cipher.encrypt(actual, 2, block.length);
+            cipher.encrypt(Unpooled.wrappedBuffer(actual), 2, block.length);
 
             assertThat(Arrays.copyOfRange(actual, 2, 2 + block.length)).isEqualTo(expected);
             assertThat(Arrays.copyOfRange(actual, 0, 2)).containsOnly(0x7F);
@@ -101,7 +71,7 @@ class LittleEndianBlowfishCipherTest {
         void encrypt_shouldReject_whenSizeIsNotBlockAligned(int size) {
             final LittleEndianBlowfishCipher cipher = new LittleEndianBlowfishCipher(KEY);
 
-            assertThatThrownBy(() -> cipher.encrypt(new byte[16], 0, size))
+            assertThatThrownBy(() -> cipher.encrypt(Unpooled.wrappedBuffer(new byte[16]), 0, size))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -113,19 +83,9 @@ class LittleEndianBlowfishCipherTest {
         void decrypt_shouldMatchGoldenVector(String key, String plain, String cipher) {
             final byte[] actual = HEX.parseHex(cipher);
 
-            new LittleEndianBlowfishCipher(HEX.parseHex(key)).decrypt(actual, 0, actual.length);
+            new LittleEndianBlowfishCipher(HEX.parseHex(key)).decrypt(Unpooled.wrappedBuffer(actual), 0, actual.length);
 
             assertThat(actual).isEqualTo(HEX.parseHex(plain));
-        }
-    }
-
-    private static List<String[]> readVectors() throws IOException {
-        try (InputStream in = LittleEndianBlowfishCipherTest.class.getResourceAsStream(VECTORS)) {
-            return new String(in.readAllBytes(), StandardCharsets.US_ASCII)
-                    .lines()
-                    .filter(line -> !line.startsWith("#"))
-                    .map(line -> line.split(","))
-                    .toList();
         }
     }
 

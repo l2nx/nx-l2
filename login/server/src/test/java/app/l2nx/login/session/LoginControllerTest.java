@@ -17,10 +17,11 @@ import static org.mockito.Mockito.when;
 
 import app.l2nx.login.account.AccountInfo;
 import app.l2nx.login.account.AccountRepository;
+import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.gameserver.GameServerRepository;
 import app.l2nx.login.gameserver.GameServerTable;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.model.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginKeys;
@@ -28,8 +29,6 @@ import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.session.model.LoginResult;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.io.File;
-import java.net.InetAddress;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -39,26 +38,22 @@ import java.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.scheduling.TaskScheduler;
 
-@ResourceLock("GameServerTable")
-@Execution(ExecutionMode.SAME_THREAD)
 class LoginControllerTest {
     private static final UUID ACCOUNT_ID = UUID.fromString("0190a6b2-0000-7000-8000-000000000001");
     private static final Duration LOGIN_TIMEOUT = LoginController.LOGIN_TIMEOUT;
 
     private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
     private final ScheduledFuture<?> purgeTask = mock(ScheduledFuture.class);
-    private final LoginController controller = new LoginController(
-            mock(AccountRepository.class), TestLoginProperties.create(new File(".")), taskScheduler);
+    private final LoginProperties properties = TestLoginProperties.create(new File("."));
+    private final GameServerTable gameServers = new GameServerTable(mock(GameServerRepository.class), properties);
+    private final LoginController controller =
+            new LoginController(mock(AccountRepository.class), gameServers, taskScheduler);
 
     @BeforeEach
     void setUp() {
@@ -77,16 +72,6 @@ class LoginControllerTest {
             final ArgumentCaptor<Instant> startTime = ArgumentCaptor.forClass(Instant.class);
             verify(taskScheduler).scheduleAtFixedRate(any(Runnable.class), startTime.capture(), eq(LOGIN_TIMEOUT));
             assertThat(startTime.getValue()).isBetween(before.plus(LOGIN_TIMEOUT), after.plus(LOGIN_TIMEOUT));
-        }
-    }
-
-    @Nested
-    class NewBlowfishKey {
-        @Test
-        void newBlowfishKey_shouldHaveNoZeroByte_whenTheRandomDrawsItsLowestValues() {
-            final byte[] actual = LoginController.newBlowfishKey(() -> 0L);
-
-            assertThat(actual).hasSize(16).containsOnly(1);
         }
     }
 
@@ -176,8 +161,9 @@ class LoginControllerTest {
             controller.removeAuthedLoginClient(ACCOUNT_ID);
             controller.loginServerClients.put(ACCOUNT_ID, newer);
 
-            controller.removeAuthedLoginClientIfCurrent(old);
+            final boolean actual = controller.removeAuthedLoginClientIfCurrent(old);
 
+            assertThat(actual).isFalse();
             assertThat(controller.getAuthedClient(ACCOUNT_ID)).isSameAs(newer);
         }
 
@@ -186,8 +172,9 @@ class LoginControllerTest {
             final LoginClient client = clientOf(ACCOUNT_ID);
             controller.loginServerClients.put(ACCOUNT_ID, client);
 
-            controller.removeAuthedLoginClientIfCurrent(client);
+            final boolean actual = controller.removeAuthedLoginClientIfCurrent(client);
 
+            assertThat(actual).isTrue();
             assertThat(controller.getAuthedClient(ACCOUNT_ID)).isNull();
         }
 
@@ -219,16 +206,13 @@ class LoginControllerTest {
 
     @Nested
     class TryCheckinAccount {
-        @TempDir
-        private Path datapackRoot;
-
-        private final AccountInfo info = new AccountInfo(ACCOUNT_ID, "first", "hash", 0, 1);
-
-        @BeforeEach
-        void setUp() {
-            // The constructor registers itself as GameServerTable.getInstance().
-            new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()));
-        }
+        private final AccountInfo info = AccountInfo.builder()
+                .id(ACCOUNT_ID)
+                .login("first")
+                .passwordHash("hash")
+                .accessLevel(0)
+                .lastServer(1)
+                .build();
 
         @Test
         void tryCheckinAccount_shouldLeaveNoEntry_whenTheConnectionClosedBeforeTheCheckin() {
@@ -273,6 +257,7 @@ class LoginControllerTest {
                     LoginVariant.C621,
                     LoginKeys.builder().blowfishKey(new byte[16]).build(),
                     1,
+                    null,
                     null);
         }
 
@@ -308,16 +293,10 @@ class LoginControllerTest {
 
     @Nested
     class IsLoginPossible {
-        @TempDir
-        Path datapackRoot;
-
         private final LoginClient client = mock(LoginClient.class);
 
         @BeforeEach
         void setUp() {
-            // The constructor registers itself as GameServerTable.getInstance(); load() drops other tests' servers.
-            new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()))
-                    .load();
             when(client.getVariant()).thenReturn(LoginVariant.C621);
             when(client.getAccountId()).thenReturn(ACCOUNT_ID);
         }
@@ -325,10 +304,9 @@ class LoginControllerTest {
         @ParameterizedTest(name = "{0} -> {1}")
         @CsvSource({"high-five, true", "essence, false", ", false"})
         void isLoginPossible_shouldAdmitOnlyServersOfTheClientsChronicles(String chronicle, boolean expected) {
-            // A spy: an open listing status needs the running login server.
             final GameServerInfo server = spy(server(1, chronicle, mock(GameServerLink.class), true));
             doReturn(true).when(server).canLogin(client);
-            GameServerTable.getInstance().register(1, server);
+            gameServers.register(1, server);
 
             final boolean actual = controller.isLoginPossible(client, 1);
 
@@ -366,63 +344,6 @@ class LoginControllerTest {
             controller.setCharactersOnServer(ACCOUNT_ID, 0, new long[0], 1);
 
             verify(client).charactersArrived(1);
-        }
-    }
-
-    @Nested
-    class BannedAddress {
-        @Test
-        void isBannedAddress_shouldMatchAnExactIpv6Ban_andNotThrow() throws Exception {
-            controller.addBanForAddress("2001:db8:0:0:0:0:0:1", 0);
-
-            assertThat(controller.isBannedAddress(InetAddress.getByName("2001:db8::1")))
-                    .isTrue();
-            assertThat(controller.isBannedAddress(InetAddress.getByName("2001:db8::2")))
-                    .isFalse();
-        }
-
-        @ParameterizedTest(name = "ban {0}, client {1}")
-        @CsvSource({"2001:db8::1, 2001:db8:0:0:0:0:0:1", "2001:db8:0:0:0:0:0:1, 2001:db8::1", "2001:DB8::1, 2001:db8::1"
-        })
-        void isBannedAddress_shouldMatch_whateverIpv6FormTheBanUses(String ban, String client) {
-            controller.addBanForAddress(ban, 0);
-
-            assertThat(controller.isBannedAddress(InetAddress.ofLiteral(client)))
-                    .isTrue();
-        }
-
-        @Test
-        void addBanForAddress_shouldRefuseAHostName_withoutResolvingIt() {
-            assertThat(controller.addBanForAddress("localhost", 0)).isFalse();
-            assertThat(controller.getBannedIps()).isEmpty();
-        }
-
-        @Test
-        void removeBanForAddress_shouldRemoveTheBan_givenAnotherIpv6Form() {
-            controller.addBanForAddress("2001:db8::1", 0);
-
-            assertThat(controller.removeBanForAddress("2001:db8:0:0:0:0:0:1")).isTrue();
-            assertThat(controller.getBannedIps()).isEmpty();
-        }
-
-        @Test
-        void isBannedAddress_shouldMatchAZeroedIpv4Subnet() throws Exception {
-            controller.addBanForAddress("10.1.0.0", 0);
-
-            assertThat(controller.isBannedAddress(InetAddress.getByName("10.1.2.3")))
-                    .isTrue();
-            assertThat(controller.isBannedAddress(InetAddress.getByName("10.2.2.3")))
-                    .isFalse();
-        }
-
-        @Test
-        void isBannedAddress_shouldDropAnExpiredSubnetBan_andCheckTheWiderOnes() throws Exception {
-            controller.getBannedIps().put("10.1.2.0", System.currentTimeMillis() - 1);
-            controller.addBanForAddress("10.0.0.0", 0);
-
-            assertThat(controller.isBannedAddress(InetAddress.getByName("10.1.2.3")))
-                    .isTrue();
-            assertThat(controller.getBannedIps()).doesNotContainKey("10.1.2.0");
         }
     }
 

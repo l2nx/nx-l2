@@ -22,115 +22,31 @@
  */
 package app.l2nx.login.session.model;
 
-import app.l2nx.login.LoginServer;
-import lombok.Getter;
+import lombok.Builder;
 
 /**
- * Session key used by the client to authenticate against the gameserver.<br>
- * It holds two 32-bit pairs: PlayOk and LoginOk.
- * <ul>
- * <li>Equality may require both pairs depending on {@code l2nx.login.show-licence}.</li>
- * <li>Lightweight container with no I/O.</li>
- * <li>Immutable fields for thread safety.</li>
- * </ul>
- * @author BazookaRpm
+ * The two key pairs the login server gives a client: LoginOk (after the login) and PlayOk (after the server selection).
+ * The client shows both to the game server, which asks the login server to check them.
  */
-public class SessionKey {
-    // Constants.
-    private static final String LABEL_PLAY_OK = "PlayOk:";
-    private static final String LABEL_LOGIN_OK = "LoginOk:";
-    private static final boolean CHECK_LOGIN_PAIR =
-            LoginServer.getInstance().getProperties().showLicence();
-    // Session key parts.
-    @Getter
-    private final int playOkID1;
-
-    @Getter
-    private final int playOkID2;
-
-    @Getter
-    private final int loginOkID1;
-
-    @Getter
-    private final int loginOkID2;
-
-    /**
-     * Creates a session key with both pairs.
-     * @param loginOk1
-     * @param loginOk2
-     * @param playOk1
-     * @param playOk2
-     */
-    public SessionKey(int loginOk1, int loginOk2, int playOk1, int playOk2) {
-        playOkID1 = playOk1;
-        playOkID2 = playOk2;
-        loginOkID1 = loginOk1;
-        loginOkID2 = loginOk2;
+@Builder(toBuilder = true)
+public record SessionKey(int loginOk1, int loginOk2, int playOk1, int playOk2) {
+    public boolean checkLoginPair(int loginOk1, int loginOk2) {
+        return (this.loginOk1 == loginOk1) && (this.loginOk2 == loginOk2);
     }
 
     /**
-     * Returns a textual representation of the key.<br>
-     * Do not write this value to production logs to avoid exposing session identifiers.
-     * @return String with both pairs.
+     * @param checkLoginPair whether the LoginOk pair must match too: only a client that was shown the licence
+     *     received it ({@code l2nx.login.show-licence})
      */
+    public boolean matches(SessionKey presented, boolean checkLoginPair) {
+        return (playOk1 == presented.playOk1)
+                && (playOk2 == presented.playOk2)
+                && (!checkLoginPair || checkLoginPair(presented.loginOk1, presented.loginOk2));
+    }
+
+    /** Never prints the key: it authenticates a game server entry. */
     @Override
     public String toString() {
-        return LABEL_PLAY_OK + " " + playOkID1 + " " + playOkID2 + " " + LABEL_LOGIN_OK + loginOkID1 + " " + loginOkID2;
-    }
-
-    /**
-     * Checks if the given pair matches the stored LoginOk pair.
-     * @param loginOk1
-     * @param loginOk2
-     * @return {@code true} if both values match.
-     */
-    public boolean checkLoginPair(int loginOk1, int loginOk2) {
-        return (loginOkID1 == loginOk1) && (loginOkID2 == loginOk2);
-    }
-
-    /**
-     * Compares equality according to the captured licence policy.<br>
-     * If {@code CHECK_LOGIN_PAIR} is {@code true}, both PlayOk and LoginOk must match; otherwise, only PlayOk.
-     * @param object
-     * @return {@code true} if keys match according to policy.
-     */
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-
-        if (!(object instanceof SessionKey)) {
-            return false;
-        }
-
-        final SessionKey key = (SessionKey) object;
-        if ((playOkID1 != key.playOkID1) || (playOkID2 != key.playOkID2)) {
-            return false;
-        }
-
-        if (CHECK_LOGIN_PAIR) {
-            return (loginOkID1 == key.loginOkID1) && (loginOkID2 == key.loginOkID2);
-        }
-
-        return true;
-    }
-
-    /**
-     * Hash code consistent with {@link #equals(Object)}.
-     * @return Hash value.
-     */
-    @Override
-    public int hashCode() {
-        int h = 17;
-        h = (31 * h) + playOkID1;
-        h = (31 * h) + playOkID2;
-
-        if (CHECK_LOGIN_PAIR) {
-            h = (31 * h) + loginOkID1;
-            h = (31 * h) + loginOkID2;
-        }
-
-        return h;
+        return "SessionKey";
     }
 }

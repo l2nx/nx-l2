@@ -5,9 +5,16 @@
 package app.l2nx.login.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
+import app.l2nx.login.protocol.c621.LoginRoutes;
+import app.l2nx.login.protocol.c621.ServerListMapper;
+import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
+import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.ScrambledKeyPair;
 import app.l2nx.network.channel.CloseReason;
@@ -33,9 +40,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import java.util.random.RandomGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,23 +57,35 @@ class LoginPipelineTest {
 
     private final BlockingTaskExecutor tasks = new BlockingTaskExecutor("login-test", 2, new SimpleMeterRegistry());
     private final List<LoginClient> released = new CopyOnWriteArrayList<>();
+    private final LoginRoutes routes = new LoginRoutes(
+            new AuthGameGuardHandler(),
+            mock(RequestAuthLoginHandler.class),
+            mock(RequestServerLoginHandler.class),
+            new RequestServerListHandler());
+    private final ScrambledKeyPair rsa;
     private final EmbeddedChannel channel;
 
     LoginPipelineTest() throws Exception {
         final KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(new RSAKeyGenParameterSpec(1024, RSAKeyGenParameterSpec.F4));
-        final LoginKeys keys = new LoginKeys(new ScrambledKeyPair(generator.generateKeyPair()), SESSION_KEY);
+        rsa = new ScrambledKeyPair(generator.generateKeyPair());
+        final LoginKeys keys = new LoginKeys(rsa, SESSION_KEY);
         channel = TestChannels.embedded();
-        new LoginChannelInitializer(
-                        LoginVariant.C621,
-                        NetworkProperties.defaults(),
-                        tasks,
-                        () -> keys,
-                        new FixedRandom(SESSION_ID),
-                        released::add)
-                .accept(channel);
+        initializer(() -> keys).accept(channel);
         channel.pipeline().fireChannelActive();
         channel.runPendingTasks();
+    }
+
+    private LoginChannelInitializer initializer(Supplier<LoginKeys> keys) {
+        return new LoginChannelInitializer(
+                LoginVariant.C621,
+                NetworkProperties.defaults(),
+                tasks,
+                keys,
+                new FixedRandom(SESSION_ID),
+                released::add,
+                routes,
+                mock(ServerListMapper.class));
     }
 
     @AfterEach
@@ -110,6 +132,28 @@ class LoginPipelineTest {
 
             assertThat(channel.isOpen()).isFalse();
             assertThat(Connections.closeReason(channel)).isEqualTo(CloseReason.TIMEOUT);
+        }
+    }
+
+    @Nested
+    class Keys {
+        @Test
+        void accept_shouldDrawTheBlowfishKeyOfEachConnection() {
+            final RandomGenerator random = new SplittableRandom(42);
+            final LoginChannelInitializer initializer =
+                    initializer(() -> new LoginKeys(rsa, LoginKeys.newBlowfishKey(random)));
+            final EmbeddedChannel first = TestChannels.embedded();
+            final EmbeddedChannel second = TestChannels.embedded();
+            try {
+                initializer.accept(first);
+                initializer.accept(second);
+
+                assertThat(LoginClient.of(first).getBlowfishKey())
+                        .isNotEqualTo(LoginClient.of(second).getBlowfishKey());
+            } finally {
+                first.finishAndReleaseAll();
+                second.finishAndReleaseAll();
+            }
         }
     }
 
@@ -263,7 +307,7 @@ class LoginPipelineTest {
         void close_shouldKeepTheAccount_whenTheClientJoinedAGameServer() {
             drop(channel.readOutbound());
             LoginClient.of(channel).setAccountId(ACCOUNT_ID);
-            LoginClient.of(channel).setJoinedGS(true);
+            LoginClient.of(channel).setJoinedServerId(1);
 
             channel.close();
 
@@ -298,7 +342,7 @@ class LoginPipelineTest {
         final byte[] payload = new byte[frame.readableBytes() - 2];
         frame.getBytes(frame.readerIndex() + 2, payload);
         frame.release();
-        new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(payload, 0, payload.length);
+        new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(Unpooled.wrappedBuffer(payload), 0, payload.length);
         assertThat(payload[0]).as("LoginFail").isEqualTo((byte) 0x01);
         assertThat(payload[1]).as("reason").isEqualTo((byte) reason.code());
         assertThat(channel.isOpen()).isFalse();
@@ -318,8 +362,8 @@ class LoginPipelineTest {
         int length = payload.length + 4;
         length += (8 - (length % 8)) % 8;
         final byte[] wire = Arrays.copyOf(payload, length);
-        XorChecksum.append(wire, 0, wire.length);
-        new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(wire, 0, wire.length);
+        XorChecksum.append(Unpooled.wrappedBuffer(wire), 0, wire.length);
+        new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(Unpooled.wrappedBuffer(wire), 0, wire.length);
         final ByteBuf frame = Unpooled.buffer(2 + wire.length);
         frame.writeShortLE(2 + wire.length).writeBytes(wire);
         return frame;

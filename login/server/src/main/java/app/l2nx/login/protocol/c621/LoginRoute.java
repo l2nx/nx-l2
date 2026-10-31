@@ -27,84 +27,23 @@
 package app.l2nx.login.protocol.c621;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
-import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
-import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
-import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
 import app.l2nx.network.codec.PacketDecodeException;
-import app.l2nx.protocol.login.c621.clientpackets.AuthGameGuard;
 import app.l2nx.protocol.login.c621.clientpackets.LoginClientOpcode;
-import app.l2nx.protocol.login.c621.clientpackets.RequestAuthLogin;
-import app.l2nx.protocol.login.c621.clientpackets.RequestServerList;
-import app.l2nx.protocol.login.c621.clientpackets.RequestServerLogin;
 import io.netty.buffer.ByteBuf;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import lombok.Builder;
 
 /**
+ * @param decoder {@code null} for a known opcode the login server ignores
  * @author Mobius
  */
-public enum LoginRoute {
-    AUTH_GAME_GUARD(
-            LoginClientOpcode.AUTH_GAME_GUARD,
-            route(AuthGameGuard::decode, AuthGameGuardHandler::handle),
-            ConnectionState.CONNECTED),
-    REQUEST_AUTH_LOGIN(
-            LoginClientOpcode.REQUEST_AUTH_LOGIN,
-            route(RequestAuthLogin::decode, RequestAuthLoginHandler::handle),
-            ConnectionState.AUTHED_GG),
-    REQUEST_SERVER_LOGIN(
-            LoginClientOpcode.REQUEST_SERVER_LOGIN,
-            route(RequestServerLogin::decode, RequestServerLoginHandler::handle),
-            ConnectionState.AUTHED_LOGIN),
-    REQUEST_SERVER_LIST(
-            LoginClientOpcode.REQUEST_SERVER_LIST,
-            route(RequestServerList::decode, RequestServerListHandler::handle),
-            ConnectionState.AUTHED_LOGIN),
-    // Sent by some High Five clients; the server never offers the agreement screen, so there is nothing to answer.
-    REQUEST_PI_AGREEMENT_CHECK(LoginClientOpcode.REQUEST_PI_AGREEMENT_CHECK, null),
-    REQUEST_PI_AGREEMENT(LoginClientOpcode.REQUEST_PI_AGREEMENT, null);
-
-    private static final Map<LoginClientOpcode, LoginRoute> BY_OPCODE = new EnumMap<>(LoginClientOpcode.class);
-
-    static {
-        for (LoginRoute route : values()) {
-            BY_OPCODE.put(route.opcode, route);
-        }
-    }
-
-    private final LoginClientOpcode opcode;
-    private final Function<ByteBuf, Consumer<LoginClient>> decoder;
-    private final Set<ConnectionState> accepted;
-
-    LoginRoute(
-            LoginClientOpcode opcode, Function<ByteBuf, Consumer<LoginClient>> decoder, ConnectionState... accepted) {
-        this.opcode = opcode;
-        this.decoder = decoder;
-        final EnumSet<ConnectionState> states = EnumSet.noneOf(ConnectionState.class);
-        Collections.addAll(states, accepted);
-        this.accepted = Collections.unmodifiableSet(states);
-    }
-
-    /**
-     * @return {@code null} when the login server has no route for the opcode
-     */
-    public static LoginRoute of(LoginClientOpcode opcode) {
-        return BY_OPCODE.get(opcode);
-    }
-
-    public LoginClientOpcode opcode() {
-        return opcode;
-    }
-
-    public Set<ConnectionState> accepted() {
-        return accepted;
+@Builder(toBuilder = true)
+public record LoginRoute(
+        LoginClientOpcode opcode, Function<ByteBuf, Consumer<LoginClient>> decoder, Set<ConnectionState> accepted) {
+    public LoginRoute {
+        accepted = Set.copyOf(accepted);
     }
 
     /** A known opcode without a handler: the packet is dropped under its own reason, not counted as unknown. */
@@ -119,16 +58,8 @@ public enum LoginRoute {
      */
     public Consumer<LoginClient> decode(ByteBuf body) {
         if (decoder == null) {
-            throw new IllegalStateException(name() + " has no handler");
+            throw new IllegalStateException(opcode + " has no handler");
         }
         return decoder.apply(body);
-    }
-
-    private static <T> Function<ByteBuf, Consumer<LoginClient>> route(
-            Function<ByteBuf, T> decode, BiConsumer<LoginClient, T> handler) {
-        return body -> {
-            final T packet = decode.apply(body);
-            return client -> handler.accept(client, packet);
-        };
     }
 }

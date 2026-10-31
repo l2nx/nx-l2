@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.util.Arrays;
 import java.util.HexFormat;
 import org.junit.jupiter.api.Nested;
@@ -30,7 +31,7 @@ class XorChecksumTest {
         void append_shouldMatchGoldenVector(int offset, String input, String output) {
             final byte[] actual = HEX.parseHex(input);
 
-            XorChecksum.append(actual, offset, actual.length - offset);
+            XorChecksum.append(Unpooled.wrappedBuffer(actual), offset, actual.length - offset);
 
             assertThat(actual).isEqualTo(HEX.parseHex(output));
         }
@@ -39,11 +40,11 @@ class XorChecksumTest {
         void append_shouldWriteSameChecksum_whenRegionStartsPastFirstWord() {
             final byte[] region = HEX.parseHex("0102030405060708090a0b0c00000000");
             final byte[] expected = region.clone();
-            XorChecksum.append(expected, 0, expected.length);
+            XorChecksum.append(Unpooled.wrappedBuffer(expected), 0, expected.length);
             final byte[] actual = new byte[6 + region.length];
             System.arraycopy(region, 0, actual, 6, region.length);
 
-            XorChecksum.append(actual, 6, region.length);
+            XorChecksum.append(Unpooled.wrappedBuffer(actual), 6, region.length);
 
             assertThat(Arrays.copyOfRange(actual, 6, actual.length)).isEqualTo(expected);
         }
@@ -51,7 +52,7 @@ class XorChecksumTest {
         @ParameterizedTest(name = "{0} bytes")
         @ValueSource(ints = {0, 3, 10})
         void append_shouldReject_whenSizeIsNotPositiveMultipleOfWord(int size) {
-            assertThatThrownBy(() -> XorChecksum.append(new byte[16], 0, size))
+            assertThatThrownBy(() -> XorChecksum.append(Unpooled.wrappedBuffer(new byte[16]), 0, size))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -63,7 +64,8 @@ class XorChecksumTest {
         void verify_shouldAccept_whenChecksumMatches(int offset, String input, String output) {
             final byte[] data = HEX.parseHex(output);
 
-            assertThat(XorChecksum.verify(data, offset, data.length - offset)).isTrue();
+            assertThat(XorChecksum.verify(Unpooled.wrappedBuffer(data), offset, data.length - offset))
+                    .isTrue();
         }
 
         @ParameterizedTest(name = "{index}: offset {0}")
@@ -72,13 +74,15 @@ class XorChecksumTest {
             final byte[] data = HEX.parseHex(output);
             data[offset] ^= 1;
 
-            assertThat(XorChecksum.verify(data, offset, data.length - offset)).isFalse();
+            assertThat(XorChecksum.verify(Unpooled.wrappedBuffer(data), offset, data.length - offset))
+                    .isFalse();
         }
 
         @ParameterizedTest(name = "{0} bytes")
         @ValueSource(ints = {0, 4, 6, 10})
         void verify_shouldReject_whenSizeIsNotMultipleOfWordAboveOneWord(int size) {
-            assertThat(XorChecksum.verify(new byte[16], 0, size)).isFalse();
+            assertThat(XorChecksum.verify(Unpooled.wrappedBuffer(new byte[16]), 0, size))
+                    .isFalse();
         }
     }
 

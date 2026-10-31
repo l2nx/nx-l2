@@ -19,10 +19,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Reads the first frame (protocol version) and sets the connection's adapter. Later frames pass through, unless the
- * first was refused: then nothing more is decoded while the connection closes.
- */
 @Slf4j
 public final class VersionHandshakeDecoder extends ChannelInboundHandlerAdapter {
     private static final int PROTOCOL_VERSION = 0x0E;
@@ -45,11 +41,11 @@ public final class VersionHandshakeDecoder extends ChannelInboundHandlerAdapter 
             ReferenceCountUtil.release(msg);
             return;
         }
-        final GameConnection connection = GameConnection.of(ctx.channel());
-        if ((connection.adapter() != null) || !(msg instanceof ByteBuf frame)) {
+        if (!(msg instanceof ByteBuf frame)) {
             ctx.fireChannelRead(msg);
             return;
         }
+        final GameConnection connection = GameConnection.of(ctx.channel());
 
         final int version;
         try {
@@ -96,6 +92,7 @@ public final class VersionHandshakeDecoder extends ChannelInboundHandlerAdapter 
         final byte[] key = keys.get();
         connection.cipher().setKey(key);
         connection.outbound().send(adapter.get().keyFrame(ctx.alloc(), key));
+        ctx.pipeline().remove(this);
     }
 
     private void refuse(ChannelHandlerContext ctx, GameConnection connection) {

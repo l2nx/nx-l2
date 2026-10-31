@@ -54,18 +54,20 @@ public record LoginProperties(
     public record ClientPort(
             @Min(1) @Max(65535) int port, @NotNull LoginVariant variant) {}
 
-    /**
-     * @param acceptNew whether a game server may take a free id that is not registered yet
-     */
     @Builder(toBuilder = true)
     public record GameServer(boolean acceptNew) {}
 
     /**
+     * @param failedLoginsWindow an address's failed-login count is forgotten once this long passes without another
+     *     failure
      * @param duration zero bans the address permanently
      */
     @Builder(toBuilder = true)
     public record Ban(
             @Positive int failedLogins,
+
+            @NotNull @DurationMin(nanos = 0, inclusive = false) @DurationUnit(ChronoUnit.SECONDS)
+            Duration failedLoginsWindow,
 
             @NotNull @DurationMin(nanos = 0) @DurationUnit(ChronoUnit.SECONDS)
             Duration duration) {}

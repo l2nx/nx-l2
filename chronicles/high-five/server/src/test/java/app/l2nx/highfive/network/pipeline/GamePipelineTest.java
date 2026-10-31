@@ -24,6 +24,7 @@ import app.l2nx.highfive.network.protocol.StubAdapter;
 import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
+import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.crypt.GameXorCipher;
@@ -105,6 +106,15 @@ class GamePipelineTest {
             assertThat(GameConnection.of(channel).adapter()).isNotNull();
             assertThat(GameConnection.of(channel).protocolVersion()).isEqualTo(VERSION);
             assertThat(GameConnection.of(channel).cipher().isEnabled()).isTrue();
+        }
+
+        @Test
+        void versionHandshake_shouldLeaveThePipeline_whenTheVersionIsAccepted() {
+            channel = channel(Session.Limits.of(NetworkProperties.defaults()), Runnable::run);
+
+            channel.writeInbound(version(VERSION));
+
+            assertThat(channel.pipeline().get(PipelineNames.HANDSHAKE)).isNull();
         }
 
         @Test
@@ -363,7 +373,6 @@ class GamePipelineTest {
     class Flood {
         @Test
         void queueOverflow_shouldClose_whileTheBucketHasTokens() {
-            // Burst far above the queue and no drain: only the full queue can refuse.
             final Session.Limits limits = Session.Limits.of(NetworkProperties.defaults()).toBuilder()
                     .queueLimit(2)
                     .burst(1_000)
@@ -380,7 +389,6 @@ class GamePipelineTest {
 
         @Test
         void rateLimit_shouldClose_whileTheQueueHasRoom() {
-            // Every command is drained at once, so the queue stays empty: only the bucket can refuse.
             final Session.Limits limits = Session.Limits.of(NetworkProperties.defaults()).toBuilder()
                     .queueLimit(64)
                     .perSecond(1)

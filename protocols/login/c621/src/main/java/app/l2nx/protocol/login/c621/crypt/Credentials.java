@@ -49,7 +49,6 @@ import lombok.Builder;
  */
 @Builder(toBuilder = true)
 public record Credentials(String user, String password) {
-    /** Raw RSA, as the client encrypts the blocks. */
     public static final String TRANSFORMATION = "RSA/ECB/NoPadding";
 
     private static final int BLOCK = RequestAuthLogin.BLOCK;
@@ -58,7 +57,6 @@ public record Credentials(String user, String password) {
     private static final int ONE_BLOCK_USER_SIZE = 14;
     private static final int ONE_BLOCK_PASSWORD = 0x6C;
 
-    // Offsets into the two decrypted blocks back to back; the login straddles them.
     private static final int TWO_BLOCKS_USER = 0x4E;
     private static final int TWO_BLOCKS_USER_SIZE = 50;
     private static final int TWO_BLOCKS_USER_TAIL = 0xCE;
@@ -126,35 +124,56 @@ public record Credentials(String user, String password) {
         return packet.build();
     }
 
-    /** Whether {@link #encrypt} can carry these credentials in the layout. */
     public boolean fits(Layout layout) {
-        try {
-            plain(layout);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+        return (encodeUser(layout).problem() == null) && (encodePassword().problem() == null);
+    }
+
+    /**
+     * Whether a client can log in with this password: {@link #decrypt} reads it back unchanged only when it fits and
+     * has no whitespace at its edges, which it trims.
+     */
+    public static boolean fitsPassword(String password) {
+        return (password != null)
+                && !password.isEmpty()
+                && (password.trim().length() == password.length())
+                && (encode("password", password, PASSWORD_SIZE).problem() == null);
     }
 
     private byte[] plain(Layout layout) {
-        final byte[] userBytes = utf8("user", user);
-        final byte[] passwordBytes = utf8("password", password);
-        require("password", passwordBytes, PASSWORD_SIZE);
+        final Field userField = encodeUser(layout);
+        if (userField.problem() != null) {
+            throw new IllegalArgumentException(userField.problem());
+        }
+        final Field passwordField = encodePassword();
+        if (passwordField.problem() != null) {
+            throw new IllegalArgumentException(passwordField.problem());
+        }
+        final byte[] userBytes = userField.bytes();
+        final byte[] passwordBytes = passwordField.bytes();
         final byte[] plain;
         if (layout == Layout.TWO_BLOCKS) {
-            require("user", userBytes, TWO_BLOCKS_USER_SIZE + TWO_BLOCKS_USER_TAIL_SIZE);
             plain = new byte[2 * BLOCK];
             final int head = Math.min(userBytes.length, TWO_BLOCKS_USER_SIZE);
             System.arraycopy(userBytes, 0, plain, TWO_BLOCKS_USER, head);
             System.arraycopy(userBytes, head, plain, TWO_BLOCKS_USER_TAIL, userBytes.length - head);
             System.arraycopy(passwordBytes, 0, plain, TWO_BLOCKS_PASSWORD, passwordBytes.length);
         } else {
-            require("user", userBytes, ONE_BLOCK_USER_SIZE);
             plain = new byte[BLOCK];
             System.arraycopy(userBytes, 0, plain, ONE_BLOCK_USER, userBytes.length);
             System.arraycopy(passwordBytes, 0, plain, ONE_BLOCK_PASSWORD, passwordBytes.length);
         }
         return plain;
+    }
+
+    private Field encodeUser(Layout layout) {
+        return encode(
+                "user",
+                user,
+                layout == Layout.TWO_BLOCKS ? TWO_BLOCKS_USER_SIZE + TWO_BLOCKS_USER_TAIL_SIZE : ONE_BLOCK_USER_SIZE);
+    }
+
+    private Field encodePassword() {
+        return encode("password", password, PASSWORD_SIZE);
     }
 
     /** Never prints the password. */
@@ -184,31 +203,41 @@ public record Credentials(String user, String password) {
         return text.isEmpty() ? null : text;
     }
 
-    private static byte[] utf8(String name, String text) {
+    private static Field encode(String name, String text, int size) {
         if (text == null) {
-            return new byte[0];
+            return Field.encoded(new byte[0]);
         }
         // A zero would end the field early on the other side.
         if (text.indexOf(0) >= 0) {
-            throw new IllegalArgumentException("The " + name + " holds a zero character");
+            return Field.refused("The " + name + " holds a zero character");
         }
+        final ByteBuffer encoded;
         try {
-            final ByteBuffer encoded = StandardCharsets.UTF_8
+            encoded = StandardCharsets.UTF_8
                     .newEncoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT)
                     .encode(CharBuffer.wrap(text));
-            final byte[] bytes = new byte[encoded.remaining()];
-            encoded.get(bytes);
-            return bytes;
         } catch (CharacterCodingException e) {
-            throw new IllegalArgumentException("The " + name + " is not valid UTF-16 text", e);
+            return Field.refused("The " + name + " is not valid UTF-16 text");
         }
+        if (encoded.remaining() > size) {
+            return Field.refused("The " + name + " takes up to " + size + " bytes, not " + encoded.remaining());
+        }
+        final byte[] bytes = new byte[encoded.remaining()];
+        encoded.get(bytes);
+        return Field.encoded(bytes);
     }
 
-    private static void require(String name, byte[] value, int size) {
-        if (value.length > size) {
-            throw new IllegalArgumentException("The " + name + " takes up to " + size + " bytes, not " + value.length);
+    /** A field's UTF-8 bytes, or why it cannot travel: exactly one is set. */
+    @Builder(toBuilder = true)
+    private record Field(byte[] bytes, String problem) {
+        static Field encoded(byte[] bytes) {
+            return Field.builder().bytes(bytes).build();
+        }
+
+        static Field refused(String problem) {
+            return Field.builder().problem(problem).build();
         }
     }
 }

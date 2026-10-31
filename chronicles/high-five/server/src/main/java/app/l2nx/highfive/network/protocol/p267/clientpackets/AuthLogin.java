@@ -25,6 +25,7 @@ package app.l2nx.highfive.network.protocol.p267.clientpackets;
 import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.network.GameClient;
+import java.util.Locale;
 
 public class AuthLogin extends ClientPacket {
     private String loginName;
@@ -35,7 +36,7 @@ public class AuthLogin extends ClientPacket {
 
     @Override
     protected void readImpl() {
-        loginName = readString().toLowerCase();
+        loginName = readString().toLowerCase(Locale.ROOT);
         playKey2 = readInt();
         playKey1 = readInt();
         loginKey1 = readInt();

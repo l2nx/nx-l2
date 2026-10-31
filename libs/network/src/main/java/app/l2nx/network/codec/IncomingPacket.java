@@ -32,10 +32,6 @@ public abstract class IncomingPacket<C> implements Runnable {
     /** Exceptions are decode errors; {@code false} drops the packet without an error. */
     protected abstract boolean read();
 
-    protected char readChar() {
-        return (char) frame().readShortLE();
-    }
-
     protected byte readByte() {
         return frame().readByte();
     }
@@ -82,17 +78,9 @@ public abstract class IncomingPacket<C> implements Runnable {
         return frame().readFloatLE();
     }
 
-    protected double readDouble() {
-        return frame().readDoubleLE();
-    }
-
     /** Lenient, as the imported packets expect; new decoders use the strict {@link Wire#readString}. */
     protected String readString() {
         return Wire.readStringToEnd(frame());
-    }
-
-    protected String readSizedString() {
-        return Wire.readSizedString(frame());
     }
 
     protected int remaining() {

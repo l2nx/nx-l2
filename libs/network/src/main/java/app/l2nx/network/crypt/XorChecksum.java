@@ -5,7 +5,6 @@
 package app.l2nx.network.crypt;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import java.util.Objects;
 
 /**
@@ -15,14 +14,6 @@ public final class XorChecksum {
     private static final int WORD_SIZE = 4;
 
     private XorChecksum() {}
-
-    public static void append(byte[] data, int offset, int size) {
-        append(Unpooled.wrappedBuffer(data), offset, size);
-    }
-
-    public static boolean verify(byte[] data, int offset, int size) {
-        return verify(Unpooled.wrappedBuffer(data), offset, size);
-    }
 
     public static void append(ByteBuf buf, int index, int size) {
         Objects.checkFromIndexSize(index, size, buf.capacity());

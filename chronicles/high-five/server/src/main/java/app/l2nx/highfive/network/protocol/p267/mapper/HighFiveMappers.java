@@ -47,14 +47,10 @@ public final class HighFiveMappers {
             throw new IllegalStateException(
                     "No High Five mapper for " + event.getClass().getName());
         }
-        final ByteBuf frame = Frames.allocate(alloc, mapper.sizeHint());
-        try {
+        return Frames.write(alloc, mapper.sizeHint(), frame -> {
             mapper.write(event, viewer, new PacketWriter(frame));
-            return frame;
-        } catch (RuntimeException e) {
-            frame.release();
-            throw e;
-        }
+            return true;
+        });
     }
 
     @SuppressWarnings("unchecked")

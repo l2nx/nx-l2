@@ -55,46 +55,4 @@ class WireTest {
             buf.release();
         }
     }
-
-    @Nested
-    class WriteSizedString {
-        @Test
-        void writeSizedString_shouldRoundTripThroughReadSizedString() {
-            final ByteBuf buf = Unpooled.buffer();
-            Wire.writeSizedString(buf, "hi");
-
-            assertThat(buf.getShortLE(0)).isEqualTo((short) 2);
-            assertThat(Wire.readSizedString(buf)).isEqualTo("hi");
-            buf.release();
-        }
-
-        @Test
-        void writeSizedString_shouldReject_whenLongerThanTheSignedCount() {
-            final ByteBuf buf = Unpooled.buffer();
-
-            assertThatThrownBy(() -> Wire.writeSizedString(buf, "x".repeat(Wire.MAX_SIZED_CHARS + 1)))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThat(buf.readableBytes()).isZero();
-            buf.release();
-        }
-    }
-
-    @Nested
-    class ReadSizedString {
-        @Test
-        void readSizedString_shouldFail_whenCountExceedsFrame() {
-            final ByteBuf buf = Unpooled.buffer().writeShortLE(10).writeShortLE('a');
-
-            assertThatThrownBy(() -> Wire.readSizedString(buf)).isInstanceOf(PacketDecodeException.class);
-            buf.release();
-        }
-
-        @Test
-        void readSizedString_shouldFail_whenCountIsMissing() {
-            final ByteBuf buf = Unpooled.buffer().writeByte(1);
-
-            assertThatThrownBy(() -> Wire.readSizedString(buf)).isInstanceOf(PacketDecodeException.class);
-            buf.release();
-        }
-    }
 }

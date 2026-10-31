@@ -75,23 +75,6 @@ class IdlePolicyTest {
     }
 
     @Nested
-    class StopPinging {
-        @Test
-        void stopPinging_shouldRestoreReadTimeout() {
-            IdlePolicy.of(channel).startPinging(pings::incrementAndGet);
-            channel.runPendingTasks();
-            IdlePolicy.of(channel).stopPinging();
-            channel.runPendingTasks();
-
-            idle(119);
-            assertThat(pings.get()).isZero();
-            assertThat(channel.isOpen()).isTrue();
-            idle(1);
-            assertThat(channel.isOpen()).isFalse();
-        }
-    }
-
-    @Nested
     class ExtendReadTimeout {
         @Test
         void extendReadTimeout_shouldRunTheFarewellOnceAndCountIdle_afterTheNewBound() {
@@ -124,20 +107,6 @@ class IdlePolicyTest {
             assertThat(farewells.get()).isEqualTo(1);
             assertThat(channel.isOpen()).isFalse();
             assertThat(closed(CloseReason.IDLE)).isEqualTo(1.0);
-        }
-
-        @Test
-        void stopPinging_shouldDropTheFarewell() {
-            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5), farewells::incrementAndGet);
-            channel.runPendingTasks();
-            IdlePolicy.of(channel).stopPinging();
-            channel.runPendingTasks();
-
-            idle(120);
-
-            assertThat(farewells.get()).isZero();
-            assertThat(channel.isOpen()).isFalse();
-            assertThat(Connections.closeReason(channel)).isEqualTo(CloseReason.IDLE);
         }
 
         private void farewell() {

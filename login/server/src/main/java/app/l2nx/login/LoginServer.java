@@ -25,14 +25,16 @@ package app.l2nx.login;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
-import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.gameserver.GameServerTable;
 import app.l2nx.login.network.LoginChannelInitializer;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginKeys;
 import app.l2nx.login.protocol.LoginVariant;
+import app.l2nx.login.protocol.c621.LoginRoutes;
+import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
+import app.l2nx.login.session.AddressBans;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.network.bootstrap.NetworkServer;
 import app.l2nx.network.channel.guard.ConnectionLimiter;
@@ -42,12 +44,12 @@ import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.transport.NetworkEventLoops;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.Channel;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
@@ -55,6 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
@@ -65,20 +68,17 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class LoginServer implements SmartLifecycle {
 
-    private static final String BANNED_IPS_CONFIGURATION_PATH = "./banned_ip.cfg";
+    private static final Path BANNED_IPS_FILE = Path.of("./banned_ip.cfg");
 
-    @Getter
-    private static LoginServer instance;
-
-    private static volatile int status = ListingStatus.LISTING_STATUS_NORMAL_VALUE;
-
-    @Getter
     private final LoginProperties properties;
-
     private final LoginController loginController;
     private final GameServerTable gameServerTable;
+    private final AddressBans addressBans;
+    private final LoginRoutes routes;
+    private final ServerListMapper serverLists;
     private final TaskScheduler taskScheduler;
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
@@ -92,28 +92,6 @@ public class LoginServer implements SmartLifecycle {
     @Getter
     private volatile boolean running;
 
-    public LoginServer(
-            LoginProperties properties,
-            LoginController loginController,
-            GameServerTable gameServerTable,
-            TaskScheduler taskScheduler,
-            ServerExit serverExit,
-            MeterRegistry meterRegistry,
-            NetworkEventLoops eventLoops,
-            NetworkProperties networkProperties,
-            NetworkMetrics networkMetrics) {
-        this.properties = properties;
-        this.loginController = loginController;
-        this.gameServerTable = gameServerTable;
-        this.taskScheduler = taskScheduler;
-        this.serverExit = serverExit;
-        this.meterRegistry = meterRegistry;
-        this.eventLoops = eventLoops;
-        this.networkProperties = networkProperties;
-        this.networkMetrics = networkMetrics;
-        instance = this;
-    }
-
     /**
      * On failure, shuts down whatever already started before rethrowing: Spring calls {@link #stop()} only on started components.
      */
@@ -121,7 +99,7 @@ public class LoginServer implements SmartLifecycle {
     public void start() {
         try {
             initializeCoreServices();
-            initializeSecurityAndBans();
+            loadBanFile(BANNED_IPS_FILE);
             configureScheduledRestart();
             startLoginClientListener();
         } catch (RuntimeException | Error e) {
@@ -183,10 +161,6 @@ public class LoginServer implements SmartLifecycle {
         gameServerTable.load();
     }
 
-    private void initializeSecurityAndBans() {
-        loadBanFile();
-    }
-
     private void configureScheduledRestart() {
         if (!properties.scheduledRestart().enabled()) {
             return;
@@ -200,7 +174,7 @@ public class LoginServer implements SmartLifecycle {
     private void startLoginClientListener() {
         final LoginProperties.Client client = properties.client();
         blockingTasks = new BlockingTaskExecutor("l2nx-login-tasks", client.maxConcurrentTasks(), meterRegistry);
-        final ConnectionLimiter limiter = new ConnectionLimiter(networkProperties, loginController::isBannedAddress);
+        final ConnectionLimiter limiter = new ConnectionLimiter(networkProperties, addressBans::isBanned);
         client.ports().stream()
                 .map(LoginProperties.ClientPort::variant)
                 .distinct()
@@ -218,9 +192,12 @@ public class LoginServer implements SmartLifecycle {
                             networkProperties,
                             blockingTasks,
                             () -> new LoginKeys(
-                                    loginController.getScrambledRSAKeyPair(), loginController.getBlowfishKey()),
+                                    loginController.getScrambledRSAKeyPair(),
+                                    LoginKeys.newBlowfishKey(LoginController.SECURE_RANDOM)),
                             LoginController.SECURE_RANDOM,
-                            loginController::removeAuthedLoginClientIfCurrent)));
+                            loginController::removeAuthedLoginClientIfCurrent,
+                            routes,
+                            serverLists)));
         }
     }
 
@@ -236,108 +213,55 @@ public class LoginServer implements SmartLifecycle {
         }
     }
 
-    public void loadBanFile() {
-        final File bannedIpConfigurationFile = new File(BANNED_IPS_CONFIGURATION_PATH);
-        if (!bannedIpConfigurationFile.exists() || !bannedIpConfigurationFile.isFile()) {
+    void loadBanFile(Path path) {
+        if (!Files.isRegularFile(path)) {
             log.warn(
                     "IP bans configuration file ({}) does not exist or is not a regular file. No IP bans have been"
                             + " loaded.",
-                    bannedIpConfigurationFile.getAbsolutePath());
+                    path.toAbsolutePath());
             return;
         }
 
-        try (FileInputStream bannedIpFileInputStream = new FileInputStream(bannedIpConfigurationFile);
-                InputStreamReader bannedIpReader = new InputStreamReader(bannedIpFileInputStream);
-                LineNumberReader bannedIpLineReader = new LineNumberReader(bannedIpReader)) {
-            String rawLine;
-            while ((rawLine = bannedIpLineReader.readLine()) != null) {
-                processBanLine(bannedIpConfigurationFile, bannedIpLineReader, rawLine);
+        try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            int lineNumber = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                processBanLine(path, ++lineNumber, line);
             }
         } catch (IOException e) {
             log.warn(
                     "Error while reading IP bans configuration file ({}). Details: {}",
-                    bannedIpConfigurationFile.getAbsolutePath(),
+                    path.toAbsolutePath(),
                     e.getMessage(),
                     e);
         }
 
-        log.info(
-                "Loaded {} IP Bans.",
-                LoginController.getInstance().getBannedIps().size());
+        log.info("Loaded {} IP Bans.", addressBans.size());
     }
 
-    private void processBanLine(File sourceFile, LineNumberReader lineReader, String rawLine) {
-        if (rawLine == null) {
+    private void processBanLine(Path source, int lineNumber, String rawLine) {
+        final String line = rawLine.trim();
+        if (line.isEmpty() || (line.charAt(0) == '#')) {
             return;
         }
-
-        final String trimmedLine = rawLine.trim();
-        if (trimmedLine.isEmpty()) {
-            return;
-        }
-
-        if (trimmedLine.charAt(0) == '#') {
-            return;
-        }
-
-        final int commentIndex = trimmedLine.indexOf('#');
-        final String definitionPart =
-                (commentIndex >= 0) ? trimmedLine.substring(0, commentIndex).trim() : trimmedLine;
-        if (definitionPart.isEmpty()) {
-            log.warn(
-                    "Skipped IP ban entry with empty definition in file ({}) at line {}.",
-                    sourceFile.getAbsolutePath(),
-                    lineReader.getLineNumber());
-            return;
-        }
-
-        final String[] tokens = definitionPart.split("\\s+");
-        if (tokens.length == 0) {
-            log.warn(
-                    "Skipped IP ban entry with no address token in file ({}) at line {}.",
-                    sourceFile.getAbsolutePath(),
-                    lineReader.getLineNumber());
-            return;
-        }
-
-        final String ipAddress = tokens[0];
+        final int comment = line.indexOf('#');
+        final String[] tokens =
+                (comment >= 0 ? line.substring(0, comment) : line).trim().split("\\s+");
         long durationMillis = 0;
-
         if (tokens.length > 1) {
-            final String durationToken = tokens[1];
             try {
-                durationMillis = Long.parseLong(durationToken);
+                durationMillis = Long.parseLong(tokens[1]);
             } catch (NumberFormatException e) {
-                log.warn(
-                        "Skipped IP ban entry due to invalid duration token '{}' in file ({}) at line {}.",
-                        durationToken,
-                        sourceFile.getAbsolutePath(),
-                        lineReader.getLineNumber());
+                log.warn("Skipped the IP ban in {} at line {}: invalid duration '{}'.", source, lineNumber, tokens[1]);
                 return;
             }
         }
-
-        try {
-            LoginController.getInstance().addBanForAddress(ipAddress, durationMillis);
-        } catch (Exception e) {
-            log.warn(
-                    "Skipped IP ban registration for address '{}' from file ({}) at line {}. Reason: {}.",
-                    ipAddress,
-                    sourceFile.getAbsolutePath(),
-                    lineReader.getLineNumber(),
-                    e.getMessage());
+        if (!addressBans.add(tokens[0], durationMillis)) {
+            log.warn("Skipped the IP ban in {} at line {}: '{}' is not an IP address.", source, lineNumber, tokens[0]);
         }
     }
 
     public void shutdown(boolean restart) {
         serverExit.exit(restart ? ServerExitCode.RESTART : ServerExitCode.SHUTDOWN);
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        LoginServer.status = status;
     }
 }

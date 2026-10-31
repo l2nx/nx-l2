@@ -7,16 +7,15 @@ package app.l2nx.login.protocol.c621.handler;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import app.l2nx.login.LoginServer;
 import app.l2nx.login.account.AccountInfo;
-import app.l2nx.login.config.LoginProperties;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.account.AccountService;
+import app.l2nx.login.config.TestLoginProperties;
+import app.l2nx.login.gameserver.model.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.session.LoginController;
@@ -27,6 +26,7 @@ import app.l2nx.protocol.login.c621.crypt.Credentials.Layout;
 import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.io.File;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
@@ -38,14 +38,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.MockedStatic;
 
 class RequestAuthLoginHandlerTest {
     private static final KeyPair KEYS = keyPair();
-    private static final AccountInfo ACCOUNT = new AccountInfo(UUID.randomUUID(), "test1", "hash", 0, 1);
+    private static final AccountInfo ACCOUNT = AccountInfo.builder()
+            .id(UUID.randomUUID())
+            .login("test1")
+            .passwordHash("hash")
+            .accessLevel(0)
+            .lastServer(1)
+            .build();
 
     private final LoginClient client = client();
     private final LoginController controller = mock(LoginController.class);
+    private final AccountService accounts = mock(AccountService.class);
+    private final RequestAuthLoginHandler handler = new RequestAuthLoginHandler(
+            controller,
+            accounts,
+            TestLoginProperties.create(new File(".")).toBuilder()
+                    .showLicence(false)
+                    .build());
 
     @Nested
     class Handle {
@@ -62,7 +74,7 @@ class RequestAuthLoginHandlerTest {
                 body.release();
             }
 
-            RequestAuthLoginHandler.handle(client, packet);
+            handler.handle(client, packet);
 
             verify(client).close(LoginFailReason.REASON_ACCESS_FAILED);
         }
@@ -76,22 +88,18 @@ class RequestAuthLoginHandlerTest {
                     .build()
                     .encrypt(KEYS.getPublic(), Layout.ONE_BLOCK);
 
-            try (MockedStatic<LoginController> ignored = controllerInstance()) {
-                RequestAuthLoginHandler.handle(client, packet);
-            }
+            handler.handle(client, packet);
 
             verify(client).close(LoginFailReason.REASON_USER_OR_PASS_WRONG);
-            verify(controller, never()).retriveAccountInfo(anyString(), any(), any());
+            verify(accounts, never()).authenticate(anyString(), any(), any());
         }
 
         @Test
         void handle_shouldCloseWithAccountInUse_whenTheRetriedCheckInStillFindsNoGameServer() throws Exception {
             alreadyOnGameServer();
-            when(controller.getAccountOnGameServer(ACCOUNT.getId())).thenReturn(null);
+            when(controller.getAccountOnGameServer(ACCOUNT.id())).thenReturn(null);
 
-            try (MockedStatic<LoginController> ignored = controllerInstance()) {
-                RequestAuthLoginHandler.handle(client, validLogin());
-            }
+            handler.handle(client, validLogin());
 
             verify(controller, times(2)).tryCheckinAccount(client, "203.0.113.7", ACCOUNT);
             verify(client).close(LoginFailReason.REASON_ACCOUNT_IN_USE);
@@ -99,20 +107,12 @@ class RequestAuthLoginHandlerTest {
 
         @Test
         void handle_shouldLogIn_whenTheAccountLeftItsGameServerBeforeTheRetriedCheckIn() throws Exception {
-            when(controller.retriveAccountInfo("203.0.113.7", "test1", "secret"))
-                    .thenReturn(ACCOUNT);
+            when(accounts.authenticate("203.0.113.7", "test1", "secret")).thenReturn(ACCOUNT);
             when(controller.tryCheckinAccount(client, "203.0.113.7", ACCOUNT))
                     .thenReturn(LoginResult.ALREADY_ON_GS, LoginResult.AUTH_SUCCESS);
-            when(controller.getAccountOnGameServer(ACCOUNT.getId())).thenReturn(null);
-            final LoginServer server = mock(LoginServer.class);
-            final LoginProperties properties = mock(LoginProperties.class);
-            when(server.getProperties()).thenReturn(properties);
+            when(controller.getAccountOnGameServer(ACCOUNT.id())).thenReturn(null);
 
-            try (MockedStatic<LoginController> ignored = controllerInstance();
-                    MockedStatic<LoginServer> serverInstance = mockStatic(LoginServer.class)) {
-                serverInstance.when(LoginServer::getInstance).thenReturn(server);
-                RequestAuthLoginHandler.handle(client, validLogin());
-            }
+            handler.handle(client, validLogin());
 
             verify(client).setAccount("test1");
             verify(client).sendServerList();
@@ -125,26 +125,18 @@ class RequestAuthLoginHandlerTest {
             final GameServerInfo server = mock(GameServerInfo.class);
             final GameServerLink link = mock(GameServerLink.class);
             when(server.getGameServerLink()).thenReturn(link);
-            when(controller.getAccountOnGameServer(ACCOUNT.getId())).thenReturn(server);
+            when(controller.getAccountOnGameServer(ACCOUNT.id())).thenReturn(server);
 
-            try (MockedStatic<LoginController> ignored = controllerInstance()) {
-                RequestAuthLoginHandler.handle(client, validLogin());
-            }
+            handler.handle(client, validLogin());
 
             verify(client).close(LoginFailReason.REASON_ACCOUNT_IN_USE);
-            verify(link).kickPlayer(ACCOUNT.getId());
+            verify(link).kickPlayer(ACCOUNT.id());
         }
     }
 
     private void alreadyOnGameServer() {
-        when(controller.retriveAccountInfo("203.0.113.7", "test1", "secret")).thenReturn(ACCOUNT);
+        when(accounts.authenticate("203.0.113.7", "test1", "secret")).thenReturn(ACCOUNT);
         when(controller.tryCheckinAccount(client, "203.0.113.7", ACCOUNT)).thenReturn(LoginResult.ALREADY_ON_GS);
-    }
-
-    private MockedStatic<LoginController> controllerInstance() {
-        final MockedStatic<LoginController> instance = mockStatic(LoginController.class);
-        instance.when(LoginController::getInstance).thenReturn(controller);
-        return instance;
     }
 
     private static RequestAuthLogin validLogin() throws Exception {

@@ -12,7 +12,8 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   standards. The code is not kept framework-free.
 - **Stage 2 changes the host, not the game.** The Mobius startup sequence, singletons (`getInstance()`) and the
   game `.ini` settings stay (the login server is already on Spring: `@ConfigurationProperties`, `JdbcClient`,
-  `TaskScheduler`). The game code moves to Spring beans and Spring Boot configuration in later work:
+  `TaskScheduler`, and no service locator: its components, the c621 handlers, their route table and the server list
+  mapper included, are beans wired by constructor injection). The game code moves to Spring beans and Spring Boot configuration in later work:
   [#17](https://github.com/l2nx/nx-l2/issues/17) (settings), [spec 003](003-engine-core/wiring-layout.md)
   (architecture and wiring of the game code).
 

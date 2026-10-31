@@ -7,10 +7,10 @@ Finished one-time specs are kept in [archive/](archive/).
 | #   | Feature             | Date       | File                                                           |
 | --- | ------------------- | ---------- | -------------------------------------------------------------- |
 | 001 | project design      | 2026-10-17 | [001-project-design.md](specs/001-project-design.md)           |
-| 002 | Spring Boot runtime | 2026-10-20 | [002-spring-boot-runtime.md](specs/002-spring-boot-runtime.md) |
+| 002 | Spring Boot runtime | 2026-10-31 | [002-spring-boot-runtime.md](specs/002-spring-boot-runtime.md) |
 | 003 | engine core         | 2026-10-20 | [003-engine-core/spec.md](specs/003-engine-core/spec.md)       |
 | 005 | code formatting     | 2026-10-19 | [005-code-formatting.md](specs/005-code-formatting.md)         |
-| 006 | database            | 2026-10-19 | [006-database.md](specs/006-database.md)                       |
+| 006 | database            | 2026-10-31 | [006-database.md](specs/006-database.md)                       |
 | 007 | java conventions    | 2026-10-19 | [007-java-conventions.md](specs/007-java-conventions.md)       |
-| 008 | network             | 2026-10-20 | [008-network.md](specs/008-network.md)                         |
+| 008 | network             | 2026-10-31 | [008-network.md](specs/008-network.md)                         |
 | 009 | load harness        | 2026-10-31 | [009-load-harness.md](specs/009-load-harness.md)               |

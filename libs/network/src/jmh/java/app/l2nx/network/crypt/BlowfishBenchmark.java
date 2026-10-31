@@ -4,6 +4,8 @@
  */
 package app.l2nx.network.crypt;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -31,6 +33,7 @@ public class BlowfishBenchmark {
     public int size;
 
     private byte[] data;
+    private ByteBuf buf;
     private BlowfishEngine engine;
     private LittleEndianBlowfishCipher cipher;
 
@@ -41,6 +44,7 @@ public class BlowfishBenchmark {
         random.nextBytes(key);
         data = new byte[size];
         random.nextBytes(data);
+        buf = Unpooled.wrappedBuffer(data);
         engine = new BlowfishEngine();
         engine.init(key);
         cipher = new LittleEndianBlowfishCipher(key);
@@ -63,14 +67,14 @@ public class BlowfishBenchmark {
     }
 
     @Benchmark
-    public byte[] jceEncrypt() {
-        cipher.encrypt(data, 0, size);
-        return data;
+    public ByteBuf jceEncrypt() {
+        cipher.encrypt(buf, 0, size);
+        return buf;
     }
 
     @Benchmark
-    public byte[] jceDecrypt() {
-        cipher.decrypt(data, 0, size);
-        return data;
+    public ByteBuf jceDecrypt() {
+        cipher.decrypt(buf, 0, size);
+        return buf;
     }
 }

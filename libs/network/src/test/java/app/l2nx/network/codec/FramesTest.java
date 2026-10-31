@@ -5,6 +5,7 @@
 package app.l2nx.network.codec;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
@@ -83,6 +84,49 @@ class FramesTest {
             assertThat(actual.getByte(actual.readerIndex())).isEqualTo((byte) 0x55);
             actual.release();
             channel.finishAndReleaseAll();
+        }
+    }
+
+    @Nested
+    class Write {
+        @ParameterizedTest
+        @MethodSource("app.l2nx.network.test.TestChannels#allocators")
+        void write_shouldLeaveHeaderRoomAndWriteThePayload(ByteBufAllocator alloc) {
+            final ByteBuf actual = Frames.write(alloc, 1, frame -> {
+                frame.writeByte(0x2E);
+                return true;
+            });
+
+            assertThat(ByteBufUtil.getBytes(actual)).containsExactly(0, 0, 0x2E);
+            actual.release();
+        }
+
+        @ParameterizedTest
+        @MethodSource("app.l2nx.network.test.TestChannels#allocators")
+        void write_shouldReleaseTheFrame_andReturnNull_whenThereIsNothingToSend(ByteBufAllocator alloc) {
+            final ByteBuf[] written = new ByteBuf[1];
+
+            final ByteBuf actual = Frames.write(alloc, 1, frame -> {
+                written[0] = frame;
+                return false;
+            });
+
+            assertThat(actual).isNull();
+            assertThat(written[0].refCnt()).isZero();
+        }
+
+        @ParameterizedTest
+        @MethodSource("app.l2nx.network.test.TestChannels#allocators")
+        void write_shouldReleaseTheFrame_andRethrow_whenThePayloadThrows(ByteBufAllocator alloc) {
+            final ByteBuf[] written = new ByteBuf[1];
+            final IllegalStateException failure = new IllegalStateException("payload");
+
+            assertThatThrownBy(() -> Frames.write(alloc, 1, frame -> {
+                        written[0] = frame;
+                        throw failure;
+                    }))
+                    .isSameAs(failure);
+            assertThat(written[0].refCnt()).isZero();
         }
     }
 

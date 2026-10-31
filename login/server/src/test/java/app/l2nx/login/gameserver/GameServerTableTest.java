@@ -6,14 +6,14 @@ package app.l2nx.login.gameserver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.gameserver.GameServerRepository.StoredGameServer;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.model.GameServerInfo;
+import app.l2nx.login.gameserver.model.ListingStatus;
+import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.LoginVariant;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,16 +25,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@ResourceLock("GameServerTable")
-@Execution(ExecutionMode.SAME_THREAD)
 class GameServerTableTest {
     @TempDir
     private Path datapackRoot;
@@ -56,7 +51,9 @@ class GameServerTableTest {
 
             table.load();
 
-            assertThat(table.getServerNames()).containsOnly(entry(1, "Bartz"), entry(9, "Teon (EURO)"));
+            assertThat(table.getServerNameById(1)).isEqualTo("Bartz");
+            assertThat(table.getServerNameById(9)).isEqualTo("Teon (EURO)");
+            assertThat(table.getServerNameById(2)).isNull();
         }
 
         @Test
@@ -66,7 +63,7 @@ class GameServerTableTest {
 
             table.load();
 
-            assertThat(table.getServerNames()).isEmpty();
+            assertThat(table.getServerNameById(1)).isNull();
         }
 
         @Test
@@ -108,23 +105,6 @@ class GameServerTableTest {
         }
     }
 
-    @Nested
-    class RegisterServerOnDb {
-        @ParameterizedTest(name = "{0}")
-        @MethodSource("app.l2nx.login.gameserver.GameServerTableTest#hexIds")
-        void registerServerOnDB_shouldStoreTheHexIdByteForByte(String name, byte[] hexId) {
-            final GameServerRepository repository = mock(GameServerRepository.class);
-            final GameServerTable table =
-                    new GameServerTable(repository, TestLoginProperties.create(datapackRoot.toFile()));
-            table.load();
-
-            table.registerServerOnDB(hexId, 1);
-
-            verify(repository).create(1, hexId);
-            assertThat(table.getRegisteredGameServerById(1).getHexId()).isEqualTo(hexId);
-        }
-    }
-
     static Stream<Arguments> hexIds() {
         final byte[] random = new byte[16];
         new SecureRandom().nextBytes(random);
@@ -135,16 +115,39 @@ class GameServerTableTest {
     }
 
     @Nested
-    class StoreChronicle {
+    class CanLogin {
+        @ParameterizedTest(name = "{0}, access level {1} -> {2}")
+        @CsvSource({
+            "AUTO, 0, true",
+            "NORMAL, -1, false",
+            "DOWN, 1, false",
+            "GM_ONLY, 0, false",
+            "GM_ONLY, 1, true",
+        })
+        void canLogin_shouldAdmitByTheListingStatusAndAccessLevel(
+                ListingStatus status, int accessLevel, boolean expected) {
+            final GameServerInfo info = new GameServerInfo(1, new byte[] {1});
+            info.setStatus(status);
+            info.setMaxPlayers(100);
+            final LoginClient client = mock(LoginClient.class);
+            when(client.getAccessLevel()).thenReturn(accessLevel);
+
+            final boolean actual = info.canLogin(client);
+
+            assertThat(actual).isEqualTo(expected);
+        }
+    }
+
+    @Nested
+    class SetDown {
         @Test
-        void storeChronicle_shouldWriteTheChronicleOfTheServer() {
-            final GameServerRepository repository = mock(GameServerRepository.class);
-            final GameServerTable table =
-                    new GameServerTable(repository, TestLoginProperties.create(datapackRoot.toFile()));
+        void setDown_shouldListTheServerAsDown() {
+            final GameServerInfo info = new GameServerInfo(1, new byte[] {1});
+            info.setStatus(ListingStatus.NORMAL);
 
-            table.storeChronicle(1, "high-five");
+            info.setDown();
 
-            verify(repository).updateChronicle(1, "high-five");
+            assertThat(info.getStatus()).isEqualTo(ListingStatus.DOWN);
         }
     }
 
@@ -162,6 +165,29 @@ class GameServerTableTest {
 
     @Nested
     class Register {
+        @Test
+        void registerWithFirstAvailableId_shouldTakeTheLowestFreeId() throws IOException {
+            Files.createDirectories(datapackRoot.resolve("data"));
+            Files.writeString(datapackRoot.resolve("data/servername.xml"), """
+                <servers_list>
+                	<server id="9" name="Teon" />
+                	<server id="1" name="Bartz" />
+                	<server id="5" name="Kain" />
+                	<server id="3" name="Gludio" />
+                </servers_list>
+                """);
+            final GameServerTable table = new GameServerTable(
+                    mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()));
+            table.load();
+            table.register(1, new GameServerInfo(1, new byte[] {1}));
+            final GameServerInfo info = new GameServerInfo(1, new byte[] {2});
+
+            final boolean actual = table.registerWithFirstAvailableId(info);
+
+            assertThat(actual).isTrue();
+            assertThat(info.getId()).isEqualTo(3);
+        }
+
         @Test
         void register_shouldNotBreakAnIterationInProgress() {
             final GameServerTable table = new GameServerTable(

@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.util.Arrays;
 import java.util.HexFormat;
 import org.junit.jupiter.api.Nested;
@@ -29,7 +30,7 @@ class RollingXorTest {
         void encrypt_shouldMatchGoldenVector(int offset, int key, String input, String output) {
             final byte[] actual = HEX.parseHex(input);
 
-            RollingXor.encrypt(actual, offset, actual.length - offset, key);
+            RollingXor.encrypt(Unpooled.wrappedBuffer(actual), offset, actual.length - offset, key);
 
             assertThat(actual).isEqualTo(HEX.parseHex(output));
         }
@@ -38,11 +39,11 @@ class RollingXorTest {
         void encrypt_shouldProduceSameRegion_whenRegionStartsPastFirstWord() {
             final byte[] region = HEX.parseHex("0102030405060708090a0b0c0d0e0f101112131400000000");
             final byte[] expected = region.clone();
-            RollingXor.encrypt(expected, 0, expected.length, 0x1234ABCD);
+            RollingXor.encrypt(Unpooled.wrappedBuffer(expected), 0, expected.length, 0x1234ABCD);
             final byte[] actual = new byte[8 + region.length];
             System.arraycopy(region, 0, actual, 8, region.length);
 
-            RollingXor.encrypt(actual, 8, region.length, 0x1234ABCD);
+            RollingXor.encrypt(Unpooled.wrappedBuffer(actual), 8, region.length, 0x1234ABCD);
 
             assertThat(Arrays.copyOfRange(actual, 8, actual.length)).isEqualTo(expected);
         }
@@ -50,7 +51,7 @@ class RollingXorTest {
         @ParameterizedTest(name = "{0} bytes")
         @ValueSource(ints = {0, 8, 14})
         void encrypt_shouldReject_whenSizeIsNotMultipleOfWordOfThreeWords(int size) {
-            assertThatThrownBy(() -> RollingXor.encrypt(new byte[16], 0, size, 1))
+            assertThatThrownBy(() -> RollingXor.encrypt(Unpooled.wrappedBuffer(new byte[16]), 0, size, 1))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -62,7 +63,7 @@ class RollingXorTest {
         void decrypt_shouldRestoreThePlainWords_ofTheGoldenVector(int offset, int key, String input, String output) {
             final byte[] actual = HEX.parseHex(output);
 
-            RollingXor.decrypt(actual, offset, actual.length - offset);
+            RollingXor.decrypt(Unpooled.wrappedBuffer(actual), offset, actual.length - offset);
 
             assertThat(actual).isEqualTo(withKeyWord(HEX.parseHex(input), HEX.parseHex(output)));
         }
@@ -70,7 +71,7 @@ class RollingXorTest {
         @ParameterizedTest(name = "{0} bytes")
         @ValueSource(ints = {0, 8, 14})
         void decrypt_shouldReject_whenSizeIsNotMultipleOfWordOfThreeWords(int size) {
-            assertThatThrownBy(() -> RollingXor.decrypt(new byte[16], 0, size))
+            assertThatThrownBy(() -> RollingXor.decrypt(Unpooled.wrappedBuffer(new byte[16]), 0, size))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }

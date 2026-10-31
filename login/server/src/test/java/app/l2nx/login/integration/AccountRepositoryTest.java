@@ -5,6 +5,7 @@
 package app.l2nx.login.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import app.l2nx.login.account.AccountInfo;
@@ -21,10 +22,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.dao.DataIntegrityViolationException;
 
 class AccountRepositoryTest extends RepositoryTest {
     private static final Instant NOW = Instant.parse("2027-01-15T08:00:00Z");
-    private static final String PASSWORD = "hash";
+    private static final String PASSWORD = "{argon2}hash";
+    private static final String NEW_PASSWORD = "{argon2}new-hash";
 
     private final AccountRepository repository = new AccountRepository(JDBC);
 
@@ -39,7 +43,7 @@ class AccountRepositoryTest extends RepositoryTest {
 
             assertThat(actual)
                     .get()
-                    .extracting(AccountInfo::getId, AccountInfo::getLogin, AccountInfo::getAccessLevel)
+                    .extracting(AccountInfo::id, AccountInfo::login, AccountInfo::accessLevel)
                     .containsExactly(id, login, 3);
         }
 
@@ -60,7 +64,7 @@ class AccountRepositoryTest extends RepositoryTest {
 
             final Optional<AccountInfo> actual = repository.findAccountInfo(login, NOW);
 
-            assertThat(actual).get().extracting(AccountInfo::getAccessLevel).isEqualTo(expected);
+            assertThat(actual).get().extracting(AccountInfo::accessLevel).isEqualTo(expected);
         }
 
         @Test
@@ -83,6 +87,13 @@ class AccountRepositoryTest extends RepositoryTest {
                     .containsEntry("last_active_at", NOW)
                     .containsEntry("access_level", 0)
                     .containsEntry("last_ip", "10.0.0.1");
+        }
+
+        @ParameterizedTest(name = "\"{0}\"")
+        @ValueSource(strings = {"plain", "{argon2}"})
+        void create_shouldFail_whenThePasswordHasNoEncodingIdOrNoHash(String password) {
+            assertThatThrownBy(() -> repository.create(uniqueLogin(), password, NOW, "10.0.0.1"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
         }
     }
 
@@ -115,8 +126,9 @@ class AccountRepositoryTest extends RepositoryTest {
             final UUID id = insertAccount(login, PASSWORD, 0);
             insertAccount(other, PASSWORD, 0);
 
-            repository.updateAccessLevel(id, -1);
+            final boolean actual = repository.updateAccessLevel(id, -1);
 
+            assertThat(actual).isTrue();
             assertThat(account(login)).containsEntry("access_level", -1);
             assertThat(account(other)).containsEntry("access_level", 0);
         }
@@ -126,9 +138,20 @@ class AccountRepositoryTest extends RepositoryTest {
             final String login = uniqueLogin();
             final UUID id = insertAccount(login, PASSWORD, 0);
 
-            repository.updateBannedUntil(id, NOW);
+            final boolean actual = repository.updateBannedUntil(id, NOW);
 
+            assertThat(actual).isTrue();
             assertThat(account(login)).containsEntry("banned_until", NOW);
+        }
+
+        @Test
+        void updateAccessLevel_shouldReturnFalse_whenTheAccountDoesNotExist() {
+            assertThat(repository.updateAccessLevel(UUID.randomUUID(), -1)).isFalse();
+        }
+
+        @Test
+        void updateBannedUntil_shouldReturnFalse_whenTheAccountDoesNotExist() {
+            assertThat(repository.updateBannedUntil(UUID.randomUUID(), NOW)).isFalse();
         }
 
         @Test
@@ -148,30 +171,30 @@ class AccountRepositoryTest extends RepositoryTest {
     }
 
     @Nested
-    class UpdatePassword {
+    class ReplacePassword {
         @Test
-        void updatePassword_shouldChangePassword_whenCurrentHashMatches() {
+        void replacePassword_shouldChange_whenTheStoredHashIsTheReadOne() {
             final UUID id = insertAccount(uniqueLogin(), PASSWORD, 0);
 
-            final boolean actual = repository.updatePassword(id, PASSWORD, "new");
+            final boolean actual = repository.replacePassword(id, PASSWORD, NEW_PASSWORD);
 
             assertThat(actual).isTrue();
-            assertThat(repository.findPassword(id)).contains("new");
+            assertThat(repository.findPassword(id)).contains(NEW_PASSWORD);
         }
 
         @Test
-        void updatePassword_shouldKeepPassword_whenCurrentHashDiffers() {
+        void replacePassword_shouldKeep_whenTheStoredHashChanged() {
             final UUID id = insertAccount(uniqueLogin(), PASSWORD, 0);
 
-            final boolean actual = repository.updatePassword(id, "wrong", "new");
+            final boolean actual = repository.replacePassword(id, "{argon2}read-before-a-change", NEW_PASSWORD);
 
             assertThat(actual).isFalse();
             assertThat(repository.findPassword(id)).contains(PASSWORD);
         }
 
         @Test
-        void updatePassword_shouldReturnFalse_whenAccountMissing() {
-            assertThat(repository.updatePassword(UUID.randomUUID(), PASSWORD, "new"))
+        void replacePassword_shouldReturnFalse_whenAccountMissing() {
+            assertThat(repository.replacePassword(UUID.randomUUID(), PASSWORD, NEW_PASSWORD))
                     .isFalse();
         }
     }

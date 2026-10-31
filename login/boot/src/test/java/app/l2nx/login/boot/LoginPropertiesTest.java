@@ -35,6 +35,7 @@ class LoginPropertiesTest {
                     "l2nx.login.client.host=",
                     "l2nx.login.client.max-concurrent-tasks=0",
                     "l2nx.login.ban.failed-logins=0",
+                    "l2nx.login.ban.failed-logins-window=0",
                     "l2nx.login.ban.duration=-1s",
                     "l2nx.login.scheduled-restart.delay=0"
                 })

@@ -41,8 +41,7 @@ public class AccountRepository {
         WHERE id = ?\
         """;
     private static final String SELECT_PASSWORD = "SELECT password FROM accounts WHERE id = ?";
-    private static final String UPDATE_PASSWORD_MATCHING =
-            "UPDATE accounts SET password = ? WHERE id = ? AND password = ?";
+    private static final String REPLACE_PASSWORD = "UPDATE accounts SET password = ? WHERE id = ? AND password = ?";
     private static final String SELECT_IP_RULES =
             "SELECT host(ip) AS ip, rule FROM account_ip_rules WHERE account_id = ?";
 
@@ -53,12 +52,13 @@ public class AccountRepository {
                 .sql(SELECT_ACCOUNT_INFO)
                 .param(utc(now))
                 .param(login)
-                .query((rs, rowNum) -> new AccountInfo(
-                        rs.getObject("id", UUID.class),
-                        rs.getString("login"),
-                        rs.getString("password"),
-                        rs.getInt("access_level"),
-                        rs.getInt("last_server_id")))
+                .query((rs, rowNum) -> AccountInfo.builder()
+                        .id(rs.getObject("id", UUID.class))
+                        .login(rs.getString("login"))
+                        .passwordHash(rs.getString("password"))
+                        .accessLevel(rs.getInt("access_level"))
+                        .lastServer(rs.getInt("last_server_id"))
+                        .build())
                 .optional();
     }
 
@@ -88,12 +88,19 @@ public class AccountRepository {
         jdbcClient.sql(UPDATE_LAST_SERVER).param(serverId).param(id).update();
     }
 
-    public void updateAccessLevel(UUID id, int accessLevel) {
-        jdbcClient.sql(UPDATE_ACCESS_LEVEL).param(accessLevel).param(id).update();
+    /** @return {@code false} when the account does not exist */
+    public boolean updateAccessLevel(UUID id, int accessLevel) {
+        return jdbcClient.sql(UPDATE_ACCESS_LEVEL).param(accessLevel).param(id).update() > 0;
     }
 
-    public void updateBannedUntil(UUID id, Instant bannedUntil) {
-        jdbcClient.sql(UPDATE_BANNED_UNTIL).param(utc(bannedUntil)).param(id).update();
+    /** @return {@code false} when the account does not exist */
+    public boolean updateBannedUntil(UUID id, Instant bannedUntil) {
+        return jdbcClient
+                        .sql(UPDATE_BANNED_UNTIL)
+                        .param(utc(bannedUntil))
+                        .param(id)
+                        .update()
+                > 0;
     }
 
     public void updateTracert(UUID id, String pcIp, String hop1, String hop2, String hop3, String hop4) {
@@ -112,15 +119,13 @@ public class AccountRepository {
         return jdbcClient.sql(SELECT_PASSWORD).param(id).query(String.class).optional();
     }
 
-    /**
-     * @return whether the password was changed: the account exists and its password hash is {@code currentHash}
-     */
-    public boolean updatePassword(UUID id, String currentHash, String newHash) {
+    /** @return whether the stored hash was still {@code readHash} and is now {@code newHash} */
+    public boolean replacePassword(UUID id, String readHash, String newHash) {
         return jdbcClient
-                        .sql(UPDATE_PASSWORD_MATCHING)
+                        .sql(REPLACE_PASSWORD)
                         .param(newHash)
                         .param(id)
-                        .param(currentHash)
+                        .param(readHash)
                         .update()
                 > 0;
     }

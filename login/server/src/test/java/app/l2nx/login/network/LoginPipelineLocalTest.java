@@ -13,15 +13,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import app.l2nx.boot.ServerExit;
-import app.l2nx.login.LoginServer;
 import app.l2nx.login.account.AccountInfo;
 import app.l2nx.login.account.AccountRepository;
+import app.l2nx.login.account.AccountService;
+import app.l2nx.login.account.TestPasswordEncoders;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.gameserver.GameServerRepository;
 import app.l2nx.login.gameserver.GameServerTable;
 import app.l2nx.login.protocol.LoginVariant;
+import app.l2nx.login.protocol.c621.LoginRoutes;
+import app.l2nx.login.protocol.c621.ServerListMapper;
+import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
+import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
+import app.l2nx.login.session.AddressBans;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.ScrambledKeyPair;
 import app.l2nx.network.channel.CloseReason;
@@ -32,7 +39,6 @@ import app.l2nx.network.crypt.XorChecksum;
 import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;
-import app.l2nx.network.transport.NetworkEventLoops;
 import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -51,14 +57,14 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalIoHandler;
 import io.netty.channel.local.LocalServerChannel;
+import io.netty.util.concurrent.FastThreadLocalThread;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -74,19 +80,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.Isolated;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * A packet's answer is offered from its lane's virtual thread, so these tests run on the local transport instead of
  * {@code EmbeddedChannel}, which is not thread-safe.
  */
-@ResourceLock("GameServerTable")
-@Execution(ExecutionMode.SAME_THREAD)
-@Isolated
 class LoginPipelineLocalTest {
     private static final UUID ACCOUNT_ID = UUID.fromString("0190a6b2-0000-7000-8000-000000000001");
     private static final byte[] SESSION_KEY = HexFormat.of().parseHex("0102030405060708090a0b0c0d0e0f10");
@@ -99,8 +99,30 @@ class LoginPipelineLocalTest {
     private final LocalAddress address = new LocalAddress(UUID.randomUUID().toString());
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private final NetworkMetrics metrics = new NetworkMetrics(registry);
+    private final ThreadRecordingEncoder encoder = new ThreadRecordingEncoder();
     private Channel client;
     private LoginKeys keys;
+    private LoginRoutes routes;
+    private ServerListMapper serverLists;
+
+    @BeforeEach
+    void wire() {
+        wire(TestLoginProperties.create(new File(".")), mock(AccountRepository.class));
+    }
+
+    private void wire(LoginProperties properties, AccountRepository accounts) {
+        final GameServerTable gameServerTable = new GameServerTable(mock(GameServerRepository.class), properties);
+        final LoginController controller = new LoginController(accounts, gameServerTable, mock(TaskScheduler.class));
+        final AccountService accountService =
+                new AccountService(accounts, new AddressBans(properties), encoder, properties);
+        accountService.afterPropertiesSet();
+        serverLists = new ServerListMapper(gameServerTable);
+        routes = new LoginRoutes(
+                new AuthGameGuardHandler(),
+                new RequestAuthLoginHandler(controller, accountService, properties),
+                new RequestServerLoginHandler(controller, properties),
+                new RequestServerListHandler());
+    }
 
     @AfterEach
     void tearDown() throws Exception {
@@ -234,26 +256,35 @@ class LoginPipelineLocalTest {
             assertThat(closedOnError()).isZero();
         }
 
-        private void install(boolean autoCreateAccounts) {
-            final LoginProperties properties = TestLoginProperties.create(datapackRoot.toFile()).toBuilder()
-                    .autoCreateAccounts(autoCreateAccounts)
-                    .build();
-            final GameServerTable gameServers = new GameServerTable(mock(GameServerRepository.class), properties);
-            final LoginController controller = new LoginController(accounts, properties, mock(TaskScheduler.class));
-            new LoginServer(
-                    properties,
-                    controller,
-                    gameServers,
-                    mock(TaskScheduler.class),
-                    mock(ServerExit.class),
-                    new SimpleMeterRegistry(),
-                    mock(NetworkEventLoops.class),
-                    NetworkProperties.defaults(),
-                    NetworkMetrics.noop());
+        @Test
+        void requestAuthLogin_shouldCheckThePasswordOnAVirtualThread_neverOnTheEventLoop() throws Exception {
+            install(true);
+            when(accounts.findAccountInfo(eq(LOGIN), any())).thenReturn(Optional.of(account()));
+
+            final byte[] answer = authenticate(LOGIN, PASSWORD);
+
+            assertThat(answer[0]).as("LoginOk").isEqualTo((byte) 0x03);
+            final Thread actual = encoder.checks.poll(5, TimeUnit.SECONDS);
+            assertThat(actual).isNotNull().isNotInstanceOf(FastThreadLocalThread.class);
+            assertThat(actual.isVirtual()).isTrue();
         }
 
-        private AccountInfo account() throws Exception {
-            return new AccountInfo(ACCOUNT_ID, LOGIN, passwordHash(PASSWORD), 0, 1);
+        private void install(boolean autoCreateAccounts) {
+            wire(
+                    TestLoginProperties.create(datapackRoot.toFile()).toBuilder()
+                            .autoCreateAccounts(autoCreateAccounts)
+                            .build(),
+                    accounts);
+        }
+
+        private AccountInfo account() {
+            return AccountInfo.builder()
+                    .id(ACCOUNT_ID)
+                    .login(LOGIN)
+                    .passwordHash(encoder.encode(PASSWORD))
+                    .accessLevel(0)
+                    .lastServer(1)
+                    .build();
         }
 
         private byte[] authenticate(String login, String password) throws Exception {
@@ -300,25 +331,10 @@ class LoginPipelineLocalTest {
                     .counter()
                     .count();
         }
-
-        private static String passwordHash(String password) throws Exception {
-            final byte[] digest = MessageDigest.getInstance("SHA").digest(password.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(digest);
-        }
     }
 
     @Nested
     class SendServerList {
-        @TempDir
-        private Path datapackRoot;
-
-        @BeforeEach
-        void setUp() {
-            // Registers itself as GameServerTable.getInstance(); load() drops other tests' servers.
-            new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()))
-                    .load();
-        }
-
         @Test
         void sendServerList_shouldWaitForTheCounts_andSendThem_whenEveryServerAnswers() throws Exception {
             final LoginClient session = connect();
@@ -397,7 +413,9 @@ class LoginPipelineLocalTest {
                                         tasks,
                                         () -> keys,
                                         new FixedRandom(SESSION_ID),
-                                        account -> released.countDown())
+                                        account -> released.countDown(),
+                                        routes,
+                                        serverLists)
                                 .accept(ch);
                         sessions.add(LoginClient.of(ch));
                     }
@@ -437,8 +455,9 @@ class LoginPipelineLocalTest {
 
     private static byte[] decrypt(byte[] frame) {
         assertThat(frame).as("frame").isNotNull();
-        new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(frame, 0, frame.length);
-        assertThat(XorChecksum.verify(frame, 0, frame.length)).isTrue();
+        new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(Unpooled.wrappedBuffer(frame), 0, frame.length);
+        assertThat(XorChecksum.verify(Unpooled.wrappedBuffer(frame), 0, frame.length))
+                .isTrue();
         return frame;
     }
 
@@ -456,11 +475,32 @@ class LoginPipelineLocalTest {
         int length = payload.length + 4;
         length += (8 - (length % 8)) % 8;
         final byte[] wire = Arrays.copyOf(payload, length);
-        XorChecksum.append(wire, 0, wire.length);
-        new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(wire, 0, wire.length);
+        XorChecksum.append(Unpooled.wrappedBuffer(wire), 0, wire.length);
+        new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(Unpooled.wrappedBuffer(wire), 0, wire.length);
         return client.alloc()
                 .buffer(2 + wire.length)
                 .writeShortLE(2 + wire.length)
                 .writeBytes(wire);
+    }
+
+    private static final class ThreadRecordingEncoder implements PasswordEncoder {
+        private final PasswordEncoder delegate = TestPasswordEncoders.argon2();
+        private final BlockingQueue<Thread> checks = new LinkedBlockingQueue<>();
+
+        @Override
+        public String encode(CharSequence rawPassword) {
+            return delegate.encode(rawPassword);
+        }
+
+        @Override
+        public boolean matches(CharSequence rawPassword, String encodedPassword) {
+            checks.add(Thread.currentThread());
+            return delegate.matches(rawPassword, encodedPassword);
+        }
+
+        @Override
+        public boolean upgradeEncoding(String encodedPassword) {
+            return delegate.upgradeEncoding(encodedPassword);
+        }
     }
 }

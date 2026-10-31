@@ -1,6 +1,7 @@
 [versions]
 archunit = "1.5.1"
 assertj = "3.27.7"
+bouncycastle = "1.86"
 bucket4j = "8.21.0"
 classgraph = "6.0.1"
 datasource-proxy = "1.11.1"
@@ -30,7 +31,9 @@ uuid-creator = "6.1.1"
 [libraries]
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 bucket4j-core = { module = "com.bucket4j:bucket4j_jdk17-core", version.ref = "bucket4j" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 datasource-proxy = { module = "net.ttddyy:datasource-proxy", version.ref = "datasource-proxy" }
@@ -84,6 +87,7 @@ spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-te
 spring-modulith-api = { module = "org.springframework.modulith:spring-modulith-api" }
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
 spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
 testcontainers = { module = "org.testcontainers:testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }

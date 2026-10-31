@@ -32,6 +32,8 @@ public final class SharedSecretServerInterceptor implements ServerInterceptor {
         final String presented = headers.get(AUTHORIZATION);
         // Same time for every content of the expected length: a wrong guess tells nothing about the secret.
         if ((presented != null) && MessageDigest.isEqual(expected, presented.getBytes(StandardCharsets.US_ASCII))) {
+            // The service never sees the transport: this line ties its later log lines to the caller's address.
+            log.info("Accepted a GS-link call from {}.", call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR));
             return next.startCall(call, headers);
         }
         log.warn(

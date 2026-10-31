@@ -25,6 +25,7 @@ public final class TestLoginProperties {
                 .gameServer(LoginProperties.GameServer.builder().acceptNew(true).build())
                 .ban(LoginProperties.Ban.builder()
                         .failedLogins(5)
+                        .failedLoginsWindow(Duration.ofMinutes(15))
                         .duration(Duration.ofMinutes(15))
                         .build())
                 .scheduledRestart(scheduledRestart)

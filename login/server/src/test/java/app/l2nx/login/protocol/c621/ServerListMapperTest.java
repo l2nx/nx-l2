@@ -5,14 +5,15 @@
 package app.l2nx.login.protocol.c621;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.gameserver.GameServerRepository;
 import app.l2nx.login.gameserver.GameServerTable;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.model.GameServerInfo;
+import app.l2nx.login.gameserver.model.ListingStatus;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList;
@@ -29,14 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-@ResourceLock("GameServerTable")
-@Execution(ExecutionMode.SAME_THREAD)
 class ServerListMapperTest {
     // opcode 0x04, 0 servers, last server 1, unknown short 0
     private static final String HEADER = "04" + "00" + "01" + "0000";
@@ -45,12 +41,15 @@ class ServerListMapperTest {
     private Path datapackRoot;
 
     private final Map<Integer, Integer> counts = new ConcurrentHashMap<>();
+    private GameServerTable table;
+    private ServerListMapper mapper;
     private LoginClient client;
 
     @BeforeEach
     void setUp() {
-        // Registers itself as GameServerTable.getInstance(); load() drops other tests' servers.
-        new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile())).load();
+        table = new GameServerTable(
+                mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()));
+        mapper = new ServerListMapper(table);
         client = mock(LoginClient.class);
         when(client.getLastServer()).thenReturn(1);
         when(client.getCharsOnServ()).thenReturn(counts);
@@ -61,17 +60,27 @@ class ServerListMapperTest {
     class Mapping {
         @Test
         void map_shouldNotBlock_andShowNoCounts_whenTheyHaveNotArrived() {
-            final ServerList list =
-                    assertTimeoutPreemptively(Duration.ofMillis(100), () -> ServerListMapper.map(client));
+            // Any interruptible wait (sleep, latch, future, monitor) throws or consumes the interrupt; a poll for the
+            // counts reads them more than once.
+            Thread.currentThread().interrupt();
+            final ServerList list;
+            try {
+                list = mapper.map(client);
+            } finally {
+                assertThat(Thread.interrupted())
+                        .as("no wait consumed the interrupt")
+                        .isTrue();
+            }
 
             assertThat(hex(list)).isEqualTo(HEADER + "00");
+            verify(client).getCharsOnServ();
         }
 
         @Test
         void map_shouldKeepTheCountsAvailableAtThatMoment() {
             counts.put(1, 3);
 
-            final ServerList list = ServerListMapper.map(client);
+            final ServerList list = mapper.map(client);
 
             assertThat(hex(list)).isEqualTo(HEADER + "01" + "01" + "03" + "00");
         }
@@ -84,7 +93,7 @@ class ServerListMapperTest {
             when(client.getCharsWaitingDelOnServ())
                     .thenReturn(new ConcurrentHashMap<>(Map.of(1, new long[] {deleteAt})));
 
-            final ServerList actual = ServerListMapper.map(client);
+            final ServerList actual = mapper.map(client);
 
             assertThat(actual.characters()).singleElement().satisfies(characters -> {
                 assertThat(characters.count()).isEqualTo(2);
@@ -94,7 +103,7 @@ class ServerListMapperTest {
 
         @Test
         void map_shouldNotShowACountThatArrivesAfterTheListWasBuilt() {
-            final ServerList list = ServerListMapper.map(client);
+            final ServerList list = mapper.map(client);
 
             counts.put(1, 3);
 
@@ -106,16 +115,52 @@ class ServerListMapperTest {
     class Chronicle {
         @Test
         void map_shouldListOnlyServersOfTheClientsChronicles() {
-            final GameServerTable table = GameServerTable.getInstance();
             table.register(11, server(11, "high-five"));
             table.register(12, server(12, "essence"));
             table.register(13, server(13, null));
             when(client.getVariant()).thenReturn(LoginVariant.C621);
             when(client.getIp()).thenReturn("127.0.0.1");
 
-            final ServerList actual = ServerListMapper.map(client);
+            final ServerList actual = mapper.map(client);
 
             assertThat(actual.servers()).extracting(Server::id).containsExactly(11);
+        }
+    }
+
+    @Nested
+    class Status {
+        @ParameterizedTest(name = "{0}, access level {1} -> up {2}")
+        @CsvSource({
+            "AUTO, 0, true",
+            "NORMAL, 0, true",
+            "NORMAL, -1, false",
+            "DOWN, 1, false",
+            "GM_ONLY, 1, true",
+        })
+        void map_shouldListTheServerUp_byItsStatusAndTheAccessLevel(
+                ListingStatus status, int accessLevel, boolean expected) {
+            final GameServerInfo info = server(11, "high-five");
+            info.setStatus(status);
+            table.register(11, info);
+            when(client.getVariant()).thenReturn(LoginVariant.C621);
+            when(client.getIp()).thenReturn("127.0.0.1");
+            when(client.getAccessLevel()).thenReturn(accessLevel);
+
+            final ServerList actual = mapper.map(client);
+
+            assertThat(actual.servers()).singleElement().extracting(Server::up).isEqualTo(expected);
+        }
+
+        @Test
+        void map_shouldHideAGmOnlyServer_fromAPlayer() {
+            final GameServerInfo info = server(11, "high-five");
+            info.setStatus(ListingStatus.GM_ONLY);
+            table.register(11, info);
+            when(client.getVariant()).thenReturn(LoginVariant.C621);
+
+            final ServerList actual = mapper.map(client);
+
+            assertThat(actual.servers()).isEmpty();
         }
     }
 
@@ -125,11 +170,11 @@ class ServerListMapperTest {
         void map_shouldListThePublishedAgeLimit() {
             final GameServerInfo info = server(11, "high-five");
             info.setAgeLimit(18);
-            GameServerTable.getInstance().register(11, info);
+            table.register(11, info);
             when(client.getVariant()).thenReturn(LoginVariant.C621);
             when(client.getIp()).thenReturn("127.0.0.1");
 
-            final String actual = hex(ServerListMapper.map(client));
+            final String actual = hex(mapper.map(client));
 
             // opcode, 1 server, last server, server id, IPv4 address, port; the age limit follows
             assertThat(actual.substring(24, 26)).isEqualTo("12");
@@ -143,11 +188,11 @@ class ServerListMapperTest {
         void map_shouldListAnIpv4Address(String host, String expected) throws Exception {
             final GameServerInfo info = server(11, "high-five");
             info.addServerAddress("0.0.0.0/0", host);
-            GameServerTable.getInstance().register(11, info);
+            table.register(11, info);
             when(client.getVariant()).thenReturn(LoginVariant.C621);
             when(client.getIp()).thenReturn("127.0.0.1");
 
-            final String actual = hex(ServerListMapper.map(client));
+            final String actual = hex(mapper.map(client));
 
             // opcode, 1 server, last server, server id; the address follows
             assertThat(actual.substring(8, 16)).isEqualTo(expected);

@@ -74,10 +74,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.BackOffExecution;
 
-/**
- * The game server's side of the GS-link: {@link LoginPort} over one gRPC stream to the login server, reopened after
- * the reconnect delay when it ends; every inbound message becomes a command of the login slice.
- */
 @Slf4j
 @Component
 public class LoginServerLink implements LoginPort, DisposableBean {
@@ -257,7 +253,13 @@ public class LoginServerLink implements LoginPort, DisposableBean {
         final GsLinkProto.PublishListing.Builder listing = GsLinkProto.PublishListing.newBuilder();
         attributes.forEach((attribute, value) -> {
             switch (attribute) {
-                case STATUS -> listing.setStatusValue(value);
+                case STATUS -> {
+                    final GsLinkProto.ListingStatus status = GsLinkProto.ListingStatus.forNumber(value);
+                    if (status == null) {
+                        throw new IllegalArgumentException("Unknown listing status code " + value);
+                    }
+                    listing.setStatus(status);
+                }
                 case TYPE -> listing.setType(value);
                 case SQUARE_BRACKET -> listing.setSquareBracket(value != 0);
                 case MAX_PLAYERS -> listing.setMaxPlayers(value);
@@ -267,7 +269,6 @@ public class LoginServerLink implements LoginPort, DisposableBean {
         send(GameServerMessage.newBuilder().setPublishListing(listing).build());
     }
 
-    /** @return {@code false} when no stream is open and the message is dropped */
     private boolean send(GameServerMessage message) {
         final Stream stream = current;
         if (stream == null) {
@@ -292,7 +293,6 @@ public class LoginServerLink implements LoginPort, DisposableBean {
         }
     }
 
-    /** @return whether the stream was the open one and ended while the link runs, not on its shutdown */
     private synchronized boolean reopen(Stream ended) {
         if (stopping || (current != ended)) {
             return false;
@@ -427,7 +427,6 @@ public class LoginServerLink implements LoginPort, DisposableBean {
                 dispatch(message);
             } catch (RuntimeException e) {
                 // Escaping onNext, the exception would make gRPC cancel the call and drop every session on the link.
-                // Both ends ship in one release, so a malformed id is a login server bug and may repeat per message.
                 if (rate.tryAcquire(message.getMessageCase().name())) {
                     log.warn(
                             "Dropped the login server's {} for account {}.",
@@ -476,7 +475,6 @@ public class LoginServerLink implements LoginPort, DisposableBean {
             }
         }
 
-        /** @return the account the message is about, {@code null} for a message about no account */
         private static String accountOf(LoginServerMessage message) {
             return switch (message.getMessageCase()) {
                 case AUTHENTICATION_RESULT ->

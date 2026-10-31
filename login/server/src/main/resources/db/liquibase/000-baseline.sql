@@ -6,7 +6,7 @@ CREATE COLLATION case_insensitive (provider = icu, locale = 'und-u-ks-level2', d
 CREATE TABLE accounts (
     id uuid PRIMARY KEY,
     login text COLLATE case_insensitive NOT NULL UNIQUE CHECK (login <> ''),
-    password text NOT NULL CHECK (password <> ''),
+    password text NOT NULL CHECK (password LIKE '{%}_%'),
     email text CHECK (email <> ''),
     created_at timestamptz NOT NULL DEFAULT now(),
     last_active_at timestamptz,

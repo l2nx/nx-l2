@@ -25,8 +25,10 @@ servers from MariaDB.
   foreign key and does not store the login: a character is created only for the account of the session. An admin
   command acting on an account names one of its characters; the game server takes the account from
   `characters.account_id`, so it needs no lookup on the login server. The protocol changes together with the game
-  server's switch (§7). A login server accepts an account-changing packet (password, temporary ban, tracert) only for
-  an account that is on the game server that sent it.
+  server's switch (§7). A login server accepts a password change or a route report only for an account on the game
+  server that sent it, since the player acts for itself there; an access-level change or a temporary ban applies to
+  any account, online or not, since the game server resolved it from its own characters, and is logged with the game
+  server's id. Every refusal is logged; none is ignored silently ([spec 008 §10](008-network.md#10-gs-link)).
 - **A role per server** (`l2nx_login`, `l2nx_game_1`, ...) owns only its schema. A local development setup may use
   one role.
 - **The operator creates the roles and schemas,** not the server: creating them is a DBA operation, and a server role
@@ -96,6 +98,9 @@ later, together with the module that owns them.
 - **Constraints:** foreign keys inside a schema, each with an index on the referencing column; `CHECK` on value
   ranges; a missing value is `NULL` with `CHECK (col <> '')` on text columns. Every imported `DEFAULT ''` becomes a
   nullable column or a required one; `gameservers.host` is dropped, nothing reads it.
+- **Account passwords** are the output of Spring Security's `DelegatingPasswordEncoder`: an Argon2id hash with its
+  `{argon2}` id, never a bare digest; `CHECK (password LIKE '{%}_%')` keeps any value without an encoder id out
+  ([spec 008 §9](008-network.md#9-login)). A database holding hashes of another form is recreated (§2).
 - **Case-insensitive names** (account logins, character and clan names) are a `UNIQUE` constraint on a column with an
   ICU nondeterministic collation created in each schema's baseline:
   `CREATE COLLATION case_insensitive (provider = icu, locale = 'und-u-ks-level2', deterministic = false)` —
@@ -147,7 +152,8 @@ later, together with the module that owns them.
 - **A `getInstance()` singleton whose SQL moves into a repository becomes a bean in the same change.** Its
   `getInstance()` stays as a static bridge, bound in the bean's constructor; called before the context created the
   bean, it throws `IllegalStateException`. Its callers do not change; they move to constructor injection with the
-  package rework ([spec 003](003-engine-core/spec.md), E10).
+  package rework ([spec 003](003-engine-core/spec.md), E10). The login server has no such bridges: its components
+  reach each other by constructor injection only.
 - **Entities and packets never get a repository injected** ([wiring §1](003-engine-core/wiring-layout.md)): until
   write-behind (E4) takes their persistence, they call the bean that owns their data (`Player` → the player
   persistence bean) through its bridge.

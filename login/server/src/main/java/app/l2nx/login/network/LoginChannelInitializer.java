@@ -7,6 +7,8 @@ package app.l2nx.login.network;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
 import app.l2nx.login.protocol.c621.LoginPacketDecoder;
+import app.l2nx.login.protocol.c621.LoginRoutes;
+import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
@@ -34,9 +36,11 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
     private final Supplier<LoginKeys> keys;
     private final RandomGenerator random;
     private final Consumer<LoginClient> releaseAccount;
+    private final LoginRoutes routes;
+    private final ServerListMapper serverLists;
 
     /**
-     * @param random draws the session ids and the XOR keys of {@code Init}
+     * @param keys called once per connection
      * @param releaseAccount receives each closed connection that did not move on to a game server; its account is
      *     {@code null} when it never authenticated
      */
@@ -46,13 +50,17 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
             BlockingTaskExecutor tasks,
             Supplier<LoginKeys> keys,
             RandomGenerator random,
-            Consumer<LoginClient> releaseAccount) {
+            Consumer<LoginClient> releaseAccount,
+            LoginRoutes routes,
+            ServerListMapper serverLists) {
         this.variant = variant;
         this.properties = properties;
         this.tasks = tasks;
         this.keys = keys;
         this.random = random;
         this.releaseAccount = releaseAccount;
+        this.routes = routes;
+        this.serverLists = serverLists;
     }
 
     @Override
@@ -63,7 +71,8 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
                 keys.get(),
                 random.nextInt(),
                 // A packet the lane rejects would leave its connection without an answer.
-                tasks.newLane(LANE_LIMIT, task -> channel.close()));
+                tasks.newLane(LANE_LIMIT, task -> channel.close()),
+                serverLists);
         channel.attr(LoginClient.KEY).set(client);
         channel.closeFuture().addListener(future -> {
             // A client that moved on to a game server keeps its session key for the game server's check.
@@ -89,7 +98,7 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
                 PipelineNames.DEADLINES,
                 new ConnectionDeadlines(properties.handshakeTimeout(), properties.authTimeout()));
         pipeline.addLast(PipelineNames.HANDSHAKE, new LoginHandshakeHandler());
-        pipeline.addLast(PipelineNames.PACKET, new LoginPacketDecoder());
+        pipeline.addLast(PipelineNames.PACKET, new LoginPacketDecoder(routes));
         pipeline.addLast(PipelineNames.TAIL, TailExceptionHandler.INSTANCE);
     }
 }

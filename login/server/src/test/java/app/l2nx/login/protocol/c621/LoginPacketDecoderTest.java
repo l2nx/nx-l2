@@ -14,6 +14,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
+import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.metrics.model.DropReason;
@@ -35,7 +39,12 @@ class LoginPacketDecoderTest {
     private static final int REQUEST_SERVER_LIST = 0x05;
 
     private final LoginClient client = mock(LoginClient.class);
-    private final EmbeddedChannel channel = TestChannels.embedded(new LoginPacketDecoder());
+    private final LoginRoutes routes = new LoginRoutes(
+            mock(AuthGameGuardHandler.class),
+            mock(RequestAuthLoginHandler.class),
+            mock(RequestServerLoginHandler.class),
+            mock(RequestServerListHandler.class));
+    private final EmbeddedChannel channel = TestChannels.embedded(new LoginPacketDecoder(routes));
 
     LoginPacketDecoderTest() {
         channel.attr(LoginClient.KEY).set(client);

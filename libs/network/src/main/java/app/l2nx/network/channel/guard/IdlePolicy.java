@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 /** Netty idle times are fixed, so every switch of mode replaces the {@code idle} handler. */
 public final class IdlePolicy extends ChannelInboundHandlerAdapter {
-    private final Duration readTimeout;
     private final Duration pingInterval;
     private final int pingMisses;
     private ChannelHandlerContext ctx;
@@ -29,7 +28,6 @@ public final class IdlePolicy extends ChannelInboundHandlerAdapter {
     private int misses;
 
     private IdlePolicy(NetworkProperties properties) {
-        readTimeout = properties.readTimeout();
         pingInterval = properties.pingInterval();
         pingMisses = properties.pingMisses();
     }
@@ -45,10 +43,6 @@ public final class IdlePolicy extends ChannelInboundHandlerAdapter {
 
     public void startPinging(Runnable ping) {
         EventLoopTasks.run(ctx.executor(), () -> switchTo(ping, null, pingInterval));
-    }
-
-    public void stopPinging() {
-        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, null, readTimeout));
     }
 
     /**

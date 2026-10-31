@@ -30,20 +30,22 @@ import app.l2nx.gslink.GsLinkStreamWriter;
 import app.l2nx.gslink.v1.GsLinkProto;
 import app.l2nx.gslink.v1.GsLinkProto.GameServerMessage;
 import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;
-import app.l2nx.login.account.PasswordHash;
+import app.l2nx.login.account.AccountService;
+import app.l2nx.login.gameserver.GameServerRegistry;
 import app.l2nx.login.gameserver.GameServerTable;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.model.GameServerInfo;
+import app.l2nx.login.gameserver.model.ListingStatus;
+import app.l2nx.login.gameserver.model.Registration;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.SessionKey;
+import app.l2nx.network.channel.RateLimitedLog;
 import com.google.protobuf.Timestamp;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -54,7 +56,6 @@ import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -65,11 +66,7 @@ import org.springframework.scheduling.TaskScheduler;
 public class GameServerLink implements StreamObserver<GameServerMessage> {
     private static final int MAX_HEX_ID_BYTES = 64;
     private static final int MAX_ADDRESSES = 32;
-    private static final String MSG_INVALID_PASSWORD_DATA = "Invalid password data! Try again.";
-    private static final String MSG_PASSWORD_CHANGED = "You have successfully changed your password!";
-    private static final String MSG_PASSWORD_CHANGE_FAILED = "The password change was unsuccessful!";
-    private static final String MSG_CURRENT_PASSWORD_MISMATCH =
-            "The typed current password doesn't match with your current one.";
+    private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
 
     private enum State {
         AWAITING_REGISTRATION,
@@ -80,10 +77,11 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
     private final Set<UUID> accountsOnGameServer = ConcurrentHashMap.newKeySet();
     private final AtomicReference<State> state = new AtomicReference<>(State.AWAITING_REGISTRATION);
     private final GsLinkStreamWriter<LoginServerMessage> writer;
-    private final SocketAddress remoteAddress;
+    private final GameServerRegistry registry;
     private final GameServerTable gameServerTable;
     private final LoginController loginController;
-    private final boolean acceptNew;
+    private final AccountService accountService;
+    private final boolean checkLoginPair;
     private final Consumer<GameServerLink> ended;
 
     @Getter
@@ -93,16 +91,18 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
 
     GameServerLink(
             StreamObserver<LoginServerMessage> responses,
-            SocketAddress remoteAddress,
+            GameServerRegistry registry,
             GameServerTable gameServerTable,
             LoginController loginController,
-            boolean acceptNew,
+            AccountService accountService,
+            boolean checkLoginPair,
             Consumer<GameServerLink> ended) {
         writer = new GsLinkStreamWriter<>(responses);
-        this.remoteAddress = remoteAddress;
+        this.registry = registry;
         this.gameServerTable = gameServerTable;
         this.loginController = loginController;
-        this.acceptNew = acceptNew;
+        this.accountService = accountService;
+        this.checkLoginPair = checkLoginPair;
         this.ended = ended;
     }
 
@@ -222,40 +222,13 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
             refuse(Status.INVALID_ARGUMENT, "more than " + MAX_ADDRESSES + " game server addresses");
             return;
         }
-        final byte[] hexId = registration.getHexId().toByteArray();
-        final int desiredId = registration.getServerId();
-        final GameServerInfo registered = gameServerTable.getRegisteredGameServerById(desiredId);
-        final GameServerInfo info;
-        if ((registered != null) && Arrays.equals(registered.getHexId(), hexId)) {
-            info = registered;
-        } else if (registered == null) {
-            if (!acceptNew) {
-                refuse(
-                        Status.PERMISSION_DENIED,
-                        "server id " + desiredId + " is not registered and new game servers are not accepted");
-                return;
-            }
-            info = new GameServerInfo(desiredId, hexId);
-            if (!gameServerTable.register(desiredId, info)) {
-                refuse(Status.ALREADY_EXISTS, "server id " + desiredId + " was taken during the registration");
-                return;
-            }
-            gameServerTable.registerServerOnDB(info);
-        } else {
-            if (!acceptNew || !registration.getAcceptAlternativeId()) {
-                refuse(
-                        Status.PERMISSION_DENIED,
-                        "the hex id does not match server id " + desiredId + " and no other id may be given");
-                return;
-            }
-            info = new GameServerInfo(desiredId, hexId);
-            if (!gameServerTable.registerWithFirstAvailableId(info)) {
-                refuse(Status.RESOURCE_EXHAUSTED, "no free server id is left");
-                return;
-            }
-            gameServerTable.registerServerOnDB(info);
+        switch (registry.register(
+                registration.getServerId(),
+                registration.getHexId().toByteArray(),
+                registration.getAcceptAlternativeId())) {
+            case Registration.Accepted(GameServerInfo info) -> attach(info, registration, chronicle);
+            case Registration.Refused(Registration.Reason reason, String detail) -> refuse(refusal(reason), detail);
         }
-        attach(info, registration, chronicle);
     }
 
     private void attach(GameServerInfo info, GsLinkProto.Register registration, String chronicle) {
@@ -279,29 +252,29 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         }
         cancelRegistrationDeadline();
         if (!chronicle.equals(previousChronicle)) {
-            gameServerTable.storeChronicle(info.getId(), chronicle);
+            registry.storeChronicle(info.getId(), chronicle);
         }
         final GsLinkProto.RegistrationResult.Builder result =
                 GsLinkProto.RegistrationResult.newBuilder().setServerId(info.getId());
-        if (info.getName() != null) {
-            result.setServerName(info.getName());
+        final String name = gameServerTable.getServerNameById(info.getId());
+        if (name != null) {
+            result.setServerName(name);
         }
         writer.send(
                 LoginServerMessage.newBuilder().setRegistrationResult(result).build());
-        log.info("Game server [{}] {} registered, chronicle {}.", info.getId(), info.getName(), chronicle);
+        log.info("Game server [{}] {} registered, chronicle {}.", info.getId(), name, chronicle);
     }
 
     /**
-     * Two processes started with one hex id would otherwise evict each other forever. A dead stream holding the id is
-     * ended by keepalive or by its end, and the game server's next attempt registers.
+     * Refusing, not evicting: two processes with one hex id would otherwise evict each other forever. A dead holder
+     * is ended by keepalive, so the next attempt registers.
      */
     private void refuseDuplicate(GameServerInfo info) {
         log.warn(
-                "Refused the registration of server [{}] {} from {}: a live GS-link holds its hex id. Is a second game"
-                        + " server running with a copy of its hexid?",
+                "Refused the registration of server [{}] {}: a live GS-link holds its hex id. Is a second game server"
+                        + " running with a copy of its hexid?",
                 info.getId(),
-                info.getName(),
-                remoteAddress);
+                gameServerTable.getServerNameById(info.getId()));
         close(Status.ALREADY_EXISTS.withDescription("Registration refused: server id " + info.getId()
                 + " is held by a live GS-link with the same hex id."));
     }
@@ -309,6 +282,14 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
     private void refuse(Status status, String reason) {
         log.info("Refused a game server registration: {}.", reason);
         close(status.withDescription("Registration refused: " + reason + "."));
+    }
+
+    private static Status refusal(Registration.Reason reason) {
+        return switch (reason) {
+            case NOT_ACCEPTED, HEX_ID_MISMATCH -> Status.PERMISSION_DENIED;
+            case ID_TAKEN -> Status.ALREADY_EXISTS;
+            case NO_FREE_ID -> Status.RESOURCE_EXHAUSTED;
+        };
     }
 
     private void registrationTimedOut(Duration timeout) {
@@ -329,7 +310,10 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
             synchronized (info) {
                 info.setDown();
             }
-            log.info("Server [{}] {} is now marked as disconnected.", info.getId(), info.getName());
+            log.info(
+                    "Server [{}] {} is now marked as disconnected.",
+                    info.getId(),
+                    gameServerTable.getServerNameById(info.getId()));
         }
         ended.accept(this);
         return true;
@@ -357,95 +341,84 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         final GsLinkProto.AuthenticationResult.Builder result = GsLinkProto.AuthenticationResult.newBuilder()
                 .setLogin(request.getLogin())
                 .setRequestId(request.getRequestId());
-        if ((client != null) && sessionKey(request.getKey()).equals(client.getSessionKey())) {
-            loginController.removeAuthedLoginClientIfCurrent(client);
+        if (isRedeemable(client, request)) {
             result.setAccepted(true).setAccountId(client.getAccountId().toString());
         }
         writer.send(
                 LoginServerMessage.newBuilder().setAuthenticationResult(result).build());
     }
 
+    /**
+     * A key enters only the server its PlayOk named, and only once: removal from the authed clients is the
+     * redemption, so a replay or another server finds nothing.
+     */
+    private boolean isRedeemable(LoginClient client, GsLinkProto.Authenticate request) {
+        if (client == null) {
+            return false;
+        }
+        final Integer selected = client.getJoinedServerId();
+        if (selected == null) {
+            return false;
+        }
+        if (selected != getServerId()) {
+            if (RATE.tryAcquire("authenticate-server")) {
+                log.warn(
+                        "Refused the login of {} on {}: its PlayOk was for server {}.",
+                        request.getLogin(),
+                        describe(),
+                        selected);
+            }
+            return false;
+        }
+        return client.getSessionKey().matches(sessionKey(request.getKey()), checkLoginPair)
+                && loginController.removeAuthedLoginClientIfCurrent(client);
+    }
+
     private static SessionKey sessionKey(GsLinkProto.SessionKey key) {
-        return new SessionKey(key.getLoginOk1(), key.getLoginOk2(), key.getPlayOk1(), key.getPlayOk2());
+        return SessionKey.builder()
+                .loginOk1(key.getLoginOk1())
+                .loginOk2(key.getLoginOk2())
+                .playOk1(key.getPlayOk1())
+                .playOk2(key.getPlayOk2())
+                .build();
     }
 
     private void changeAccessLevel(GsLinkProto.ChangeAccessLevel change) {
-        final UUID accountId = UUID.fromString(change.getAccountId());
-        loginController.setAccountAccessLevel(accountId, change.getLevel());
-        log.info("Changed account {} access level to {}", accountId, change.getLevel());
+        accountService.changeAccessLevel(UUID.fromString(change.getAccountId()), change.getLevel(), getServerId());
     }
 
     private void reportRoute(GsLinkProto.ReportRoute route) {
         final UUID accountId = UUID.fromString(route.getAccountId());
-        if (hasAccountOnGameServer(accountId)) {
-            loginController.setAccountLastTracert(
-                    accountId,
-                    route.hasClientAddress() ? StringUtils.trimToNull(route.getClientAddress()) : null,
-                    hop(route, 0),
-                    hop(route, 1),
-                    hop(route, 2),
-                    hop(route, 3));
-        }
-    }
-
-    private static String hop(GsLinkProto.ReportRoute route, int index) {
-        return (index < route.getHopsCount()) ? StringUtils.trimToNull(route.getHops(index)) : null;
+        accountService.reportRoute(
+                accountId,
+                route.hasClientAddress() ? StringUtils.trimToNull(route.getClientAddress()) : null,
+                route.getHopsList().stream().map(StringUtils::trimToNull).toList(),
+                hasAccountOnGameServer(accountId),
+                getServerId());
     }
 
     private void requestTempBan(GsLinkProto.RequestTempBan request) {
         final UUID accountId = UUID.fromString(request.getAccountId());
-        final Duration duration = Duration.ofSeconds(
-                request.getDuration().getSeconds(), request.getDuration().getNanos());
-        if (!duration.isPositive()) {
-            log.warn("Ignored a temporary ban of account {} with a non-positive length of {}.", accountId, duration);
-            return;
-        }
-        if (!hasAccountOnGameServer(accountId)) {
-            return;
-        }
-        loginController.setAccountTempBan(accountId, duration);
-        final String ip = request.hasIp() ? StringUtils.trimToNull(request.getIp()) : null;
-        if (ip != null) {
-            loginController.addBanForAddress(ip, duration.toMillis());
-        }
+        accountService.tempBan(
+                accountId,
+                Duration.ofSeconds(
+                        request.getDuration().getSeconds(),
+                        request.getDuration().getNanos()),
+                request.hasIp() ? StringUtils.trimToNull(request.getIp()) : null,
+                hasAccountOnGameServer(accountId),
+                getServerId());
     }
 
     private void changePassword(GsLinkProto.ChangePassword request) {
         final UUID accountId = UUID.fromString(request.getAccountId());
-        final String characterName = request.getCharacterName();
-        if (!hasAccountOnGameServer(accountId)) {
-            log.trace("Refused a password change of account {} requested by player {}.", accountId, characterName);
-            passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGE_FAILED);
-            return;
-        }
-        if (request.getOldPassword().isEmpty() || request.getNewPassword().isEmpty()) {
-            passwordChangeResult(request.getRequestId(), characterName, MSG_INVALID_PASSWORD_DATA);
-            return;
-        }
-        try {
-            final String currentHash = PasswordHash.of(request.getOldPassword());
-            final String newHash = PasswordHash.of(request.getNewPassword());
-            if (loginController.changePassword(accountId, currentHash, newHash)) {
-                passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGED);
-            } else if (currentHash.equals(loginController.getPasswordHash(accountId))) {
-                log.warn(
-                        "Password change failed for account {} requested by player {} on GS {} (0 rows updated).",
-                        accountId,
-                        characterName,
-                        getServerId());
-                passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGE_FAILED);
-            } else {
-                passwordChangeResult(request.getRequestId(), characterName, MSG_CURRENT_PASSWORD_MISMATCH);
-            }
-        } catch (DataAccessException e) {
-            log.warn(
-                    "Error while changing the password of account {} requested by player {} on GS {}.",
-                    accountId,
-                    characterName,
-                    getServerId(),
-                    e);
-            passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGE_FAILED);
-        }
+        final String message = accountService.changePassword(
+                accountId,
+                request.getCharacterName(),
+                request.getOldPassword(),
+                request.getNewPassword(),
+                hasAccountOnGameServer(accountId),
+                getServerId());
+        passwordChangeResult(request.getRequestId(), request.getCharacterName(), message);
     }
 
     private void passwordChangeResult(String requestId, String characterName, String message) {
@@ -469,10 +442,18 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         return Instant.ofEpochSecond(time.getSeconds(), time.getNanos()).toEpochMilli();
     }
 
+    /** One listing is one update: an unknown status refuses all of it, and the stream stays open. */
     private void publishListing(GsLinkProto.PublishListing listing) {
+        final ListingStatus status = listing.hasStatus() ? listingStatus(listing.getStatus()) : null;
+        if (listing.hasStatus() && (status == null)) {
+            if (RATE.tryAcquire("listing-status")) {
+                log.warn("Refused a listing of {}: unknown status {}.", describe(), listing.getStatusValue());
+            }
+            return;
+        }
         final GameServerInfo info = gameServerInfo;
-        if (listing.hasStatus()) {
-            info.setStatus(listing.getStatusValue());
+        if (status != null) {
+            info.setStatus(status);
         }
         if (listing.hasType()) {
             info.setServerType(listing.getType());
@@ -488,7 +469,20 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         }
     }
 
-    private static void setGameHosts(GameServerInfo info, List<GsLinkProto.GameServerAddress> addresses) {
+    /** @return {@code null} for a value this release does not know */
+    private static ListingStatus listingStatus(GsLinkProto.ListingStatus status) {
+        return switch (status) {
+            case LISTING_STATUS_AUTO -> ListingStatus.AUTO;
+            case LISTING_STATUS_GOOD -> ListingStatus.GOOD;
+            case LISTING_STATUS_NORMAL -> ListingStatus.NORMAL;
+            case LISTING_STATUS_FULL -> ListingStatus.FULL;
+            case LISTING_STATUS_DOWN -> ListingStatus.DOWN;
+            case LISTING_STATUS_GM_ONLY -> ListingStatus.GM_ONLY;
+            case UNRECOGNIZED -> null;
+        };
+    }
+
+    private void setGameHosts(GameServerInfo info, List<GsLinkProto.GameServerAddress> addresses) {
         info.clearServerAddresses();
         for (GsLinkProto.GameServerAddress address : addresses) {
             try {
@@ -500,12 +494,14 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         log.info(
                 "Updated Gameserver [{}] {} IP's: {}",
                 info.getId(),
-                info.getName(),
+                gameServerTable.getServerNameById(info.getId()),
                 String.join(", ", info.getServerAddresses()));
     }
 
     private String describe() {
         final GameServerInfo info = gameServerInfo;
-        return (info != null) ? "server [" + info.getId() + "] " + info.getName() : "an unregistered game server";
+        return (info != null)
+                ? "server [" + info.getId() + "] " + gameServerTable.getServerNameById(info.getId())
+                : "an unregistered game server";
     }
 }

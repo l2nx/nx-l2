@@ -60,11 +60,8 @@ lists what is open.
 - [#89](https://github.com/l2nx/nx-l2/issues/89) Harden the network connection lifecycle: late init, idle, close reasons, write errors, shutdown deadline
 - [#90](https://github.com/l2nx/nx-l2/issues/90) Clean up libs/network: module boundaries, shared L2 pipeline, login transport leftovers and statics
 - [#91](https://github.com/l2nx/nx-l2/issues/91) Port the first client slice end to end before growing the port framework
-- [#92](https://github.com/l2nx/nx-l2/issues/92) Bind PlayOk to the game server the player selected
 - [#93](https://github.com/l2nx/nx-l2/issues/93) Make the login side of the GS-link thread-safe and keep database work off the stream
 - [#94](https://github.com/l2nx/nx-l2/issues/94) Harden GS-link failure handling: reconnect classification, malformed messages, shutdown, buffering, tests
-- [#95](https://github.com/l2nx/nx-l2/issues/95) Split account and registration logic out of GameServerLink
-- [#96](https://github.com/l2nx/nx-l2/issues/96) Hash account passwords with a salted adaptive algorithm
 - [#97](https://github.com/l2nx/nx-l2/issues/97) Bound the world lifecycle waits and merge the two game server lifecycles
 - [#98](https://github.com/l2nx/nx-l2/issues/98) Decide which Errors from a loop task stop the server
 - [#99](https://github.com/l2nx/nx-l2/issues/99) Keep the loop out of overload spirals: coalesce missed fixed-rate runs, time-budget the deadlines phase
@@ -79,7 +76,6 @@ lists what is open.
 - [#109](https://github.com/l2nx/nx-l2/issues/109) Move alliance, couple and range rules into schema constraints
 - [#110](https://github.com/l2nx/nx-l2/issues/110) Test repository transactions and published database meters through Spring
 - [#111](https://github.com/l2nx/nx-l2/issues/111) Make the load gate trustworthy: outcome accounting, comparability, timeouts in latency, statistics, validity limits
-- [#112](https://github.com/l2nx/nx-l2/issues/112) Read server meters through Prometheus and record the actual meter window
 - [#113](https://github.com/l2nx/nx-l2/issues/113) Test the p267 login storm against the real login server
 - [#114](https://github.com/l2nx/nx-l2/issues/114) Load harness cleanup: p267 adapter measurement, speculative bot model, fail-fast CLI
 - [#115](https://github.com/l2nx/nx-l2/issues/115) Finish the bug classes of the Mobius batch: static config snapshots and equals/hashCode gaps
@@ -88,9 +84,14 @@ lists what is open.
 - [#118](https://github.com/l2nx/nx-l2/issues/118) Bring specs and comments in line with the code
 - [#119](https://github.com/l2nx/nx-l2/issues/119) Add slice and domain-event to the glossary and settle term mismatches
 - [#123](https://github.com/l2nx/nx-l2/issues/123) Loop wakes up to 15 ms late on Windows and counts on-time timers as overdue
+- [#126](https://github.com/l2nx/nx-l2/issues/126) Default-locale case conversion breaks identifiers under a Turkish locale
 
 ## Done
 
+- [#112](https://github.com/l2nx/nx-l2/issues/112) Read server meters through Prometheus and record the actual meter window
+- [#92](https://github.com/l2nx/nx-l2/issues/92) Bind PlayOk to the game server the player selected
+- [#95](https://github.com/l2nx/nx-l2/issues/95) Split account and registration logic out of GameServerLink
+- [#96](https://github.com/l2nx/nx-l2/issues/96) Hash account passwords with a salted adaptive algorithm
 - [#120](https://github.com/l2nx/nx-l2/issues/120) Flaky tools/load tests assert timing-dependent exact counts
 - [#85](https://github.com/l2nx/nx-l2/issues/85) LoadCommandRunnerTest fails when no roaming action falls into the short steady window
 - [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run

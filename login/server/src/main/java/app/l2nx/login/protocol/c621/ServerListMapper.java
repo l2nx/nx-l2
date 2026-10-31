@@ -26,9 +26,9 @@
  */
 package app.l2nx.login.protocol.c621;
 
-import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.gameserver.GameServerTable;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.gameserver.model.GameServerInfo;
+import app.l2nx.login.gameserver.model.ListingStatus;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList;
 import app.l2nx.protocol.login.c621.serverpackets.ServerList.Characters;
@@ -40,19 +40,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
+@Component
 @Slf4j
+@RequiredArgsConstructor
 public final class ServerListMapper {
+    private final GameServerTable gameServerTable;
 
-    private ServerListMapper() {}
-
-    public static ServerList map(LoginClient client) {
-        final List<Server> servers = new ArrayList<>(
-                GameServerTable.getInstance().getRegisteredGameServers().size());
-        for (GameServerInfo gsi :
-                GameServerTable.getInstance().getRegisteredGameServers().values()) {
-            if ((gsi.getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE) && (client.getAccessLevel() < 1)) {
+    public ServerList map(LoginClient client) {
+        final Map<Integer, GameServerInfo> registered = gameServerTable.getRegisteredGameServers();
+        final List<Server> servers = new ArrayList<>(registered.size());
+        for (GameServerInfo gsi : registered.values()) {
+            final ListingStatus status = gsi.getStatus();
+            if ((status == ListingStatus.GM_ONLY) && (client.getAccessLevel() < 1)) {
                 continue;
             }
 
@@ -60,7 +63,7 @@ public final class ServerListMapper {
                 continue;
             }
 
-            servers.add(server(client, gsi));
+            servers.add(server(client, gsi, status));
         }
 
         // Snapshot: game servers answer from other threads, possibly after sendServerList stopped waiting.
@@ -88,14 +91,13 @@ public final class ServerListMapper {
                 .build();
     }
 
-    private static Server server(LoginClient client, GameServerInfo gsi) {
+    /** @param status read once by the caller: the GS-link thread may change it between two reads */
+    private static Server server(LoginClient client, GameServerInfo gsi, ListingStatus status) {
         final byte[] ip = ipv4(client, gsi);
 
-        final int status = (client.getAccessLevel() < 0)
-                        || ((gsi.getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE)
-                                && (client.getAccessLevel() <= 0))
-                ? ListingStatus.LISTING_STATUS_DOWN_VALUE
-                : gsi.getStatus();
+        final boolean up = (client.getAccessLevel() >= 0)
+                && (status != ListingStatus.DOWN)
+                && ((status != ListingStatus.GM_ONLY) || (client.getAccessLevel() > 0));
         return Server.builder()
                 .id(gsi.getId())
                 .ip(ip)
@@ -104,7 +106,7 @@ public final class ServerListMapper {
                 .pvp(gsi.isPvp())
                 .currentPlayers(gsi.getCurrentPlayerCount())
                 .maxPlayers(gsi.getMaxPlayers())
-                .up(status != ListingStatus.LISTING_STATUS_DOWN_VALUE)
+                .up(up)
                 .serverType(gsi.getServerType())
                 .brackets(gsi.isShowingBrackets())
                 .build();

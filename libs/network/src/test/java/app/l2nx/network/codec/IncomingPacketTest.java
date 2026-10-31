@@ -24,13 +24,13 @@ class IncomingPacketTest {
                     .writeShortLE(-2)
                     .writeIntLE(0x01020304)
                     .writeLongLE(5L)
-                    .writeDoubleLE(1.5);
+                    .writeFloatLE(1.5F);
             Wire.writeString(frame, "name");
             final Probe packet = new Probe();
 
             assertThat(packet.decode("client", frame)).isTrue();
 
-            assertThat(packet.values).containsExactly(7, -2, 0x01020304, 5L, 1.5, "name", 0);
+            assertThat(packet.values).containsExactly(7, -2, 0x01020304, 5L, 1.5F, "name", 0);
             assertThat(packet.getClient()).isEqualTo("client");
             assertThatThrownBy(packet::remainingAfterDecode).isInstanceOf(IllegalStateException.class);
             frame.release();
@@ -101,7 +101,7 @@ class IncomingPacketTest {
             values.add((int) readShort());
             values.add(readInt());
             values.add(readLong());
-            values.add(readDouble());
+            values.add(readFloat());
             values.add(readString());
             values.add(remaining());
             return true;

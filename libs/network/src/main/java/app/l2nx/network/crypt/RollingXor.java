@@ -5,7 +5,6 @@
 package app.l2nx.network.crypt;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import java.util.Objects;
 
 /**
@@ -17,10 +16,6 @@ public final class RollingXor {
     private static final int MIN_SIZE = 3 * WORD_SIZE;
 
     private RollingXor() {}
-
-    public static void encrypt(byte[] data, int offset, int size, int key) {
-        encrypt(Unpooled.wrappedBuffer(data), offset, size, key);
-    }
 
     public static void encrypt(ByteBuf buf, int index, int size, int key) {
         Objects.checkFromIndexSize(index, size, buf.capacity());
@@ -34,10 +29,6 @@ public final class RollingXor {
             buf.setIntLE(i, word ^ rollingKey);
         }
         buf.setIntLE(keyIndex, rollingKey);
-    }
-
-    public static void decrypt(byte[] data, int offset, int size) {
-        decrypt(Unpooled.wrappedBuffer(data), offset, size);
     }
 
     /** Walks back from the final key; the word that carried it keeps it, since the original word is lost. */

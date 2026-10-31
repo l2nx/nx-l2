@@ -21,17 +21,18 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 
 ## 2. Layout
 
-| Module / package                                                      | Holds                                                                                                                         |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `libs/network` (`app.l2nx.network`)                                   | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the cipher primitives  |
-| `protocols/{login,game}/<id>` (`app.l2nx.protocol.{login,game}.<id>`) | one wire protocol: opcodes, wire records with their codecs, the protocol's keys and frame cipher (§8 Wire codecs)             |
-| `engine/core` `session`                                               | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout)) |
-| `login/server` `protocol/<variant>/`                                  | the login server's side of one login protocol: handshake, decoder, a handler per client packet, accepted states               |
-| `libs/gslink` (`app.l2nx.gslink`)                                     | the GS-link contract: `.proto` (`l2nx.gslink.v1`), generated stubs, the shared-secret interceptors, `l2nx.gslink` settings    |
-| `login/server` `gslink`                                               | login side of the GS-link: the gRPC service                                                                                   |
-| `chronicles/<c>/server` `login`                                       | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands       |
-| `chronicles/<c>/server` `network`                                     | game pipeline, version handshake, protocol registry, `gslink/` (the gRPC client of the GS-link, adapter of `LoginPort`)       |
-| `chronicles/<c>/server` `network/protocol/<id>/`                      | one client protocol adapter: wire records to commands, view events to wire records                                            |
+| Module / package                                                      | Holds                                                                                                                                |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `libs/network` (`app.l2nx.network`)                                   | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the cipher primitives         |
+| `protocols/{login,game}/<id>` (`app.l2nx.protocol.{login,game}.<id>`) | one wire protocol: opcodes, wire records with their codecs, the protocol's keys and frame cipher (§8 Wire codecs)                    |
+| `engine/core` `session`                                               | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout))        |
+| `login/server` `protocol/<variant>/`                                  | the login server's side of one login protocol: handshake, decoder, a handler per client packet, accepted states                      |
+| `libs/gslink` (`app.l2nx.gslink`)                                     | the GS-link contract: `.proto` (`l2nx.gslink.v1`), generated stubs, the shared-secret interceptors, `l2nx.gslink` settings           |
+| `login/server` `gslink`                                               | login side of the GS-link: the gRPC service and one stream adapter per game server (`GameServerLink`)                                |
+| `login/server` `gameserver`, `account`                                | the registration policy of game servers (`GameServerRegistry`) and the account rules of the login and the GS-link (`AccountService`) |
+| `chronicles/<c>/server` `login`                                       | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands              |
+| `chronicles/<c>/server` `network`                                     | game pipeline, version handshake, protocol registry, `gslink/` (the gRPC client of the GS-link, adapter of `LoginPort`)              |
+| `chronicles/<c>/server` `network/protocol/<id>/`                      | one client protocol adapter: wire records to commands, view events to wire records                                                   |
 
 `libs/network` knows no game rules and no protocol; it knows bytes, frames and the Lineage 2 cipher primitives
 (LE Blowfish, rolling XOR, XOR checksum). The keys, opcodes and layouts of a protocol live in its `protocols/` module, which depends on `libs/network` and Netty buffers only, so the load harness uses it as the server does
@@ -256,8 +257,9 @@ and is rejected the same way when it is missing; the legacy list shrinks as pack
 - **The version handshake is protocol-independent.** The first packet of a game connection is the protocol
   version, read by the chronicle's handshake decoder on the IO thread before any adapter exists.
 - **`GameProtocolRegistry`** maps the version to an adapter; the handshake sets the channel's adapter field, which
-  the single packet decoder (§5) delegates to. Pipeline handlers are not replaced, so frames already buffered after
-  the version are decoded by the new adapter.
+  the single packet decoder (§5) delegates to, and then removes itself from the pipeline. The packet decoder stays in
+  place, so frames already buffered after the version reach it in order and are decoded by the new adapter. After a
+  refused version the handshake stays and discards the frames that follow while the connection closes.
 - **Key exchange:** the adapter's key packet is the first outbound packet and goes out in clear; the encoder
   enables the rolling XOR in both directions right after encoding it. An unknown version is refused through the
   handshake's own refusal packet and the connection closes after the write; a ping version (`-2`) closes without a
@@ -331,24 +333,45 @@ Packets not yet moved to ports pass through the `p267` adapter as they are:
   server speaks first, so the port names the variant. `l2nx.login.client.ports` lists `{port, variant}` and replaces
   `l2nx.login.client.port`; each port has its
   own bootstrap and initializer on the shared groups. One variant exists today.
-- **Handshake handler:** sends `Init` with the RSA public key and the session Blowfish key, then removes itself;
-  timeouts per §5.
+- **Handshake handler:** sends `Init` with the RSA public key and the connection's own Blowfish key, drawn from
+  `SecureRandom` when the connection opens, then removes itself; timeouts per §5.
 - **Cipher:**
   - outbound: the encoder pads the payload to 8 bytes, appends the XOR checksum, encrypts with Blowfish and fills
     in the length after padding; `Init` instead gets the XOR pass with a random key and the static Blowfish key;
   - inbound: Blowfish decrypt, then checksum verification; a bad checksum closes the connection with `error` and a
     rate-limited warning;
   - session key bytes are 1..255: the client reads the key from `Init` up to its first zero byte, so a zero inside
-    the key would leave the two sides with different keys.
+    the key would leave the two sides with different keys;
+  - every cipher instance belongs to one connection and runs only on its event loop, so it is not thread-safe by
+    design and takes no locks; the static-key cipher of `Init` is created for that one frame.
 - **Blocking and heavy work** (RSA decrypt of the credentials, account lookup, password check) runs on a bounded
   executor of virtual threads, ordered per channel; results return through the channel's event loop. Never on an
   IO thread. A channel holds an executor slot for at most a batch of its tasks and then queues again behind the
   others (a fair semaphore), so a busy channel cannot starve logins; tasks the executor can no longer run after
   close go to the channel's rejection handler instead of running against a closing context.
+- **Passwords** are Argon2id hashes through Spring Security's `DelegatingPasswordEncoder` with Argon2id as its only
+  encoding (`Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8`: 16 MiB, 2 iterations, one lane), stored with
+  their `{argon2}` id; a hash with any other id fails the check like a wrong password: it is logged with a warning,
+  spends one hash and counts as a failed login. `AccountService` checks the password on the executor above. A login
+  of an unknown account spends one hash too, so the answer time does not tell which logins exist; the hash it is
+  matched against is encoded once when the service starts. `l2nx.login.ban.failed-logins` failed logins from one
+  address ban it for `ban.duration`; the count lapses once `ban.failed-logins-window` passes without a failure (a
+  Caffeine cache expiring after write) and resets on a successful login. A stored hash with
+  weaker parameters than the encoder's is re-encoded after a successful login. A password change from a game server
+  (§10) refuses a new password the client cannot send back intact (more than 16 UTF-8 bytes, a zero character, an
+  unpaired surrogate, whitespace at its edges, which the credentials block trims), compares the typed old password
+  with the stored hash in Java and replaces the hash only if it is still the one it read.
+  - Cost, measured with JMH on a 6-core desktop CPU with 12 hardware threads: about 18 ms and 16.6 MiB allocated per
+    hash on one thread, about 165 hashes/s on 12 threads.
+  - Memory: a hash never blocks its virtual thread, so at most one hash runs per carrier thread (one per available
+    processor, within `max-concurrent-tasks`). A burst of logins holds about 16.6 MiB of heap per concurrent hash,
+    which the login server's heap must leave room for; the distribution starts with `-Xmx256m`.
 - **Codecs and handlers:** the records, the frame cipher and the credentials block are `protocols/login/c621`
   (§8 Wire codecs); `login/server` holds a handler per client record, which does what the packet means (RSA
   decrypt and account check for `RequestAuthLogin`), and sends server records. The login server has no ports or
-  commands: it is one small process without slices, so the Netty idiom of a handler per message type suffices.
+  commands: it is one small process without slices, so the Netty idiom of a handler per message type suffices. The
+  handlers and the server list mapper are beans, and `LoginRoutes`, the route table built from the handler beans, is
+  handed to each channel initializer; nothing in the login server is reached through a static instance.
 - **Login states:** the packet decoder decodes the record whatever the state and hands it with its handler to the
   channel's lane; the connection state is checked there, just before the handler runs, and is dropped as
   `l2nx.network.dropped{reason=wrong-state}` when the state does not accept it. A packet read right behind a
@@ -386,13 +409,21 @@ service GsLink {
 - **Registration:** the first message is `Register` with the hex id and the chronicle; a stream that sends anything
   else first, or nothing within `handshake-timeout`, is cancelled. A registration with the hex id of a live stream is
   refused (`ALREADY_EXISTS`), so two processes started with the same hex id cannot evict each other in a loop; a dead
-  stream is closed by keepalive or by its end, and the game server's next attempt then registers.
+  stream is closed by keepalive or by its end, and the game server's next attempt then registers. Which server id a
+  registration gets is `GameServerRegistry`'s decision: a known hex id gets its server back; an unknown one takes the
+  desired id when it is free, or the lowest free id when the game server accepts another one (also when another
+  registration takes the desired id at the same moment), and only while
+  `l2nx.login.game-server.accept-new` is on (otherwise `PERMISSION_DENIED`; no free id is `RESOURCE_EXHAUSTED`); a new
+  server is stored at once. `GameServerLink` keeps only the stream's state machine and the mapping between proto
+  messages and the login server's calls.
 - **Authentication:** the game server sends `l2nx.gslink.secret` (required on both servers, no default, at least
   32 characters) as a bearer token in the `authorization` metadata through Spring gRPC's
   `BearerTokenAuthenticationInterceptor`; a server interceptor compares it in constant time and rejects the call with
-  `UNAUTHENTICATED`. The secret travels in clear only on loopback: the login server refuses to start when
-  the gRPC server listens on another address without TLS, and the game server refuses a non-loopback target without
-  TLS. TLS comes from a Spring Boot SSL bundle; the game server verifies the login server's certificate, host name
+  `UNAUTHENTICATED`. It logs each refused call with a warning and each accepted call with the peer's address at
+  info, one line per game server connect since a call is a long-lived stream: the service never sees the transport,
+  so this line ties its later log lines (a refused registration) to an address. The secret travels in clear only on
+  loopback: the login server refuses to start when the gRPC server listens on another address without TLS, and the
+  game server refuses a non-loopback target without TLS. TLS comes from a Spring Boot SSL bundle; the game server verifies the login server's certificate, host name
   included. The server binds to `127.0.0.1` by default.
 - **Liveness:** gRPC keepalive pings (`keepAliveTime` 15 s and its timeout on the game server's channel, a matching
   `permitKeepAliveTime` on the login server) detect a dead link. The channel reconnects by gRPC's own connection
@@ -407,6 +438,30 @@ service GsLink {
 - **Chronicle:** the game server reports its chronicle when it registers, and the login server stores it with the
   server. A client sees and enters only servers of the chronicles its protocol variant serves; a server that never
   registered has no chronicle and is listed to nobody.
+- **A player's entry:** `Authenticate` carries the login and the session key the client shows the game server. Both
+  servers lower-case the login with `Locale.ROOT`, so the login server finds the client by plain equality whatever
+  either machine's default locale is (a Turkish one would turn `I` into a dotless `ı`). The
+  login server accepts it only on the stream of the game server the client got `PlayOk` for, when the PlayOk pair
+  matches, and the LoginOk pair too when `l2nx.login.show-licence` is on (only then did the client receive it).
+  Accepting removes the client from the authenticated clients, so a key is redeemed once and a replay finds nothing.
+  Another game server presenting the key is refused with a rate-limited warning, and the key stays valid for the
+  selected server.
+- **Listing:** `PublishListing` sets only the attributes it carries. The login server maps the proto `ListingStatus`
+  to its own enum and refuses the whole listing when the status is a value it does not know (a rate-limited warning;
+  the stream stays open). The game server sends the proto value of its own status's code and throws on a code the
+  proto lacks, a programming error rather than input.
+- **Account messages** apply the rules of `AccountService`; every refusal is logged with the game server's id, none
+  is ignored silently:
+  - `ChangeAccessLevel` and `RequestTempBan` apply to any account, online or not, and are logged: the game server is
+    trusted through the secret and resolves the account from its own characters. A temporary ban with a length that is not positive
+    is refused with a warning. Otherwise the account ban and the address ban it carries apply independently, each
+    logging its own outcome: an unknown account or a failed store skips only the account ban, and an address that is
+    not an IP literal skips only the address ban. The address ban is kept in memory for the same length, and an
+    address already banned keeps the later expiry;
+  - `ReportRoute` and `ChangePassword` act for the player itself, so they apply only to an account on the game server
+    that sent them; another one is refused with a warning (rate-limited for the route), and a refused password change
+    answers with the failure text; a new password the client cannot send (§9) is refused with a warning and the
+    invalid-data text.
 - **A lost link fails what waits for it:** the game side marks every request that needs an answer (a player's
   authentication, a password change) as pending, and when the stream ends while the server runs, each one is failed
   at once (the client gets the login failure, the player the error text) instead of waiting forever. A request sent
@@ -487,8 +542,8 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
   and game handshakes, a frame buffered behind the protocol version, unknown opcodes, decode errors, queue
   overflow, rate limit, slow client and outbound limit, close with queued buffers.
 - **GS-link tests on gRPC's in-process transport:** registration, a wrong or missing secret, the registration
-  timeout, refusal of a live hex id, re-registration after a dropped stream, ordering on shutdown; one test over
-  TLS with a test certificate.
+  timeout, refusal of a live hex id, re-registration after a dropped stream, ordering on shutdown, a key accepted
+  only on the stream of the server its PlayOk named; one test over TLS with a test certificate.
 - **Leak detection** at `paranoid` in every test JVM.
 - **Golden tests** of the ciphers, of each adapter's decoders (bytes in, command out) and mappers (event in, bytes
   out).
@@ -518,3 +573,5 @@ Stage 4 is done when:
 - Client protocol 140 over High Five content: [#27](https://github.com/l2nx/nx-l2/issues/27).
 - Client protocol 557 over High Five content: [#28](https://github.com/l2nx/nx-l2/issues/28).
 - Edge gateway: [#4](https://github.com/l2nx/nx-l2/issues/4).
+- Database work and password hashing off the GS-link stream's lane:
+  [#93](https://github.com/l2nx/nx-l2/issues/93).

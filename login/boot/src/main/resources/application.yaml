@@ -39,8 +39,10 @@ l2nx:
     game-server:
       accept-new: true
     ban:
+      # Failed logins from one address that ban it, counted until failed-logins-window passes without a failure.
       failed-logins: 5
       # A number without a unit is seconds.
+      failed-logins-window: 15m
       duration: 15m
     scheduled-restart:
       enabled: false

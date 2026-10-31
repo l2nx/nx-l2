@@ -17,6 +17,9 @@ import app.l2nx.boot.ServerExitCode;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.gameserver.GameServerTable;
+import app.l2nx.login.protocol.c621.LoginRoutes;
+import app.l2nx.login.protocol.c621.ServerListMapper;
+import app.l2nx.login.session.AddressBans;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.ScrambledKeyPair;
 import app.l2nx.network.config.NetworkProperties;
@@ -25,9 +28,12 @@ import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.transport.NetworkEventLoops;
 import app.l2nx.network.transport.TransportResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -38,22 +44,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.grpc.server.GrpcServerFactory;
 import org.springframework.grpc.server.lifecycle.GrpcServerLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
-@ResourceLock("GameServerTable")
-@Execution(ExecutionMode.SAME_THREAD)
 class LoginServerTest {
     private static final Duration RESTART_DELAY = Duration.ofHours(6);
     private static final ScrambledKeyPair RSA_KEYS = new ScrambledKeyPair(keyPair("RSA"));
 
     private final LoginController loginController = mock(LoginController.class);
+    private final AddressBans addressBans = new AddressBans(TestLoginProperties.create(new File(".")));
     private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
     private final ServerExit serverExit = mock(ServerExit.class);
     private final NetworkEventLoops eventLoops = new NetworkEventLoops(
@@ -157,11 +162,49 @@ class LoginServerTest {
         }
     }
 
+    @Nested
+    class LoadBanFile {
+        @TempDir
+        private Path directory;
+
+        @ParameterizedTest(name = "\"{0}\" -> {1} bans")
+        @CsvSource(
+                delimiter = '|',
+                value = {
+                    "'# 10.0.0.1'               | 0",
+                    "'   '                      | 0",
+                    "'10.0.0.1'                 | 1",
+                    "'  10.0.0.1 60000  '       | 1",
+                    "'10.0.0.1 # trailing note' | 1",
+                    "'10.0.0.1 soon'            | 0",
+                    "'not-an-ip'                | 0"
+                })
+        void loadBanFile_shouldBanOnlyAValidLine(String line, int expected) throws Exception {
+            final Path file = Files.writeString(directory.resolve("banned_ip.cfg"), line + "\n");
+
+            server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()))
+                    .loadBanFile(file);
+
+            assertThat(addressBans.size()).isEqualTo(expected);
+        }
+
+        @Test
+        void loadBanFile_shouldBanNothing_whenTheFileIsMissing() throws Exception {
+            server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()))
+                    .loadBanFile(directory.resolve("banned_ip.cfg"));
+
+            assertThat(addressBans.size()).isZero();
+        }
+    }
+
     private LoginServer server(LoginProperties properties) {
         return new LoginServer(
                 properties,
                 loginController,
                 mock(GameServerTable.class),
+                addressBans,
+                mock(LoginRoutes.class),
+                mock(ServerListMapper.class),
                 taskScheduler,
                 serverExit,
                 new SimpleMeterRegistry(),

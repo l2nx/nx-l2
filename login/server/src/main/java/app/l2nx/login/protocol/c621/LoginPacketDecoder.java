@@ -15,6 +15,7 @@ import app.l2nx.protocol.login.c621.clientpackets.LoginClientOpcode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,8 +23,11 @@ import lombok.extern.slf4j.Slf4j;
  * database). Any decode or hand-off error closes the connection.
  */
 @Slf4j
+@RequiredArgsConstructor
 public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
     private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
+
+    private final LoginRoutes routes;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -61,10 +65,10 @@ public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
     /**
      * @return the decoded packet, {@code null} when it was dropped
      */
-    private static LanePacket decode(LoginClient client, NetworkMetrics metrics, ByteBuf frame) {
+    private LanePacket decode(LoginClient client, NetworkMetrics metrics, ByteBuf frame) {
         final int opcode = frame.readUnsignedByte();
         final LoginClientOpcode known = LoginClientOpcode.of(opcode);
-        final LoginRoute route = known == null ? null : LoginRoute.of(known);
+        final LoginRoute route = known == null ? null : routes.route(known);
         if (route == null) {
             metrics.dropped(DropReason.UNKNOWN_OPCODE);
             if (RATE.tryAcquire("login-unknown")) {

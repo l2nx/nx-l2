@@ -8,53 +8,46 @@ import app.l2nx.gslink.SharedSecretServerInterceptor;
 import app.l2nx.gslink.v1.GsLinkGrpc;
 import app.l2nx.gslink.v1.GsLinkProto.GameServerMessage;
 import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;
+import app.l2nx.login.account.AccountService;
 import app.l2nx.login.config.LoginProperties;
+import app.l2nx.login.gameserver.GameServerRegistry;
 import app.l2nx.login.gameserver.GameServerTable;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.network.config.NetworkProperties;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.grpc.server.lifecycle.GrpcServerShutdownEvent;
 import org.springframework.grpc.server.service.GrpcService;
 import org.springframework.scheduling.TaskScheduler;
 
-@GrpcService(interceptors = {SharedSecretServerInterceptor.class, RemoteAddressInterceptor.class})
+@GrpcService(interceptors = SharedSecretServerInterceptor.class)
+@RequiredArgsConstructor
 public class GsLinkService extends GsLinkGrpc.GsLinkImplBase {
     private final Set<GameServerLink> links = ConcurrentHashMap.newKeySet();
+    private final GameServerRegistry registry;
     private final GameServerTable gameServerTable;
     private final LoginController loginController;
+    private final AccountService accountService;
     private final TaskScheduler taskScheduler;
-    private final Duration handshakeTimeout;
-    private final boolean acceptNew;
-
-    public GsLinkService(
-            GameServerTable gameServerTable,
-            LoginController loginController,
-            TaskScheduler taskScheduler,
-            NetworkProperties network,
-            LoginProperties properties) {
-        this.gameServerTable = gameServerTable;
-        this.loginController = loginController;
-        this.taskScheduler = taskScheduler;
-        handshakeTimeout = network.handshakeTimeout();
-        acceptNew = properties.gameServer().acceptNew();
-    }
+    private final NetworkProperties network;
+    private final LoginProperties properties;
 
     @Override
     public StreamObserver<GameServerMessage> connect(StreamObserver<LoginServerMessage> responses) {
         final GameServerLink link = new GameServerLink(
                 responses,
-                RemoteAddressInterceptor.REMOTE_ADDRESS.get(),
+                registry,
                 gameServerTable,
                 loginController,
-                acceptNew,
+                accountService,
+                properties.showLicence(),
                 links::remove);
         links.add(link);
-        link.awaitRegistration(taskScheduler, handshakeTimeout);
+        link.awaitRegistration(taskScheduler, network.handshakeTimeout());
         return link;
     }
 

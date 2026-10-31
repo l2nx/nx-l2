@@ -26,9 +26,10 @@
  */
 package app.l2nx.login.protocol.c621.handler;
 
-import app.l2nx.login.LoginServer;
 import app.l2nx.login.account.AccountInfo;
-import app.l2nx.login.gameserver.GameServerTable.GameServerInfo;
+import app.l2nx.login.account.AccountService;
+import app.l2nx.login.config.LoginProperties;
+import app.l2nx.login.gameserver.model.GameServerInfo;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.c621.ConnectionState;
@@ -45,17 +46,23 @@ import java.security.Key;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
+@Component
 @Slf4j
+@RequiredArgsConstructor
 public final class RequestAuthLoginHandler {
-    private RequestAuthLoginHandler() {}
+    private final LoginController loginController;
+    private final AccountService accountService;
+    private final LoginProperties properties;
 
     public static void warmUp(Key privateKey) throws GeneralSecurityException {
         Cipher.getInstance(Credentials.TRANSFORMATION).init(Cipher.DECRYPT_MODE, privateKey);
     }
 
-    public static void handle(LoginClient client, RequestAuthLogin packet) {
+    public void handle(LoginClient client, RequestAuthLogin packet) {
         final Credentials credentials;
         try {
             credentials = Credentials.decrypt(client.getRSAPrivateKey(), packet);
@@ -76,37 +83,36 @@ public final class RequestAuthLoginHandler {
         }
 
         final String clientAddr = client.getIp();
-        final LoginController lc = LoginController.getInstance();
-        final AccountInfo info = lc.retriveAccountInfo(clientAddr, credentials.user(), credentials.password());
+        final AccountInfo info = accountService.authenticate(clientAddr, credentials.user(), credentials.password());
         if (info == null) {
             client.close(LoginFailReason.REASON_USER_OR_PASS_WRONG);
             return;
         }
 
-        LoginResult result = lc.tryCheckinAccount(client, clientAddr, info);
+        LoginResult result = loginController.tryCheckinAccount(client, clientAddr, info);
         GameServerInfo gameServer = null;
         if (result == LoginResult.ALREADY_ON_GS) {
-            gameServer = lc.getAccountOnGameServer(info.getId());
+            gameServer = loginController.getAccountOnGameServer(info.id());
             if (gameServer == null) {
                 // The account left its game server between the two checks: the check-in may pass now.
-                result = lc.tryCheckinAccount(client, clientAddr, info);
+                result = loginController.tryCheckinAccount(client, clientAddr, info);
                 if (result == LoginResult.ALREADY_ON_GS) {
-                    gameServer = lc.getAccountOnGameServer(info.getId());
+                    gameServer = loginController.getAccountOnGameServer(info.id());
                 }
             }
         }
 
         switch (result) {
             case AUTH_SUCCESS: {
-                client.setAccount(info.getLogin());
+                client.setAccount(info.login());
                 client.setConnectionState(ConnectionState.AUTHED_LOGIN);
                 client.authDone();
-                client.setSessionKey(lc.newSessionKey());
-                lc.requestCharacters(client);
-                if (LoginServer.getInstance().getProperties().showLicence()) {
+                client.setSessionKey(loginController.newSessionKey());
+                loginController.requestCharacters(client);
+                if (properties.showLicence()) {
                     client.sendPacket(LoginOk.builder()
-                            .loginOk1(client.getSessionKey().getLoginOkID1())
-                            .loginOk2(client.getSessionKey().getLoginOkID2())
+                            .loginOk1(client.getSessionKey().loginOk1())
+                            .loginOk2(client.getSessionKey().loginOk2())
                             .build());
                 } else {
                     client.sendServerList();
@@ -122,10 +128,10 @@ public final class RequestAuthLoginHandler {
                 return;
             }
             case ALREADY_ON_LS: {
-                final LoginClient oldClient = lc.getAuthedClient(info.getId());
+                final LoginClient oldClient = loginController.getAuthedClient(info.id());
                 if (oldClient != null) {
                     oldClient.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
-                    lc.removeAuthedLoginClientIfCurrent(oldClient);
+                    loginController.removeAuthedLoginClientIfCurrent(oldClient);
                 }
 
                 client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
@@ -135,7 +141,7 @@ public final class RequestAuthLoginHandler {
                 client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
                 final GameServerLink link = gameServer == null ? null : gameServer.getGameServerLink();
                 if (link != null) {
-                    link.kickPlayer(info.getId());
+                    link.kickPlayer(info.id());
                 }
                 break;
             }

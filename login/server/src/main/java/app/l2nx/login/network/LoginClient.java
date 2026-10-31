@@ -28,7 +28,6 @@ package app.l2nx.login.network;
 
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.ConnectionState;
-import app.l2nx.login.protocol.c621.OutgoingLoginPacket;
 import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.login.session.LoginController;
 import app.l2nx.login.session.model.SessionKey;
@@ -37,8 +36,10 @@ import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.guard.ConnectionDeadlines;
 import app.l2nx.network.channel.guard.IdlePolicy;
+import app.l2nx.network.codec.Frames;
 import app.l2nx.network.exec.SerialExecutor;
 import app.l2nx.network.metrics.model.DropReason;
+import app.l2nx.protocol.login.c621.crypt.LoginFrameCipher;
 import app.l2nx.protocol.login.c621.serverpackets.AccountKicked;
 import app.l2nx.protocol.login.c621.serverpackets.LoginFail;
 import app.l2nx.protocol.login.c621.serverpackets.LoginServerPacket;
@@ -72,6 +73,8 @@ public class LoginClient {
 
     static final Duration CHARACTERS_WAIT = Duration.ofMillis(500);
 
+    private static final int SIZE_HINT = 64;
+
     private final Channel channel;
 
     @Getter
@@ -84,6 +87,7 @@ public class LoginClient {
     private final int sessionId;
 
     private final SerialExecutor tasks;
+    private final ServerListMapper serverLists;
 
     @Getter
     private final String ip;
@@ -118,20 +122,29 @@ public class LoginClient {
     @Setter
     private volatile SessionKey sessionKey;
 
+    /** The game server the client got PlayOk for, the only one that may redeem its key; {@code null} until then. */
+    @Getter
     @Setter
-    private volatile boolean joinedGS;
+    private volatile Integer joinedServerId;
 
     @Getter
     @Setter
     private volatile ConnectionState connectionState = ConnectionState.CONNECTED;
 
-    public LoginClient(Channel channel, LoginVariant variant, LoginKeys keys, int sessionId, SerialExecutor tasks) {
+    public LoginClient(
+            Channel channel,
+            LoginVariant variant,
+            LoginKeys keys,
+            int sessionId,
+            SerialExecutor tasks,
+            ServerListMapper serverLists) {
         this.channel = channel;
         this.variant = variant;
         this.keys = keys;
         blowfishKey = keys.blowfishKey();
         this.sessionId = sessionId;
         this.tasks = tasks;
+        this.serverLists = serverLists;
         ip = channel.remoteAddress() instanceof InetSocketAddress inet
                 ? inet.getAddress().getHostAddress()
                 : Objects.toString(channel.remoteAddress(), null);
@@ -174,7 +187,10 @@ public class LoginClient {
     }
 
     private ByteBuf serialize(LoginServerPacket packet) {
-        return new OutgoingLoginPacket(packet).serialize(this, channel.alloc());
+        return Frames.write(channel.alloc(), SIZE_HINT + LoginFrameCipher.MAX_OVERHEAD, frame -> {
+            packet.write(frame);
+            return true;
+        });
     }
 
     public void close(LoginFailReason reason) {
@@ -238,7 +254,7 @@ public class LoginClient {
     }
 
     public boolean hasJoinedGS() {
-        return joinedGS;
+        return joinedServerId != null;
     }
 
     public void setCharsOnServ(int serverId, int chars) {
@@ -315,7 +331,7 @@ public class LoginClient {
     }
 
     private void buildServerList() {
-        execute(() -> sendPacket(ServerListMapper.map(this)));
+        execute(() -> sendPacket(serverLists.map(this)));
     }
 
     boolean isServerListWaiting() {

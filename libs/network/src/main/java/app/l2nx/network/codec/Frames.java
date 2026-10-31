@@ -16,6 +16,12 @@ public final class Frames {
     public static final int HEADER = 2;
     public static final int MAX_LENGTH = 0xFFFF;
 
+    @FunctionalInterface
+    public interface Payload {
+        /** @return {@code false} when there is nothing to send */
+        boolean write(ByteBuf frame);
+    }
+
     private Frames() {}
 
     /** Hands out retained slices of the cumulation, which the cipher decrypts in place. */
@@ -25,6 +31,23 @@ public final class Frames {
 
     public static ByteBuf allocate(ByteBufAllocator alloc, int payloadHint) {
         return alloc.buffer(HEADER + payloadHint).writeZero(HEADER);
+    }
+
+    /** @return the frame the caller owns, {@code null} when the payload has nothing to send; released on throw */
+    public static ByteBuf write(ByteBufAllocator alloc, int payloadHint, Payload payload) {
+        final ByteBuf frame = allocate(alloc, payloadHint);
+        final boolean written;
+        try {
+            written = payload.write(frame);
+        } catch (RuntimeException e) {
+            frame.release();
+            throw e;
+        }
+        if (!written) {
+            frame.release();
+            return null;
+        }
+        return frame;
     }
 
     /**
