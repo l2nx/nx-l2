@@ -86,10 +86,7 @@ public final class GameConnection implements SessionTransport {
     public void accept(GameProtocolAdapter adapter, int version) {
         protocolVersion = version;
         this.adapter = adapter;
-        final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
-        if (deadlines != null) {
-            deadlines.handshakeReached();
-        }
+        ConnectionDeadlines.handshakeReached(channel);
     }
 
     public OutboundQueue outbound() {
@@ -139,15 +136,9 @@ public final class GameConnection implements SessionTransport {
     }
 
     private void authenticated() {
-        final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
-        if (deadlines != null) {
-            deadlines.authReached();
-        }
+        ConnectionDeadlines.authReached(channel);
         // The client sends nothing on the character selection screen, so the ping starts there and runs to the close.
-        final IdlePolicy idle = IdlePolicy.of(channel);
-        if (idle != null) {
-            idle.startPinging(this::ping);
-        }
+        IdlePolicy.startPinging(channel, this::ping);
     }
 
     private void ping() {

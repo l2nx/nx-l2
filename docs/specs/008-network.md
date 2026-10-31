@@ -87,14 +87,20 @@ Game connection, in order:
 
 1. **Accept filter:** bans and `connections-per-ip`, `accept-per-ip-per-second`, `max-connections`, checked in
    `initChannel` before any byte is read.
-2. **Timeouts:** `IdleStateHandler`: until `AUTHED` read idle for `read-timeout` closes the connection; from
-   `AUTHED` read idle for `ping-interval` sends `NetPing`, and `ping-misses` unanswered pings close it. The client
-   sends nothing on the character selection screen, so the ping starts there, not in game. `handshake-timeout` and
-   `auth-timeout` are timers on the event loop, cancelled when the session reaches the state.
-3. **Framing:** `LengthFieldBasedFrameDecoder`, little-endian, 2-byte length that counts itself
+2. **Frame decoder:** `LengthFieldBasedFrameDecoder`, little-endian, 2-byte length that counts itself
    (`lengthAdjustment = -2`, `initialBytesToStrip = 2`), `max-frame`.
-4. **Cipher:** decrypts the frame in place; the frame is a retained slice of the decoder's cumulation and is
+3. **Cipher decoder:** decrypts the frame in place; the frame is a retained slice of the decoder's cumulation and is
    writable.
+4. **Frame encoder, idle, outbound queue, deadlines:** the frame encoder frames and encrypts what leaves; the
+   outbound queue sits above it, so every queued packet is framed and encrypted. Steps 2 to 4 are one shared
+   assembly, `L2Pipeline` in the `libs/network` bootstrap, which the login and game servers both call
+   (`install`: codec, then the guards); `installCodec` (framing and cipher only) is also used by the load harness
+   client. The guards come after the cipher decoder, so idle detection sees only frames that decrypted:
+   - **Idle:** `IdleStateHandler`: until `AUTHED` read idle for `read-timeout` closes the connection; from
+     `AUTHED` read idle for `ping-interval` sends `NetPing`, and `ping-misses` unanswered pings close it. The client
+     sends nothing on the character selection screen, so the ping starts there, not in game.
+   - **Deadlines:** `handshake-timeout` and `auth-timeout` are timers on the event loop, cancelled when the session
+     reaches the state.
 5. **Packet decoder:** one decoder per channel that delegates to the channel's current adapter (§8). It reads the
    opcode (one byte, and for extended packets of High Five `0xD0` plus a 2-byte sub-opcode) and looks it up in the
    adapter's immutable table, one route per opcode. The decoder wraps the decoded command or legacy packet in the

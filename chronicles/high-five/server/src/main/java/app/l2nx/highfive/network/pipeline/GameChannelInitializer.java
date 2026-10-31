@@ -10,14 +10,9 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.GameClientAdapter;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
-import app.l2nx.network.channel.OutboundQueue;
+import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
-import app.l2nx.network.channel.guard.ConnectionDeadlines;
-import app.l2nx.network.channel.guard.IdlePolicy;
-import app.l2nx.network.codec.CipherDecoder;
-import app.l2nx.network.codec.FrameEncoder;
-import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.channel.Channel;
@@ -54,15 +49,7 @@ public final class GameChannelInitializer implements Consumer<Channel> {
         final GameClient client = clients.apply(connection);
 
         final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(PipelineNames.FRAME_DECODER, Frames.decoder((int)
-                properties.maxFrame().toBytes()));
-        pipeline.addLast(PipelineNames.CIPHER_DECODER, new CipherDecoder(cipher));
-        pipeline.addLast(PipelineNames.FRAME_ENCODER, new FrameEncoder(cipher));
-        IdlePolicy.install(pipeline, properties);
-        pipeline.addLast(PipelineNames.OUTBOUND, new OutboundQueue(properties));
-        pipeline.addLast(
-                PipelineNames.DEADLINES,
-                new ConnectionDeadlines(properties.handshakeTimeout(), properties.authTimeout()));
+        L2Pipeline.install(pipeline, cipher, properties);
         pipeline.addLast(PipelineNames.HANDSHAKE, new VersionHandshakeDecoder(registry, keys));
         pipeline.addLast(PipelineNames.PACKET, GamePacketDecoder.INSTANCE);
         pipeline.addLast(PipelineNames.SESSION, GameSessionHandler.INSTANCE);

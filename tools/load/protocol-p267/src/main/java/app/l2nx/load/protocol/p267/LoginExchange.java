@@ -9,9 +9,8 @@ import app.l2nx.load.bot.intent.Login;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.logging.RateLimitedLog;
+import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.channel.PipelineNames;
-import app.l2nx.network.codec.CipherDecoder;
-import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketDecodeException;
 import app.l2nx.protocol.login.c621.clientpackets.AuthGameGuard;
@@ -74,11 +73,8 @@ public final class LoginExchange extends ChannelInboundHandlerAdapter {
 
     public void install(Channel channel, int maxFrame) {
         this.channel = channel;
-        channel.pipeline()
-                .addLast(PipelineNames.FRAME_DECODER, Frames.decoder(maxFrame))
-                .addLast(PipelineNames.CIPHER_DECODER, new CipherDecoder(cipher))
-                .addLast(PipelineNames.FRAME_ENCODER, new FrameEncoder(cipher))
-                .addLast(PipelineNames.SESSION, this);
+        L2Pipeline.installCodec(channel.pipeline(), cipher, maxFrame);
+        channel.pipeline().addLast(PipelineNames.SESSION, this);
     }
 
     public void login(Login intent) {

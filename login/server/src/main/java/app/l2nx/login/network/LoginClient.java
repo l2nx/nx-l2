@@ -50,12 +50,10 @@ import app.l2nx.protocol.login.c621.serverpackets.reason.PlayFailReason;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
-import java.net.InetSocketAddress;
 import java.security.interfaces.RSAPrivateKey;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -145,9 +143,7 @@ public class LoginClient {
         this.sessionId = sessionId;
         this.tasks = tasks;
         this.serverLists = serverLists;
-        ip = channel.remoteAddress() instanceof InetSocketAddress inet
-                ? inet.getAddress().getHostAddress()
-                : Objects.toString(channel.remoteAddress(), null);
+        ip = Connections.remoteIp(channel);
         connectionStartTime = System.currentTimeMillis();
         channel.closeFuture().addListener(future -> cancelServerListWait());
     }
@@ -222,22 +218,13 @@ public class LoginClient {
     }
 
     public void handshakeDone() {
-        final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
-        if (deadlines != null) {
-            deadlines.handshakeReached();
-        }
+        ConnectionDeadlines.handshakeReached(channel);
     }
 
     public void authDone() {
-        final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
-        if (deadlines != null) {
-            deadlines.authReached();
-        }
+        ConnectionDeadlines.authReached(channel);
         // The client ignores a bare close on the licence and server list screens, so the expiry LoginFail goes first.
-        final IdlePolicy idle = IdlePolicy.of(channel);
-        if (idle != null) {
-            idle.extendReadTimeout(LoginController.LOGIN_TIMEOUT, this::closeForExpiry);
-        }
+        IdlePolicy.extendReadTimeout(channel, LoginController.LOGIN_TIMEOUT, this::closeForExpiry);
     }
 
     /** The connection's one copy of the session key, shared by its frame cipher and {@code Init}: never changed. */

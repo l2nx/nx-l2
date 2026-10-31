@@ -37,20 +37,22 @@ public final class IdlePolicy extends ChannelInboundHandlerAdapter {
         pipeline.addLast(PipelineNames.IDLE_POLICY, new IdlePolicy(properties));
     }
 
-    public static IdlePolicy of(Channel channel) {
-        return channel.pipeline().get(IdlePolicy.class);
-    }
-
-    public void startPinging(Runnable ping) {
-        EventLoopTasks.run(ctx.executor(), () -> switchTo(ping, null, pingInterval));
+    public static void startPinging(Channel channel, Runnable ping) {
+        final IdlePolicy idle = channel.pipeline().get(IdlePolicy.class);
+        if (idle != null) {
+            EventLoopTasks.run(channel.eventLoop(), () -> idle.switchTo(ping, null, idle.pingInterval));
+        }
     }
 
     /**
      * {@code farewell} sends the protocol's last packet and closes, because a client may not notice a bare close; if
      * the connection is still open at the next read-idle, it is closed bare.
      */
-    public void extendReadTimeout(Duration readTimeout, Runnable farewell) {
-        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, farewell, readTimeout));
+    public static void extendReadTimeout(Channel channel, Duration readTimeout, Runnable farewell) {
+        final IdlePolicy idle = channel.pipeline().get(IdlePolicy.class);
+        if (idle != null) {
+            EventLoopTasks.run(channel.eventLoop(), () -> idle.switchTo(null, farewell, readTimeout));
+        }
     }
 
     private void switchTo(Runnable newPing, Runnable newFarewell, Duration readerIdle) {

@@ -10,9 +10,7 @@ import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
 import app.l2nx.network.channel.guard.ConnectionLimiter;
-import app.l2nx.network.codec.CipherDecoder;
 import app.l2nx.network.codec.FrameCipher;
-import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.config.Transport;
@@ -188,10 +186,8 @@ class NetworkServerTest {
     }
 
     private static void echoPipeline(Channel channel) {
+        L2Pipeline.installCodec(channel.pipeline(), FrameCipher.NONE, 16 * 1024);
         channel.pipeline()
-                .addLast(PipelineNames.FRAME_DECODER, Frames.decoder(16 * 1024))
-                .addLast(PipelineNames.CIPHER_DECODER, new CipherDecoder(FrameCipher.NONE))
-                .addLast(PipelineNames.FRAME_ENCODER, new FrameEncoder(FrameCipher.NONE))
                 .addLast(PipelineNames.OUTBOUND, new OutboundQueue(NetworkProperties.defaults()))
                 .addLast(PipelineNames.PACKET, new SimpleChannelInboundHandler<ByteBuf>() {
                     @Override

@@ -5,6 +5,7 @@
 package app.l2nx.network.channel.guard;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
@@ -41,8 +42,8 @@ class IdlePolicyTest {
     @Nested
     class StartPinging {
         @Test
-        void ping_shouldPingEachIntervalAndCloseAfterThreeMisses() {
-            IdlePolicy.of(channel).startPinging(pings::incrementAndGet);
+        void startPinging_shouldPingEachIntervalAndCloseAfterThreeMisses() {
+            IdlePolicy.startPinging(channel, pings::incrementAndGet);
             channel.runPendingTasks();
 
             idle(30);
@@ -58,8 +59,8 @@ class IdlePolicyTest {
         }
 
         @Test
-        void ping_shouldResetMisses_whenClientReads() {
-            IdlePolicy.of(channel).startPinging(pings::incrementAndGet);
+        void startPinging_shouldResetMisses_whenClientReads() {
+            IdlePolicy.startPinging(channel, pings::incrementAndGet);
             channel.runPendingTasks();
             idle(30);
             idle(30);
@@ -72,13 +73,21 @@ class IdlePolicyTest {
             assertThat(channel.isOpen()).isTrue();
             channel.finishAndReleaseAll();
         }
+
+        @Test
+        void startPinging_shouldDoNothing_whenTheChannelHasClosed() {
+            channel.close();
+
+            assertThatCode(() -> IdlePolicy.startPinging(channel, pings::incrementAndGet))
+                    .doesNotThrowAnyException();
+        }
     }
 
     @Nested
     class ExtendReadTimeout {
         @Test
         void extendReadTimeout_shouldRunTheFarewellOnceAndCountIdle_afterTheNewBound() {
-            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5), this::farewell);
+            IdlePolicy.extendReadTimeout(channel, Duration.ofMinutes(5), this::farewell);
             channel.runPendingTasks();
 
             idle(299);
@@ -95,7 +104,7 @@ class IdlePolicyTest {
 
         @Test
         void extendReadTimeout_shouldLeaveTheConnectionToTheFarewell_untilTheNextReadIdle() {
-            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5), farewells::incrementAndGet);
+            IdlePolicy.extendReadTimeout(channel, Duration.ofMinutes(5), farewells::incrementAndGet);
             channel.runPendingTasks();
 
             idle(300);
@@ -120,6 +129,15 @@ class IdlePolicyTest {
                     .tag("reason", reason.tag())
                     .counter()
                     .count();
+        }
+
+        @Test
+        void extendReadTimeout_shouldDoNothing_whenTheChannelHasClosed() {
+            channel.close();
+
+            assertThatCode(() ->
+                            IdlePolicy.extendReadTimeout(channel, Duration.ofMinutes(5), farewells::incrementAndGet))
+                    .doesNotThrowAnyException();
         }
     }
 

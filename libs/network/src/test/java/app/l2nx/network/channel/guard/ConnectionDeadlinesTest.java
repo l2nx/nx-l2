@@ -5,6 +5,7 @@
 package app.l2nx.network.channel.guard;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
@@ -22,7 +23,7 @@ class ConnectionDeadlinesTest {
     @Nested
     class HandlerAdded {
         @Test
-        void handshake_shouldCloseWithTimeout_whenNotReachedInTime() {
+        void handlerAdded_shouldCloseWithTimeout_whenTheHandshakeIsNotReachedInTime() {
             channel.advanceTimeBy(10, TimeUnit.SECONDS);
             channel.runScheduledPendingTasks();
 
@@ -34,8 +35,8 @@ class ConnectionDeadlinesTest {
     @Nested
     class HandshakeReached {
         @Test
-        void auth_shouldCloseWithTimeout_whenOnlyHandshakeIsReached() {
-            ConnectionDeadlines.of(channel).handshakeReached();
+        void handshakeReached_shouldLeaveTheAuthDeadlineRunning() {
+            ConnectionDeadlines.handshakeReached(channel);
             channel.runPendingTasks();
             channel.advanceTimeBy(59, TimeUnit.SECONDS);
             channel.runScheduledPendingTasks();
@@ -45,19 +46,33 @@ class ConnectionDeadlinesTest {
             channel.runScheduledPendingTasks();
             assertThat(channel.isOpen()).isFalse();
         }
+
+        @Test
+        void handshakeReached_shouldDoNothing_whenTheChannelHasClosed() {
+            channel.close();
+
+            assertThatCode(() -> ConnectionDeadlines.handshakeReached(channel)).doesNotThrowAnyException();
+        }
     }
 
     @Nested
     class AuthReached {
         @Test
-        void auth_shouldCancelBothTimers_whenReached() {
-            ConnectionDeadlines.of(channel).authReached();
+        void authReached_shouldCancelBothTimers() {
+            ConnectionDeadlines.authReached(channel);
             channel.runPendingTasks();
             channel.advanceTimeBy(5, TimeUnit.MINUTES);
             channel.runScheduledPendingTasks();
 
             assertThat(channel.isOpen()).isTrue();
             channel.finishAndReleaseAll();
+        }
+
+        @Test
+        void authReached_shouldDoNothing_whenTheChannelHasClosed() {
+            channel.close();
+
+            assertThatCode(() -> ConnectionDeadlines.authReached(channel)).doesNotThrowAnyException();
         }
     }
 

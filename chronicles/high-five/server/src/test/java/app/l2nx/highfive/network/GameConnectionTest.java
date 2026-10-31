@@ -8,12 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.highfive.network.protocol.StubAdapter;
+import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
-import app.l2nx.network.channel.OutboundQueue;
-import app.l2nx.network.channel.PipelineNames;
-import app.l2nx.network.channel.guard.ConnectionDeadlines;
-import app.l2nx.network.channel.guard.IdlePolicy;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.test.TestChannels;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
@@ -33,13 +30,9 @@ class GameConnectionTest {
     @BeforeEach
     void setUp() {
         channel = TestChannels.embedded();
-        IdlePolicy.install(channel.pipeline(), properties);
-        channel.pipeline().addLast(PipelineNames.OUTBOUND, new OutboundQueue(properties));
-        channel.pipeline()
-                .addLast(
-                        PipelineNames.DEADLINES,
-                        new ConnectionDeadlines(properties.handshakeTimeout(), properties.authTimeout()));
-        connection = new GameConnection(channel, new GameFrameCipher(), properties);
+        final GameFrameCipher cipher = new GameFrameCipher();
+        L2Pipeline.install(channel.pipeline(), cipher, properties);
+        connection = new GameConnection(channel, cipher, properties);
         channel.attr(GameConnection.KEY).set(connection);
         connection.accept(new StubAdapter("stub", 273, 0), 273);
     }

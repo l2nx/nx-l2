@@ -29,8 +29,18 @@ public final class ConnectionDeadlines extends ChannelInboundHandlerAdapter {
         authNanos = auth.toNanos();
     }
 
-    public static ConnectionDeadlines of(Channel channel) {
-        return channel.pipeline().get(ConnectionDeadlines.class);
+    public static void handshakeReached(Channel channel) {
+        final ConnectionDeadlines deadlines = channel.pipeline().get(ConnectionDeadlines.class);
+        if (deadlines != null) {
+            EventLoopTasks.run(channel.eventLoop(), () -> cancel(deadlines.handshake));
+        }
+    }
+
+    public static void authReached(Channel channel) {
+        final ConnectionDeadlines deadlines = channel.pipeline().get(ConnectionDeadlines.class);
+        if (deadlines != null) {
+            EventLoopTasks.run(channel.eventLoop(), deadlines::cancelBoth);
+        }
     }
 
     @Override
@@ -49,26 +59,13 @@ public final class ConnectionDeadlines extends ChannelInboundHandlerAdapter {
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        cancel(handshake);
-        cancel(auth);
+        cancelBoth();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        cancel(handshake);
-        cancel(auth);
+        cancelBoth();
         ctx.fireChannelInactive();
-    }
-
-    public void handshakeReached() {
-        EventLoopTasks.run(ctx.executor(), () -> cancel(handshake));
-    }
-
-    public void authReached() {
-        EventLoopTasks.run(ctx.executor(), () -> {
-            cancel(handshake);
-            cancel(auth);
-        });
     }
 
     private void start() {
@@ -77,6 +74,11 @@ public final class ConnectionDeadlines extends ChannelInboundHandlerAdapter {
         }
         handshake = ctx.executor().schedule(this::expire, handshakeNanos, TimeUnit.NANOSECONDS);
         auth = ctx.executor().schedule(this::expire, authNanos, TimeUnit.NANOSECONDS);
+    }
+
+    private void cancelBoth() {
+        cancel(handshake);
+        cancel(auth);
     }
 
     private void expire() {

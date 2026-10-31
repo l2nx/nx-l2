@@ -4,8 +4,7 @@
  */
 package app.l2nx.load.protocol.p267;
 
-import app.l2nx.network.codec.CipherDecoder;
-import app.l2nx.network.codec.FrameEncoder;
+import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.protocol.login.c621.crypt.LoginFrameCipher;
 import app.l2nx.protocol.login.c621.crypt.ScrambledModulus;
@@ -66,7 +65,7 @@ public final class LoginServerSide {
 
     public static void install(ChannelPipeline pipeline) {
         final LoginFrameCipher cipher = LoginFrameCipher.server(BLOWFISH_KEY, () -> XOR_KEY);
-        pipeline.addLast(Frames.decoder(MAX_FRAME), new CipherDecoder(cipher), new FrameEncoder(cipher));
+        L2Pipeline.installCodec(pipeline, cipher, MAX_FRAME);
     }
 
     public static ByteBuf frame(ByteBufAllocator alloc, Consumer<ByteBuf> writer) {

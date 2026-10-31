@@ -9,14 +9,9 @@ import app.l2nx.login.protocol.c621.LoginRoutes;
 import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.login.protocol.c621.pipeline.LoginHandshakeHandler;
 import app.l2nx.login.protocol.c621.pipeline.LoginPacketDecoder;
-import app.l2nx.network.channel.OutboundQueue;
+import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
-import app.l2nx.network.channel.guard.ConnectionDeadlines;
-import app.l2nx.network.channel.guard.IdlePolicy;
-import app.l2nx.network.codec.CipherDecoder;
-import app.l2nx.network.codec.FrameEncoder;
-import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.protocol.login.c621.crypt.LoginFrameCipher;
@@ -88,15 +83,7 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
 
     private void installC621(ChannelPipeline pipeline, LoginClient client) {
         final LoginFrameCipher cipher = LoginFrameCipher.server(client.getBlowfishKey(), random::nextInt);
-        pipeline.addLast(PipelineNames.FRAME_DECODER, Frames.decoder((int)
-                properties.maxFrame().toBytes()));
-        pipeline.addLast(PipelineNames.CIPHER_DECODER, new CipherDecoder(cipher));
-        pipeline.addLast(PipelineNames.FRAME_ENCODER, new FrameEncoder(cipher));
-        IdlePolicy.install(pipeline, properties);
-        pipeline.addLast(PipelineNames.OUTBOUND, new OutboundQueue(properties));
-        pipeline.addLast(
-                PipelineNames.DEADLINES,
-                new ConnectionDeadlines(properties.handshakeTimeout(), properties.authTimeout()));
+        L2Pipeline.install(pipeline, cipher, properties);
         pipeline.addLast(PipelineNames.HANDSHAKE, new LoginHandshakeHandler());
         pipeline.addLast(PipelineNames.PACKET, new LoginPacketDecoder(routes));
         pipeline.addLast(PipelineNames.TAIL, TailExceptionHandler.INSTANCE);

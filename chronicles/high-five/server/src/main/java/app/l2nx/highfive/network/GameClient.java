@@ -44,8 +44,8 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.security.SecondaryPasswordAuth;
 import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.highfive.util.FloodProtectors;
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.OutboundQueue;
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
@@ -114,9 +114,7 @@ public class GameClient {
 
     public GameClient(GameConnection connection) {
         this.connection = connection;
-        ip = connection.channel().remoteAddress() instanceof InetSocketAddress inet
-                ? inet.getAddress().getHostAddress()
-                : String.valueOf(connection.channel().remoteAddress());
+        ip = Connections.remoteIp(connection.channel());
         ACCOUNTING_LOG.trace("Client connected: {}", ip);
     }
 
