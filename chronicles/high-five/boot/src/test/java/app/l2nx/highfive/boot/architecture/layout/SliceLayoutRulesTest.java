@@ -29,7 +29,6 @@ class SliceLayoutRulesTest {
             Map.entry("commands", SliceLayoutRules::commands),
             Map.entry("commandPackages", SliceLayoutRules::commandPackages),
             Map.entry("viewEvents", SliceLayoutRules::viewEvents),
-            Map.entry("domainEvents", SliceLayoutRules::domainEvents),
             Map.entry("ports", SliceLayoutRules::ports),
             Map.entry("repositories", SliceLayoutRules::repositories),
             Map.entry("noImplOrGateway", SliceLayoutRules::noImplOrGateway),

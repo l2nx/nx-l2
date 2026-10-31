@@ -39,7 +39,9 @@ flow inside a partition, and how state shared by several partitions is owned. Pa
 
 - **Synchronous typed dispatch inside a partition.** The Mobius event system (89 event types, script listeners)
   stays as the mechanism and runs on the partition thread. An event object is built only if its type has a
-  listener (the existing `hasListener` guards), so idle event types cost nothing.
+  listener (the existing `hasListener` guards), so idle event types cost nothing. Its `On*` records are scripting
+  hooks, not the domain events of the slice layout ([wiring-layout §4](wiring-layout.md#inside-a-slice)); E10 moves
+  them slice by slice.
 - **No asynchronous events in process.** `notifyEventAsync` and `notifyEventAsyncDelayed` go away (E7; from the E6
   cutover until then they run as the loop's `execute` and `schedule`): a delayed reaction is a timer deadline, a
   reaction in another partition or service is a message.

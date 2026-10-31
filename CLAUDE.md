@@ -21,8 +21,8 @@ recorded in the spec with its reason, not a silent choice.
   `wait`, `join`, `park`, latch or future wait, since a blocked task freezes the whole world; a pause is a loop timer. The only exceptions are the
   static data parse pool (`IXmlReader`) and the `partition` bridges (ArchUnit `ScheduledWorkRules`, same module).
 - **Chronicle slices keep one layout.** A migrated slice `app.l2nx.highfive.<slice>` has its API in the root and only
-  the fixed subpackages, commands, handlers, view events and domain events are checked by their marker types
-  (`Command`, `CommandHandler`, `ViewEvent`, `DomainEvent`), adapters live under `network/` and no slice depends on it;
+  the fixed subpackages, commands, handlers and view events are checked by their marker types
+  (`Command`, `CommandHandler`, `ViewEvent`), adapters live under `network/` and no slice depends on it;
   `SliceLayoutArchitectureTest` in `chronicles/high-five/boot` checks it with Spring Modulith and ArchUnit, legacy violations frozen in
   `src/test/archunit-store`. Design: [spec 003, wiring and layout §4](docs/specs/003-engine-core/wiring-layout.md#4-layout).
 

@@ -11,7 +11,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-import app.l2nx.engine.core.partition.DomainEvent;
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.engine.core.session.command.CommandHandler;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
@@ -49,7 +48,7 @@ public final class SliceLayoutRules {
             JavaClass.Predicates.belongToAnyOf(GameClient.class, Disconnection.class);
 
     private static final List<String> SUBPACKAGES =
-            List.of("command", "view", "event", "system", "model", "template", "repository");
+            List.of("command", "view", "system", "model", "template", "repository");
     private static final List<String> INTERNAL = List.of("system", "model", "template", "repository");
     private static final String ENGINE_CORE = "app.l2nx.engine.core..";
     private static final String HANDLER = "Handler";
@@ -144,18 +143,6 @@ public final class SliceLayoutRules {
                 .allowEmptyShould(true);
     }
 
-    ArchRule domainEvents() {
-        return classes()
-                .that()
-                .resideInAPackage(root + "..")
-                .and()
-                .areAssignableTo(DomainEvent.class)
-                .should()
-                .resideInAnyPackage(packages("event"))
-                .as("a domain event lives in the event package of a slice")
-                .allowEmptyShould(true);
-    }
-
     ArchRule ports() {
         return classes()
                 .that()
@@ -210,8 +197,7 @@ public final class SliceLayoutRules {
                 .resideInAPackage(root + ".network..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage(Stream.concat(Stream.of(internalPackages()), Stream.of(packages("event")))
-                        .toArray(String[]::new))
+                .resideInAnyPackage(internalPackages())
                 .as("network uses a slice only through its root, command and view")
                 .allowEmptyShould(true);
     }
@@ -229,8 +215,7 @@ public final class SliceLayoutRules {
                 .allowEmptyShould(true);
     }
 
-    // The converted chat channel scripts deliver through ChatService; they are not a slice, so only this rule holds
-    // them.
+    // Chat channel scripts are not a slice, so only this rule constrains them.
     ArchRule chatChannelsWithoutNetwork() {
         return noClasses()
                 .that()

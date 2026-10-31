@@ -201,7 +201,6 @@ root package is its API; the rest is internal unless marked as a named interface
   (root)       API: the facade, outbound ports, value types carried by commands and view events
   command/     commands and their handlers                       open to protocol adapters
   view/        view events and the read-only views mappers read   open to protocol adapters
-  event/       domain events for systems and scripts             open to other slices
   system/      systems                                           internal
   model/       components and internal state                     internal
   template/    static data: templates, loader, registry          internal

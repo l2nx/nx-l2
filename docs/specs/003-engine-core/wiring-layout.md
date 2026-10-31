@@ -67,15 +67,15 @@ onto it and the longer it is exercised. The order follows the stages: `clock` (E
 `loop` and `partition` (E6 part 1, before stage 4: `session` implements `InputSource` of `loop.inbox`), `session`
 (stage 4), `replication` (E8), `persistence` (E3, E4). It holds the chronicle-agnostic mechanisms:
 
-| Package       | Contents                                                                                                    |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `loop`        | partition and service loops, pass phases, loop threads; sub-packages `inbox`, `timer`, `periodic`        |
-| `clock`       | `GameClock`, RNG                                                                                            |
-| `partition`   | partitions, entity transfer, global service base                                                            |
-| `identity`    | UUIDv7 generation, wire-handle allocator                                                                    |
-| `session`     | session queues and their drain, session states, command dispatch, `ClientPort`                              |
-| `replication` | client view, visibility grid, event classes, budgets                                                        |
-| `persistence` | write-behind, value transaction runner, outbox                                                              |
+| Package       | Contents                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| `loop`        | partition and service loops, pass phases, loop threads; sub-packages `inbox`, `timer`, `periodic` |
+| `clock`       | `GameClock`, RNG                                                                                  |
+| `partition`   | partitions, entity transfer, global service base                                                  |
+| `identity`    | UUIDv7 generation, wire-handle allocator                                                          |
+| `session`     | session queues and their drain, session states, command dispatch, `ClientPort`                    |
+| `replication` | client view, visibility grid, event classes, budgets                                              |
+| `persistence` | write-behind, value transaction runner, outbox                                                    |
 
 Only `session` depends on `libs/network` (its transport, settings and meters); an ArchUnit rule in `engine/core` keeps
 the other packages transport-free.
@@ -117,7 +117,6 @@ app.l2nx.highfive.<slice>
   (root)       API: facade or service, outbound <Edge>Port, value types and enums carried by commands or view events
   command/     command records (public) and their handlers (package-private)      named interface
   view/        view events and read-only view interfaces                          named interface
-  event/       domain events (entities.md §4)                                     named interface
   system/      systems                                                            internal
   model/       components, internal value types and enums                         internal
   template/    static data: templates, loader, registry                           internal
@@ -127,8 +126,11 @@ app.l2nx.highfive.<slice>
 - **`view/` is what an adapter may read:** the view events and the read-only views a mapper reads to serialize them.
   Components in `model/` implement those view interfaces; they are mutable and owned by their system, so no adapter
   reaches them.
-- **View events and domain events are kept apart:** a view event (`ViewEvent`) is a fact for clients, a domain event
-  (`DomainEvent`) is dispatched inside the partition to systems and scripts.
+- **Domain events come with their first consumer.** A slice gets an `event/` package and the `DomainEvent` marker when
+  another slice reacts to one of its facts; the event is published synchronously inside the partition through
+  Spring's `ApplicationEventPublisher`. Until then slices call each other's root API. The Mobius `On*` records of
+  `EventDispatcher` stay scripting hooks (several carry a veto or a filter the caller waits for) and migrate to
+  domain events slice by slice in E10.
 - **A command and its one handler sit together** in `command/`; the handler class is package-private, so the named
   interface exposes the records only.
 - **Value types that cross a port** (a chat type, a move input, a message key, a failure reason) are API and live in
@@ -142,12 +144,12 @@ app.l2nx.highfive.<slice>
 Ports exist only at the outer edges that are a network or another process. Game logic is not split into `api` /
 `domain` / `infra`.
 
-| Edge       | Into the game       | Out of the game                              | Adapter                                      |
-| ---------- | ------------------- | -------------------------------------------- | -------------------------------------------- |
+| Edge       | Into the game       | Out of the game                              | Adapter                                  |
+| ---------- | ------------------- | -------------------------------------------- | ---------------------------------------- |
 | client     | command and handler | view event to `ClientPort` (`engine/core`)   | `network/protocol/<id>/` (`P267Adapter`) |
-| login link | command and handler | `LoginPort` (slice `login`)                  | `network/gslink/` (`LoginServerLink`)        |
-| database   | —                   | `@Repository` class in `<slice>/repository/` | the repository itself                        |
-| Kafka      | command and handler | a port in the owning slice                   | the L2NX adapter module (stage 5)            |
+| login link | command and handler | `LoginPort` (slice `login`)                  | `network/gslink/` (`LoginServerLink`)    |
+| database   | —                   | `@Repository` class in `<slice>/repository/` | the repository itself                    |
+| Kafka      | command and handler | a port in the owning slice                   | the L2NX adapter module (stage 5)        |
 
 - **Everything that enters the game is a command,** whatever its source; there are no inbound port interfaces. A
   command is named as an intent (`KickAccount`, `SendChat`); the answer to a request the game made is a noun
@@ -166,8 +168,7 @@ Ports exist only at the outer edges that are a network or another process. Game 
   internals. Legacy packages are excluded, and the list of verified slices only grows as slices migrate.
 - **ArchUnit:** the fixed subpackage names; by marker type, a `Command` is a public record in `command/`, a
   `CommandHandler` is package-private there with a non-public constructor and is named `<Command>Handler` after the
-  command it handles, and `command/` holds nothing else; `ViewEvent` types only in `view/`, `DomainEvent` types only
-  in `event/`; `*Port` only as interfaces in a slice root or `engine/core`; `@Repository` only in
+  command it handles, and `command/` holds nothing else; `ViewEvent` types only in `view/`; `*Port` only as interfaces in a slice root or `engine/core`; `@Repository` only in
   `<slice>/repository/`; no `*Impl` or `*Gateway` types; no slice depends on `network`.
 - **Legacy classes a slice still needs are named, not tolerated by pattern:** a slice migrated before the port
   framework covers its whole path may use a few legacy `network` classes (the game client, its disconnection, the

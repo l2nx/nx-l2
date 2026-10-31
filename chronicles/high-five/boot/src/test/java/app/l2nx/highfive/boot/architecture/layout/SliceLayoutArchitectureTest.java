@@ -37,9 +37,6 @@ class SliceLayoutArchitectureTest {
     static final ArchRule viewEvents = RULES.viewEvents();
 
     @ArchTest
-    static final ArchRule domainEvents = RULES.domainEvents();
-
-    @ArchTest
     static final ArchRule ports = RULES.ports();
 
     @ArchTest
