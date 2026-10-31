@@ -6,16 +6,18 @@ package app.l2nx.highfive.network.protocol.p267.mapper;
 
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 
 /**
- * Turns one view event into one High Five packet on the emitting thread, without side effects. Viewer-dependent
- * output (relation, karma colour, language) declares it, so a broadcast serializes once per variant.
+ * Maps one view event to one wire record of the p267 protocol on the emitting thread, without side effects; the
+ * record writes the layout. Viewer-dependent output (relation, karma colour, language) declares it, so a broadcast
+ * serializes once per variant.
  */
 public interface OutboundMapper<E extends ViewEvent> {
     Class<E> eventType();
 
-    void write(E event, GameClient viewer, PacketWriter out);
+    /** {@code null} when this viewer's client gets nothing for the event. */
+    GameServerPacket map(E event, GameClient viewer);
 
     default boolean viewerDependent() {
         return false;

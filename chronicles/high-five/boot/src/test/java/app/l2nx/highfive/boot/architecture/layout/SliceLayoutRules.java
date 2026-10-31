@@ -17,10 +17,8 @@ import app.l2nx.engine.core.session.command.CommandHandler;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaParameterizedType;
@@ -41,7 +39,7 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class SliceLayoutRules {
     public static final String CHRONICLE_ROOT = "app.l2nx.highfive";
-    static final List<String> MIGRATED = List.of("login", "movement", "partition");
+    static final List<String> MIGRATED = List.of("login", "movement", "partition", "message", "action");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
 
     /**
@@ -49,12 +47,7 @@ public final class SliceLayoutRules {
      * the list may only shrink.
      */
     static final DescribedPredicate<JavaClass> LEGACY_NETWORK_FACADES = JavaClass.Predicates.belongToAnyOf(
-            GameClient.class,
-            Disconnection.class,
-            SystemMessageId.class,
-            CharSelectionInfo.class,
-            LoginFail.class,
-            SystemMessage.class);
+            GameClient.class, Disconnection.class, CharSelectionInfo.class, LoginFail.class);
 
     private static final List<String> SUBPACKAGES =
             List.of("command", "view", "event", "system", "model", "template", "repository");

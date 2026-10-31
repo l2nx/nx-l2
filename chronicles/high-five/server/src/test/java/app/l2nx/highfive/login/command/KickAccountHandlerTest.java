@@ -21,9 +21,10 @@ import app.l2nx.highfive.login.FakeLoginPort.Call;
 import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,17 +41,20 @@ class KickAccountHandlerTest {
     private final GameClient client = mock(GameClient.class);
     private final Session session = mock(Session.class);
 
-    @Test
-    void address_shouldBeTheAccount() {
-        final UUID accountId = UUID.randomUUID();
+    @Nested
+    class Address {
+        @Test
+        void address_shouldBeTheAccount() {
+            final UUID accountId = UUID.randomUUID();
 
-        assertThat(new KickAccount(accountId).address()).isEqualTo(new SessionAddress.Account(accountId));
+            assertThat(new KickAccount(accountId).address()).isEqualTo(new SessionAddress.Account(accountId));
+        }
     }
 
     @Nested
     class Handle {
         @Test
-        void handle_shouldSaveAndRemoveThePlayer_withTheMessage_andFreeTheAccount() {
+        void handle_shouldSaveAndRemoveThePlayerWithTheMessageAndFreeTheAccount() {
             final UUID accountId = UUID.randomUUID();
             final Disconnection disconnection = mock(Disconnection.class);
             when(session.attachment(GameClient.class)).thenReturn(client);
@@ -64,7 +68,7 @@ class KickAccountHandlerTest {
                 handler.handle(session, new KickAccount(accountId));
             }
 
-            verify(disconnection).storeAndDeleteWith(any(SystemMessage.class));
+            verify(disconnection).storeAndCloseWith(MessageShown.of(MessageKey.ACCOUNT_LOGGED_IN_ELSEWHERE));
             assertThat(accounts.find(accountId)).isNull();
             assertThat(accounts.reserve("alice", client)).isTrue();
             assertThat(port.getCalls()).containsExactly(Call.of("accountLeft", accountId));
@@ -74,7 +78,7 @@ class KickAccountHandlerTest {
         void handle_shouldFreeTheAccount_whenRemovingThePlayerFails() {
             final UUID accountId = UUID.randomUUID();
             final Disconnection disconnection = mock(Disconnection.class);
-            doThrow(new IllegalStateException("boom")).when(disconnection).storeAndDeleteWith(any());
+            doThrow(new IllegalStateException("boom")).when(disconnection).storeAndCloseWith(any());
             when(session.attachment(GameClient.class)).thenReturn(client);
             when(client.getAccountName()).thenReturn("alice");
             accounts.reserve("alice", client);
@@ -104,7 +108,7 @@ class KickAccountHandlerTest {
         }
 
         @Test
-        void handleWithoutSession_shouldSaveAndRemoveThePlayer_andFreeTheAccount_whenTheClientIsDetached() {
+        void handleWithoutSession_shouldSaveAndRemoveThePlayerAndFreeTheAccount_whenTheClientIsDetached() {
             final UUID accountId = holdDetached();
             final Disconnection disconnection = mock(Disconnection.class);
 
@@ -114,7 +118,7 @@ class KickAccountHandlerTest {
                 handler.handleWithoutSession(new KickAccount(accountId));
             }
 
-            verify(disconnection).storeAndDeleteWith(any(SystemMessage.class));
+            verify(disconnection).storeAndCloseWith(MessageShown.of(MessageKey.ACCOUNT_LOGGED_IN_ELSEWHERE));
             assertThat(accounts.find(accountId)).isNull();
             assertThat(accounts.reserve("alice", client)).isTrue();
             assertThat(port.getCalls()).containsExactly(Call.of("accountLeft", accountId));
@@ -124,7 +128,7 @@ class KickAccountHandlerTest {
         void handleWithoutSession_shouldFreeTheAccount_whenRemovingThePlayerFails() {
             final UUID accountId = holdDetached();
             final Disconnection disconnection = mock(Disconnection.class);
-            doThrow(new IllegalStateException("boom")).when(disconnection).storeAndDeleteWith(any());
+            doThrow(new IllegalStateException("boom")).when(disconnection).storeAndCloseWith(any());
 
             try (MockedStatic<Disconnection> disconnections = mockStatic(Disconnection.class)) {
                 disconnections.when(() -> Disconnection.of(client)).thenReturn(disconnection);

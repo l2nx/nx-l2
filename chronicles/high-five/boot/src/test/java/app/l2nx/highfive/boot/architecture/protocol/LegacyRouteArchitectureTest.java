@@ -35,7 +35,7 @@ class LegacyRouteArchitectureTest {
         final int actual = new P267Adapter().legacyInboundCount();
 
         assertThat(actual)
-                .as("inbound opcodes of the highfive table served by legacy packets, now %d", actual)
+                .as("inbound opcodes of the p267 table served by legacy packets, now %d", actual)
                 .isEqualTo(LEGACY_INBOUND_OPCODES);
     }
 }

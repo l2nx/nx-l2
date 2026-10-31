@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network;
 
+import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
@@ -132,6 +133,14 @@ public class Disconnection {
 
         if (client != null) {
             client.close(packet);
+        }
+    }
+
+    public void storeAndCloseWith(ViewEvent event) {
+        storeAndDelete();
+
+        if (client != null) {
+            client.port().emitAndClose(event);
         }
     }
 

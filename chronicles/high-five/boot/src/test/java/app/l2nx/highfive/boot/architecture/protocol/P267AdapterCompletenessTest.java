@@ -92,7 +92,7 @@ class P267AdapterCompletenessTest {
         covered.addAll(ADAPTER.droppedEvents());
 
         assertThat(covered)
-                .as("view events without a highfive mapper or drop")
+                .as("view events without a p267 mapper or drop")
                 .containsAll(concrete(classes, ViewEvent.class));
     }
 

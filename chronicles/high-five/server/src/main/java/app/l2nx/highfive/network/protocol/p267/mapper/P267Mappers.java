@@ -8,7 +8,7 @@ import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import app.l2nx.network.codec.Frames;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import java.util.List;
@@ -17,15 +17,16 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public final class HighFiveMappers {
-    private static final List<OutboundMapper<?>> MAPPERS = List.of();
+public final class P267Mappers {
+    private static final List<OutboundMapper<?>> MAPPERS =
+            List.of(new ActionCancelledMapper(), new MessageShownMapper());
 
     private static final Set<Class<? extends ViewEvent>> DROPPED = Set.of();
 
     private static final Map<Class<?>, OutboundMapper<?>> BY_TYPE =
             MAPPERS.stream().collect(Collectors.toUnmodifiableMap(OutboundMapper::eventType, Function.identity()));
 
-    private HighFiveMappers() {}
+    private P267Mappers() {}
 
     public static Set<Class<? extends ViewEvent>> mapped() {
         return MAPPERS.stream()
@@ -45,10 +46,15 @@ public final class HighFiveMappers {
                 return null;
             }
             throw new IllegalStateException(
-                    "No High Five mapper for " + event.getClass().getName());
+                    "No p267 mapper for " + event.getClass().getName());
+        }
+        // Mapped before allocating, so a viewer whose client gets nothing costs no buffer.
+        final GameServerPacket packet = mapper.map(event, viewer);
+        if (packet == null) {
+            return null;
         }
         return Frames.write(alloc, mapper.sizeHint(), frame -> {
-            mapper.write(event, viewer, new PacketWriter(frame));
+            packet.write(frame);
             return true;
         });
     }

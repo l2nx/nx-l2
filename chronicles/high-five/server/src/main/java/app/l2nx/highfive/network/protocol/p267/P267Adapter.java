@@ -10,12 +10,13 @@ import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
-import app.l2nx.highfive.network.protocol.p267.mapper.HighFiveMappers;
+import app.l2nx.highfive.network.protocol.p267.mapper.P267Mappers;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPackets;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketWriter;
 import app.l2nx.protocol.game.p267.serverpackets.KeyPacket;
+import app.l2nx.protocol.game.p267.serverpackets.ServerClose;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import java.util.Arrays;
@@ -69,7 +70,7 @@ public final class P267Adapter implements GameProtocolAdapter {
     @Override
     public ByteBuf serverCloseFrame(ByteBufAllocator alloc) {
         final ByteBuf frame = Frames.allocate(alloc, 1);
-        ServerPackets.SERVER_CLOSE.writeId(new PacketWriter(frame));
+        ServerClose.INSTANCE.write(frame);
         return frame;
     }
 
@@ -80,7 +81,7 @@ public final class P267Adapter implements GameProtocolAdapter {
 
     @Override
     public ByteBuf serialize(ViewEvent event, GameClient viewer, ByteBufAllocator alloc) {
-        return HighFiveMappers.serialize(event, viewer, alloc);
+        return P267Mappers.serialize(event, viewer, alloc);
     }
 
     @Override
@@ -90,7 +91,7 @@ public final class P267Adapter implements GameProtocolAdapter {
 
     @Override
     public Object audienceKey(ViewEvent event, GameClient viewer) {
-        return HighFiveMappers.audienceKey(this, event, viewer);
+        return P267Mappers.audienceKey(this, event, viewer);
     }
 
     @Override
@@ -100,12 +101,12 @@ public final class P267Adapter implements GameProtocolAdapter {
 
     @Override
     public Set<Class<? extends ViewEvent>> mappedEvents() {
-        return HighFiveMappers.mapped();
+        return P267Mappers.mapped();
     }
 
     @Override
     public Set<Class<? extends ViewEvent>> droppedEvents() {
-        return HighFiveMappers.dropped();
+        return P267Mappers.dropped();
     }
 
     @Override

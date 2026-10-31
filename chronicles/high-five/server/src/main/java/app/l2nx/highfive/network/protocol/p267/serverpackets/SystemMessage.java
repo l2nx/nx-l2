@@ -181,7 +181,11 @@ public class SystemMessage extends ServerPacket {
     }
 
     public SystemMessage addPcName(Player pc) {
-        append(new SMParam(TYPE_PLAYER_NAME, pc.getAppearance().getVisibleName()));
+        return addPlayerName(pc.getAppearance().getVisibleName());
+    }
+
+    public SystemMessage addPlayerName(String name) {
+        append(new SMParam(TYPE_PLAYER_NAME, name));
         return this;
     }
 
@@ -292,23 +296,19 @@ public class SystemMessage extends ServerPacket {
         toWire(client).write(buffer.buffer());
     }
 
-    private app.l2nx.protocol.game.p267.serverpackets.SystemMessage toWire(GameClient client) {
-        if (MultilingualSupportConfig.MULTILANG_ENABLE) {
-            final Player player = client.getPlayer();
-            if (player != null) {
-                final String lang = player.getLang();
-                if ((lang != null) && !lang.equals("en")) {
-                    final SMLocalisation sml = systemMessageId.getLocalisation(lang);
-                    if (sml != null) {
-                        final Object[] values = new Object[paramIndex];
-                        for (int i = 0; i < paramIndex; i++) {
-                            values[i] = params[i].getValue();
-                        }
-                        return new app.l2nx.protocol.game.p267.serverpackets.SystemMessage(
-                                SystemMessageId.S1_2.getId(),
-                                List.of(new SystemMessageParam.Text(sml.getLocalisation(values))));
-                    }
+    /** The message as this viewer's client shows it: one localized text when its language has a localisation. */
+    public app.l2nx.protocol.game.p267.serverpackets.SystemMessage toWire(GameClient viewer) {
+        final String lang = language(viewer);
+        if (lang != null) {
+            final SMLocalisation sml = systemMessageId.getLocalisation(lang);
+            if (sml != null) {
+                final Object[] values = new Object[paramIndex];
+                for (int i = 0; i < paramIndex; i++) {
+                    values[i] = params[i].getValue();
                 }
+                return new app.l2nx.protocol.game.p267.serverpackets.SystemMessage(
+                        SystemMessageId.S1_2.getId(),
+                        List.of(new SystemMessageParam.Text(sml.getLocalisation(values))));
             }
         }
 
@@ -318,33 +318,47 @@ public class SystemMessage extends ServerPacket {
                 log.warn("Found null parameter for SystemMessageId {}", systemMessageId);
                 continue;
             }
-            wire.add(
-                    switch (param.getType()) {
-                        case TYPE_TEXT -> new SystemMessageParam.Text(wireString(param.getStringValue()));
-                        case TYPE_PLAYER_NAME -> new SystemMessageParam.PlayerName(wireString(param.getStringValue()));
-                        case TYPE_LONG_NUMBER -> new SystemMessageParam.LongNumber(param.getLongValue());
-                        case TYPE_INT_NUMBER -> new SystemMessageParam.IntNumber(param.getIntValue());
-                        case TYPE_NPC_NAME -> new SystemMessageParam.NpcName(param.getIntValue());
-                        case TYPE_ITEM_NAME -> new SystemMessageParam.ItemName(param.getIntValue());
-                        case TYPE_CASTLE_NAME -> new SystemMessageParam.CastleName(param.getIntValue());
-                        case TYPE_ELEMENT_NAME -> new SystemMessageParam.ElementName(param.getIntValue());
-                        case TYPE_SYSTEM_STRING -> new SystemMessageParam.SystemString(param.getIntValue());
-                        case TYPE_INSTANCE_NAME -> new SystemMessageParam.InstanceName(param.getIntValue());
-                        case TYPE_DOOR_NAME -> new SystemMessageParam.DoorName(param.getIntValue());
-                        case TYPE_SKILL_NAME -> {
-                            final int[] skill = param.getIntArrayValue();
-                            yield new SystemMessageParam.SkillName(skill[0], skill[1]);
-                        }
-                        case TYPE_ZONE_NAME -> {
-                            final int[] zone = param.getIntArrayValue();
-                            yield new SystemMessageParam.ZoneName(zone[0], zone[1], zone[2]);
-                        }
-                        default ->
-                            throw new IllegalStateException("Parameter type " + param.getType() + " of "
-                                    + systemMessageId + " has no wire form");
-                    });
+            wire.add(wireParam(param));
         }
         return new app.l2nx.protocol.game.p267.serverpackets.SystemMessage(systemMessageId.getId(), wire);
+    }
+
+    /** {@code null} when the viewer reads the default language or localisation is off. */
+    public static String language(GameClient viewer) {
+        if (!MultilingualSupportConfig.MULTILANG_ENABLE || (viewer == null)) {
+            return null;
+        }
+        final Player player = viewer.getPlayer();
+        if (player == null) {
+            return null;
+        }
+        final String lang = player.getLang();
+        return ((lang != null) && !lang.equals("en")) ? lang : null;
+    }
+
+    private static SystemMessageParam wireParam(SMParam param) {
+        return switch (param.getType()) {
+            case TYPE_TEXT -> new SystemMessageParam.Text(wireString(param.getStringValue()));
+            case TYPE_PLAYER_NAME -> new SystemMessageParam.PlayerName(wireString(param.getStringValue()));
+            case TYPE_LONG_NUMBER -> new SystemMessageParam.LongNumber(param.getLongValue());
+            case TYPE_INT_NUMBER -> new SystemMessageParam.IntNumber(param.getIntValue());
+            case TYPE_NPC_NAME -> new SystemMessageParam.NpcName(param.getIntValue());
+            case TYPE_ITEM_NAME -> new SystemMessageParam.ItemName(param.getIntValue());
+            case TYPE_CASTLE_NAME -> new SystemMessageParam.CastleName(param.getIntValue());
+            case TYPE_ELEMENT_NAME -> new SystemMessageParam.ElementName(param.getIntValue());
+            case TYPE_SYSTEM_STRING -> new SystemMessageParam.SystemString(param.getIntValue());
+            case TYPE_INSTANCE_NAME -> new SystemMessageParam.InstanceName(param.getIntValue());
+            case TYPE_DOOR_NAME -> new SystemMessageParam.DoorName(param.getIntValue());
+            case TYPE_SKILL_NAME -> {
+                final int[] skill = param.getIntArrayValue();
+                yield new SystemMessageParam.SkillName(skill[0], skill[1]);
+            }
+            case TYPE_ZONE_NAME -> {
+                final int[] zone = param.getIntArrayValue();
+                yield new SystemMessageParam.ZoneName(zone[0], zone[1], zone[2]);
+            }
+            default -> throw new IllegalStateException("Unknown system message parameter type " + param.getType());
+        };
     }
 
     /** The wire has no null string: a text argument a legacy caller left {@code null} always reached the client empty. */

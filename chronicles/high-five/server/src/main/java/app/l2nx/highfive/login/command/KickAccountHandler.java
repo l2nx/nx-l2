@@ -29,10 +29,10 @@ package app.l2nx.highfive.login.command;
 import app.l2nx.engine.core.session.Session;
 import app.l2nx.engine.core.session.command.SessionCommandHandler;
 import app.l2nx.highfive.login.LoginService;
+import app.l2nx.highfive.message.MessageKey;
+import app.l2nx.highfive.message.view.MessageShown;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -50,9 +50,7 @@ class KickAccountHandler implements SessionCommandHandler<KickAccount> {
     public void handle(Session session, KickAccount command) {
         final GameClient client = GameClient.of(session);
         try {
-            Disconnection.of(client)
-                    .storeAndDeleteWith(
-                            new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT));
+            Disconnection.of(client).storeAndCloseWith(MessageShown.of(MessageKey.ACCOUNT_LOGGED_IN_ELSEWHERE));
             ACCOUNTING_LOG.info("Kicked by login, {}", client);
         } finally {
             loginService.logout(client.getAccountName(), command.accountId());
@@ -68,9 +66,7 @@ class KickAccountHandler implements SessionCommandHandler<KickAccount> {
         final GameClient client = loginService.findClient(command.accountId());
         try {
             if ((client != null) && client.isDetached()) {
-                Disconnection.of(client)
-                        .storeAndDeleteWith(
-                                new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT));
+                Disconnection.of(client).storeAndCloseWith(MessageShown.of(MessageKey.ACCOUNT_LOGGED_IN_ELSEWHERE));
                 ACCOUNTING_LOG.info("Kicked by login, {}", client);
             }
         } finally {
