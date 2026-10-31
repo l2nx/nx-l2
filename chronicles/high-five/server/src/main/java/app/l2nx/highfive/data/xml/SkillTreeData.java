@@ -570,7 +570,7 @@ public class SkillTreeData implements IXmlReader {
             }
 
             if (skill.isAutoGet() && (player.getLevel() >= skill.getGetLevel())) {
-                final Skill oldSkill = player.getSkills().get(skill.getSkillId());
+                final Skill oldSkill = player.getKnownSkill(skill.getSkillId());
                 if (oldSkill != null) {
                     if (oldSkill.getLevel() < skill.getSkillLevel()) {
                         result.add(skill);
@@ -599,7 +599,7 @@ public class SkillTreeData implements IXmlReader {
             }
 
             if (skill.isLearnedByNpc() && (player.getLevel() >= skill.getGetLevel())) {
-                final Skill oldSkill = player.getSkills().get(skill.getSkillId());
+                final Skill oldSkill = player.getKnownSkill(skill.getSkillId());
                 if (oldSkill != null) {
                     if (oldSkill.getLevel() == (skill.getSkillLevel() - 1)) {
                         result.add(skill);
@@ -621,7 +621,7 @@ public class SkillTreeData implements IXmlReader {
     public List<SkillLearn> getAvailableCollectSkills(Player player) {
         final List<SkillLearn> result = new ArrayList<>();
         for (SkillLearn skill : collectSkillTree.values()) {
-            final Skill oldSkill = player.getSkills().get(skill.getSkillId());
+            final Skill oldSkill = player.getKnownSkill(skill.getSkillId());
             if (oldSkill != null) {
                 if (oldSkill.getLevel() == (skill.getSkillLevel() - 1)) {
                     result.add(skill);
@@ -673,7 +673,7 @@ public class SkillTreeData implements IXmlReader {
         for (SkillLearn skill : transformSkillTree.values()) {
             if ((player.getLevel() >= skill.getGetLevel())
                     && (skill.getRaces().isEmpty() || skill.getRaces().contains(race))) {
-                final Skill oldSkill = player.getSkills().get(skill.getSkillId());
+                final Skill oldSkill = player.getKnownSkill(skill.getSkillId());
                 if (oldSkill != null) {
                     if (oldSkill.getLevel() == (skill.getSkillLevel() - 1)) {
                         result.add(skill);
@@ -777,7 +777,7 @@ public class SkillTreeData implements IXmlReader {
                                             .get(subClass.getClassIndex() - 1)
                                             .getSlot())
                             && (subClassConds.get(subClass.getClassIndex() - 1).getLvl() <= subClass.getLevel())) {
-                        final Skill oldSkill = player.getSkills().get(skill.getSkillId());
+                        final Skill oldSkill = player.getKnownSkill(skill.getSkillId());
                         if (oldSkill != null) {
                             if (oldSkill.getLevel() == (skill.getSkillLevel() - 1)) {
                                 result.add(skill);

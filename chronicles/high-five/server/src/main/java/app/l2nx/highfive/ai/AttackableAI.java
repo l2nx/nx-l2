@@ -482,8 +482,8 @@ public class AttackableAI extends CreatureAI {
                 }
 
                 if (npc.isFakePlayer() && npc.isAggressive()) {
-                    final List<Item> droppedItems = npc.getFakePlayerDrops();
-                    if (droppedItems.isEmpty()) {
+                    final Item droppedItem = npc.getLastFakePlayerDrop();
+                    if (droppedItem == null) {
                         final Creature nearestTarget = World.getNearestVisibleObjectInRange(
                                 npc,
                                 Creature.class,
@@ -501,14 +501,11 @@ public class AttackableAI extends CreatureAI {
                         }
                     } else if (!npc.isInCombat()) // Must pickup items.
                     {
-                        final int itemIndex = npc.getFakePlayerDrops().size()
-                                - 1; // Last item dropped - can also use 0 for first item dropped.
-                        final Item droppedItem = npc.getFakePlayerDrops().get(itemIndex);
-                        if ((droppedItem != null) && droppedItem.isSpawned()) {
+                        if (droppedItem.isSpawned()) {
                             if (npc.calculateDistance2D(droppedItem) > 50) {
                                 moveTo(droppedItem);
                             } else {
-                                npc.getFakePlayerDrops().remove(itemIndex);
+                                npc.removeLastFakePlayerDrop();
                                 droppedItem.pickupMe(npc);
                                 if (GeneralConfig.SAVE_DROPPED_ITEM) {
                                     ItemsOnGroundManager.getInstance().removeObject(droppedItem);
@@ -524,7 +521,7 @@ public class AttackableAI extends CreatureAI {
                                 }
                             }
                         } else {
-                            npc.getFakePlayerDrops().remove(itemIndex);
+                            npc.removeLastFakePlayerDrop();
                         }
 
                         npc.setRunning();
@@ -602,10 +599,10 @@ public class AttackableAI extends CreatureAI {
         // Chance to forget attackers after some time.
         if ((npc.getCurrentHp() == npc.getMaxHp())
                 && (npc.getCurrentMp() == npc.getMaxMp())
-                && !npc.getAttackByList().isEmpty()
+                && !npc.isAttackByListEmpty()
                 && (ClockBridge.random().nextInt(500) == 0)) {
             npc.clearAggroList();
-            npc.getAttackByList().clear();
+            npc.clearAttackByList();
         }
 
         // If this is a festival monster, then it remains in the same location.
@@ -844,7 +841,7 @@ public class AttackableAI extends CreatureAI {
 
                     npc.abortAttack();
                     npc.clearAggroList();
-                    npc.getAttackByList().clear();
+                    npc.clearAttackByList();
                     if (npc.hasAI()) {
                         npc.getAI().setIntentionMoveTo(spawn.getLocation());
                     } else {
@@ -861,7 +858,7 @@ public class AttackableAI extends CreatureAI {
 
                             minion.abortAttack();
                             minion.clearAggroList();
-                            minion.getAttackByList().clear();
+                            minion.clearAttackByList();
                             if (minion.hasAI()) {
                                 minion.getAI().setIntentionMoveTo(spawn.getLocation());
                             } else {
@@ -915,7 +912,7 @@ public class AttackableAI extends CreatureAI {
             // Lose target and walk to spawn.
             setTarget(null);
             npc.clearAggroList();
-            npc.getAttackByList().clear();
+            npc.clearAttackByList();
 
             if (!actor.isFakePlayer()) {
                 npc.setWalking();
@@ -2301,7 +2298,7 @@ public class AttackableAI extends CreatureAI {
         }
 
         npc.clearAggroList();
-        npc.getAttackByList().clear();
+        npc.clearAttackByList();
         npc.teleToLocation(master, MINION_LEASH_OFFSET);
     }
 
@@ -2401,15 +2398,7 @@ public class AttackableAI extends CreatureAI {
             try {
                 // Call friendly npcs for help only if this NPC was attacked by the target creature.
                 final Creature finalTarget = attacker;
-                boolean targetExistsInAttackByList = false;
-                for (Creature reference : me.getAttackByList()) {
-                    if (reference == finalTarget) {
-                        targetExistsInAttackByList = true;
-                        break;
-                    }
-                }
-
-                if (targetExistsInAttackByList) {
+                if (me.isAttackedBy(finalTarget)) {
                     World.forEachVisibleObjectInRange(me, Attackable.class, factionRange, nearby -> {
                         // Don't call dead npcs, npcs without ai or npcs which are too far away.
                         if (nearby.isDead()

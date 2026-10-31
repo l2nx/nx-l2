@@ -278,7 +278,10 @@ A thread that is not the owner of a partition never reads or writes its mutable 
   confinement check of the UI toolkits (Android `View.checkThread`, JavaFX `checkFxUserThread`); Netty's
   `inEventLoop()` is the same test, used there to hop threads instead of failing. The check is one reference
   comparison against `Thread.currentThread()`, a JIT intrinsic; its cost is measured by JMH. An ArchUnit rule
-  checks that every public method of a migrated class calls it before any other call or field access.
+  checks that every public method of a migrated class calls it before any other call or field access. An abstract
+  method has no body to check: its implementations carry the check once their own classes migrate, and until then
+  an override in a subclass that is not migrated runs unchecked. A migrated class has no Lombok accessors, since a
+  generated method cannot carry the check; they are written out.
 - **Debug only, on the loop's own hot path.** The loop's owner-only methods (timers, systems, deferred work) assert
   the owner with Java `assert`, enabled (`-ea`) in tests and local runs.
 
@@ -365,9 +368,16 @@ class, each class a change of its own and in this order: `World` and `WorldRegio
 `Creature`, `EffectList`, `Player`, the item containers with `Inventory` and `Item`, `Party` and `Clan`. A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
-place). Done: `World` and `WorldRegion`. Their runs were the tests, a client run on the live world and a JMH A/B of
-the visibility paths (`WorldBenchmark`); the load-run check waits for the load harness to enter the world
+place). Done: `World`, `WorldRegion` and `Creature`. Their runs were the tests, a client run on the live world and
+a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions, skills
+and reuse); the load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
+A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
+`Creature`: the attacker list, known relations, fake player drops, `getKnownSkill` instead of a scan), so the
+snapshot rule below costs no copy on those paths. The `StampedLock` around `Creature.doAttack` was also a re-entry
+guard (`tryWriteLock` fails on the thread that holds it), so an attack ordered from inside an attack is still
+dropped, by a plain flag. The checks cost the stat calculation of `Creature` about 4 ns of its 11 (several checks per
+calculation), accepted for now and tracked in [#146](https://github.com/l2nx/nx-l2/issues/146).
 
 **Iteration without concurrent collections.** Legacy code removes and moves objects while it iterates them, which the
 weakly consistent iterators of `ConcurrentHashMap` tolerated and a plain collection does not (a JDK iterator throws

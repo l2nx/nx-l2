@@ -111,7 +111,7 @@ public class CreatureStat {
         }
 
         final int id = stat.ordinal();
-        final Calculator calc = activeChar.getCalculators()[id];
+        final Calculator calc = activeChar.getCalculator(id);
 
         // If no Func object found, no modifier is applied.
         if ((calc == null) || (calc.size() == 0)) {

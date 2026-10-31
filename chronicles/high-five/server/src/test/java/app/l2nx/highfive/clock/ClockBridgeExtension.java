@@ -7,7 +7,6 @@ package app.l2nx.highfive.clock;
 import app.l2nx.engine.core.clock.ManualGameClock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Optional;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -29,7 +28,7 @@ public final class ClockBridgeExtension implements BeforeAllCallback, AfterAllCa
 
     private static final Namespace NAMESPACE = Namespace.create(ClockBridgeExtension.class);
     private static final String CLOCK = "clock";
-    private static final String PREVIOUS = "previous";
+    private static final String BINDING = "binding";
 
     /**
      * Runs the body under the production binding, which answers game time and randomness on a loop thread only.
@@ -56,23 +55,19 @@ public final class ClockBridgeExtension implements BeforeAllCallback, AfterAllCa
         final ThreadLocal<RandomGenerator> random =
                 ThreadLocal.withInitial(() -> RandomGeneratorFactory.of("L64X128MixRandom")
                         .create(SEED ^ Thread.currentThread().getName().hashCode()));
-        final ClockBridge.TimeSource previous = ClockBridge.swap(new ClockBridge.FixedTimeSource(clock, random::get));
-
         final ExtensionContext.Store store = context.getStore(NAMESPACE);
         store.put(CLOCK, clock);
-        store.put(PREVIOUS, Optional.ofNullable(previous));
+        store.put(BINDING, FixedClockBinding.bind(clock, random::get));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void afterAll(ExtensionContext context) {
         if (boundByEnclosingClass(context)) {
             return;
         }
 
-        final Optional<ClockBridge.TimeSource> previous =
-                context.getStore(NAMESPACE).get(PREVIOUS, Optional.class);
-        ClockBridge.swap(previous.orElse(null));
+        // Removed, not read: the store would close it a second time when the context ends.
+        context.getStore(NAMESPACE).remove(BINDING, FixedClockBinding.class).close();
     }
 
     /** A store looks a key up in the enclosing contexts too, so a nested class resolves the outer class's clock. */

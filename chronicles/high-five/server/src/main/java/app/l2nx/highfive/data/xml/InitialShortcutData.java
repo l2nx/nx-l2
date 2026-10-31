@@ -224,7 +224,7 @@ public class InitialShortcutData implements IXmlReader {
                     break;
                 }
                 case SKILL: {
-                    if (!player.getSkills().containsKey(shortcutId)) {
+                    if (player.getKnownSkill(shortcutId) == null) {
                         continue;
                     }
                     break;
@@ -267,7 +267,7 @@ public class InitialShortcutData implements IXmlReader {
                         break;
                     }
                     case SKILL: {
-                        if (!player.getSkills().containsKey(shortcut.getId())) {
+                        if (player.getKnownSkill(shortcut.getId()) == null) {
                             continue;
                         }
                         break;

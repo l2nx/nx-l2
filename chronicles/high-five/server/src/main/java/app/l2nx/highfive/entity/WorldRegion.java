@@ -107,7 +107,7 @@ public class WorldRegion {
             mob.stopAllEffects();
 
             mob.clearAggroList();
-            mob.getAttackByList().clear();
+            mob.clearAttackByList();
 
             final Spawn spawn = mob.getSpawn();
             if ((spawn != null) && (mob.calculateDistance2D(spawn) > NpcConfig.MAX_DRIFT_RANGE)) {

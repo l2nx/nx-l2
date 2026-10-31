@@ -43,8 +43,8 @@ public class FocusMaxEnergy extends AbstractEffect {
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         if (effected.isPlayer()) {
-            final Skill sonicMastery = effected.getSkills().get(992);
-            final Skill focusMastery = effected.getSkills().get(993);
+            final Skill sonicMastery = effected.getKnownSkill(992);
+            final Skill focusMastery = effected.getKnownSkill(993);
             final int maxCharge = (sonicMastery != null)
                     ? sonicMastery.getLevel()
                     : (focusMastery != null) ? focusMastery.getLevel() : 0;

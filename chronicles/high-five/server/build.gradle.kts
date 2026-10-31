@@ -1,5 +1,6 @@
 plugins {
     id("nx-l2.java-conventions")
+    `java-test-fixtures`
     pmd
     alias(libs.plugins.jmh)
 }
@@ -30,10 +31,13 @@ dependencies {
     testImplementation(libs.liquibase.core)
     testRuntimeOnly(libs.postgresql)
 
+    testFixturesImplementation(platform(libs.spring.boot.dependencies))
+
     jmhImplementation(platform(libs.spring.boot.dependencies))
     jmhImplementation(testFixtures(project(":libs:network")))
     jmhImplementation(testFixtures(project(":engine:core")))
     jmhImplementation(libs.mockito.core)
+    jmhImplementation(testFixtures(project))
 }
 
 // The engine reads ./config and ./data against the working directory.
@@ -42,8 +46,8 @@ tasks.withType<Test>().configureEach {
     workingDir = layout.projectDirectory.dir("../datapack").asFile
 }
 
-// Only the single-writer ruleset runs: it covers synchronized blocks, which ArchUnit cannot see. Tests and
-// benchmarks may lock freely.
+// Only the single-writer ruleset runs: it covers synchronized blocks, which ArchUnit cannot see. Tests, fixtures
+// and benchmarks may lock freely.
 pmd {
     toolVersion = libs.versions.pmd.get()
     ruleSets = listOf()
@@ -59,6 +63,12 @@ tasks.named("pmdJmh") {
     enabled = false
 }
 
+tasks.named("pmdTestFixtures") {
+    enabled = false
+}
+
 jmh {
     includes.set(providers.gradleProperty("jmh.includes").map { listOf(it) }.orElse(listOf(".*")))
+    // The benchmark jar bundles the whole server classpath, past the 65535 entries of a plain zip.
+    zip64 = true
 }

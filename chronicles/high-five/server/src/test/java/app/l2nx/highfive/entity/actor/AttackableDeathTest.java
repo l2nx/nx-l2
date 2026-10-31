@@ -20,7 +20,6 @@ import app.l2nx.engine.core.identity.WireHandleAllocator;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.config.PlayerConfig;
-import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.zone.ZoneRegion;
 import app.l2nx.highfive.interfaces.ILocational;
@@ -30,12 +29,10 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableKill;
 import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.partition.WorldLoopExtension;
-import app.l2nx.highfive.util.StatSet;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,8 +51,6 @@ import org.mockito.MockedStatic;
 @ResourceLock(WorldLoopExtension.LOCK)
 @ResourceLock("PlayerConfig")
 class AttackableDeathTest {
-    private static final int NPC_ID = 20_545;
-
     private final List<String> log = new ArrayList<>();
     private int partyRange;
 
@@ -138,9 +133,11 @@ class AttackableDeathTest {
                             any(Attackable.class),
                             maxHp.capture(),
                             anyBoolean());
-            final float actual = dead.get().getVitalityPoints(level.getValue(), damage.getValue(), maxHp.getValue());
+            final AtomicReference<Float> actual = new AtomicReference<>();
+            WorldLoopExtension.runInPass(() ->
+                    actual.set(dead.get().getVitalityPoints(level.getValue(), damage.getValue(), maxHp.getValue())));
 
-            assertThat(actual).isEqualTo(-15f);
+            assertThat(actual.get()).isEqualTo(-15f);
         }
     }
 
@@ -182,21 +179,14 @@ class AttackableDeathTest {
         }
     }
 
-    private static final class RecordingAttackable extends Attackable {
+    private static final class RecordingAttackable extends TestAttackable {
         private final List<String> log;
         private final CreatureAI ai = mock(CreatureAI.class);
         private int maxHp = 1_000;
 
         private RecordingAttackable(List<String> log) {
-            super(template());
             this.log = log;
             setMustRewardExpSp(false);
-        }
-
-        private static NpcTemplate template() {
-            final NpcTemplate template = new NpcTemplate(new StatSet(Map.of("id", NPC_ID, "baseHpMax", 1_000)));
-            template.setSkills(Map.of());
-            return template;
         }
 
         @Override

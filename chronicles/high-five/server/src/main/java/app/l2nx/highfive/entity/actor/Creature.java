@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.AttackableAI;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -47,6 +48,7 @@ import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.SendMessageLocalisationData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.WorldRegion;
@@ -165,20 +167,22 @@ import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.CreatureSeeTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.StampedLock;
 import java.util.random.RandomGenerator;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
@@ -202,78 +206,46 @@ import org.slf4j.LoggerFactory;
  * @version $Revision: 1.53.2.45.2.34 $ $Date: 2005/04/11 10:06:08 $
  */
 @Slf4j
+@SingleWriter
 public abstract class Creature extends WorldObject {
-    @Getter
-    private final Set<Creature> attackByList = ConcurrentHashMap.newKeySet(1);
+    private final ObjectOpenHashSet<Creature> attackByList = new ObjectOpenHashSet<>(1);
 
-    @Getter
-    @Setter
-    private volatile boolean castingNow = false;
+    private boolean castingNow = false;
 
-    @Getter
-    @Setter
-    private volatile boolean castingSimultaneouslyNow = false;
+    private boolean castingSimultaneouslyNow = false;
 
-    @Getter
-    @Setter
     private Skill lastSkillCast;
 
-    @Getter
-    @Setter
     private Skill lastSimultaneousSkillCast;
 
-    @Getter
-    @Setter
     private boolean dead = false;
 
-    @Getter
-    @Setter
     private boolean immobilized = false;
 
-    @Getter
-    @Setter
     private boolean overloaded = false;
 
-    @Setter
     private boolean paralyzed = false;
 
     private boolean pendingRevive = false;
 
-    @Getter
     private boolean running = false;
 
-    @Getter
-    @Setter
     protected boolean showSummonAnimation = false;
 
-    @Getter
-    @Setter
     protected boolean teleporting = false;
 
-    @Setter
     private boolean invul = false;
 
-    @Getter
-    @Setter
     private boolean mortal = true;
 
-    @Getter
-    @Setter
     private boolean flying = false;
 
-    @Getter
-    @Setter
     private CreatureStat stat;
 
-    @Getter
-    @Setter
     private CreatureStatus status;
 
-    @Getter
-    @Setter(lombok.AccessLevel.PROTECTED)
     private CreatureTemplate template;
 
-    @Getter
     private String title;
 
     public static final double MAX_HP_BAR_PX = 352.0;
@@ -282,51 +254,38 @@ public abstract class Creature extends WorldObject {
     private double hpUpdateDecCheck = .0;
     private double hpUpdateInterval = .0;
 
-    @Getter
-    @Setter
     private int karma = 0;
 
-    @Getter
     private Calculator[] calculators;
 
-    @Getter
-    private final Map<Integer, Skill> skills = new ConcurrentHashMap<>();
+    private final Int2ObjectOpenHashMap<Skill> skills = new Int2ObjectOpenHashMap<>();
 
-    @Getter
-    private final Map<Integer, TimeStamp> skillReuseTimeStamps = new ConcurrentHashMap<>();
+    private final Int2ObjectOpenHashMap<TimeStamp> skillReuseTimeStamps = new Int2ObjectOpenHashMap<>();
 
-    @Getter
-    private final Map<Integer, TimeStamp> itemReuseTimeStamps = new ConcurrentHashMap<>();
+    private final Int2ObjectOpenHashMap<TimeStamp> itemReuseTimeStamps = new Int2ObjectOpenHashMap<>();
 
-    @Getter
-    private final Map<Integer, Long> disabledSkills = new ConcurrentHashMap<>();
+    private static final long NOT_DISABLED = -1;
+
+    private final Int2LongOpenHashMap disabledSkills = new Int2LongOpenHashMap();
 
     private boolean allSkillsDisabled;
 
     private final byte[] zones = new byte[ZoneId.getZoneCount()];
     protected final Location lastZoneValidateLocation = new Location(getX(), getY(), getZ());
 
-    private final StampedLock attackLock = new StampedLock();
+    // Not a lock: an attack ordered re-entrantly by a listener or AI during an attack is dropped.
+    private boolean attacking;
 
-    @Getter
-    @Setter
     private Team team = Team.NONE;
 
-    @Getter
-    @Setter
     private boolean lethalable = true;
 
-    @Getter
-    private final Map<Integer, OptionSkillHolder> triggerSkills = new ConcurrentHashMap<>(1);
+    private final Int2ObjectOpenHashMap<OptionSkillHolder> triggerSkills = new Int2ObjectOpenHashMap<>(1);
 
-    @Getter(lombok.AccessLevel.PRIVATE)
-    private final Map<Integer, InvulSkillHolder> invulAgainstSkills = new ConcurrentHashMap<>(1);
+    private final Int2ObjectOpenHashMap<InvulSkillHolder> invulAgainstSkills = new Int2ObjectOpenHashMap<>(1);
 
-    @Getter
     private final EffectList effectList = new EffectList(this);
 
-    @Getter
-    @Setter
     private Creature summoner = null;
 
     private SkillChannelizer channelizer = null;
@@ -335,50 +294,38 @@ public abstract class Creature extends WorldObject {
 
     private final BuffFinishTask buffFinishTask = new BuffFinishTask();
 
-    @Getter
     private int abnormalVisualEffects;
 
-    @Getter
     private int abnormalVisualEffectSpecial;
 
-    @Getter
     private int abnormalVisualEffectEvent;
 
     protected MoveData move;
 
-    @Getter
-    @Setter
     private boolean cursorKeyMovement = false;
 
-    @Getter
     private WorldObject target;
     /** Represents the time where the attack should end, in nanoseconds. */
-    @Getter
-    private volatile long attackEndTime;
+    private long attackEndTime;
 
-    @Getter
     private int bowAttackEndTime;
 
-    @Getter
     private int castInterruptTime;
 
     private static final Calculator[] NPC_STD_CALCULATOR = Formulas.getStdNPCCalculators();
 
-    private volatile CreatureAI ai = null;
+    private CreatureAI ai = null;
 
-    @Setter
-    protected Future<?> skillCast;
+    protected ScheduledFuture<?> skillCast;
 
-    protected Future<?> skillCast2;
+    protected ScheduledFuture<?> skillCast2;
 
-    @Getter
-    private final Map<Integer, RelationCache> knownRelations = new ConcurrentHashMap<>();
+    private final Int2ObjectOpenHashMap<RelationCache> knownRelations = new Int2ObjectOpenHashMap<>();
 
-    private Set<Creature> seenCreatures = null;
+    private ObjectOpenHashSet<Creature> seenCreatures = null;
     private int seenCreatureRange = PlayerConfig.ALT_PARTY_RANGE;
 
-    @Getter
-    private final List<Item> fakePlayerDrops = new CopyOnWriteArrayList<>();
+    private final ObjectArrayList<Item> fakePlayerDrops = new ObjectArrayList<>();
 
     private OnCreatureSkillUse onCreatureSkillUse = null;
 
@@ -391,6 +338,8 @@ public abstract class Creature extends WorldObject {
         if (template == null) {
             throw new NullPointerException("Template is null!");
         }
+
+        disabledSkills.defaultReturnValue(NOT_DISABLED);
 
         setInstanceType(InstanceType.Creature);
         initCharStat();
@@ -420,12 +369,353 @@ public abstract class Creature extends WorldObject {
         setInvul(true);
     }
 
+    public Set<Creature> getAttackByList() {
+        WorldPartition.checkOwner();
+        return ObjectSets.unmodifiable(new ObjectOpenHashSet<>(attackByList));
+    }
+
+    public void clearAttackByList() {
+        WorldPartition.checkOwner();
+        attackByList.clear();
+    }
+
+    public boolean isAttackedBy(Creature creature) {
+        WorldPartition.checkOwner();
+        return attackByList.contains(creature);
+    }
+
+    public boolean isAttackByListEmpty() {
+        WorldPartition.checkOwner();
+        return attackByList.isEmpty();
+    }
+
+    protected void addToAttackByList(Creature attacker) {
+        WorldPartition.checkOwner();
+        attackByList.add(attacker);
+    }
+
+    public boolean isCastingNow() {
+        WorldPartition.checkOwner();
+        return castingNow;
+    }
+
+    public void setCastingNow(boolean castingNow) {
+        WorldPartition.checkOwner();
+        this.castingNow = castingNow;
+    }
+
+    public boolean isCastingSimultaneouslyNow() {
+        WorldPartition.checkOwner();
+        return castingSimultaneouslyNow;
+    }
+
+    public void setCastingSimultaneouslyNow(boolean castingSimultaneouslyNow) {
+        WorldPartition.checkOwner();
+        this.castingSimultaneouslyNow = castingSimultaneouslyNow;
+    }
+
+    public Skill getLastSkillCast() {
+        WorldPartition.checkOwner();
+        return lastSkillCast;
+    }
+
+    public void setLastSkillCast(Skill lastSkillCast) {
+        WorldPartition.checkOwner();
+        this.lastSkillCast = lastSkillCast;
+    }
+
+    public Skill getLastSimultaneousSkillCast() {
+        WorldPartition.checkOwner();
+        return lastSimultaneousSkillCast;
+    }
+
+    public void setLastSimultaneousSkillCast(Skill lastSimultaneousSkillCast) {
+        WorldPartition.checkOwner();
+        this.lastSimultaneousSkillCast = lastSimultaneousSkillCast;
+    }
+
+    public boolean isDead() {
+        WorldPartition.checkOwner();
+        return dead;
+    }
+
+    public void setDead(boolean dead) {
+        WorldPartition.checkOwner();
+        this.dead = dead;
+    }
+
+    public boolean isImmobilized() {
+        WorldPartition.checkOwner();
+        return immobilized;
+    }
+
+    public void setImmobilized(boolean immobilized) {
+        WorldPartition.checkOwner();
+        this.immobilized = immobilized;
+    }
+
+    public boolean isOverloaded() {
+        WorldPartition.checkOwner();
+        return overloaded;
+    }
+
+    public void setOverloaded(boolean overloaded) {
+        WorldPartition.checkOwner();
+        this.overloaded = overloaded;
+    }
+
+    public void setParalyzed(boolean paralyzed) {
+        WorldPartition.checkOwner();
+        this.paralyzed = paralyzed;
+    }
+
+    public boolean isRunning() {
+        WorldPartition.checkOwner();
+        return running;
+    }
+
+    public boolean isShowSummonAnimation() {
+        WorldPartition.checkOwner();
+        return showSummonAnimation;
+    }
+
+    public void setShowSummonAnimation(boolean showSummonAnimation) {
+        WorldPartition.checkOwner();
+        this.showSummonAnimation = showSummonAnimation;
+    }
+
+    public boolean isTeleporting() {
+        WorldPartition.checkOwner();
+        return teleporting;
+    }
+
+    public void setTeleporting(boolean teleporting) {
+        WorldPartition.checkOwner();
+        this.teleporting = teleporting;
+    }
+
+    public void setInvul(boolean invul) {
+        WorldPartition.checkOwner();
+        this.invul = invul;
+    }
+
+    public boolean isMortal() {
+        WorldPartition.checkOwner();
+        return mortal;
+    }
+
+    public void setMortal(boolean mortal) {
+        WorldPartition.checkOwner();
+        this.mortal = mortal;
+    }
+
+    public boolean isFlying() {
+        WorldPartition.checkOwner();
+        return flying;
+    }
+
+    public void setFlying(boolean flying) {
+        WorldPartition.checkOwner();
+        this.flying = flying;
+    }
+
+    public CreatureStat getStat() {
+        WorldPartition.checkOwner();
+        return stat;
+    }
+
+    public void setStat(CreatureStat stat) {
+        WorldPartition.checkOwner();
+        this.stat = stat;
+    }
+
+    public CreatureStatus getStatus() {
+        WorldPartition.checkOwner();
+        return status;
+    }
+
+    public void setStatus(CreatureStatus status) {
+        WorldPartition.checkOwner();
+        this.status = status;
+    }
+
+    public CreatureTemplate getTemplate() {
+        WorldPartition.checkOwner();
+        return template;
+    }
+
+    protected void setTemplate(CreatureTemplate template) {
+        this.template = template;
+    }
+
+    public String getTitle() {
+        WorldPartition.checkOwner();
+        return title;
+    }
+
+    public int getKarma() {
+        WorldPartition.checkOwner();
+        return karma;
+    }
+
+    public void setKarma(int karma) {
+        WorldPartition.checkOwner();
+        this.karma = karma;
+    }
+
+    public Calculator getCalculator(int statId) {
+        WorldPartition.checkOwner();
+        return calculators[statId];
+    }
+
+    public Map<Integer, Skill> getSkills() {
+        WorldPartition.checkOwner();
+        return Int2ObjectMaps.unmodifiable(new Int2ObjectOpenHashMap<>(skills));
+    }
+
+    public Map<Integer, TimeStamp> getSkillReuseTimeStamps() {
+        WorldPartition.checkOwner();
+        return Int2ObjectMaps.unmodifiable(new Int2ObjectOpenHashMap<>(skillReuseTimeStamps));
+    }
+
+    public Map<Integer, TimeStamp> getItemReuseTimeStamps() {
+        WorldPartition.checkOwner();
+        return Int2ObjectMaps.unmodifiable(new Int2ObjectOpenHashMap<>(itemReuseTimeStamps));
+    }
+
+    public Team getTeam() {
+        WorldPartition.checkOwner();
+        return team;
+    }
+
+    public void setTeam(Team team) {
+        WorldPartition.checkOwner();
+        this.team = team;
+    }
+
+    public boolean isLethalable() {
+        WorldPartition.checkOwner();
+        return lethalable;
+    }
+
+    public void setLethalable(boolean lethalable) {
+        WorldPartition.checkOwner();
+        this.lethalable = lethalable;
+    }
+
+    public EffectList getEffectList() {
+        WorldPartition.checkOwner();
+        return effectList;
+    }
+
+    public Creature getSummoner() {
+        WorldPartition.checkOwner();
+        return summoner;
+    }
+
+    public void setSummoner(Creature summoner) {
+        WorldPartition.checkOwner();
+        this.summoner = summoner;
+    }
+
+    public int getAbnormalVisualEffects() {
+        WorldPartition.checkOwner();
+        return abnormalVisualEffects;
+    }
+
+    public int getAbnormalVisualEffectSpecial() {
+        WorldPartition.checkOwner();
+        return abnormalVisualEffectSpecial;
+    }
+
+    public int getAbnormalVisualEffectEvent() {
+        WorldPartition.checkOwner();
+        return abnormalVisualEffectEvent;
+    }
+
+    public boolean isCursorKeyMovement() {
+        WorldPartition.checkOwner();
+        return cursorKeyMovement;
+    }
+
+    public void setCursorKeyMovement(boolean cursorKeyMovement) {
+        WorldPartition.checkOwner();
+        this.cursorKeyMovement = cursorKeyMovement;
+    }
+
+    public WorldObject getTarget() {
+        WorldPartition.checkOwner();
+        return target;
+    }
+
+    public long getAttackEndTime() {
+        WorldPartition.checkOwner();
+        return attackEndTime;
+    }
+
+    public int getBowAttackEndTime() {
+        WorldPartition.checkOwner();
+        return bowAttackEndTime;
+    }
+
+    public int getCastInterruptTime() {
+        WorldPartition.checkOwner();
+        return castInterruptTime;
+    }
+
+    public void setSkillCast(ScheduledFuture<?> skillCast) {
+        WorldPartition.checkOwner();
+        this.skillCast = skillCast;
+    }
+
+    public RelationCache getKnownRelation(int objectId) {
+        WorldPartition.checkOwner();
+        return knownRelations.get(objectId);
+    }
+
+    public void putKnownRelation(int objectId, RelationCache relation) {
+        WorldPartition.checkOwner();
+        knownRelations.put(objectId, relation);
+    }
+
+    public void removeKnownRelation(int objectId) {
+        WorldPartition.checkOwner();
+        knownRelations.remove(objectId);
+    }
+
+    public void addFakePlayerDrop(Item item) {
+        WorldPartition.checkOwner();
+        fakePlayerDrops.add(item);
+    }
+
+    public Item getLastFakePlayerDrop() {
+        WorldPartition.checkOwner();
+        return fakePlayerDrops.isEmpty() ? null : fakePlayerDrops.getLast();
+    }
+
+    public void removeLastFakePlayerDrop() {
+        WorldPartition.checkOwner();
+        fakePlayerDrops.removeLast();
+    }
+
+    public void clearFakePlayerDrops() {
+        WorldPartition.checkOwner();
+        fakePlayerDrops.clear();
+    }
+
+    public boolean isCoreAIDisabled() {
+        WorldPartition.checkOwner();
+        return coreAIDisabled;
+    }
+
     public Inventory getInventory() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     public boolean destroyItemByItemId(
             ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         // Default: NPCs consume virtual items for their skills.
         // TODO: should be logged if even happens.. should be false
         return true;
@@ -433,6 +723,7 @@ public abstract class Creature extends WorldObject {
 
     public boolean destroyItem(
             ItemProcessType process, int objectId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         // Default: NPCs consume virtual items for their skills.
         // TODO: should be logged if even happens.. should be false
         return true;
@@ -440,6 +731,7 @@ public abstract class Creature extends WorldObject {
 
     @Override
     public boolean isInsideZone(ZoneId zone) {
+        WorldPartition.checkOwner();
         final Instance instance = InstanceManager.getInstance().getInstance(getInstanceId());
         switch (zone) {
             case PVP: {
@@ -462,30 +754,35 @@ public abstract class Creature extends WorldObject {
     }
 
     public void setInsideZone(ZoneId zone, boolean state) {
-        synchronized (zones) {
-            if (state) {
-                zones[zone.ordinal()]++;
-            } else if (zones[zone.ordinal()] > 0) {
-                zones[zone.ordinal()]--;
-            }
+        WorldPartition.checkOwner();
+        if (state) {
+            zones[zone.ordinal()]++;
+        } else if (zones[zone.ordinal()] > 0) {
+            zones[zone.ordinal()]--;
         }
     }
 
     public boolean isTransformed() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public Transform getTransformation() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    public void untransform() {}
+    public void untransform() {
+        WorldPartition.checkOwner();
+    }
 
     public boolean isGM() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public AccessLevel getAccessLevel() {
+        WorldPartition.checkOwner();
         return null;
     }
 
@@ -497,6 +794,7 @@ public abstract class Creature extends WorldObject {
 
     /** Does not remove the object from the World's object map and sends no packets to players. */
     public void onDecay() {
+        WorldPartition.checkOwner();
         if (PlayerConfig.DISCONNECT_AFTER_DEATH && isPlayer()) {
             final Player player = asPlayer();
             if (player.isOnline()) {
@@ -517,6 +815,7 @@ public abstract class Creature extends WorldObject {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
 
         buffFinishTask.start();
@@ -549,7 +848,8 @@ public abstract class Creature extends WorldObject {
         }
     }
 
-    public synchronized void onTeleported() {
+    public void onTeleported() {
+        WorldPartition.checkOwner();
         if (!teleporting) {
             return;
         }
@@ -562,9 +862,12 @@ public abstract class Creature extends WorldObject {
         }
     }
 
-    public void addAttackerToAttackByList(Creature creature) {}
+    public void addAttackerToAttackByList(Creature creature) {
+        WorldPartition.checkOwner();
+    }
 
     public void broadcastPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
         packet.sendInBroadcast();
         try {
             World.forEachVisibleObject(this, Player.class, player -> {
@@ -579,19 +882,23 @@ public abstract class Creature extends WorldObject {
 
     // TODO: Add target logic.
     public void broadcastSkillPacket(ServerPacket packet, WorldObject target) {
+        WorldPartition.checkOwner();
         broadcastPacket(packet);
     }
 
     // TODO: Add targets logic.
     public void broadcastSkillPacket(ServerPacket packet, Collection<WorldObject> targets) {
+        WorldPartition.checkOwner();
         broadcastPacket(packet);
     }
 
     public void broadcastMoveToLocation() {
+        WorldPartition.checkOwner();
         broadcastMoveToLocation(false);
     }
 
     public void broadcastMoveToLocation(boolean force) {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move == null) {
             return;
@@ -628,6 +935,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void broadcastSocialAction(int id) {
+        WorldPartition.checkOwner();
         if (isPlayable()) {
             broadcastPacket(new SocialAction(getObjectId(), id));
         } else {
@@ -664,6 +972,7 @@ public abstract class Creature extends WorldObject {
 
     /** HP and MP only; CP is not sent. */
     public void broadcastStatusUpdate() {
+        WorldPartition.checkOwner();
         if (status.getStatusListener().isEmpty() || !needHpUpdate()) {
             return;
         }
@@ -679,9 +988,12 @@ public abstract class Creature extends WorldObject {
         }
     }
 
-    public void sendMessage(String text) {}
+    public void sendMessage(String text) {
+        WorldPartition.checkOwner();
+    }
 
     public void teleToLocation(int xValue, int yValue, int zValue, int headingValue, int instanceId, int randomOffset) {
+        WorldPartition.checkOwner();
         if (isPlayer() && !asPlayer().isOnline()) {
             return;
         }
@@ -757,38 +1069,47 @@ public abstract class Creature extends WorldObject {
     }
 
     public void teleToLocation(int x, int y, int z, int heading, int instanceId, boolean randomOffset) {
+        WorldPartition.checkOwner();
         teleToLocation(x, y, z, heading, instanceId, (randomOffset) ? PlayerConfig.MAX_OFFSET_ON_TELEPORT : 0);
     }
 
     public void teleToLocation(int x, int y, int z, int heading, int instanceId) {
+        WorldPartition.checkOwner();
         teleToLocation(x, y, z, heading, instanceId, 0);
     }
 
     public void teleToLocation(int x, int y, int z, int heading, boolean randomOffset) {
+        WorldPartition.checkOwner();
         teleToLocation(x, y, z, heading, -1, (randomOffset) ? PlayerConfig.MAX_OFFSET_ON_TELEPORT : 0);
     }
 
     public void teleToLocation(int x, int y, int z, int heading) {
+        WorldPartition.checkOwner();
         teleToLocation(x, y, z, heading, -1, 0);
     }
 
     public void teleToLocation(int x, int y, int z, boolean randomOffset) {
+        WorldPartition.checkOwner();
         teleToLocation(x, y, z, 0, -1, (randomOffset) ? PlayerConfig.MAX_OFFSET_ON_TELEPORT : 0);
     }
 
     public void teleToLocation(int x, int y, int z) {
+        WorldPartition.checkOwner();
         teleToLocation(x, y, z, 0, -1, 0);
     }
 
     public void teleToLocation(ILocational loc, int randomOffset) {
+        WorldPartition.checkOwner();
         teleToLocation(loc.getX(), loc.getY(), loc.getZ(), loc.getHeading(), loc.getInstanceId(), randomOffset);
     }
 
     public void teleToLocation(ILocational loc, int instanceId, int randomOffset) {
+        WorldPartition.checkOwner();
         teleToLocation(loc.getX(), loc.getY(), loc.getZ(), loc.getHeading(), instanceId, randomOffset);
     }
 
     public void teleToLocation(ILocational loc, boolean randomOffset) {
+        WorldPartition.checkOwner();
         teleToLocation(
                 loc.getX(),
                 loc.getY(),
@@ -799,10 +1120,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public void teleToLocation(ILocational loc) {
+        WorldPartition.checkOwner();
         teleToLocation(loc.getX(), loc.getY(), loc.getZ(), loc.getHeading(), loc.getInstanceId(), 0);
     }
 
     public void teleToLocation(TeleportWhereType teleportWhere) {
+        WorldPartition.checkOwner();
         teleToLocation(MapRegionData.getInstance().getTeleToLocation(this, teleportWhere), true);
     }
 
@@ -863,11 +1186,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public void doAttack(Creature target) {
-        final long stamp = attackLock.tryWriteLock();
-        if (stamp == 0) {
+        WorldPartition.checkOwner();
+        if (attacking) {
             return;
         }
 
+        attacking = true;
         try {
             if ((target == null) || isAttackDisabled() || !target.isTargetable()) {
                 return;
@@ -1103,7 +1427,7 @@ public abstract class Creature extends WorldObject {
             WorldPartition.loop()
                     .schedule(() -> getAI().notifyActionReadyToAct(), timeAtk + reuse, TimeUnit.MILLISECONDS);
         } finally {
-            attackLock.unlockWrite(stamp);
+            attacking = false;
         }
     }
 
@@ -1332,14 +1656,17 @@ public abstract class Creature extends WorldObject {
     }
 
     public void doCast(Skill skill) {
+        WorldPartition.checkOwner();
         beginCast(skill, false);
     }
 
     public void doSimultaneousCast(Skill skill) {
+        WorldPartition.checkOwner();
         beginCast(skill, true);
     }
 
     public void doCast(Skill skill, Creature target, List<WorldObject> targets) {
+        WorldPartition.checkOwner();
         if (!checkDoCastConditions(skill)) {
             setCastingNow(false);
             return;
@@ -1356,6 +1683,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void doSimultaneousCast(Skill skill, Creature target, List<WorldObject> targets) {
+        WorldPartition.checkOwner();
         if (!checkDoCastConditions(skill)) {
             setCastingSimultaneouslyNow(false);
             return;
@@ -1683,7 +2011,7 @@ public abstract class Creature extends WorldObject {
             }
 
             if (simultaneously) {
-                final Future<?> future = skillCast2;
+                final ScheduledFuture<?> future = skillCast2;
                 if (future != null) {
                     future.cancel(true);
                     skillCast2 = null;
@@ -1692,7 +2020,7 @@ public abstract class Creature extends WorldObject {
                 // 400 ms early for client animation (party buffs especially).
                 skillCast2 = WorldPartition.loop().schedule(mut, Math.max(0, skillTime - 400), TimeUnit.MILLISECONDS);
             } else {
-                final Future<?> future = skillCast;
+                final ScheduledFuture<?> future = skillCast;
                 if (future != null) {
                     future.cancel(true);
                     skillCast = null;
@@ -1707,6 +2035,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean checkDoCastConditions(Skill skill) {
+        WorldPartition.checkOwner();
         if ((skill == null)
                 || isSkillDisabled(skill)
                 || ((skill.getFlyType() == FlyType.CHARGE) && isMovementDisabled())) {
@@ -1805,21 +2134,25 @@ public abstract class Creature extends WorldObject {
     }
 
     public void addTimeStampItem(Item item, long reuse) {
+        WorldPartition.checkOwner();
         addTimeStampItem(item, reuse, -1);
     }
 
     public void addTimeStampItem(Item item, long reuse, long endsAt) {
+        WorldPartition.checkOwner();
         itemReuseTimeStamps.put(item.getObjectId(), new TimeStamp(item, reuse, endsAt));
     }
 
     /** @return the remaining time, or -1 without a time stamp. */
     public long getItemRemainingReuseTime(int itemObjId) {
+        WorldPartition.checkOwner();
         final TimeStamp reuseStamp = itemReuseTimeStamps.get(itemObjId);
         return reuseStamp != null ? reuseStamp.getRemaining() : -1;
     }
 
     /** @return the remaining time, or -1 without a time stamp. */
     public long getReuseDelayOnGroup(int group) {
+        WorldPartition.checkOwner();
         if ((group > 0) && !itemReuseTimeStamps.isEmpty()) {
             final long currentTime = ClockBridge.gameMillis();
             for (TimeStamp ts : itemReuseTimeStamps.values()) {
@@ -1836,37 +2169,45 @@ public abstract class Creature extends WorldObject {
     }
 
     public void addTimeStamp(Skill skill, long reuse) {
+        WorldPartition.checkOwner();
         addTimeStamp(skill, reuse, -1);
     }
 
     public void addTimeStamp(Skill skill, long reuse, long endsAt) {
+        WorldPartition.checkOwner();
         skillReuseTimeStamps.put(skill.getReuseHashCode(), new TimeStamp(skill, reuse, endsAt));
     }
 
     public void removeTimeStamp(Skill skill) {
+        WorldPartition.checkOwner();
         skillReuseTimeStamps.remove(skill.getReuseHashCode());
     }
 
     public void resetTimeStamps() {
+        WorldPartition.checkOwner();
         skillReuseTimeStamps.clear();
     }
 
     /** @return the remaining time, or -1 without a time stamp. */
     public long getSkillRemainingReuseTime(int hashCode) {
+        WorldPartition.checkOwner();
         final TimeStamp reuseStamp = skillReuseTimeStamps.get(hashCode);
         return reuseStamp != null ? reuseStamp.getRemaining() : -1;
     }
 
     public boolean hasSkillReuse(int hashCode) {
+        WorldPartition.checkOwner();
         final TimeStamp reuseStamp = skillReuseTimeStamps.get(hashCode);
         return (reuseStamp != null) && reuseStamp.hasNotPassed();
     }
 
     public TimeStamp getSkillReuseTimeStamp(int hashCode) {
+        WorldPartition.checkOwner();
         return skillReuseTimeStamps.get(hashCode);
     }
 
     public void enableSkill(Skill skill) {
+        WorldPartition.checkOwner();
         if (skill == null) {
             return;
         }
@@ -1876,6 +2217,7 @@ public abstract class Creature extends WorldObject {
 
     /** Disables the skill for {@code delay} ms; zero or less disables it indefinitely. */
     public void disableSkill(Skill skill, long delay) {
+        WorldPartition.checkOwner();
         if (skill == null) {
             return;
         }
@@ -1884,10 +2226,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public void resetDisabledSkills() {
+        WorldPartition.checkOwner();
         disabledSkills.clear();
     }
 
     public boolean isSkillDisabled(Skill skill) {
+        WorldPartition.checkOwner();
         if (skill == null) {
             return false;
         }
@@ -1905,8 +2249,8 @@ public abstract class Creature extends WorldObject {
             return false;
         }
 
-        final Long stamp = disabledSkills.get(hashCode);
-        if (stamp == null) {
+        final long stamp = disabledSkills.get(hashCode);
+        if (stamp == NOT_DISABLED) {
             return false;
         }
 
@@ -1919,27 +2263,28 @@ public abstract class Creature extends WorldObject {
     }
 
     public void disableAllSkills() {
+        WorldPartition.checkOwner();
         allSkillsDisabled = true;
     }
 
     public void enableAllSkills() {
+        WorldPartition.checkOwner();
         allSkillsDisabled = false;
     }
 
     /** @return {@code false} if the creature was already dead. */
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (CaptchaConfig.ENABLE_CAPTCHA) {
             CaptchaManager.getInstance().updateCounter(killer, this);
         }
 
-        synchronized (this) {
-            if (dead) {
-                return false;
-            }
-
-            setCurrentHp(0);
-            setDead(true);
+        if (dead) {
+            return false;
         }
+
+        setCurrentHp(0);
+        setDead(true);
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_DEATH, this)) {
             EventDispatcher.getInstance()
@@ -2032,7 +2377,7 @@ public abstract class Creature extends WorldObject {
 
         ZoneManager.getInstance().getRegion(this).onDeath(this);
 
-        getAttackByList().clear();
+        attackByList.clear();
 
         if (isChannelized()) {
             getSkillChannelized().abortChannelization();
@@ -2068,9 +2413,10 @@ public abstract class Creature extends WorldObject {
 
     @Override
     public boolean decayMe() {
+        WorldPartition.checkOwner();
         if (hasAI()) {
             if (isAttackable()) {
-                getAttackByList().clear();
+                attackByList.clear();
                 asAttackable().clearAggroList();
                 getAI().setIntentionIdle();
             }
@@ -2086,6 +2432,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (hasAI()) {
             getAI().stopAITask();
         }
@@ -2105,6 +2452,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void detachAI() {
+        WorldPartition.checkOwner();
         if (isWalker()) {
             return;
         }
@@ -2115,6 +2463,7 @@ public abstract class Creature extends WorldObject {
     protected void calculateRewards(Creature killer) {}
 
     public void doRevive() {
+        WorldPartition.checkOwner();
         if (!dead) {
             return;
         }
@@ -2146,18 +2495,14 @@ public abstract class Creature extends WorldObject {
     }
 
     public void doRevive(double revivePower) {
+        WorldPartition.checkOwner();
         doRevive();
     }
 
     public CreatureAI getAI() {
-        CreatureAI ai = this.ai;
+        WorldPartition.checkOwner();
         if (ai == null) {
-            synchronized (this) {
-                ai = this.ai;
-                if (ai == null) {
-                    this.ai = ai = initAI();
-                }
-            }
+            ai = initAI();
         }
 
         return ai;
@@ -2168,6 +2513,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void setAI(CreatureAI newAI) {
+        WorldPartition.checkOwner();
         final CreatureAI oldAI = ai;
         if ((oldAI != null) && (oldAI != newAI) && (oldAI instanceof AttackableAI)) {
             oldAI.stopAITask();
@@ -2177,34 +2523,42 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean hasAI() {
+        WorldPartition.checkOwner();
         return ai != null;
     }
 
     public boolean isRaid() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean isMinion() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean isRaidMinion() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean isControlBlocked() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.FEAR);
     }
 
     public boolean isAllSkillsDisabled() {
+        WorldPartition.checkOwner();
         return allSkillsDisabled || isStunned() || isSleeping() || isParalyzed();
     }
 
     public boolean isAttackDisabled() {
+        WorldPartition.checkOwner();
         return isAttackingNow() || isDisabled();
     }
 
     public boolean isDisabled() {
+        WorldPartition.checkOwner();
         return coreAIDisabled
                 || isAlikeDead()
                 || isPhysicalAttackMuted()
@@ -2214,26 +2568,32 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isConfused() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.CONFUSED);
     }
 
     public boolean isAlikeDead() {
+        WorldPartition.checkOwner();
         return dead;
     }
 
     public boolean isMuted() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.MUTED);
     }
 
     public boolean isPhysicalMuted() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.PSYCHICAL_MUTED);
     }
 
     public boolean isPhysicalAttackMuted() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.PSYCHICAL_ATTACK_MUTED);
     }
 
     public boolean isMovementDisabled() {
+        WorldPartition.checkOwner();
         // check for isTeleporting to prevent teleport cheating (if appear packet not received)
         return isStunned()
                 || isRooted()
@@ -2246,26 +2606,32 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isOutOfControl() {
+        WorldPartition.checkOwner();
         return isConfused() || isControlBlocked();
     }
 
     public boolean isParalyzed() {
+        WorldPartition.checkOwner();
         return paralyzed || isAffected(EffectFlag.PARALYZED);
     }
 
     public boolean isPendingRevive() {
+        WorldPartition.checkOwner();
         return dead && pendingRevive;
     }
 
     public void setIsPendingRevive(boolean value) {
+        WorldPartition.checkOwner();
         pendingRevive = value;
     }
 
     public boolean isDisarmed() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.DISARMED);
     }
 
     public boolean isRooted() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.ROOTED);
     }
 
@@ -2301,42 +2667,52 @@ public abstract class Creature extends WorldObject {
     }
 
     public void setRunning() {
+        WorldPartition.checkOwner();
         setRunning(true);
     }
 
     public boolean isSleeping() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.SLEEP);
     }
 
     public boolean isStunned() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.STUNNED);
     }
 
     public boolean isBetrayed() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.BETRAYED);
     }
 
     public boolean isInvul() {
+        WorldPartition.checkOwner();
         return invul || teleporting || isAffected(EffectFlag.INVUL);
     }
 
     public boolean isUndead() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean isResurrectionBlocked() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.BLOCK_RESURRECTION);
     }
 
     public void initCharStat() {
+        WorldPartition.checkOwner();
         stat = new CreatureStat(this);
     }
 
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         status = new CreatureStatus(this);
     }
 
     public void setTitle(String value) {
+        WorldPartition.checkOwner();
         if (value == null) {
             title = "";
         } else {
@@ -2345,10 +2721,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public void setWalking() {
+        WorldPartition.checkOwner();
         setRunning(false);
     }
 
     public boolean hasAbnormalVisualEffect(AbnormalVisualEffect ave) {
+        WorldPartition.checkOwner();
         if (ave.isEvent()) {
             return (abnormalVisualEffectEvent & ave.getMask()) == ave.getMask();
         }
@@ -2361,6 +2739,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void startAbnormalVisualEffect(boolean update, AbnormalVisualEffect... aves) {
+        WorldPartition.checkOwner();
         for (AbnormalVisualEffect ave : aves) {
             if (ave.isEvent()) {
                 abnormalVisualEffectEvent |= ave.getMask();
@@ -2377,6 +2756,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void stopAbnormalVisualEffect(boolean update, AbnormalVisualEffect... aves) {
+        WorldPartition.checkOwner();
         for (AbnormalVisualEffect ave : aves) {
             if (ave.isEvent()) {
                 abnormalVisualEffectEvent &= ~ave.getMask();
@@ -2393,6 +2773,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void startFakeDeath() {
+        WorldPartition.checkOwner();
         if (!isPlayer()) {
             return;
         }
@@ -2415,6 +2796,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void startStunning() {
+        WorldPartition.checkOwner();
         abortAttack();
         abortCast();
         stopMove(null);
@@ -2427,6 +2809,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void startParalyze() {
+        WorldPartition.checkOwner();
         abortAttack();
         abortCast();
         stopMove(null);
@@ -2434,33 +2817,40 @@ public abstract class Creature extends WorldObject {
     }
 
     public void stopAllEffects() {
+        WorldPartition.checkOwner();
         effectList.stopAllEffects();
     }
 
     /** Stops all effects except those that last through death. */
     public void stopAllEffectsExceptThoseThatLastThroughDeath() {
+        WorldPartition.checkOwner();
         effectList.stopAllEffectsExceptThoseThatLastThroughDeath();
     }
 
     public void stopSkillEffects(SkillFinishType type, int skillId) {
+        WorldPartition.checkOwner();
         effectList.stopSkillEffects(type, skillId);
     }
 
     public void stopEffects(EffectType type) {
+        WorldPartition.checkOwner();
         effectList.stopEffects(type);
     }
 
     /** Runs on any action except movement (attack, cast). */
     public void stopEffectsOnAction() {
+        WorldPartition.checkOwner();
         effectList.stopEffectsOnAction();
     }
 
     /** Runs on HP decrease and mana burn. */
     public void stopEffectsOnDamage(boolean awake) {
+        WorldPartition.checkOwner();
         effectList.stopEffectsOnDamage(awake);
     }
 
     public void stopFakeDeath(boolean removeEffects) {
+        WorldPartition.checkOwner();
         if (removeEffects) {
             stopEffects(EffectType.FAKE_DEATH);
         }
@@ -2481,6 +2871,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void stopStunning(boolean removeEffects) {
+        WorldPartition.checkOwner();
         if (removeEffects) {
             stopEffects(EffectType.STUN);
         }
@@ -2493,6 +2884,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void stopTransformation(boolean removeEffects) {
+        WorldPartition.checkOwner();
         if (removeEffects) {
             effectList.stopSkillEffects(SkillFinishType.NORMAL, AbnormalType.TRANSFORM);
         }
@@ -2512,12 +2904,16 @@ public abstract class Creature extends WorldObject {
 
     /** Updates only this player's client, not the party's. */
     public void updateEffectIcons() {
+        WorldPartition.checkOwner();
         updateEffectIcons(false);
     }
 
-    public void updateEffectIcons(boolean partyOnly) {}
+    public void updateEffectIcons(boolean partyOnly) {
+        WorldPartition.checkOwner();
+    }
 
     public boolean isAffectedBySkill(int skillId) {
+        WorldPartition.checkOwner();
         return effectList.isAffectedBySkill(skillId);
     }
 
@@ -2547,30 +2943,30 @@ public abstract class Creature extends WorldObject {
 
     /** NPCs without skills share NPC_STD_CALCULATOR, so it is copied before the first modification. */
     public void addStatFunc(AbstractFunction function) {
+        WorldPartition.checkOwner();
         if (function == null) {
             return;
         }
 
-        synchronized (this) {
-            if (calculators == NPC_STD_CALCULATOR) {
-                calculators = new Calculator[Stat.NUM_STATS];
-                for (int i = 0; i < Stat.NUM_STATS; i++) {
-                    if (NPC_STD_CALCULATOR[i] != null) {
-                        calculators[i] = new Calculator(NPC_STD_CALCULATOR[i]);
-                    }
+        if (calculators == NPC_STD_CALCULATOR) {
+            calculators = new Calculator[Stat.NUM_STATS];
+            for (int i = 0; i < Stat.NUM_STATS; i++) {
+                if (NPC_STD_CALCULATOR[i] != null) {
+                    calculators[i] = new Calculator(NPC_STD_CALCULATOR[i]);
                 }
             }
-
-            final int stat = function.getStat().ordinal();
-            if (calculators[stat] == null) {
-                calculators[stat] = new Calculator();
-            }
-
-            calculators[stat].addFunc(function);
         }
+
+        final int stat = function.getStat().ordinal();
+        if (calculators[stat] == null) {
+            calculators[stat] = new Calculator();
+        }
+
+        calculators[stat].addFunc(function);
     }
 
     public void addStatFuncs(List<AbstractFunction> functions) {
+        WorldPartition.checkOwner();
         final List<Stat> modifiedStats = new ArrayList<>();
         for (AbstractFunction f : functions) {
             modifiedStats.add(f.getStat());
@@ -2582,39 +2978,39 @@ public abstract class Creature extends WorldObject {
 
     /** Re-links an NPC to the shared NPC_STD_CALCULATOR once its calculators match it again. */
     public void removeStatFunc(AbstractFunction function) {
+        WorldPartition.checkOwner();
         if (function == null) {
             return;
         }
 
         final int stat = function.getStat().ordinal();
 
-        synchronized (this) {
-            if (calculators[stat] == null) {
-                return;
+        if (calculators[stat] == null) {
+            return;
+        }
+
+        calculators[stat].removeFunc(function);
+
+        if (calculators[stat].size() == 0) {
+            calculators[stat] = null;
+        }
+
+        if (isNpc()) {
+            int i = 0;
+            for (; i < Stat.NUM_STATS; i++) {
+                if (!Calculator.equalsCals(calculators[i], NPC_STD_CALCULATOR[i])) {
+                    break;
+                }
             }
 
-            calculators[stat].removeFunc(function);
-
-            if (calculators[stat].size() == 0) {
-                calculators[stat] = null;
-            }
-
-            if (isNpc()) {
-                int i = 0;
-                for (; i < Stat.NUM_STATS; i++) {
-                    if (!Calculator.equalsCals(calculators[i], NPC_STD_CALCULATOR[i])) {
-                        break;
-                    }
-                }
-
-                if (i >= Stat.NUM_STATS) {
-                    calculators = NPC_STD_CALCULATOR;
-                }
+            if (i >= Stat.NUM_STATS) {
+                calculators = NPC_STD_CALCULATOR;
             }
         }
     }
 
     public void removeStatFuncs(AbstractFunction[] functions) {
+        WorldPartition.checkOwner();
         final List<Stat> modifiedStats = new ArrayList<>();
         for (AbstractFunction f : functions) {
             modifiedStats.add(f.getStat());
@@ -2625,51 +3021,50 @@ public abstract class Creature extends WorldObject {
     }
 
     public void removeStatsOwner(Object owner) {
+        WorldPartition.checkOwner();
         List<Stat> modifiedStats = null;
         int i = 0;
 
-        synchronized (this) {
-            for (Calculator calc : calculators) {
-                if (calc != null) {
-                    if (modifiedStats != null) {
-                        modifiedStats.addAll(calc.removeOwner(owner));
-                    } else {
-                        modifiedStats = calc.removeOwner(owner);
-                    }
-
-                    if (calc.size() == 0) {
-                        calculators[i] = null;
-                    }
+        for (Calculator calc : calculators) {
+            if (calc != null) {
+                if (modifiedStats != null) {
+                    modifiedStats.addAll(calc.removeOwner(owner));
+                } else {
+                    modifiedStats = calc.removeOwner(owner);
                 }
 
-                i++;
-            }
-
-            if (isNpc()) {
-                i = 0;
-                for (; i < Stat.NUM_STATS; i++) {
-                    if (!Calculator.equalsCals(calculators[i], NPC_STD_CALCULATOR[i])) {
-                        break;
-                    }
-                }
-
-                if (i >= Stat.NUM_STATS) {
-                    calculators = NPC_STD_CALCULATOR;
+                if (calc.size() == 0) {
+                    calculators[i] = null;
                 }
             }
 
-            if (isSummon()) {
-                if (getCurrentHp() > getMaxHp()) {
-                    setCurrentHp(getMaxHp());
-                }
-
-                if (getCurrentMp() > getMaxMp()) {
-                    setCurrentMp(getMaxMp());
-                }
-            }
-
-            broadcastModifiedStats(modifiedStats);
+            i++;
         }
+
+        if (isNpc()) {
+            i = 0;
+            for (; i < Stat.NUM_STATS; i++) {
+                if (!Calculator.equalsCals(calculators[i], NPC_STD_CALCULATOR[i])) {
+                    break;
+                }
+            }
+
+            if (i >= Stat.NUM_STATS) {
+                calculators = NPC_STD_CALCULATOR;
+            }
+        }
+
+        if (isSummon()) {
+            if (getCurrentHp() > getMaxHp()) {
+                setCurrentHp(getMaxHp());
+            }
+
+            if (getCurrentMp() > getMaxMp()) {
+                setCurrentMp(getMaxMp());
+            }
+        }
+
+        broadcastModifiedStats(modifiedStats);
     }
 
     protected void broadcastModifiedStats(List<Stat> stats) {
@@ -2740,6 +3135,7 @@ public abstract class Creature extends WorldObject {
 
     /** Destination X while moving, current X otherwise. */
     public int getXdestination() {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move != null) {
             return move.xDestination;
@@ -2750,6 +3146,7 @@ public abstract class Creature extends WorldObject {
 
     /** Destination Y while moving, current Y otherwise. */
     public int getYdestination() {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move != null) {
             return move.yDestination;
@@ -2760,6 +3157,7 @@ public abstract class Creature extends WorldObject {
 
     /** Destination Z while moving, current Z otherwise. */
     public int getZdestination() {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move != null) {
             return move.zDestination;
@@ -2769,14 +3167,17 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isInCombat() {
+        WorldPartition.checkOwner();
         return hasAI() && ((getAI().getAttackTarget() != null) || getAI().isAutoAttacking());
     }
 
     public boolean isMoving() {
+        WorldPartition.checkOwner();
         return move != null;
     }
 
     public boolean isOnGeodataPath() {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move == null) {
             return false;
@@ -2786,6 +3187,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isOnGeodataPath(MoveData move) {
+        WorldPartition.checkOwner();
         if (move.onGeodataPathIndex == -1) {
             return false;
         }
@@ -2799,6 +3201,7 @@ public abstract class Creature extends WorldObject {
 
     /** @return the geo path of the current move, or null when there is no move. */
     public List<GeoLocation> getGeoPath() {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move != null) {
             return move.geoPath;
@@ -2808,30 +3211,36 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean canAbortCast() {
+        WorldPartition.checkOwner();
         return castInterruptTime > GameTimeTaskManager.getInstance().getGameTicks();
     }
 
     public boolean isAttackingOrCastingNow() {
+        WorldPartition.checkOwner();
         return isAttackingNow() || isRangeAttackingNow() || isCastingNow() || isCastingSimultaneouslyNow();
     }
 
     public boolean isAttackingNow() {
+        WorldPartition.checkOwner();
         return attackEndTime > ClockBridge.gameMillis();
     }
 
     public boolean isRangeAttackingNow() {
+        WorldPartition.checkOwner();
         return bowAttackEndTime > GameTimeTaskManager.getInstance().getGameTicks();
     }
 
     public void abortAttack() {
+        WorldPartition.checkOwner();
         if (isAttackingNow()) {
             sendPacket(ActionFailed.STATIC_PACKET);
         }
     }
 
     public void abortCast() {
+        WorldPartition.checkOwner();
         if (castingNow || castingSimultaneouslyNow) {
-            Future<?> future = skillCast;
+            ScheduledFuture<?> future = skillCast;
 
             if (future != null) {
                 future.cancel(true);
@@ -2871,6 +3280,7 @@ public abstract class Creature extends WorldObject {
      * tamper with their speed; Z is taken from the client's ValidatePosition packet.
      */
     public boolean updatePosition() {
+        WorldPartition.checkOwner();
         if (!isSpawned()) {
             this.move = null;
             return true;
@@ -3047,7 +3457,7 @@ public abstract class Creature extends WorldObject {
                 final Spawn spawn = asAttackable().getSpawn();
                 if (spawn != null) {
                     teleToLocation(spawn, getInstanceId(), 0);
-                    getAttackByList().clear();
+                    attackByList.clear();
                     asAttackable().clearAggroList();
                     getAI().setIntentionIdle();
                 }
@@ -3072,6 +3482,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void revalidateZone(boolean force) {
+        WorldPartition.checkOwner();
         // This function is called too often from movement code.
         if (!force
                 && (calculateDistance3D(lastZoneValidateLocation)
@@ -3091,6 +3502,7 @@ public abstract class Creature extends WorldObject {
 
     /** Sends no StopMove/StopRotation packet. */
     public void stopMove(Location loc) {
+        WorldPartition.checkOwner();
         move = null;
 
         if (loc != null) {
@@ -3103,6 +3515,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void setTarget(WorldObject object) {
+        WorldPartition.checkOwner();
         if ((object != null) && !object.isSpawned()) {
             target = null;
             return;
@@ -3113,6 +3526,7 @@ public abstract class Creature extends WorldObject {
 
     /** @return the target's object id, or -1 without a target. */
     public int getTargetId() {
+        WorldPartition.checkOwner();
         if (target != null) {
             return target.getObjectId();
         }
@@ -3122,6 +3536,7 @@ public abstract class Creature extends WorldObject {
 
     /** Only sets up the move; sends no MoveToPawn/MoveToLocation packet. */
     public void moveToLocation(int xValue, int yValue, int zValue, int offsetValue) {
+        WorldPartition.checkOwner();
         final double speed = stat.getMoveSpeed();
         if ((speed <= 0) || isMovementDisabled()) {
             sendPacket(ActionFailed.STATIC_PACKET);
@@ -3397,6 +3812,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean moveToNextRoutePoint() {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move == null) {
             return false;
@@ -3458,6 +3874,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean validateMovementHeading(int heading) {
+        WorldPartition.checkOwner();
         final MoveData move = this.move;
         if (move == null) {
             return true;
@@ -3473,18 +3890,22 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isInsideRadius2D(ILocational loc, int radius) {
+        WorldPartition.checkOwner();
         return isInsideRadius2D(loc.getX(), loc.getY(), loc.getZ(), radius);
     }
 
     public boolean isInsideRadius2D(int x, int y, int z, int radius) {
+        WorldPartition.checkOwner();
         return calculateDistance2D(x, y, z) < radius;
     }
 
     public boolean isInsideRadius3D(ILocational loc, int radius) {
+        WorldPartition.checkOwner();
         return isInsideRadius3D(loc.getX(), loc.getY(), loc.getZ(), radius);
     }
 
     public boolean isInsideRadius3D(int x, int y, int z, int radius) {
+        WorldPartition.checkOwner();
         return calculateDistance3D(x, y, z) < radius;
     }
 
@@ -3496,7 +3917,9 @@ public abstract class Creature extends WorldObject {
         return true;
     }
 
-    public synchronized void addExpAndSp(double addToExp, double addToSp) {}
+    public void addExpAndSp(double addToExp, double addToSp) {
+        WorldPartition.checkOwner();
+    }
 
     public abstract Item getActiveWeaponInstance();
 
@@ -3514,6 +3937,7 @@ public abstract class Creature extends WorldObject {
             byte shld,
             boolean soulshot,
             boolean rechargeShots) {
+        WorldPartition.checkOwner();
         if ((target == null) || isAlikeDead()) {
             getAI().notifyActionCancel();
             return;
@@ -3639,12 +4063,19 @@ public abstract class Creature extends WorldObject {
             }
 
             if (!triggerSkills.isEmpty()) {
-                for (OptionSkillHolder holder : triggerSkills.values()) {
-                    if (((!crit && (holder.skillType() == OptionSkillType.ATTACK))
-                                    || ((holder.skillType() == OptionSkillType.CRITICAL) && crit))
-                            && (ClockBridge.random().nextInt(100) < holder.chance())) {
-                        makeTriggerCast(holder.skill(), target);
+                // A trigger cast can equip or unequip an item and so change the triggers.
+                final ObjectArrayList<OptionSkillHolder> triggers = ScratchBuffers.acquire();
+                try {
+                    ScratchBuffers.copy(triggerSkills.values(), triggers);
+                    for (OptionSkillHolder holder : triggers) {
+                        if (((!crit && (holder.skillType() == OptionSkillType.ATTACK))
+                                        || ((holder.skillType() == OptionSkillType.CRITICAL) && crit))
+                                && (ClockBridge.random().nextInt(100) < holder.chance())) {
+                            makeTriggerCast(holder.skill(), target);
+                        }
                     }
+                } finally {
+                    ScratchBuffers.release(triggers);
                 }
             }
 
@@ -3659,6 +4090,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void breakAttack() {
+        WorldPartition.checkOwner();
         if (isAttackingNow()) {
             abortAttack();
             if (isPlayer()) {
@@ -3668,6 +4100,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void breakCast() {
+        WorldPartition.checkOwner();
         // damage can only cancel magical & static skills
         if (castingNow
                 && canAbortCast()
@@ -3685,6 +4118,7 @@ public abstract class Creature extends WorldObject {
 
     @Override
     public void onForcedAttack(Player player) {
+        WorldPartition.checkOwner();
         if (isInsidePeaceZone(player)) {
             player.sendPacket(SystemMessageId.YOU_MAY_NOT_ATTACK_THIS_TARGET_IN_A_PEACEFUL_ZONE);
             player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -3730,14 +4164,17 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isInsidePeaceZone(Player attacker) {
+        WorldPartition.checkOwner();
         return isInsidePeaceZone(attacker, this);
     }
 
     public boolean isInsidePeaceZone(Player attacker, WorldObject target) {
+        WorldPartition.checkOwner();
         return (!attacker.getAccessLevel().allowPeaceAttack() && isInsidePeaceZone((WorldObject) attacker, target));
     }
 
     public boolean isInsidePeaceZone(WorldObject attacker, WorldObject target) {
+        WorldPartition.checkOwner();
         if ((target == null) || !((target.isPlayable() || target.isFakePlayer()) && attacker.isPlayable())) {
             return false;
         }
@@ -3776,24 +4213,29 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isInActiveRegion() {
+        WorldPartition.checkOwner();
         final WorldRegion region = getWorldRegion();
         return ((region != null) && (region.isActive()));
     }
 
     public boolean isInParty() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public Party getParty() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     /** Delay in milliseconds before the next attack. */
     public int calculateTimeBetweenAttacks() {
+        WorldPartition.checkOwner();
         return (int) (500000 / stat.getPAtkSpd());
     }
 
     public int calculateReuseTime(Weapon weapon) {
+        WorldPartition.checkOwner();
         if (isTransformed()) {
             switch (getAttackType()) {
                 case BOW: {
@@ -3814,6 +4256,7 @@ public abstract class Creature extends WorldObject {
 
     /** @return the replaced skill, or null if the skill is new. */
     public Skill addSkill(Skill newSkill) {
+        WorldPartition.checkOwner();
         Skill oldSkill = null;
         if (newSkill != null) {
             oldSkill = skills.put(newSkill.getId(), newSkill);
@@ -3836,14 +4279,17 @@ public abstract class Creature extends WorldObject {
     }
 
     public Skill removeSkill(Skill skill, boolean cancelEffect) {
+        WorldPartition.checkOwner();
         return (skill != null) ? removeSkill(skill.getId(), cancelEffect) : null;
     }
 
     public Skill removeSkill(int skillId) {
+        WorldPartition.checkOwner();
         return removeSkill(skillId, true);
     }
 
     public Skill removeSkill(int skillId, boolean cancelEffect) {
+        WorldPartition.checkOwner();
         final Skill oldSkill = skills.remove(skillId);
 
         if (oldSkill != null) {
@@ -3867,28 +4313,34 @@ public abstract class Creature extends WorldObject {
     }
 
     public Collection<Skill> getAllSkills() {
-        return skills.values();
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(skills.values()));
     }
 
     public int getSkillLevel(int skillId) {
+        WorldPartition.checkOwner();
         final Skill skill = getKnownSkill(skillId);
         return (skill == null) ? 0 : skill.getLevel();
     }
 
     public Skill getKnownSkill(int skillId) {
+        WorldPartition.checkOwner();
         return skills.get(skillId);
     }
 
     public int getBuffCount() {
+        WorldPartition.checkOwner();
         return effectList.getBuffCount();
     }
 
     public int getDanceCount() {
+        WorldPartition.checkOwner();
         return effectList.getDanceCount();
     }
 
     /** Requires a cast in progress. */
     public void onMagicLaunchedTimer(MagicUseTask mut) {
+        WorldPartition.checkOwner();
         final Skill skill = mut.getSkill();
         final List<WorldObject> targets = mut.getTargets();
         if ((skill == null) || (targets == null)) {
@@ -3995,6 +4447,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void onMagicHitTimer(MagicUseTask mut) {
+        WorldPartition.checkOwner();
         final Skill skill = mut.getSkill();
         final List<WorldObject> targets = mut.getTargets();
         if ((skill == null) || (targets == null)) {
@@ -4087,6 +4540,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void onMagicFinalizer(MagicUseTask mut) {
+        WorldPartition.checkOwner();
         if (mut.isSimultaneous()) {
             skillCast2 = null;
             setCastingSimultaneouslyNow(false);
@@ -4174,6 +4628,7 @@ public abstract class Creature extends WorldObject {
     protected void notifyQuestEventSkillFinished(Skill skill, WorldObject target) {}
 
     public void callSkill(Skill skill, List<WorldObject> targets) {
+        WorldPartition.checkOwner();
         try {
             if (skill.isToggle() && isAffectedBySkill(skill.getId())) {
                 return;
@@ -4250,13 +4705,13 @@ public abstract class Creature extends WorldObject {
                                         && (targetsAttackTarget != null)
                                         && targetsAttackTarget.isRaid()
                                         && targetsAttackTarget.giveRaidCurse()
-                                        && targetsAttackTarget.getAttackByList().contains(target)
+                                        && targetsAttackTarget.isAttackedBy(target)
                                         && (getLevel() > (targetsAttackTarget.getLevel() + 8)))
                                 || (!skill.hasNegativeEffect()
                                         && (targetsCastTarget != null)
                                         && targetsCastTarget.isRaid()
                                         && targetsCastTarget.giveRaidCurse()
-                                        && targetsCastTarget.getAttackByList().contains(target)
+                                        && targetsCastTarget.isAttackedBy(target)
                                         && (getLevel() > (targetsCastTarget.getLevel() + 8))))) {
                     final CommonSkill curse = skill.isMagic() ? CommonSkill.RAID_CURSE : CommonSkill.RAID_CURSE2;
                     final Skill curseSkill = curse.getSkill();
@@ -4282,12 +4737,19 @@ public abstract class Creature extends WorldObject {
                     }
 
                     if (!triggerSkills.isEmpty()) {
-                        for (OptionSkillHolder holder : triggerSkills.values()) {
-                            if (((skill.isMagic() && (holder.skillType() == OptionSkillType.MAGIC))
-                                            || (skill.isPhysical() && (holder.skillType() == OptionSkillType.ATTACK)))
-                                    && (ClockBridge.random().nextInt(100) < holder.chance())) {
-                                makeTriggerCast(holder.skill(), target);
+                        final ObjectArrayList<OptionSkillHolder> triggers = ScratchBuffers.acquire();
+                        try {
+                            ScratchBuffers.copy(triggerSkills.values(), triggers);
+                            for (OptionSkillHolder holder : triggers) {
+                                if (((skill.isMagic() && (holder.skillType() == OptionSkillType.MAGIC))
+                                                || (skill.isPhysical()
+                                                        && (holder.skillType() == OptionSkillType.ATTACK)))
+                                        && (ClockBridge.random().nextInt(100) < holder.chance())) {
+                                    makeTriggerCast(holder.skill(), target);
+                                }
                             }
+                        } finally {
+                            ScratchBuffers.release(triggers);
                         }
                     }
                 }
@@ -4460,22 +4922,26 @@ public abstract class Creature extends WorldObject {
 
     /** (level + 89) / 100. */
     public double getLevelMod() {
+        WorldPartition.checkOwner();
         return ((getLevel() + 89) / 100d);
     }
 
     public void forceIsCasting(int newSkillCastEndTick) {
+        WorldPartition.checkOwner();
         setCastingNow(true);
 
         // for interrupt -400 ms
         castInterruptTime = newSkillCastEndTick - 4;
     }
 
-    @Getter
     private boolean coreAIDisabled = false;
 
-    public void updatePvPFlag(int value) {}
+    public void updatePvPFlag(int value) {
+        WorldPartition.checkOwner();
+    }
 
     public double getRandomDamageMultiplier() {
+        WorldPartition.checkOwner();
         int random;
         if (getActiveWeaponItem() != null) {
             random = (int) stat.calcStat(Stat.RANDOM_DAMAGE, 0);
@@ -4489,164 +4955,204 @@ public abstract class Creature extends WorldObject {
     public abstract int getLevel();
 
     public double calcStat(Stat stat, double init) {
+        WorldPartition.checkOwner();
         return this.stat.calcStat(stat, init, null, null);
     }
 
     // TODO: remove once CreatureStatus is complete
     public double calcStat(Stat stat, double init, Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         return this.stat.calcStat(stat, init, target, skill);
     }
 
     public int getAccuracy() {
+        WorldPartition.checkOwner();
         return stat.getAccuracy();
     }
 
     public float getAttackSpeedMultiplier() {
+        WorldPartition.checkOwner();
         return stat.getAttackSpeedMultiplier();
     }
 
     public double getCriticalDmg(Creature target, double init) {
+        WorldPartition.checkOwner();
         return stat.getCriticalDmg(target, init);
     }
 
     public int getCriticalHit(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         return stat.getCriticalHit(target, skill);
     }
 
     public int getEvasionRate(Creature target) {
+        WorldPartition.checkOwner();
         return stat.getEvasionRate(target);
     }
 
     public int getMagicalAttackRange(Skill skill) {
+        WorldPartition.checkOwner();
         return stat.getMagicalAttackRange(skill);
     }
 
     public int getMaxCp() {
+        WorldPartition.checkOwner();
         return stat.getMaxCp();
     }
 
     public int getMaxRecoverableCp() {
+        WorldPartition.checkOwner();
         return stat.getMaxRecoverableCp();
     }
 
     public double getMAtk(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         return stat.getMAtk(target, skill);
     }
 
     public int getMAtkSpd() {
+        WorldPartition.checkOwner();
         return stat.getMAtkSpd();
     }
 
     public int getMaxMp() {
+        WorldPartition.checkOwner();
         return stat.getMaxMp();
     }
 
     public int getMaxRecoverableMp() {
+        WorldPartition.checkOwner();
         return stat.getMaxRecoverableMp();
     }
 
     public int getMaxHp() {
+        WorldPartition.checkOwner();
         return stat.getMaxHp();
     }
 
     public int getMaxRecoverableHp() {
+        WorldPartition.checkOwner();
         return stat.getMaxRecoverableHp();
     }
 
     public int getMCriticalHit(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         return stat.getMCriticalHit(target, skill);
     }
 
     public double getMDef(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         return stat.getMDef(target, skill);
     }
 
     public double getMReuseRate(Skill skill) {
+        WorldPartition.checkOwner();
         return stat.getMReuseRate(skill);
     }
 
     public double getPAtk(Creature target) {
+        WorldPartition.checkOwner();
         return stat.getPAtk(target);
     }
 
     public double getPAtkSpd() {
+        WorldPartition.checkOwner();
         return stat.getPAtkSpd();
     }
 
     public double getPDef(Creature target) {
+        WorldPartition.checkOwner();
         return stat.getPDef(target);
     }
 
     public int getPhysicalAttackRange() {
+        WorldPartition.checkOwner();
         return stat.getPhysicalAttackRange();
     }
 
     public double getMovementSpeedMultiplier() {
+        WorldPartition.checkOwner();
         return stat.getMovementSpeedMultiplier();
     }
 
     public double getRunSpeed() {
+        WorldPartition.checkOwner();
         return stat.getRunSpeed();
     }
 
     public double getWalkSpeed() {
+        WorldPartition.checkOwner();
         return stat.getWalkSpeed();
     }
 
     public double getSwimRunSpeed() {
+        WorldPartition.checkOwner();
         return stat.getSwimRunSpeed();
     }
 
     public double getSwimWalkSpeed() {
+        WorldPartition.checkOwner();
         return stat.getSwimWalkSpeed();
     }
 
     public double getMoveSpeed() {
+        WorldPartition.checkOwner();
         return stat.getMoveSpeed();
     }
 
     public int getShldDef() {
+        WorldPartition.checkOwner();
         return stat.getShldDef();
     }
 
     public int getSTR() {
+        WorldPartition.checkOwner();
         return stat.getSTR();
     }
 
     public int getDEX() {
+        WorldPartition.checkOwner();
         return stat.getDEX();
     }
 
     public int getCON() {
+        WorldPartition.checkOwner();
         return stat.getCON();
     }
 
     public int getINT() {
+        WorldPartition.checkOwner();
         return stat.getINT();
     }
 
     public int getWIT() {
+        WorldPartition.checkOwner();
         return stat.getWIT();
     }
 
     public int getMEN() {
+        WorldPartition.checkOwner();
         return stat.getMEN();
     }
 
     // TODO: remove once CreatureStatus is complete
     public void addStatusListener(Creature object) {
+        WorldPartition.checkOwner();
         status.addStatusListener(object);
     }
 
     public void reduceCurrentHp(double amount, Creature attacker, Skill skill) {
+        WorldPartition.checkOwner();
         reduceCurrentHp(amount, attacker, true, false, skill);
     }
 
     public void reduceCurrentHpByDOT(double amount, Creature attacker, Skill skill) {
+        WorldPartition.checkOwner();
         reduceCurrentHp(amount, attacker, !skill.isToggle(), true, skill);
     }
 
     public void reduceCurrentHp(double amount, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
+        WorldPartition.checkOwner();
         if (ChampionMonstersConfig.CHAMPION_ENABLE && isChampion() && (ChampionMonstersConfig.CHAMPION_HP != 0)) {
             status.reduceHp(amount / ChampionMonstersConfig.CHAMPION_HP, attacker, awake, isDOT, false);
         } else {
@@ -4664,11 +5170,13 @@ public abstract class Creature extends WorldObject {
     }
 
     public void reduceCurrentMp(double amount) {
+        WorldPartition.checkOwner();
         status.reduceMp(amount);
     }
 
     @Override
     public void removeStatusListener(Creature object) {
+        WorldPartition.checkOwner();
         status.removeStatusListener(object);
     }
 
@@ -4677,51 +5185,63 @@ public abstract class Creature extends WorldObject {
     }
 
     public double getCurrentCp() {
+        WorldPartition.checkOwner();
         return status.getCurrentCp();
     }
 
     public int getCurrentCpPercent() {
+        WorldPartition.checkOwner();
         return (int) ((status.getCurrentCp() * 100) / stat.getMaxCp());
     }
 
     public void setCurrentCp(double newCp) {
+        WorldPartition.checkOwner();
         status.setCurrentCp(newCp);
     }
 
     public double getCurrentHp() {
+        WorldPartition.checkOwner();
         return status.getCurrentHp();
     }
 
     public int getCurrentHpPercent() {
+        WorldPartition.checkOwner();
         return (int) ((status.getCurrentHp() * 100) / stat.getMaxHp());
     }
 
     public void setCurrentHp(double newHp) {
+        WorldPartition.checkOwner();
         status.setCurrentHp(newHp);
     }
 
     public void setCurrentHpMp(double newHp, double newMp) {
+        WorldPartition.checkOwner();
         status.setCurrentHpMp(newHp, newMp);
     }
 
     public double getCurrentMp() {
+        WorldPartition.checkOwner();
         return status.getCurrentMp();
     }
 
     public int getCurrentMpPercent() {
+        WorldPartition.checkOwner();
         return (int) ((status.getCurrentMp() * 100) / stat.getMaxMp());
     }
 
     public void setCurrentMp(double newMp) {
+        WorldPartition.checkOwner();
         status.setCurrentMp(newMp);
     }
 
     public void fullRestore() {
+        WorldPartition.checkOwner();
         status.setCurrentHp(getMaxHp());
         status.setCurrentMp(getMaxMp(), isPlayable());
     }
 
     public int getMaxLoad() {
+        WorldPartition.checkOwner();
         if (isPlayer() || isPet()) {
             // Weight limit = (CON modifier * 69000) * skills.
             final double baseLoad = Math.floor(BaseStat.CON.calcBonus(this) * 69000 * PlayerConfig.ALT_WEIGHT_LIMIT);
@@ -4732,6 +5252,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public int getBonusWeightPenalty() {
+        WorldPartition.checkOwner();
         if (isPlayer() || isPet()) {
             return (int) calcStat(Stat.WEIGHT_PENALTY, 1, this, null);
         }
@@ -4740,6 +5261,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public int getCurrentLoad() {
+        WorldPartition.checkOwner();
         if (isPlayer() || isPet()) {
             final Inventory inventory = getInventory();
             return (inventory != null) ? inventory.getTotalWeight() : 0;
@@ -4749,10 +5271,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isChampion() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public void sendDamageMessage(Creature target, int damage, boolean mcrit, boolean pcrit, boolean miss) {
+        WorldPartition.checkOwner();
         if (miss && target.isPlayer()) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_EVADED_C2_S_ATTACK);
             sm.addPcName(target.asPlayer());
@@ -4762,42 +5286,52 @@ public abstract class Creature extends WorldObject {
     }
 
     public byte getAttackElement() {
+        WorldPartition.checkOwner();
         return stat.getAttackElement();
     }
 
     public int getAttackElementValue(byte attackAttribute) {
+        WorldPartition.checkOwner();
         return stat.getAttackElementValue(attackAttribute);
     }
 
     public int getDefenseElementValue(byte defenseAttribute) {
+        WorldPartition.checkOwner();
         return stat.getDefenseElementValue(defenseAttribute);
     }
 
     public void disableCoreAI(boolean value) {
+        WorldPartition.checkOwner();
         coreAIDisabled = value;
     }
 
     public boolean giveRaidCurse() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     public boolean isAffected(EffectFlag flag) {
+        WorldPartition.checkOwner();
         return effectList.isAffected(flag);
     }
 
     public boolean isAffectedByAbnormalType(AbnormalType type) {
+        WorldPartition.checkOwner();
         return effectList.isAffectedByAbnormalType(type);
     }
 
     public void addTriggerSkill(OptionSkillHolder holder) {
-        getTriggerSkills().put(holder.skill().getId(), holder);
+        WorldPartition.checkOwner();
+        triggerSkills.put(holder.skill().getId(), holder);
     }
 
     public void removeTriggerSkill(OptionSkillHolder holder) {
-        getTriggerSkills().remove(holder.skill().getId());
+        WorldPartition.checkOwner();
+        triggerSkills.remove(holder.skill().getId());
     }
 
     public void makeTriggerCast(Skill skill, Creature target, boolean ignoreTargetType) {
+        WorldPartition.checkOwner();
         try {
             if (skill == null) {
                 return;
@@ -4851,41 +5385,52 @@ public abstract class Creature extends WorldObject {
     }
 
     public void makeTriggerCast(Skill skill, Creature target) {
+        WorldPartition.checkOwner();
         makeTriggerCast(skill, target, false);
     }
 
     public boolean canRevive() {
+        WorldPartition.checkOwner();
         return true;
     }
 
-    public void setCanRevive(boolean value) {}
+    public void setCanRevive(boolean value) {
+        WorldPartition.checkOwner();
+    }
 
     public boolean isSweepActive() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getClanId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public Clan getClan() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     public boolean isAcademyMember() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getPledgeType() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public int getAllyId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public void notifyDamageReceived(
             double damage, Creature attacker, Skill skill, boolean critical, boolean damageOverTime) {
+        WorldPartition.checkOwner();
         if (isPlayer() && asPlayer().isFakeDeath() && PlayerConfig.FAKE_DEATH_DAMAGE_STAND && (damage > 0)) {
             stopFakeDeath(true);
         }
@@ -4921,6 +5466,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void notifyAttackAvoid(Creature target, boolean isDot) {
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_ATTACK_AVOID, target)) {
             EventDispatcher.getInstance()
                     .notifyEvent(
@@ -4934,6 +5480,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public WeaponType getAttackType() {
+        WorldPartition.checkOwner();
         if (isTransformed()) {
             final TransformTemplate template = getTransformation().getTemplate(asPlayer());
             if (template != null) {
@@ -4950,24 +5497,29 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isInCategory(CategoryType type) {
+        WorldPartition.checkOwner();
         return CategoryData.getInstance().isInCategory(type, getId());
     }
 
     @Override
     public boolean isCreature() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Creature asCreature() {
+        WorldPartition.checkOwner();
         return this;
     }
 
     public boolean isChanneling() {
+        WorldPartition.checkOwner();
         return (channelizer != null) && channelizer.isChanneling();
     }
 
     public SkillChannelizer getSkillChannelizer() {
+        WorldPartition.checkOwner();
         if (channelizer == null) {
             channelizer = new SkillChannelizer(this);
         }
@@ -4976,10 +5528,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isChannelized() {
+        WorldPartition.checkOwner();
         return (channelized != null) && !channelized.isChannelized();
     }
 
     public SkillChannelized getSkillChannelized() {
+        WorldPartition.checkOwner();
         if (channelized == null) {
             channelized = new SkillChannelized();
         }
@@ -4988,25 +5542,28 @@ public abstract class Creature extends WorldObject {
     }
 
     public void addInvulAgainst(SkillHolder holder) {
-        final InvulSkillHolder invulHolder = getInvulAgainstSkills().get(holder.getSkillId());
+        WorldPartition.checkOwner();
+        final InvulSkillHolder invulHolder = invulAgainstSkills.get(holder.getSkillId());
         if (invulHolder != null) {
             invulHolder.increaseInstances();
             return;
         }
 
-        getInvulAgainstSkills().put(holder.getSkillId(), new InvulSkillHolder(holder));
+        invulAgainstSkills.put(holder.getSkillId(), new InvulSkillHolder(holder));
     }
 
     public void removeInvulAgainst(SkillHolder holder) {
-        final InvulSkillHolder invulHolder = getInvulAgainstSkills().get(holder.getSkillId());
+        WorldPartition.checkOwner();
+        final InvulSkillHolder invulHolder = invulAgainstSkills.get(holder.getSkillId());
         if ((invulHolder != null) && (invulHolder.decreaseInstances() < 1)) {
-            getInvulAgainstSkills().remove(holder.getSkillId());
+            invulAgainstSkills.remove(holder.getSkillId());
         }
     }
 
     public boolean isInvulAgainst(int skillId, int skillLevel) {
+        WorldPartition.checkOwner();
         if (!invulAgainstSkills.isEmpty()) {
-            final SkillHolder holder = getInvulAgainstSkills().get(skillId);
+            final SkillHolder holder = invulAgainstSkills.get(skillId);
             return ((holder != null) && ((holder.getSkillLevel() < 1) || (holder.getSkillLevel() == skillLevel)));
         }
 
@@ -5015,6 +5572,7 @@ public abstract class Creature extends WorldObject {
 
     @Override
     public Collection<AbstractEventListener> getListeners(EventType type) {
+        WorldPartition.checkOwner();
         final Collection<AbstractEventListener> objectListeners = super.getListeners(type);
         final Collection<AbstractEventListener> templateListeners = template.getListeners(type);
         final Collection<AbstractEventListener> globalListeners = isMonster()
@@ -5042,11 +5600,13 @@ public abstract class Creature extends WorldObject {
     }
 
     public Race getRace() {
+        WorldPartition.checkOwner();
         return template.getRace();
     }
 
     @Override
     public void setXYZ(int newX, int newY, int newZ) {
+        WorldPartition.checkOwner();
         // 0, 0 is not a valid location.
         if ((newX == 0) && (newY == 0)) {
             return;
@@ -5068,41 +5628,42 @@ public abstract class Creature extends WorldObject {
     }
 
     public boolean isInDuel() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getDuelId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public byte getSiegeState() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public int getSiegeSide() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     protected void initSeenCreatures() {
         if (seenCreatures == null) {
-            synchronized (this) {
-                if (seenCreatures == null) {
-                    if (isNpc()) {
-                        final NpcTemplate template = asNpc().getTemplate();
-                        if ((template != null) && (template.getAggroRange() > 0)) {
-                            seenCreatureRange = template.getAggroRange();
-                        }
-                    }
-
-                    seenCreatures = ConcurrentHashMap.newKeySet(1);
+            if (isNpc()) {
+                final NpcTemplate template = asNpc().getTemplate();
+                if ((template != null) && (template.getAggroRange() > 0)) {
+                    seenCreatureRange = template.getAggroRange();
                 }
             }
+
+            seenCreatures = new ObjectOpenHashSet<>(1);
         }
 
         CreatureSeeTaskManager.getInstance().add(this);
     }
 
     public void updateSeenCreatures() {
+        WorldPartition.checkOwner();
         if ((seenCreatures == null) || dead || !isSpawned()) {
             return;
         }
@@ -5128,6 +5689,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public void removeSeenCreature(WorldObject worldObject) {
+        WorldPartition.checkOwner();
         if (seenCreatures == null) {
             return;
         }
@@ -5136,6 +5698,7 @@ public abstract class Creature extends WorldObject {
     }
 
     public int getMinShopDistance() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
@@ -5144,6 +5707,7 @@ public abstract class Creature extends WorldObject {
      * tick does not snap back to the stale xAccurate / yAccurate.
      */
     public void setSyncedXYZ(int x, int y, int z) {
+        WorldPartition.checkOwner();
         setXYZ(x, y, z);
 
         final MoveData move = this.move;
@@ -5154,10 +5718,12 @@ public abstract class Creature extends WorldObject {
     }
 
     public void addBuffInfoTime(BuffInfo info) {
+        WorldPartition.checkOwner();
         buffFinishTask.addBuffInfo(info);
     }
 
     public void removeBuffInfoTime(BuffInfo info) {
+        WorldPartition.checkOwner();
         buffFinishTask.removeBuffInfo(info);
     }
 }

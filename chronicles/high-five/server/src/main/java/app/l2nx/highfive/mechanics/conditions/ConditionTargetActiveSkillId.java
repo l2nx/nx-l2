@@ -54,12 +54,7 @@ public class ConditionTargetActiveSkillId extends Condition {
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        for (Skill sk : effected.getAllSkills()) {
-            if ((sk != null) && (sk.getId() == skillId) && ((skillLevel == -1) || (skillLevel <= sk.getLevel()))) {
-                return true;
-            }
-        }
-
-        return false;
+        final Skill known = effected.getKnownSkill(skillId);
+        return (known != null) && ((skillLevel == -1) || (skillLevel <= known.getLevel()));
     }
 }

@@ -130,6 +130,7 @@ class ClockBridgeExtensionTest {
                 new Class<?>[] {ExtensionContext.Store.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "put" -> values.put(args[0], args[1]);
+                    case "remove" -> values.remove(args[0]);
                     case "get" -> {
                         if (values.containsKey(args[0]) || (parent == null)) {
                             yield values.get(args[0]);

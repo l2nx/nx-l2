@@ -48,6 +48,11 @@ public final class AllowedSingleWriter {
         }
     }
 
+    @SingleWriter
+    public abstract static class CheckedAbstract {
+        public abstract int level();
+    }
+
     public static final class Plain {
         public volatile int value;
         private final Map<Integer, Object> map = new ConcurrentHashMap<>();

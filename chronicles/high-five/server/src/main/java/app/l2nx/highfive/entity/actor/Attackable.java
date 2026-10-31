@@ -83,7 +83,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -706,16 +705,12 @@ public class Attackable extends Npc {
 
     @Override
     public void addAttackerToAttackByList(Creature creature) {
+        WorldPartition.checkOwner();
         if ((creature == null) || (creature == this)) {
             return;
         }
 
-        final Set<Creature> attackByList = getAttackByList();
-        if (attackByList.contains(creature)) {
-            return;
-        }
-
-        attackByList.add(creature);
+        addToAttackByList(creature);
     }
 
     public Creature getMainDamageDealer() {
@@ -999,7 +994,7 @@ public class Attackable extends Npc {
 
         result.add(mostHated);
 
-        if (getAttackByList().contains(secondMostHated)) {
+        if (isAttackedBy(secondMostHated)) {
             result.add(secondMostHated);
         } else {
             result.add(null);
@@ -1116,8 +1111,8 @@ public class Attackable extends Npc {
                             mainDamageDealer.broadcastInfo(); // ? check if this is necessary
                         } else {
                             final Item droppedItem = dropItem(mainDamageDealer, drop); // Drop the item on the ground.
-                            if (FakePlayersConfig.FAKE_PLAYER_CAN_PICKUP) {
-                                mainDamageDealer.getFakePlayerDrops().add(droppedItem);
+                            if (FakePlayersConfig.FAKE_PLAYER_CAN_PICKUP && (droppedItem != null)) {
+                                mainDamageDealer.addFakePlayerDrop(droppedItem);
                             }
                         }
                     }
@@ -1423,7 +1418,7 @@ public class Attackable extends Npc {
 
         // fake players
         if (isFakePlayer()) {
-            getFakePlayerDrops().clear(); // Clear existing fake player drops.
+            clearFakePlayerDrops();
             setKarma(0); // reset karma
             setScriptValue(0); // remove pvp flag
             setRunning(); // don't walk

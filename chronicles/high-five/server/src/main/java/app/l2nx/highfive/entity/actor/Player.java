@@ -3856,8 +3856,7 @@ public class Player extends Playable {
                                             // Update relation.
                                             final int relation = getRelation(player);
                                             final boolean isAutoAttackable = isAutoAttackable(player);
-                                            final RelationCache oldrelation =
-                                                    getKnownRelations().get(player.getObjectId());
+                                            final RelationCache oldrelation = getKnownRelation(player.getObjectId());
                                             if ((oldrelation == null)
                                                     || (oldrelation.relation() != relation)
                                                     || (oldrelation.autoAttackable() != isAutoAttackable)) {
@@ -3868,10 +3867,9 @@ public class Player extends Playable {
                                                             new RelationChanged(summon, relation, isAutoAttackable));
                                                 }
 
-                                                getKnownRelations()
-                                                        .put(
-                                                                player.getObjectId(),
-                                                                new RelationCache(relation, isAutoAttackable));
+                                                putKnownRelation(
+                                                        player.getObjectId(),
+                                                        new RelationCache(relation, isAutoAttackable));
                                             }
                                         }
                                     });
@@ -3912,7 +3910,7 @@ public class Player extends Playable {
                 if (isCharInfo) {
                     final int relation = getRelation(player);
                     final boolean isAutoAttackable = isAutoAttackable(player);
-                    final RelationCache cache = getKnownRelations().get(player.getObjectId());
+                    final RelationCache cache = getKnownRelation(player.getObjectId());
                     if ((cache == null)
                             || (cache.relation() != relation)
                             || (cache.autoAttackable() != isAutoAttackable)) {
@@ -3921,7 +3919,7 @@ public class Player extends Playable {
                             player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
                         }
 
-                        getKnownRelations().put(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
+                        putKnownRelation(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
                     }
                 }
             });
@@ -11204,14 +11202,14 @@ public class Player extends Playable {
 
         final int relation = getRelation(player);
         final boolean isAutoAttackable = isAutoAttackable(player);
-        final RelationCache cache = getKnownRelations().get(player.getObjectId());
+        final RelationCache cache = getKnownRelation(player.getObjectId());
         if ((cache == null) || (cache.relation() != relation) || (cache.autoAttackable() != isAutoAttackable)) {
             player.sendPacket(new RelationChanged(this, relation, isAutoAttackable));
             if (hasSummon()) {
                 player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
             }
 
-            getKnownRelations().put(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
+            putKnownRelation(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
         }
 
         switch (privateStoreType) {

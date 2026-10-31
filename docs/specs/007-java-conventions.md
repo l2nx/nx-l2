@@ -42,7 +42,9 @@ Rejected:
   not grow setters for every field. They replace only trivial accessors: a body of exactly `return field;` or
   `this.field = value;`, not `synchronized`, no copy, no side effect, with the name Lombok generates. A non-public
   accessor keeps its visibility through `AccessLevel`. Any other accessor stays hand-written, and so does one that
-  shares a name with another method of the class: Lombok then generates nothing.
+  shares a name with another method of the class: Lombok then generates nothing. A `@SingleWriter` class takes no
+  accessor annotations at all: each public method starts with the ownership check (spec 003, execution §7), which a
+  generated method cannot carry.
 - **`@Slf4j`** as the only logger of a class (§6).
 - **`@RequiredArgsConstructor`:**
   - on a Spring bean, as `spring-architecture` prescribes for constructor injection, with its two traps: Lombok

@@ -104,6 +104,8 @@ final class SingleWriterRules {
             .arePublic()
             .and()
             .doNotHaveModifier(JavaModifier.SYNTHETIC)
+            .and()
+            .doNotHaveModifier(JavaModifier.ABSTRACT)
             .and(DescribedPredicate.describe(
                     "are not toString, equals or hashCode", method -> !OBJECT_METHODS.contains(method.getName())))
             .should(callWorldPartitionCheckOwner())

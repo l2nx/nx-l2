@@ -159,7 +159,7 @@ public class PlayerAI extends PlayableAI {
     @Override
     public void notifyActionForgetObject(WorldObject object) {
         if ((object != null) && object.isPlayer()) {
-            getActor().getKnownRelations().remove(object.getObjectId());
+            getActor().removeKnownRelation(object.getObjectId());
         }
 
         super.notifyActionForgetObject(object);
