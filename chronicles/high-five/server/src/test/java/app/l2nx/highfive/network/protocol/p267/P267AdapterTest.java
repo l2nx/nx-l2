@@ -9,10 +9,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
 import app.l2nx.highfive.network.protocol.OpcodeTable.RouteKind;
-import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPackets;
-import app.l2nx.highfive.network.protocol.p267.clientpackets.ExClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPacket;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestBookMarkSlotInfo;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestChangeBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestDeleteBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestItemList;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestModifyBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestSaveBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBookMark;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
@@ -20,12 +24,14 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
-import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class P267AdapterTest {
@@ -89,7 +95,7 @@ class P267AdapterTest {
     @Nested
     class Decode {
         @Test
-        void decode_shouldRouteALegacyPacket_needingACharacterInTheWorldByDefault() {
+        void decode_shouldRouteALegacyPacketNeedingACharacterInTheWorldByDefault() {
             assertThat(decode(0x14))
                     .isInstanceOfSatisfying(
                             RequestItemList.class,
@@ -105,7 +111,7 @@ class P267AdapterTest {
         }
 
         @Test
-        void decode_shouldConsumePingAnswersOnTheIoThread_afterAuthentication() {
+        void decode_shouldConsumePingAnswersOnTheIoThread_whenAuthenticated() {
             final OpcodeTable.Entry actual = entry(0xB1);
 
             assertThat(actual.kind()).isEqualTo(RouteKind.CONNECTION);
@@ -119,23 +125,29 @@ class P267AdapterTest {
             assertThat(decode(0xCF)).isSameAs(OpcodeTable.IGNORED);
         }
 
-        @Test
-        void decode_shouldResolveTheBookmarkSubOpcode() {
-            assertThat(decode(0xD0, 0x51, 0x00, 0, 0, 0, 0)).isInstanceOf(RequestBookMarkSlotInfo.class);
+        @ParameterizedTest(name = "{0} = {1}")
+        @MethodSource("bookmarkPackets")
+        void decode_shouldResolveTheSixBookmarkPacketsByTheThirdId(
+                int bookmarkId, Class<? extends ClientPacket> expected) {
+            // Zero padding is a body every bookmark packet reads without running out: empty strings and zero ints.
+            assertThat(decode(0xD0, 0x51, 0x00, bookmarkId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+                    .isInstanceOf(expected);
         }
-    }
 
-    @Test
-    void legacyInboundCount_shouldCountTheImplementedLegacyEntries_andTheSixBookmarkPackets() {
-        final long expected = Arrays.stream(ClientPackets.values())
-                        .filter(ClientPackets::implemented)
-                        .count()
-                + Arrays.stream(ExClientPackets.values())
-                        .filter(ExClientPackets::implemented)
-                        .count()
-                + 6;
+        @Test
+        void decode_shouldNotResolveABookmarkPacket_whenPastTheSixth() {
+            assertThat(decode(0xD0, 0x51, 0x00, 6, 0, 0, 0)).isSameAs(OpcodeTable.UNKNOWN);
+        }
 
-        assertThat(adapter.legacyInboundCount()).isEqualTo((int) expected);
+        static Stream<Arguments> bookmarkPackets() {
+            return Stream.of(
+                    Arguments.of(0, RequestBookMarkSlotInfo.class),
+                    Arguments.of(1, RequestSaveBookMarkSlot.class),
+                    Arguments.of(2, RequestModifyBookMarkSlot.class),
+                    Arguments.of(3, RequestDeleteBookMarkSlot.class),
+                    Arguments.of(4, RequestTeleportBookMark.class),
+                    Arguments.of(5, RequestChangeBookMarkSlot.class));
+        }
     }
 
     private Object decode(int... bytes) {
