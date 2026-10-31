@@ -7,7 +7,7 @@ package app.l2nx.protocol.game.p267.serverpackets;
 import app.l2nx.network.codec.PacketDecodeException;
 import app.l2nx.network.codec.Wire;
 import io.netty.buffer.ByteBuf;
-import java.util.Objects;
+import lombok.Builder;
 
 /** A system message argument: its wire type code, then its value. Codes 8, 14 and 15 are not used by High Five. */
 public sealed interface SystemMessageParam {
@@ -25,6 +25,9 @@ public sealed interface SystemMessageParam {
     int PLAYER_NAME = 12;
     int SYSTEM_STRING = 13;
 
+    /** The type code and the shortest value, an empty string. */
+    int MIN_BYTES = 4 + 2;
+
     int type();
 
     void writeValue(ByteBuf out);
@@ -36,10 +39,16 @@ public sealed interface SystemMessageParam {
             case INT_NUMBER -> new IntNumber(in.readIntLE());
             case NPC_NAME -> new NpcName(in.readIntLE());
             case ITEM_NAME -> new ItemName(in.readIntLE());
-            case SKILL_NAME -> new SkillName(in.readIntLE(), in.readIntLE());
+            case SKILL_NAME ->
+                SkillName.builder().id(in.readIntLE()).level(in.readIntLE()).build();
             case CASTLE_NAME -> new CastleName(in.readIntLE());
             case LONG_NUMBER -> new LongNumber(in.readLongLE());
-            case ZONE_NAME -> new ZoneName(in.readIntLE(), in.readIntLE(), in.readIntLE());
+            case ZONE_NAME ->
+                ZoneName.builder()
+                        .x(in.readIntLE())
+                        .y(in.readIntLE())
+                        .z(in.readIntLE())
+                        .build();
             case ELEMENT_NAME -> new ElementName(in.readIntLE());
             case INSTANCE_NAME -> new InstanceName(in.readIntLE());
             case DOOR_NAME -> new DoorName(in.readIntLE());
@@ -49,11 +58,10 @@ public sealed interface SystemMessageParam {
         };
     }
 
+    /**
+     * @param value {@code null} reaches the client as an empty string
+     */
     record Text(String value) implements SystemMessageParam {
-        public Text {
-            Objects.requireNonNull(value, "value");
-        }
-
         @Override
         public int type() {
             return TEXT;
@@ -101,6 +109,7 @@ public sealed interface SystemMessageParam {
         }
     }
 
+    @Builder(toBuilder = true)
     record SkillName(int id, int level) implements SystemMessageParam {
         @Override
         public int type() {
@@ -138,6 +147,7 @@ public sealed interface SystemMessageParam {
         }
     }
 
+    @Builder(toBuilder = true)
     record ZoneName(int x, int y, int z) implements SystemMessageParam {
         @Override
         public int type() {
@@ -188,11 +198,10 @@ public sealed interface SystemMessageParam {
         }
     }
 
+    /**
+     * @param name {@code null} reaches the client as an empty string
+     */
     record PlayerName(String name) implements SystemMessageParam {
-        public PlayerName {
-            Objects.requireNonNull(name, "name");
-        }
-
         @Override
         public int type() {
             return PLAYER_NAME;

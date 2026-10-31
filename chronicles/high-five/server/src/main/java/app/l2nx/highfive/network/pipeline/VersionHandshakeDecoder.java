@@ -7,8 +7,8 @@ package app.l2nx.highfive.network.pipeline;
 import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
-import app.l2nx.highfive.network.protocol.p267.HandshakeRefusal;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
+import app.l2nx.highfive.network.protocol.p267.P267HandshakeRefusal;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
@@ -98,6 +98,6 @@ public final class VersionHandshakeDecoder extends ChannelInboundHandlerAdapter 
 
     private void refuse(ChannelHandlerContext ctx, GameConnection connection) {
         refused = true;
-        connection.outbound().sendAndClose(HandshakeRefusal.frame(ctx.alloc()));
+        connection.outbound().sendAndClose(P267HandshakeRefusal.frame(ctx.alloc()));
     }
 }

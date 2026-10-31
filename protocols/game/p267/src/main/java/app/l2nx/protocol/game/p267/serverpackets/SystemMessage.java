@@ -9,10 +9,9 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.Builder;
 
-/**
- * @param messageId the client's system message id
- */
+@Builder(toBuilder = true)
 public record SystemMessage(int messageId, List<SystemMessageParam> params) implements GameServerPacket {
     public SystemMessage {
         params = List.copyOf(Objects.requireNonNull(params, "params"));
@@ -21,8 +20,8 @@ public record SystemMessage(int messageId, List<SystemMessageParam> params) impl
     public static SystemMessage read(ByteBuf body) {
         return Bodies.parse("SystemMessage", body, in -> {
             final int messageId = in.readIntLE();
-            final int count = in.readIntLE();
-            final List<SystemMessageParam> params = new ArrayList<>(Math.min(count, 16));
+            final int count = Bodies.count(in.readIntLE(), in, SystemMessageParam.MIN_BYTES);
+            final List<SystemMessageParam> params = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 params.add(SystemMessageParam.read(in));
             }

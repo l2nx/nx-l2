@@ -20,7 +20,10 @@ import app.l2nx.network.codec.PacketDecodeException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CharSelectionInfoTest {
     static List<Integer> paperdoll() {
@@ -110,44 +113,71 @@ class CharSelectionInfoTest {
                 + d(20000);
     }
 
-    @Test
-    void write_shouldWriteTheHeaderOfAnEmptyList() {
-        assertThat(written(new CharSelectionInfo(7, List.of())::write)).isEqualTo("09" + d(0) + d(7) + c(0));
+    @Nested
+    class Write {
+        @Test
+        void write_shouldWriteTheHeaderOfAnEmptyList() {
+            assertThat(written(new CharSelectionInfo(7, List.of())::write)).isEqualTo("09" + d(0) + d(7) + c(0));
+        }
+
+        @Test
+        void write_shouldWriteEverySlotInTheLegacyLayout() {
+            assertThat(written(new CharSelectionInfo(7, List.of(slot()))::write))
+                    .isEqualTo("09" + d(1) + d(7) + c(0) + slotBytes());
+        }
+
+        @Test
+        void write_shouldWriteTheShortestSlotInMinSlotBytes() {
+            final CharSelectionInfo packet = new CharSelectionInfo(
+                    7, List.of(slot().toBuilder().name(null).login(null).build()));
+
+            assertThat(written(packet::write).length() / 2).isEqualTo(1 + 4 + 4 + 1 + CharSelectionInfo.MIN_SLOT_BYTES);
+        }
     }
 
-    @Test
-    void write_shouldWriteEverySlotInTheLegacyLayout() {
-        assertThat(written(new CharSelectionInfo(7, List.of(slot()))::write))
-                .isEqualTo("09" + d(1) + d(7) + c(0) + slotBytes());
+    @Nested
+    class Read {
+        @Test
+        void read_shouldReadBackWhatWriteWrote() {
+            final CharSelectionInfo packet = new CharSelectionInfo(
+                    7,
+                    List.of(
+                            slot(),
+                            slot().toBuilder()
+                                    .name("Bob")
+                                    .active(false)
+                                    .deleteSeconds(-1)
+                                    .build()));
+
+            assertThat(read(written(packet::write).substring(2), CharSelectionInfo::read))
+                    .isEqualTo(packet);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {-1, Integer.MIN_VALUE, 2})
+        void read_shouldFail_whenTheCountDoesNotFitTheBody(int count) {
+            final String body = d(count) + d(7) + c(0) + slotBytes();
+
+            assertThatThrownBy(() -> read(body, CharSelectionInfo::read))
+                    .isInstanceOf(PacketDecodeException.class)
+                    .hasMessageContaining("List count");
+        }
+
+        @Test
+        void read_shouldFail_whenASlotIsCut() {
+            final String body = d(1) + d(7) + c(0) + slotBytes().substring(0, 40);
+
+            assertThatThrownBy(() -> read(body, CharSelectionInfo::read)).isInstanceOf(PacketDecodeException.class);
+        }
     }
 
-    @Test
-    void read_shouldReadBackWhatWriteWrote() {
-        final CharSelectionInfo packet = new CharSelectionInfo(
-                7,
-                List.of(
-                        slot(),
-                        slot().toBuilder()
-                                .name("Bob")
-                                .active(false)
-                                .deleteSeconds(-1)
-                                .build()));
-
-        assertThat(read(written(packet::write).substring(2), CharSelectionInfo::read))
-                .isEqualTo(packet);
-    }
-
-    @Test
-    void slot_shouldRefuseAPaperdollOfAnotherSize() {
-        assertThatIllegalArgumentException()
-                .isThrownBy(
-                        () -> slot().toBuilder().paperdollItemIds(List.of(1, 2)).build());
-    }
-
-    @Test
-    void read_shouldFail_whenASlotIsCut() {
-        final String body = d(1) + d(7) + c(0) + slotBytes().substring(0, 40);
-
-        assertThatThrownBy(() -> read(body, CharSelectionInfo::read)).isInstanceOf(PacketDecodeException.class);
+    @Nested
+    class SlotValue {
+        @Test
+        void build_shouldRefuseAPaperdollOfAnotherSize() {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() ->
+                            slot().toBuilder().paperdollItemIds(List.of(1, 2)).build());
+        }
     }
 }

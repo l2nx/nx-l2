@@ -72,11 +72,6 @@ public abstract class ServerPacket extends OutgoingPacket<GameClient> implements
         return PAPERDOLL_ORDER;
     }
 
-    /** The High Five paperdoll order of the character list, as {@code Inventory} slots; a copy. */
-    public static int[] paperdollOrder() {
-        return PAPERDOLL_ORDER.clone();
-    }
-
     private volatile boolean broadcast;
     private ByteBuf broadcastFrame;
 

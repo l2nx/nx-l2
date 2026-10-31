@@ -31,6 +31,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.SystemMessageId.SMLocalisation;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.codec.PacketWriter;
 import app.l2nx.protocol.game.p267.serverpackets.SystemMessageParam;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SystemMessage extends ServerPacket {
     private static final SMParam[] EMPTY_PARAM_ARRAY = new SMParam[0];
+    private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
 
     public class SMParam {
         @Getter
@@ -228,9 +230,14 @@ public class SystemMessage extends ServerPacket {
         return addItemName(item.getId());
     }
 
+    /** An id without a template goes out bare: the client still names the item from its own data. */
     public SystemMessage addItemName(int id) {
         final ItemTemplate item = ItemData.getInstance().getTemplate(id);
-        if (item.getDisplayId() != id) {
+        if (item == null) {
+            if (RATE.tryAcquire("unknown-item")) {
+                log.warn("No item template {} for SystemMessageId {}, sent as a bare item id", id, systemMessageId);
+            }
+        } else if (item.getDisplayId() != id) {
             return addString(item.getName());
         }
 
@@ -338,8 +345,8 @@ public class SystemMessage extends ServerPacket {
 
     private static SystemMessageParam wireParam(SMParam param) {
         return switch (param.getType()) {
-            case TYPE_TEXT -> new SystemMessageParam.Text(wireString(param.getStringValue()));
-            case TYPE_PLAYER_NAME -> new SystemMessageParam.PlayerName(wireString(param.getStringValue()));
+            case TYPE_TEXT -> new SystemMessageParam.Text(param.getStringValue());
+            case TYPE_PLAYER_NAME -> new SystemMessageParam.PlayerName(param.getStringValue());
             case TYPE_LONG_NUMBER -> new SystemMessageParam.LongNumber(param.getLongValue());
             case TYPE_INT_NUMBER -> new SystemMessageParam.IntNumber(param.getIntValue());
             case TYPE_NPC_NAME -> new SystemMessageParam.NpcName(param.getIntValue());
@@ -351,18 +358,20 @@ public class SystemMessage extends ServerPacket {
             case TYPE_DOOR_NAME -> new SystemMessageParam.DoorName(param.getIntValue());
             case TYPE_SKILL_NAME -> {
                 final int[] skill = param.getIntArrayValue();
-                yield new SystemMessageParam.SkillName(skill[0], skill[1]);
+                yield SystemMessageParam.SkillName.builder()
+                        .id(skill[0])
+                        .level(skill[1])
+                        .build();
             }
             case TYPE_ZONE_NAME -> {
                 final int[] zone = param.getIntArrayValue();
-                yield new SystemMessageParam.ZoneName(zone[0], zone[1], zone[2]);
+                yield SystemMessageParam.ZoneName.builder()
+                        .x(zone[0])
+                        .y(zone[1])
+                        .z(zone[2])
+                        .build();
             }
             default -> throw new IllegalStateException("Unknown system message parameter type " + param.getType());
         };
-    }
-
-    /** The wire has no null string: a text argument a legacy caller left {@code null} always reached the client empty. */
-    static String wireString(String value) {
-        return value == null ? "" : value;
     }
 }

@@ -35,6 +35,7 @@ import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteFail;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteSuccess;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
+import app.l2nx.protocol.game.p267.serverpackets.reason.CharDeleteFailReason;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -56,7 +57,7 @@ public class CharacterDelete extends ClientPacket {
 
         // if (!client.getFloodProtectors().canSelectCharacter())
         // {
-        // sendPacket(new CharDeleteFail(CharDeleteFail.REASON_DELETION_FAILED));
+        // sendPacket(new CharDeleteFail(CharDeleteFailReason.REASON_DELETION_FAILED));
         // return;
         // }
 
@@ -84,11 +85,11 @@ public class CharacterDelete extends ClientPacket {
                     break;
                 }
                 case 1: {
-                    client.sendPacket(new CharDeleteFail(CharDeleteFail.REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER));
+                    client.sendPacket(new CharDeleteFail(CharDeleteFailReason.REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER));
                     break;
                 }
                 case 2: {
-                    client.sendPacket(new CharDeleteFail(CharDeleteFail.REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED));
+                    client.sendPacket(new CharDeleteFail(CharDeleteFailReason.REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED));
                     break;
                 }
             }

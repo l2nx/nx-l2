@@ -25,32 +25,23 @@ package app.l2nx.highfive.network.protocol.p267.serverpackets;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 import app.l2nx.protocol.game.p267.serverpackets.reason.LoginFailReason;
+import java.util.Objects;
 
 public class LoginFail extends ServerPacket {
-    public static final int NO_TEXT = 0;
-    public static final int SYSTEM_ERROR_LOGIN_LATER = 1;
-    public static final int PASSWORD_DOES_NOT_MATCH_THIS_ACCOUNT = 2;
-    public static final int PASSWORD_DOES_NOT_MATCH_THIS_ACCOUNT2 = 3;
-    public static final int ACCESS_FAILED_TRY_LATER = 4;
-    public static final int INCORRECT_ACCOUNT_INFO_CONTACT_CUSTOMER_SUPPORT = 5;
-    public static final int ACCESS_FAILED_TRY_LATER2 = 6;
-    public static final int ACOUNT_ALREADY_IN_USE = 7;
-    public static final int ACCESS_FAILED_TRY_LATER3 = 8;
-    public static final int ACCESS_FAILED_TRY_LATER4 = 9;
-    public static final int ACCESS_FAILED_TRY_LATER5 = 10;
+    private final LoginFailReason reason;
 
-    private final int reason;
+    public LoginFail(LoginFailReason reason) {
+        this.reason = Objects.requireNonNull(reason, "reason");
+    }
 
-    /**
-     * @param reason
-     */
-    public LoginFail(int reason) {
-        this.reason = reason;
+    /** For callers outside the p267 adapter, which may not reference wire records. */
+    public static LoginFail systemErrorLoginLater() {
+        return new LoginFail(LoginFailReason.SYSTEM_ERROR_LOGIN_LATER);
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.LOGIN_FAIL.debug(this);
-        new app.l2nx.protocol.game.p267.serverpackets.LoginFail(LoginFailReason.of(reason)).write(buffer.buffer());
+        new app.l2nx.protocol.game.p267.serverpackets.LoginFail(reason).write(buffer.buffer());
     }
 }

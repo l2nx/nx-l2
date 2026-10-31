@@ -10,6 +10,7 @@ import app.l2nx.protocol.game.p267.Bodies;
 import app.l2nx.protocol.game.p267.ChatChannel;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import lombok.Builder;
@@ -21,6 +22,7 @@ import lombok.Builder;
  * @param senderName written when set; otherwise {@code senderNameId} names the speaker
  * @param messageId an NPC string id, {@link #NO_MESSAGE} for free text
  * @param text written when set; otherwise each of {@code parameters}, the NPC string's arguments
+ * @param parameters a {@code null} argument reaches the client as an empty string
  */
 @Builder(toBuilder = true)
 public record CreatureSay(
@@ -36,7 +38,7 @@ public record CreatureSay(
 
     public CreatureSay {
         Objects.requireNonNull(channel, "channel");
-        parameters = (parameters == null) ? List.of() : List.copyOf(parameters);
+        parameters = (parameters == null) ? List.of() : Collections.unmodifiableList(new ArrayList<>(parameters));
     }
 
     /**

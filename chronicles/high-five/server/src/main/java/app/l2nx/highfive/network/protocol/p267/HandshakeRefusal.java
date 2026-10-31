@@ -5,27 +5,23 @@
 package app.l2nx.highfive.network.protocol.p267;
 
 import app.l2nx.network.codec.Frames;
+import app.l2nx.protocol.game.p267.serverpackets.KeyPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
-/**
- * The version-check answer with result 0 ("wrong protocol"), which the client shows as a version mismatch. No
- * adapter exists for an unknown version, so it lives here.
- */
-public final class HandshakeRefusal {
-    private static final int VERSION_CHECK = 0x2E;
+public final class P267HandshakeRefusal {
+    private static final KeyPacket REFUSAL = KeyPacket.builder()
+            .accepted(false)
+            .key(new byte[KeyPacket.KEY_BYTES])
+            .serverId(0)
+            .build();
     private static final int LENGTH = 23;
 
-    private HandshakeRefusal() {}
+    private P267HandshakeRefusal() {}
 
     public static ByteBuf frame(ByteBufAllocator alloc) {
-        return Frames.allocate(alloc, LENGTH)
-                .writeByte(VERSION_CHECK)
-                .writeByte(0)
-                .writeZero(8)
-                .writeIntLE(0)
-                .writeIntLE(0)
-                .writeByte(1)
-                .writeIntLE(0);
+        final ByteBuf frame = Frames.allocate(alloc, LENGTH);
+        REFUSAL.write(frame);
+        return frame;
     }
 }

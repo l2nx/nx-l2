@@ -10,10 +10,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import lombok.Builder;
 
-/**
- * The answer to the protocol version and the first packet in clear. Only the first half of the XOR key travels; both
- * sides append the same fixed tail.
- */
+/** Sent in clear. Only the first half of the XOR key travels; both sides append the same fixed tail. */
 @Builder(toBuilder = true)
 public record KeyPacket(boolean accepted, byte[] key, int serverId) implements GameServerPacket {
     public static final int KEY_BYTES = 8;
@@ -34,7 +31,7 @@ public record KeyPacket(boolean accepted, byte[] key, int serverId) implements G
             in.skipBytes(4);
             final int serverId = in.readIntLE();
             in.skipBytes(5);
-            return new KeyPacket(accepted, key, serverId);
+            return builder().accepted(accepted).key(key).serverId(serverId).build();
         });
     }
 
@@ -43,8 +40,8 @@ public record KeyPacket(boolean accepted, byte[] key, int serverId) implements G
         out.writeByte(GameServerOpcode.VERSION_CHECK.opcode());
         out.writeByte(accepted ? 1 : 0);
         out.writeBytes(key);
-        // Encryption is always on; the client turns its XOR on when this flag is 1.
-        out.writeIntLE(1);
+        // The client turns its XOR on when this flag is 1; a refused client gets no key to turn on.
+        out.writeIntLE(accepted ? 1 : 0);
         out.writeIntLE(serverId);
         out.writeByte(1);
         out.writeIntLE(0); // obfuscation key

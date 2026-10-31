@@ -4,6 +4,8 @@
  */
 package app.l2nx.highfive.message;
 
+import lombok.Builder;
+
 /** Typed message parameters: the adapter decides how its client renders each kind. */
 public sealed interface MessageParam {
     record Text(String value) implements MessageParam {}
@@ -16,5 +18,6 @@ public sealed interface MessageParam {
 
     record ItemTemplate(int templateId) implements MessageParam {}
 
+    @Builder(toBuilder = true)
     record Skill(int id, int level) implements MessageParam {}
 }

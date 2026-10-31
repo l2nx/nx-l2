@@ -14,7 +14,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.l2nx.network.codec.PacketDecodeException;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class SystemMessageTest {
     private static final SystemMessage EVERY_KIND = new SystemMessage(
@@ -24,55 +27,77 @@ class SystemMessageTest {
                     new SystemMessageParam.IntNumber(1),
                     new SystemMessageParam.NpcName(2),
                     new SystemMessageParam.ItemName(3),
-                    new SystemMessageParam.SkillName(4, 5),
+                    SystemMessageParam.SkillName.builder().id(4).level(5).build(),
                     new SystemMessageParam.CastleName(6),
                     new SystemMessageParam.LongNumber(7L),
-                    new SystemMessageParam.ZoneName(8, 9, 10),
+                    SystemMessageParam.ZoneName.builder().x(8).y(9).z(10).build(),
                     new SystemMessageParam.ElementName(11),
                     new SystemMessageParam.InstanceName(12),
                     new SystemMessageParam.DoorName(13),
                     new SystemMessageParam.PlayerName("p"),
                     new SystemMessageParam.SystemString(14)));
 
-    @Test
-    void write_shouldWriteTheIdAndNoParameters() {
-        assertThat(written(new SystemMessage(1234, List.of())::write)).isEqualTo("62" + d(1234) + d(0));
+    @Nested
+    class Write {
+        @Test
+        void write_shouldWriteTheIdAndNoParameters() {
+            assertThat(written(new SystemMessage(1234, List.of())::write)).isEqualTo("62" + d(1234) + d(0));
+        }
+
+        @Test
+        void write_shouldWriteEachParameterAsItsTypeAndValue() {
+            assertThat(written(EVERY_KIND::write))
+                    .isEqualTo("62" + d(2000) + d(13)
+                            + d(0) + s("t")
+                            + d(1) + d(1)
+                            + d(2) + d(2)
+                            + d(3) + d(3)
+                            + d(4) + d(4) + d(5)
+                            + d(5) + d(6)
+                            + d(6) + q(7L)
+                            + d(7) + d(8) + d(9) + d(10)
+                            + d(9) + d(11)
+                            + d(10) + d(12)
+                            + d(11) + d(13)
+                            + d(12) + s("p")
+                            + d(13) + d(14));
+        }
+
+        @Test
+        void write_shouldWriteANullTextOrNameAsAnEmptyString() {
+            final SystemMessage message = new SystemMessage(
+                    1, List.of(new SystemMessageParam.Text(null), new SystemMessageParam.PlayerName(null)));
+
+            assertThat(written(message::write)).isEqualTo("62" + d(1) + d(2) + d(0) + s("") + d(12) + s(""));
+        }
     }
 
-    @Test
-    void write_shouldWriteEachParameterAsItsTypeAndValue() {
-        assertThat(written(EVERY_KIND::write))
-                .isEqualTo("62" + d(2000) + d(13)
-                        + d(0) + s("t")
-                        + d(1) + d(1)
-                        + d(2) + d(2)
-                        + d(3) + d(3)
-                        + d(4) + d(4) + d(5)
-                        + d(5) + d(6)
-                        + d(6) + q(7L)
-                        + d(7) + d(8) + d(9) + d(10)
-                        + d(9) + d(11)
-                        + d(10) + d(12)
-                        + d(11) + d(13)
-                        + d(12) + s("p")
-                        + d(13) + d(14));
-    }
+    @Nested
+    class Read {
+        @Test
+        void read_shouldReadBackWhatWriteWrote() {
+            assertThat(read(written(EVERY_KIND::write).substring(2), SystemMessage::read))
+                    .isEqualTo(EVERY_KIND);
+        }
 
-    @Test
-    void read_shouldReadBackWhatWriteWrote() {
-        assertThat(read(written(EVERY_KIND::write).substring(2), SystemMessage::read))
-                .isEqualTo(EVERY_KIND);
-    }
+        @Test
+        void read_shouldFail_whenAParameterTypeIsUnknown() {
+            assertThatThrownBy(() -> read(d(1) + d(1) + d(8) + d(0), SystemMessage::read))
+                    .isInstanceOf(PacketDecodeException.class);
+        }
 
-    @Test
-    void read_shouldFail_whenAParameterTypeIsUnknown() {
-        assertThatThrownBy(() -> read(d(1) + d(1) + d(8) + d(0), SystemMessage::read))
-                .isInstanceOf(PacketDecodeException.class);
-    }
+        @ParameterizedTest
+        @ValueSource(ints = {-1, Integer.MIN_VALUE, 2})
+        void read_shouldFail_whenTheCountDoesNotFitTheBody(int count) {
+            assertThatThrownBy(() -> read(d(1) + d(count) + d(1) + d(5), SystemMessage::read))
+                    .isInstanceOf(PacketDecodeException.class)
+                    .hasMessageContaining("List count");
+        }
 
-    @Test
-    void read_shouldFail_whenAParameterIsMissing() {
-        assertThatThrownBy(() -> read(d(1) + d(2) + d(1) + d(5), SystemMessage::read))
-                .isInstanceOf(PacketDecodeException.class);
+        @Test
+        void read_shouldFail_whenAParameterIsMissing() {
+            assertThatThrownBy(() -> read(d(1) + d(2) + d(1) + d(5), SystemMessage::read))
+                    .isInstanceOf(PacketDecodeException.class);
+        }
     }
 }

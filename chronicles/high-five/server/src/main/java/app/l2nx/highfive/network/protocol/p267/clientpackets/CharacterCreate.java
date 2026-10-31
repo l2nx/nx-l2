@@ -59,6 +59,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharCreateFail;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharCreateOk;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
+import app.l2nx.protocol.game.p267.serverpackets.reason.CharCreateFailReason;
 import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -105,34 +106,34 @@ public class CharacterCreate extends ClientPacket {
         // Last Verified: May 30, 2009 - Gracia Final - Players are able to create characters with names consisting of
         // as little as 1,2,3 letter/number combinations.
         if (name.isEmpty() || (name.length() > 16)) {
-            client.sendPacket(new CharCreateFail(CharCreateFail.REASON_16_ENG_CHARS));
+            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_16_ENG_CHARS));
             return;
         }
 
         if (PlayerConfig.FORBIDDEN_NAMES.length > 0) {
             for (String st : PlayerConfig.FORBIDDEN_NAMES) {
                 if (name.toLowerCase().contains(st.toLowerCase())) {
-                    client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
+                    client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_INCORRECT_NAME));
                     return;
                 }
             }
         }
 
         if (FakePlayerData.getInstance().getProperName(name) != null) {
-            client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
+            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_INCORRECT_NAME));
             return;
         }
 
         // Last Verified: May 30, 2009 - Gracia Final.
         if (!StringUtils.isAlphanumeric(name) || !isValidName(name)) {
-            client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
+            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_INCORRECT_NAME));
             return;
         }
 
         if ((face > 2) || (face < 0)) {
             log.warn(
                     "Character Creation Failure: Character face {} is invalid. Possible client hack. {}", face, client);
-            client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
             return;
         }
 
@@ -141,7 +142,7 @@ public class CharacterCreate extends ClientPacket {
                     "Character Creation Failure: Character hair style {} is invalid. Possible client hack. {}",
                     hairStyle,
                     client);
-            client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
             return;
         }
 
@@ -150,7 +151,7 @@ public class CharacterCreate extends ClientPacket {
                     "Character Creation Failure: Character hair color {} is invalid. Possible client hack. {}",
                     hairColor,
                     client);
-            client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+            client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
             return;
         }
 
@@ -164,16 +165,16 @@ public class CharacterCreate extends ClientPacket {
             if ((CharInfoTable.getInstance().getAccountCharacterCount(client.getAccountId())
                             >= ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT)
                     && (ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT != 0)) {
-                client.sendPacket(new CharCreateFail(CharCreateFail.REASON_TOO_MANY_CHARACTERS));
+                client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_TOO_MANY_CHARACTERS));
                 return;
             } else if (CharInfoTable.getInstance().doesCharNameExist(name)) {
-                client.sendPacket(new CharCreateFail(CharCreateFail.REASON_NAME_ALREADY_EXISTS));
+                client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_NAME_ALREADY_EXISTS));
                 return;
             }
 
             template = PlayerTemplateData.getInstance().getTemplate(classId);
             if ((template == null) || (PlayerClass.getPlayerClass(classId).level() > 0)) {
-                client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                 return;
             }
 
@@ -182,42 +183,42 @@ public class CharacterCreate extends ClientPacket {
             switch (template.getRace()) {
                 case HUMAN: {
                     if (!AllowedPlayerRacesConfig.ALLOW_HUMAN) {
-                        client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case ELF: {
                     if (!AllowedPlayerRacesConfig.ALLOW_ELF) {
-                        client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case DARK_ELF: {
                     if (!AllowedPlayerRacesConfig.ALLOW_DARKELF) {
-                        client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case ORC: {
                     if (!AllowedPlayerRacesConfig.ALLOW_ORC) {
-                        client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case DWARF: {
                     if (!AllowedPlayerRacesConfig.ALLOW_DWARF) {
-                        client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                         return;
                     }
                     break;
                 }
                 case KAMAEL: {
                     if (!AllowedPlayerRacesConfig.ALLOW_KAMAEL) {
-                        client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+                        client.sendPacket(new CharCreateFail(CharCreateFailReason.REASON_CREATION_FAILED));
                         return;
                     }
                     break;

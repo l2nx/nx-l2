@@ -26,7 +26,6 @@ public final class GameFrameCipher implements FrameCipher {
         this.clientSide = clientSide;
     }
 
-    /** The client learns the key from the clear key packet; every frame after it is encrypted both ways. */
     public static GameFrameCipher client() {
         return new GameFrameCipher(true);
     }
@@ -34,7 +33,9 @@ public final class GameFrameCipher implements FrameCipher {
     public void setKey(byte[] key) {
         xor.setKey(key);
         keyed = true;
-        enabled = clientSide;
+        if (clientSide) {
+            enabled = true;
+        }
     }
 
     public boolean isEnabled() {

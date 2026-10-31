@@ -15,26 +15,23 @@ import lombok.Builder;
 /**
  * @param maxCharacters how many characters the account may have; 0 keeps the client from offering creation
  */
+@Builder(toBuilder = true)
 public record CharSelectionInfo(int maxCharacters, List<Slot> slots) implements GameServerPacket {
     public static final int PAPERDOLL_SLOTS = 26;
 
-    // Seven unknown ints after the PvP kills.
     private static final int AFTER_KILLS = 7 * 4;
     // Transformation, pet NPC, pet level, pet food, pet food level as ints, pet HP and MP as doubles.
     private static final int PET = (5 * 4) + (2 * 8);
+    static final int MIN_SLOT_BYTES = 317;
 
     public CharSelectionInfo {
         slots = List.copyOf(Objects.requireNonNull(slots, "slots"));
     }
 
     /**
-     * Wire values only: the caller computes the share of the level's experience, the seconds until deletion and which
-     * slot is active.
-     *
      * @param paperdollItemIds the item ids worn, in the client's {@link #PAPERDOLL_SLOTS} paperdoll order
      * @param expPercent the share of the current level's experience, 0 to 1
      * @param deleteSeconds -1 for a banned character, 0 for none pending, else the seconds until deletion
-     * @param enchantEffect the weapon's enchant glow, 0 to 127
      */
     @Builder(toBuilder = true)
     public record Slot(
@@ -84,7 +81,7 @@ public record CharSelectionInfo(int maxCharacters, List<Slot> slots) implements 
             final int count = in.readIntLE();
             final int maxCharacters = in.readIntLE();
             in.skipBytes(1);
-            final List<Slot> slots = new ArrayList<>(Math.min(count, 32));
+            final List<Slot> slots = new ArrayList<>(Bodies.count(count, in, MIN_SLOT_BYTES));
             for (int i = 0; i < count; i++) {
                 slots.add(readSlot(in));
             }

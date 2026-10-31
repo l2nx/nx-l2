@@ -30,6 +30,13 @@ class SystemMessageTest {
         assertThat(body(message)).isEqualTo("62" + d(SystemMessageId.S1_2.getId()) + d(1) + d(0) + "0000");
     }
 
+    @Test
+    void writeImpl_shouldWriteANullPlayerNameAsAnEmptyString() {
+        final SystemMessage message = new SystemMessage(SystemMessageId.S1_2).addPlayerName(null);
+
+        assertThat(body(message)).isEqualTo("62" + d(SystemMessageId.S1_2.getId()) + d(1) + d(12) + "0000");
+    }
+
     static String body(ServerPacket packet) {
         final ByteBuf frame = packet.serialize(mock(GameClient.class), UnpooledByteBufAllocator.DEFAULT);
         try {

@@ -25,22 +25,18 @@ package app.l2nx.highfive.network.protocol.p267.serverpackets;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 import app.l2nx.protocol.game.p267.serverpackets.reason.CharDeleteFailReason;
+import java.util.Objects;
 
 public class CharDeleteFail extends ServerPacket {
-    public static final int REASON_DELETION_FAILED = 1;
-    public static final int REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER = 2;
-    public static final int REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED = 3;
+    private final CharDeleteFailReason reason;
 
-    private final int error;
-
-    public CharDeleteFail(int errorCode) {
-        error = errorCode;
+    public CharDeleteFail(CharDeleteFailReason reason) {
+        this.reason = Objects.requireNonNull(reason, "reason");
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.CHARACTER_DELETE_FAIL.debug(this);
-        new app.l2nx.protocol.game.p267.serverpackets.CharDeleteFail(CharDeleteFailReason.of(error))
-                .write(buffer.buffer());
+        new app.l2nx.protocol.game.p267.serverpackets.CharDeleteFail(reason).write(buffer.buffer());
     }
 }

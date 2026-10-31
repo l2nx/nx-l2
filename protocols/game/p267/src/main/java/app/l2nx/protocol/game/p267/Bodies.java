@@ -19,4 +19,17 @@ public final class Bodies {
             throw new PacketDecodeException(packet + " read past the end of its frame", e);
         }
     }
+
+    /**
+     * A wire list count the rest of the body cannot hold is malformed: refused here, before it sizes a collection.
+     *
+     * @param minElementBytes the size of the shortest element the list may hold
+     */
+    public static int count(int count, ByteBuf body, int minElementBytes) {
+        if ((count < 0) || (count > (body.readableBytes() / minElementBytes))) {
+            throw new PacketDecodeException(
+                    "List count " + count + " does not fit the " + body.readableBytes() + " bytes left");
+        }
+        return count;
+    }
 }

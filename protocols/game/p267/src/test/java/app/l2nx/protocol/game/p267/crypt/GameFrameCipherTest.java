@@ -10,6 +10,7 @@ import app.l2nx.network.crypt.GameXorCipher;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class GameFrameCipherTest {
@@ -17,92 +18,121 @@ class GameFrameCipherTest {
         1, 2, 3, 4, 5, 6, 7, 8, (byte) 0xC8, 0x27, (byte) 0x93, 1, (byte) 0xA1, 0x6C, 0x31, (byte) 0x97
     };
 
-    @Test
-    void encrypt_shouldLeaveFramesClear_untilAKeyIsSet() {
-        final GameFrameCipher cipher = new GameFrameCipher();
+    @Nested
+    class Encrypt {
+        @Test
+        void encrypt_shouldLeaveFramesClear_whenNoKeyIsSet() {
+            final GameFrameCipher cipher = new GameFrameCipher();
 
-        assertThat(roundTrip(cipher, true)).containsExactly(9, 8, 7);
-        assertThat(cipher.isEnabled()).isFalse();
+            assertThat(roundTrip(cipher, true)).containsExactly(9, 8, 7);
+            assertThat(cipher.isEnabled()).isFalse();
+        }
+
+        @Test
+        void encrypt_shouldSendTheKeyFrameClearAndEnableBothDirections() {
+            final GameFrameCipher cipher = new GameFrameCipher();
+            cipher.setKey(KEY);
+
+            assertThat(roundTrip(cipher, true)).as("key packet").containsExactly(9, 8, 7);
+            assertThat(cipher.isEnabled()).isTrue();
+
+            final GameXorCipher reference = new GameXorCipher();
+            reference.setKey(KEY);
+            final ByteBuf expected = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+            reference.encrypt(expected, 0, 3);
+            assertThat(roundTrip(cipher, true)).containsExactly(ByteBufUtil.getBytes(expected));
+            expected.release();
+        }
     }
 
-    @Test
-    void encrypt_shouldSendTheKeyFrameClearAndEnableBothDirections() {
-        final GameFrameCipher cipher = new GameFrameCipher();
-        cipher.setKey(KEY);
+    @Nested
+    class SetKey {
+        @Test
+        void setKey_shouldKeepTheServersXorOn_whenTheKeyIsSetAgain() {
+            final GameFrameCipher cipher = new GameFrameCipher();
+            cipher.setKey(KEY);
+            roundTrip(cipher, true);
 
-        assertThat(roundTrip(cipher, true)).as("key packet").containsExactly(9, 8, 7);
-        assertThat(cipher.isEnabled()).isTrue();
+            cipher.setKey(KEY);
 
-        final GameXorCipher reference = new GameXorCipher();
-        reference.setKey(KEY);
-        final ByteBuf expected = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
-        reference.encrypt(expected, 0, 3);
-        assertThat(roundTrip(cipher, true)).containsExactly(ByteBufUtil.getBytes(expected));
-        expected.release();
+            assertThat(cipher.isEnabled()).isTrue();
+            final GameXorCipher reference = new GameXorCipher();
+            reference.setKey(KEY);
+            final ByteBuf expected = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+            reference.encrypt(expected, 0, 3);
+            assertThat(roundTrip(cipher, true)).containsExactly(ByteBufUtil.getBytes(expected));
+            expected.release();
+        }
     }
 
-    @Test
-    void decrypt_shouldPassClearFramesBeforeTheKeyPacket() {
-        final GameFrameCipher cipher = new GameFrameCipher();
-        cipher.setKey(KEY);
+    @Nested
+    class Decrypt {
+        @Test
+        void decrypt_shouldPassClearFrames_whenTheKeyPacketIsNotSentYet() {
+            final GameFrameCipher cipher = new GameFrameCipher();
+            cipher.setKey(KEY);
 
-        assertThat(roundTrip(cipher, false)).containsExactly(9, 8, 7);
+            assertThat(roundTrip(cipher, false)).containsExactly(9, 8, 7);
+        }
+
+        @Test
+        void decrypt_shouldUndoTheClientsXor_whenTheKeyPacketIsSent() {
+            final GameFrameCipher cipher = new GameFrameCipher();
+            cipher.setKey(KEY);
+            roundTrip(cipher, true);
+            final GameXorCipher client = new GameXorCipher();
+            client.setKey(KEY);
+            final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+            client.encrypt(frame, 0, 3);
+
+            assertThat(cipher.decrypt(frame, 0, 3)).isTrue();
+
+            assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
+            frame.release();
+        }
     }
 
-    @Test
-    void decrypt_shouldUndoTheClientsXor_afterTheKeyPacket() {
-        final GameFrameCipher cipher = new GameFrameCipher();
-        cipher.setKey(KEY);
-        roundTrip(cipher, true);
-        final GameXorCipher client = new GameXorCipher();
-        client.setKey(KEY);
-        final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
-        client.encrypt(frame, 0, 3);
+    @Nested
+    class Client {
+        @Test
+        void encrypt_shouldEncryptFromTheFirstFrame_whenTheKeyArrived() {
+            final GameFrameCipher cipher = GameFrameCipher.client();
+            cipher.setKey(KEY);
 
-        assertThat(cipher.decrypt(frame, 0, 3)).isTrue();
+            final GameXorCipher server = new GameXorCipher();
+            server.setKey(KEY);
+            final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+            cipher.encrypt(frame, 0, 3);
 
-        assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
-        frame.release();
-    }
+            assertThat(cipher.isEnabled()).isTrue();
+            server.decrypt(frame, 0, 3);
+            assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
+            frame.release();
+        }
 
-    @Test
-    void client_shouldEncryptFromTheFirstFrame_afterTheKeyArrived() {
-        final GameFrameCipher cipher = GameFrameCipher.client();
-        cipher.setKey(KEY);
+        @Test
+        void decrypt_shouldReadTheServersFirstEncryptedFrame() {
+            final GameFrameCipher server = new GameFrameCipher();
+            server.setKey(KEY);
+            roundTrip(server, true);
+            final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
+            server.encrypt(frame, 0, 3);
+            final GameFrameCipher client = GameFrameCipher.client();
+            client.setKey(KEY);
 
-        final GameXorCipher server = new GameXorCipher();
-        server.setKey(KEY);
-        final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
-        cipher.encrypt(frame, 0, 3);
+            assertThat(client.decrypt(frame, 0, 3)).isTrue();
 
-        assertThat(cipher.isEnabled()).isTrue();
-        server.decrypt(frame, 0, 3);
-        assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
-        frame.release();
-    }
+            assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
+            frame.release();
+        }
 
-    @Test
-    void client_shouldReadTheServersFirstEncryptedFrame() {
-        final GameFrameCipher server = new GameFrameCipher();
-        server.setKey(KEY);
-        roundTrip(server, true);
-        final ByteBuf frame = Unpooled.wrappedBuffer(new byte[] {9, 8, 7});
-        server.encrypt(frame, 0, 3);
-        final GameFrameCipher client = GameFrameCipher.client();
-        client.setKey(KEY);
+        @Test
+        void encrypt_shouldPassFramesClear_whenNoKeyIsSet() {
+            final GameFrameCipher cipher = GameFrameCipher.client();
 
-        assertThat(client.decrypt(frame, 0, 3)).isTrue();
-
-        assertThat(ByteBufUtil.getBytes(frame)).containsExactly(9, 8, 7);
-        frame.release();
-    }
-
-    @Test
-    void client_shouldPassFramesClear_untilAKeyIsSet() {
-        final GameFrameCipher cipher = GameFrameCipher.client();
-
-        assertThat(roundTrip(cipher, true)).containsExactly(9, 8, 7);
-        assertThat(roundTrip(cipher, false)).containsExactly(9, 8, 7);
+            assertThat(roundTrip(cipher, true)).containsExactly(9, 8, 7);
+            assertThat(roundTrip(cipher, false)).containsExactly(9, 8, 7);
+        }
     }
 
     private static byte[] roundTrip(GameFrameCipher cipher, boolean encrypt) {

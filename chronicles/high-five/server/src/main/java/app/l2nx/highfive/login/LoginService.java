@@ -79,7 +79,7 @@ public class LoginService {
     }
 
     public void failAuthentication(String login, GameClient client) {
-        client.close(new LoginFail(LoginFail.SYSTEM_ERROR_LOGIN_LATER));
+        client.close(LoginFail.systemErrorLoginLater());
         logout(login, null);
     }
 

@@ -87,12 +87,7 @@ public class CreatureSay extends ServerPacket {
                 .senderNameId(charId)
                 .messageId(messageId)
                 .text(text)
-                .parameters(
-                        parameters == null
-                                ? null
-                                : parameters.stream()
-                                        .map(SystemMessage::wireString)
-                                        .toList())
+                .parameters(parameters)
                 .build()
                 .write(buffer.buffer());
     }
