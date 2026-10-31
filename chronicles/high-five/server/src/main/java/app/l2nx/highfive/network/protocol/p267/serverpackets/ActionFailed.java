@@ -32,6 +32,7 @@ public class ActionFailed extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.ACTION_FAIL.writeId(this, buffer);
+        ServerPackets.ACTION_FAIL.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.ActionFailed.INSTANCE.write(buffer.buffer());
     }
 }

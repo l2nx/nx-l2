@@ -32,7 +32,10 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.SystemMessageId.SMLocalisation;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.SystemMessageParam;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -285,9 +288,11 @@ public class SystemMessage extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.SYSTEM_MESSAGE.writeId(this, buffer);
+        ServerPackets.SYSTEM_MESSAGE.debug(this);
+        toWire(client).write(buffer.buffer());
+    }
 
-        // Localisation related.
+    private app.l2nx.protocol.game.p267.serverpackets.SystemMessage toWire(GameClient client) {
         if (MultilingualSupportConfig.MULTILANG_ENABLE) {
             final Player player = client.getPlayer();
             if (player != null) {
@@ -295,65 +300,55 @@ public class SystemMessage extends ServerPacket {
                 if ((lang != null) && !lang.equals("en")) {
                     final SMLocalisation sml = systemMessageId.getLocalisation(lang);
                     if (sml != null) {
-                        final Object[] params = new Object[paramIndex];
+                        final Object[] values = new Object[paramIndex];
                         for (int i = 0; i < paramIndex; i++) {
-                            params[i] = this.params[i].getValue();
+                            values[i] = params[i].getValue();
                         }
-
-                        buffer.writeInt(SystemMessageId.S1_2.getId());
-                        buffer.writeInt(1);
-                        buffer.writeInt(TYPE_TEXT);
-                        buffer.writeString(sml.getLocalisation(params));
-                        return;
+                        return new app.l2nx.protocol.game.p267.serverpackets.SystemMessage(
+                                SystemMessageId.S1_2.getId(),
+                                List.of(new SystemMessageParam.Text(sml.getLocalisation(values))));
                     }
                 }
             }
         }
 
-        buffer.writeInt(systemMessageId.getId());
-        buffer.writeInt(this.params.length);
-        for (SMParam param : this.params) {
+        final List<SystemMessageParam> wire = new ArrayList<>(params.length);
+        for (SMParam param : params) {
             if (param == null) {
                 log.warn("Found null parameter for SystemMessageId {}", systemMessageId);
                 continue;
             }
-
-            buffer.writeInt(param.getType());
-            switch (param.getType()) {
-                case TYPE_TEXT:
-                case TYPE_PLAYER_NAME: {
-                    buffer.writeString(param.getStringValue());
-                    break;
-                }
-                case TYPE_LONG_NUMBER: {
-                    buffer.writeLong(param.getLongValue());
-                    break;
-                }
-                case TYPE_ITEM_NAME:
-                case TYPE_CASTLE_NAME:
-                case TYPE_INT_NUMBER:
-                case TYPE_NPC_NAME:
-                case TYPE_ELEMENT_NAME:
-                case TYPE_SYSTEM_STRING:
-                case TYPE_INSTANCE_NAME:
-                case TYPE_DOOR_NAME: {
-                    buffer.writeInt(param.getIntValue());
-                    break;
-                }
-                case TYPE_SKILL_NAME: {
-                    final int[] array = param.getIntArrayValue();
-                    buffer.writeInt(array[0]); // SkillId
-                    buffer.writeInt(array[1]); // SkillLevel
-                    break;
-                }
-                case TYPE_ZONE_NAME: {
-                    final int[] array = param.getIntArrayValue();
-                    buffer.writeInt(array[0]); // x
-                    buffer.writeInt(array[1]); // y
-                    buffer.writeInt(array[2]); // z
-                    break;
-                }
-            }
+            wire.add(
+                    switch (param.getType()) {
+                        case TYPE_TEXT -> new SystemMessageParam.Text(wireString(param.getStringValue()));
+                        case TYPE_PLAYER_NAME -> new SystemMessageParam.PlayerName(wireString(param.getStringValue()));
+                        case TYPE_LONG_NUMBER -> new SystemMessageParam.LongNumber(param.getLongValue());
+                        case TYPE_INT_NUMBER -> new SystemMessageParam.IntNumber(param.getIntValue());
+                        case TYPE_NPC_NAME -> new SystemMessageParam.NpcName(param.getIntValue());
+                        case TYPE_ITEM_NAME -> new SystemMessageParam.ItemName(param.getIntValue());
+                        case TYPE_CASTLE_NAME -> new SystemMessageParam.CastleName(param.getIntValue());
+                        case TYPE_ELEMENT_NAME -> new SystemMessageParam.ElementName(param.getIntValue());
+                        case TYPE_SYSTEM_STRING -> new SystemMessageParam.SystemString(param.getIntValue());
+                        case TYPE_INSTANCE_NAME -> new SystemMessageParam.InstanceName(param.getIntValue());
+                        case TYPE_DOOR_NAME -> new SystemMessageParam.DoorName(param.getIntValue());
+                        case TYPE_SKILL_NAME -> {
+                            final int[] skill = param.getIntArrayValue();
+                            yield new SystemMessageParam.SkillName(skill[0], skill[1]);
+                        }
+                        case TYPE_ZONE_NAME -> {
+                            final int[] zone = param.getIntArrayValue();
+                            yield new SystemMessageParam.ZoneName(zone[0], zone[1], zone[2]);
+                        }
+                        default ->
+                            throw new IllegalStateException("Parameter type " + param.getType() + " of "
+                                    + systemMessageId + " has no wire form");
+                    });
         }
+        return new app.l2nx.protocol.game.p267.serverpackets.SystemMessage(systemMessageId.getId(), wire);
+    }
+
+    /** The wire has no null string: a text argument a legacy caller left {@code null} always reached the client empty. */
+    static String wireString(String value) {
+        return value == null ? "" : value;
     }
 }

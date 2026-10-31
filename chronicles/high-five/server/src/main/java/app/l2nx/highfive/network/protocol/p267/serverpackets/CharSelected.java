@@ -38,41 +38,34 @@ public class CharSelected extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.CHARACTER_SELECTED.writeId(this, buffer);
-        buffer.writeString(player.getName());
-        buffer.writeInt(player.getObjectId());
-        buffer.writeString(player.getTitle());
-        buffer.writeInt(sessionId);
-        buffer.writeInt(player.getClanId());
-        buffer.writeInt(0); // ??
-        buffer.writeInt(player.getAppearance().isFemale());
-        buffer.writeInt(player.getRace().ordinal());
-        buffer.writeInt(player.getPlayerClass().getId());
-        buffer.writeInt(1); // active ??
-        buffer.writeInt(player.getX());
-        buffer.writeInt(player.getY());
-        buffer.writeInt(player.getZ());
-        buffer.writeDouble(player.getCurrentHp());
-        buffer.writeDouble(player.getCurrentMp());
-        buffer.writeInt((int) player.getSp());
-        buffer.writeLong(player.getExp());
-        buffer.writeInt(player.getLevel());
-        buffer.writeInt(player.getKarma()); // thx evill33t
-        buffer.writeInt(player.getPkKills());
-        buffer.writeInt(player.getINT());
-        buffer.writeInt(player.getSTR());
-        buffer.writeInt(player.getCON());
-        buffer.writeInt(player.getMEN());
-        buffer.writeInt(player.getDEX());
-        buffer.writeInt(player.getWIT());
-        buffer.writeInt(GameTimeTaskManager.getInstance().getGameTime() % (24 * 60)); // "reset" on 24th hour
-        buffer.writeInt(0);
-        buffer.writeInt(player.getPlayerClass().getId());
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeBytes(new byte[64]);
-        buffer.writeInt(0);
+        ServerPackets.CHARACTER_SELECTED.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.CharSelected.builder()
+                .name(player.getName())
+                .objectId(player.getObjectId())
+                .title(player.getTitle())
+                .playOk1(sessionId)
+                .clanId(player.getClanId())
+                .female(player.getAppearance().isFemale())
+                .race(player.getRace().ordinal())
+                .classId(player.getPlayerClass().getId())
+                .x(player.getX())
+                .y(player.getY())
+                .z(player.getZ())
+                .currentHp(player.getCurrentHp())
+                .currentMp(player.getCurrentMp())
+                .sp((int) player.getSp())
+                .exp(player.getExp())
+                .level(player.getLevel())
+                .karma(player.getKarma())
+                .pkKills(player.getPkKills())
+                .intelligence(player.getINT())
+                .strength(player.getSTR())
+                .constitution(player.getCON())
+                .mentality(player.getMEN())
+                .dexterity(player.getDEX())
+                .wit(player.getWIT())
+                .gameMinute(GameTimeTaskManager.getInstance().getGameTime() % (24 * 60)) // "reset" on 24th hour
+                .build()
+                .write(buffer.buffer());
     }
 }

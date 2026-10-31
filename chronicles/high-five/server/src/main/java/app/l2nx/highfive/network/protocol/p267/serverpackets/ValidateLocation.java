@@ -38,11 +38,14 @@ public class ValidateLocation extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.VALIDATE_LOCATION.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeInt(loc.getX());
-        buffer.writeInt(loc.getY());
-        buffer.writeInt(loc.getZ());
-        buffer.writeInt(loc.getHeading());
+        ServerPackets.VALIDATE_LOCATION.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.ValidateLocation.builder()
+                .objectId(objectId)
+                .x(loc.getX())
+                .y(loc.getY())
+                .z(loc.getZ())
+                .heading(loc.getHeading())
+                .build()
+                .write(buffer.buffer());
     }
 }

@@ -41,7 +41,7 @@ public class RestartResponse extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.RESTART_RESPONSE.writeId(this, buffer);
-        buffer.writeInt(result);
+        ServerPackets.RESTART_RESPONSE.debug(this);
+        new app.l2nx.protocol.game.p267.serverpackets.RestartResponse(result).write(buffer.buffer());
     }
 }

@@ -24,6 +24,7 @@ package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.reason.LoginFailReason;
 
 public class LoginFail extends ServerPacket {
     public static final int NO_TEXT = 0;
@@ -49,7 +50,7 @@ public class LoginFail extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.LOGIN_FAIL.writeId(this, buffer);
-        buffer.writeInt(reason);
+        ServerPackets.LOGIN_FAIL.debug(this);
+        new app.l2nx.protocol.game.p267.serverpackets.LoginFail(LoginFailReason.of(reason)).write(buffer.buffer());
     }
 }

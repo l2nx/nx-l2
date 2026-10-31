@@ -29,6 +29,7 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.ChatChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,23 +79,22 @@ public class CreatureSay extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.SAY2.writeId(this, buffer);
-        buffer.writeInt(sender == null ? 0 : sender.getObjectId());
-        buffer.writeInt(chatType.getClientId());
-        if (senderName != null) {
-            buffer.writeString(senderName);
-        } else {
-            buffer.writeInt(charId);
-        }
-
-        buffer.writeInt(messageId); // High Five NPCString ID
-        if (text != null) {
-            buffer.writeString(text);
-        } else if (parameters != null) {
-            for (String s : parameters) {
-                buffer.writeString(s);
-            }
-        }
+        ServerPackets.SAY2.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.CreatureSay.builder()
+                .senderId(sender == null ? 0 : sender.getObjectId())
+                .channel(ChatChannel.of(chatType.getClientId()))
+                .senderName(senderName)
+                .senderNameId(charId)
+                .messageId(messageId)
+                .text(text)
+                .parameters(
+                        parameters == null
+                                ? null
+                                : parameters.stream()
+                                        .map(SystemMessage::wireString)
+                                        .toList())
+                .build()
+                .write(buffer.buffer());
     }
 
     @Override

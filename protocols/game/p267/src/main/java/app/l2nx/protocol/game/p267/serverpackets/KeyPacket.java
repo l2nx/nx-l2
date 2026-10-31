@@ -2,28 +2,75 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.p267;
+package app.l2nx.protocol.game.p267.serverpackets;
 
-import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPackets;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.Bodies;
+import io.netty.buffer.ByteBuf;
+import java.util.Arrays;
+import java.util.Objects;
+import lombok.Builder;
 
-public final class KeyPacketWriter {
-    private static final int KEY_BYTES_SENT = 8;
+/**
+ * The answer to the protocol version and the first packet in clear. Only the first half of the XOR key travels; both
+ * sides append the same fixed tail.
+ */
+@Builder(toBuilder = true)
+public record KeyPacket(boolean accepted, byte[] key, int serverId) implements GameServerPacket {
+    public static final int KEY_BYTES = 8;
 
-    private KeyPacketWriter() {}
-
-    /** Only the first half of the key travels; both sides append the same fixed tail. */
-    public static void write(PacketWriter out, byte[] key, boolean accepted) {
-        ServerPackets.VERSION_CHECK.writeId(out);
-        out.writeByte(accepted ? 1 : 0);
-        for (int i = 0; i < KEY_BYTES_SENT; i++) {
-            out.writeByte(key[i]);
+    public KeyPacket {
+        Objects.requireNonNull(key, "key");
+        if (key.length != KEY_BYTES) {
+            throw new IllegalArgumentException("The key packet carries " + KEY_BYTES + " key bytes, not " + key.length);
         }
+        key = key.clone();
+    }
+
+    public static KeyPacket read(ByteBuf body) {
+        return Bodies.parse("KeyPacket", body, in -> {
+            final boolean accepted = in.readByte() != 0;
+            final byte[] key = new byte[KEY_BYTES];
+            in.readBytes(key);
+            in.skipBytes(4);
+            final int serverId = in.readIntLE();
+            in.skipBytes(5);
+            return new KeyPacket(accepted, key, serverId);
+        });
+    }
+
+    @Override
+    public void write(ByteBuf out) {
+        out.writeByte(GameServerOpcode.VERSION_CHECK.opcode());
+        out.writeByte(accepted ? 1 : 0);
+        out.writeBytes(key);
         // Encryption is always on; the client turns its XOR on when this flag is 1.
-        out.writeInt(1);
-        out.writeInt(ServerConfig.SERVER_ID);
+        out.writeIntLE(1);
+        out.writeIntLE(serverId);
         out.writeByte(1);
-        out.writeInt(0); // obfuscation key
+        out.writeIntLE(0); // obfuscation key
+    }
+
+    @Override
+    public byte[] key() {
+        return key.clone();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return (other instanceof KeyPacket that)
+                && (accepted == that.accepted)
+                && Arrays.equals(key, that.key)
+                && (serverId == that.serverId);
+    }
+
+    @Override
+    public int hashCode() {
+        return (31 * Objects.hash(accepted, serverId)) + Arrays.hashCode(key);
+    }
+
+    /** Never prints the key. */
+    @Override
+    public String toString() {
+        return "KeyPacket[accepted=" + accepted + ", serverId=" + serverId + "]";
     }
 }

@@ -21,8 +21,9 @@ class LegacyRouteRulesTest {
     void serverPacketReferences_shouldPass_whenOnlyTheAdapterReferencesServerPackets() {
         final JavaClasses classes = new ClassFileImporter().importPackages(WELLFORMED);
 
-        final EvaluationResult actual =
-                new LegacyRouteRules(WELLFORMED).serverPacketReferences().evaluate(classes);
+        final EvaluationResult actual = new LegacyRouteRules(WELLFORMED, WELLFORMED + ".wire")
+                .serverPacketReferences()
+                .evaluate(classes);
 
         assertThat(actual.hasViolation()).isFalse();
     }
@@ -31,11 +32,36 @@ class LegacyRouteRulesTest {
     void serverPacketReferences_shouldReportTheTopLevelClassOnce_whenItAndItsNestedClassesReferenceAPacket() {
         final JavaClasses classes = new ClassFileImporter().importPackages(BROKEN);
 
-        final EvaluationResult actual =
-                new LegacyRouteRules(BROKEN).serverPacketReferences().evaluate(classes);
+        final EvaluationResult actual = new LegacyRouteRules(BROKEN, BROKEN + ".wire")
+                .serverPacketReferences()
+                .evaluate(classes);
 
         assertThat(actual.getFailureReport().getDetails())
                 .containsExactly(
                         BROKEN + ".login.Notice references " + BROKEN + ".network.protocol.p267.serverpackets.Pong");
+    }
+
+    @Test
+    void wireRecordReferences_shouldPass_whenOnlyTheAdapterReferencesWireRecords() {
+        final JavaClasses classes = new ClassFileImporter().importPackages(WELLFORMED);
+
+        final EvaluationResult actual = new LegacyRouteRules(WELLFORMED, WELLFORMED + ".wire")
+                .wireRecordReferences()
+                .evaluate(classes);
+
+        assertThat(actual.hasViolation()).isFalse();
+    }
+
+    @Test
+    void wireRecordReferences_shouldReport_whenASliceReferencesAWireRecord() {
+        final JavaClasses classes = new ClassFileImporter().importPackages(BROKEN);
+
+        final EvaluationResult actual = new LegacyRouteRules(BROKEN, BROKEN + ".wire")
+                .wireRecordReferences()
+                .evaluate(classes);
+
+        assertThat(actual.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(BROKEN + ".login.Greeting")
+                        && line.contains(BROKEN + ".wire.p267.serverpackets.Ping"));
     }
 }

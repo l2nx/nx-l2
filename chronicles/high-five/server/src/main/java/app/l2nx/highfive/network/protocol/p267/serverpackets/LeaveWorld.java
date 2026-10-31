@@ -32,6 +32,7 @@ public class LeaveWorld extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.LOG_OUT_OK.writeId(this, buffer);
+        ServerPackets.LOG_OUT_OK.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.LeaveWorld.INSTANCE.write(buffer.buffer());
     }
 }

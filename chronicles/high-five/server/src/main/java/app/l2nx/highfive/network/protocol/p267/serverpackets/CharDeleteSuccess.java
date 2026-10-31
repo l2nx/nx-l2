@@ -28,6 +28,7 @@ import app.l2nx.network.codec.PacketWriter;
 public class CharDeleteSuccess extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.CHARACTER_DELETE_SUCCESS.writeId(this, buffer);
+        ServerPackets.CHARACTER_DELETE_SUCCESS.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.CharDeleteSuccess.INSTANCE.write(buffer.buffer());
     }
 }

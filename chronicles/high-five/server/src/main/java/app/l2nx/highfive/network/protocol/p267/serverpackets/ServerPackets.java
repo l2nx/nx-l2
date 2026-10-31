@@ -531,14 +531,18 @@ public enum ServerPackets {
     }
 
     public void writeId(ServerPacket packet, PacketWriter buffer) {
+        debug(packet);
+        writeId(buffer);
+    }
+
+    /** Logs the packet when server packet debugging is on; packets that write through a wire record call it. */
+    public void debug(ServerPacket packet) {
         if (DevelopmentConfig.DEBUG_SERVER_PACKETS) {
             final String name = packet.getClass().getSimpleName();
             if (!DevelopmentConfig.EXCLUDED_DEBUG_PACKETS.contains(name)) {
                 log.info("{}{}", (id2 > 0 ? "[S EX] " : "[S] "), name);
             }
         }
-
-        writeId(buffer);
     }
 
     public void writeId(PacketWriter buffer) {

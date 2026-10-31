@@ -28,6 +28,9 @@ class LegacyRouteArchitectureTest {
     static final ArchRule serverPacketReferences = freeze(LegacyRouteRules.CHRONICLE.serverPacketReferences());
 
     @ArchTest
+    static final ArchRule wireRecordReferences = LegacyRouteRules.CHRONICLE.wireRecordReferences();
+
+    @ArchTest
     static void legacyInboundOpcodes_shouldMatchThePin(JavaClasses classes) {
         final int actual = new P267Adapter().legacyInboundCount();
 

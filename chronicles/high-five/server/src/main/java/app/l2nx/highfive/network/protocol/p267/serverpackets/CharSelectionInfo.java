@@ -79,15 +79,8 @@ public class CharSelectionInfo extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.CHARACTER_SELECTION_INFO.writeId(this, buffer);
+        ServerPackets.CHARACTER_SELECTION_INFO.debug(this);
         final int size = charInfo.size();
-        buffer.writeInt(size); // Created character count
-        buffer.writeInt(
-                ServerConfig
-                        .MAX_CHARACTERS_NUMBER_PER_ACCOUNT); // Can prevent players from creating new characters (if 0);
-        // (if 1, the client will ask if chars may be created
-        // (0x13) Response: (0x0D) ).
-        buffer.writeByte(0);
         long lastAccess = 0;
         if (activeId == -1) {
             for (int i = 0; i < size; i++) {
@@ -97,81 +90,65 @@ public class CharSelectionInfo extends ServerPacket {
                 }
             }
         }
-
+        final List<app.l2nx.protocol.game.p267.serverpackets.CharSelectionInfo.Slot> slots = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            final CharacterInfoHolder charInfoPackage = charInfo.get(i);
-            buffer.writeString(charInfoPackage.getName()); // Character name
-            buffer.writeInt(charInfoPackage.getObjectId()); // Character ID
-            buffer.writeString(loginName); // Account name
-            buffer.writeInt(sessionId); // Account ID
-            buffer.writeInt(charInfoPackage.getClanId()); // Clan ID
-            buffer.writeInt(0); // Builder level
-            buffer.writeInt(charInfoPackage.getSex()); // Sex
-            buffer.writeInt(charInfoPackage.getRace()); // Race
-            buffer.writeInt(charInfoPackage.getBaseClassId());
-            buffer.writeInt(1); // GameServerName
-            buffer.writeInt(charInfoPackage.getX());
-            buffer.writeInt(charInfoPackage.getY());
-            buffer.writeInt(charInfoPackage.getZ());
-            buffer.writeDouble(charInfoPackage.getCurrentHp());
-            buffer.writeDouble(charInfoPackage.getCurrentMp());
-            buffer.writeInt((int) charInfoPackage.getSp());
-            buffer.writeLong(charInfoPackage.getExp());
-            buffer.writeDouble((float) (charInfoPackage.getExp()
-                            - ExperienceData.getInstance().getExpForLevel(charInfoPackage.getLevel()))
-                    / (ExperienceData.getInstance().getExpForLevel(charInfoPackage.getLevel() + 1)
-                            - ExperienceData.getInstance().getExpForLevel(charInfoPackage.getLevel()))); // High
-
-            // Five
-            buffer.writeInt(charInfoPackage.getLevel());
-            buffer.writeInt(charInfoPackage.getKarma());
-            buffer.writeInt(charInfoPackage.getPkKills());
-            buffer.writeInt(charInfoPackage.getPvPKills());
-            buffer.writeInt(0);
-            buffer.writeInt(0);
-            buffer.writeInt(0);
-            buffer.writeInt(0);
-            buffer.writeInt(0);
-            buffer.writeInt(0);
-            buffer.writeInt(0);
-            for (int slot : getPaperdollOrder()) {
-                buffer.writeInt(charInfoPackage.getPaperdollItemId(slot));
-            }
-
-            buffer.writeInt(charInfoPackage.getHairStyle());
-            buffer.writeInt(charInfoPackage.getHairColor());
-            buffer.writeInt(charInfoPackage.getFace());
-            buffer.writeDouble(charInfoPackage.getMaxHp()); // Maximum HP
-            buffer.writeDouble(charInfoPackage.getMaxMp()); // Maximum MP
-
-            if (charInfoPackage.getAccessLevel() > -1) {
-                // Deleted.
-                if (charInfoPackage.getDeleteTimer() > 0) {
-                    buffer.writeInt((int) ((charInfoPackage.getDeleteTimer() - ClockBridge.wallMillis()) / 1000));
-                } else // Normal.
-                {
-                    buffer.writeInt(0);
-                }
-            } else // Banned.
-            {
-                buffer.writeInt(-1);
-            }
-
-            buffer.writeInt(charInfoPackage.getClassId());
-            buffer.writeInt(i == activeId);
-            buffer.writeByte(Math.min(charInfoPackage.getEnchantEffect(), 127));
-            buffer.writeInt(charInfoPackage.getAugmentationId());
-            // buffer.writeInt(charInfoPackage.getTransformId()); // Used to display Transformations
-            buffer.writeInt(
-                    0); // Currently on retail when you are on character select you don't see your transformation.
-            buffer.writeInt(0); // Pet NpcId
-            buffer.writeInt(0); // Pet level
-            buffer.writeInt(0); // Pet Food
-            buffer.writeInt(0); // Pet Food Level
-            buffer.writeDouble(0); // Current pet HP
-            buffer.writeDouble(0); // Current pet MP
-            buffer.writeInt(charInfoPackage.getVitalityPoints()); // Vitality
+            slots.add(slot(charInfo.get(i), i == activeId));
         }
+        new app.l2nx.protocol.game.p267.serverpackets.CharSelectionInfo(
+                        ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT, slots)
+                .write(buffer.buffer());
+    }
+
+    private app.l2nx.protocol.game.p267.serverpackets.CharSelectionInfo.Slot slot(
+            CharacterInfoHolder character, boolean active) {
+        final long levelExp = ExperienceData.getInstance().getExpForLevel(character.getLevel());
+        final long nextLevelExp = ExperienceData.getInstance().getExpForLevel(character.getLevel() + 1);
+        final List<Integer> paperdoll = new ArrayList<>();
+        for (int slot : getPaperdollOrder()) {
+            paperdoll.add(character.getPaperdollItemId(slot));
+        }
+        final int deleteSeconds;
+        if (character.getAccessLevel() < 0) {
+            deleteSeconds = -1; // banned
+        } else if (character.getDeleteTimer() > 0) {
+            deleteSeconds = (int) ((character.getDeleteTimer() - ClockBridge.wallMillis()) / 1000);
+        } else {
+            deleteSeconds = 0;
+        }
+        return app.l2nx.protocol.game.p267.serverpackets.CharSelectionInfo.Slot.builder()
+                .name(character.getName())
+                .objectId(character.getObjectId())
+                .login(loginName)
+                .playOk1(sessionId)
+                .clanId(character.getClanId())
+                .sex(character.getSex())
+                .race(character.getRace())
+                .baseClassId(character.getBaseClassId())
+                .x(character.getX())
+                .y(character.getY())
+                .z(character.getZ())
+                .currentHp(character.getCurrentHp())
+                .currentMp(character.getCurrentMp())
+                .sp((int) character.getSp())
+                .exp(character.getExp())
+                .expPercent((float) (character.getExp() - levelExp) / (nextLevelExp - levelExp))
+                .level(character.getLevel())
+                .karma(character.getKarma())
+                .pkKills(character.getPkKills())
+                .pvpKills(character.getPvPKills())
+                .paperdollItemIds(paperdoll)
+                .hairStyle(character.getHairStyle())
+                .hairColor(character.getHairColor())
+                .face(character.getFace())
+                .maxHp(character.getMaxHp())
+                .maxMp(character.getMaxMp())
+                .deleteSeconds(deleteSeconds)
+                .classId(character.getClassId())
+                .active(active)
+                .enchantEffect(Math.min(character.getEnchantEffect(), 127))
+                .augmentationId(character.getAugmentationId())
+                .vitalityPoints(character.getVitalityPoints())
+                .build();
     }
 
     private static List<CharacterInfoHolder> loadCharacterSelectInfo(UUID accountId) {

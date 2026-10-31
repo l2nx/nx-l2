@@ -24,6 +24,7 @@ package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.reason.CharCreateFailReason;
 
 public class CharCreateFail extends ServerPacket {
     public static final int REASON_CREATION_FAILED = 0x00; // "Your character creation has failed."
@@ -48,7 +49,8 @@ public class CharCreateFail extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.CHARACTER_CREATE_FAIL.writeId(this, buffer);
-        buffer.writeInt(error);
+        ServerPackets.CHARACTER_CREATE_FAIL.debug(this);
+        new app.l2nx.protocol.game.p267.serverpackets.CharCreateFail(CharCreateFailReason.of(error))
+                .write(buffer.buffer());
     }
 }

@@ -4,7 +4,10 @@
  */
 package app.l2nx.highfive.boot.architecture.protocol;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import app.l2nx.highfive.boot.architecture.layout.SliceLayoutRules;
 import com.tngtech.archunit.core.domain.Dependency;
@@ -21,12 +24,14 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 final class LegacyRouteRules {
-    static final LegacyRouteRules CHRONICLE = new LegacyRouteRules(SliceLayoutRules.CHRONICLE_ROOT);
+    static final LegacyRouteRules CHRONICLE =
+            new LegacyRouteRules(SliceLayoutRules.CHRONICLE_ROOT, "app.l2nx.protocol.game");
 
     private static final String ADAPTER = ".network.protocol.p267";
     private static final String SERVER_PACKETS = ADAPTER + ".serverpackets";
 
     private final String root;
+    private final String wire;
 
     // Frozen: the description keys the freeze store and the violation texts are its lines, so neither may change.
     ArchRule serverPacketReferences() {
@@ -37,6 +42,19 @@ final class LegacyRouteRules {
                 .resideOutsideOfPackage(root + ADAPTER + "..")
                 .should(notReferenceAServerPacket())
                 .as("only the p267 adapter references server packets");
+    }
+
+    // The pipeline picks the protocol's frame cipher, so the crypt package is open to it.
+    ArchRule wireRecordReferences() {
+        return noClasses()
+                .that()
+                .resideInAPackage(root + "..")
+                .and()
+                .resideOutsideOfPackage(root + ADAPTER + "..")
+                .should()
+                .dependOnClassesThat(resideInAPackage(wire + "..").and(not(resideInAPackage(wire + "..crypt.."))))
+                .as("only the p267 adapter references wire records")
+                .allowEmptyShould(true);
     }
 
     private ArchCondition<JavaClass> notReferenceAServerPacket() {

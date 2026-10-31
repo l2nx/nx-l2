@@ -32,7 +32,7 @@ public class CharCreateOk extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.CHARACTER_CREATE_SUCCESS.writeId(this, buffer);
-        buffer.writeInt(1);
+        ServerPackets.CHARACTER_CREATE_SUCCESS.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.CharCreateOk.INSTANCE.write(buffer.buffer());
     }
 }

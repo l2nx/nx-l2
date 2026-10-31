@@ -32,6 +32,7 @@ public class ServerClose extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.SERVER_CLOSE.writeId(this, buffer);
+        ServerPackets.SERVER_CLOSE.debug(this);
+        app.l2nx.protocol.game.p267.serverpackets.ServerClose.INSTANCE.write(buffer.buffer());
     }
 }

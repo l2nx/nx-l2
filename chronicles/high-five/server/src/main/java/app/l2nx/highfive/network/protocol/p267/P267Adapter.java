@@ -6,6 +6,7 @@ package app.l2nx.highfive.network.protocol.p267;
 
 import app.l2nx.engine.core.session.outbound.LegacyPacket;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
+import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
@@ -14,8 +15,10 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPackets;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.KeyPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Component;
@@ -44,8 +47,13 @@ public final class P267Adapter implements GameProtocolAdapter {
 
     @Override
     public ByteBuf keyFrame(ByteBufAllocator alloc, byte[] key) {
+        final KeyPacket packet = KeyPacket.builder()
+                .accepted(true)
+                .key(Arrays.copyOf(key, KeyPacket.KEY_BYTES))
+                .serverId(ServerConfig.SERVER_ID)
+                .build();
         final ByteBuf frame = Frames.allocate(alloc, KEY_FRAME_SIZE);
-        KeyPacketWriter.write(new PacketWriter(frame), key, true);
+        packet.write(frame);
         return frame;
     }
 
