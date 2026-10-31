@@ -7,6 +7,7 @@ package app.l2nx.highfive.network.pipeline;
 import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
+import app.l2nx.highfive.network.protocol.p267.HandshakeRefusal;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.channel.CloseReason;
