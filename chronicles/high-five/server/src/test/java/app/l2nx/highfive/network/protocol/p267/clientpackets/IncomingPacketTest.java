@@ -7,6 +7,8 @@ package app.l2nx.highfive.network.protocol.p267.clientpackets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import app.l2nx.network.codec.PacketDecodeException;
+import app.l2nx.network.codec.Wire;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;

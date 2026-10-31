@@ -10,11 +10,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Run time keyed by class: {@code type} is the fully qualified name, so an anonymous class never yields a blank tag.
- * The other tag keys follow Spring's {@code tasks.scheduled.execution}.
- */
-public final class RunTimers {
+/** Run time keyed by class: {@code type} is the fully qualified name, so an anonymous class never yields a blank tag. */
+final class RunTimers {
     public static final String TYPE_TAG = "type";
     public static final String OUTCOME_TAG = "outcome";
     public static final String EXCEPTION_TAG = "exception";
@@ -52,7 +49,7 @@ public final class RunTimers {
         success.record(clock.monotonicTime() - start, TimeUnit.NANOSECONDS);
     }
 
-    // As Spring's DefaultServerRequestObservationConvention: the binary name stands in for an anonymous class.
+    // An anonymous class has an empty simple name; the binary name stands in.
     public static String exceptionName(Throwable failure) {
         final String simpleName = failure.getClass().getSimpleName();
         return simpleName.isEmpty() ? failure.getClass().getName() : simpleName;

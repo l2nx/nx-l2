@@ -15,6 +15,7 @@ dependencies {
     runtimeOnly(variantOf(libs.netty.transport.native.epoll) { classifier("linux-aarch_64") })
     runtimeOnly(variantOf(libs.netty.transport.native.io.uring) { classifier("linux-x86_64") })
     runtimeOnly(variantOf(libs.netty.transport.native.io.uring) { classifier("linux-aarch_64") })
+    implementation(project(":libs:logging"))
     implementation(libs.jctools.core)
     implementation(libs.bucket4j.core)
     implementation(libs.spring.boot.autoconfigure)

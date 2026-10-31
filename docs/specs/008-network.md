@@ -24,6 +24,7 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 | Module / package                                                      | Holds                                                                                                                                |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `libs/network` (`app.l2nx.network`)                                   | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the cipher primitives         |
+| `libs/logging` (`app.l2nx.logging`)                                   | the rate-limited log every server, the network library and the load bots share                                                       |
 | `protocols/{login,game}/<id>` (`app.l2nx.protocol.{login,game}.<id>`) | one wire protocol: opcodes, wire records with their codecs, the protocol's keys and frame cipher (§8 Wire codecs)                    |
 | `engine/core` `session`                                               | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout))        |
 | `login/server` `protocol/<variant>/`                                  | the login server's side of one login protocol: handshake, decoder, a handler per client packet, accepted states                      |

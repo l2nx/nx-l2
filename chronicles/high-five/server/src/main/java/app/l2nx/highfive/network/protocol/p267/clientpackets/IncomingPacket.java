@@ -4,6 +4,8 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.network.codec.PacketDecodeException;
+import app.l2nx.network.codec.Wire;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 

@@ -187,6 +187,7 @@ The move is mechanical because a chronicle is one self-contained directory (§4)
 libs/                 knows no game rules; reusable by any server
   boot                app.l2nx.boot        Spring Boot auto-configuration shared by the servers
   database            app.l2nx.database    schema check, Instant/timestamptz bridge, PostgreSQL test fixtures (spec 006)
+  logging             app.l2nx.logging     rate-limited log shared by servers, the network library and load bots
   network             app.l2nx.network     Netty transport (framing, cipher primitives, server/client)
   gslink              app.l2nx.gslink      GS-link gRPC contract (proto, stubs, secret interceptors)
   telemetry           app.l2nx.telemetry   Micrometer

@@ -4,10 +4,10 @@
  */
 package app.l2nx.login.account;
 
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.session.AddressBans;
-import app.l2nx.logging.RateLimitedLog;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;

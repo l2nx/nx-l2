@@ -10,12 +10,14 @@ dependencies {
     api(libs.micrometer.core)
     api(libs.uuid.creator)
     api(project(":libs:network"))
+    implementation(project(":libs:logging"))
     implementation(libs.spring.boot.autoconfigure)
     implementation(libs.bucket4j.core)
     implementation(libs.fastutil)
     implementation(libs.jctools.core)
 
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.archunit.junit5)
     testImplementation(libs.jqwik)
 
     testFixturesImplementation(platform(libs.spring.boot.dependencies))

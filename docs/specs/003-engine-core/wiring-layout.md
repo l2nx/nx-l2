@@ -77,6 +77,9 @@ onto it and the longer it is exercised. The order follows the stages: `clock` (E
 | `replication` | client view, visibility grid, event classes, budgets                                                        |
 | `persistence` | write-behind, value transaction runner, outbox                                                              |
 
+Only `session` depends on `libs/network` (its transport, settings and meters); an ArchUnit rule in `engine/core` keeps
+the other packages transport-free.
+
 Game mechanics shared by chronicles still join `engine/` only by proven overlap when Essence arrives
 ([spec 001 §4](../001-project-design.md#4-module-layout)).
 

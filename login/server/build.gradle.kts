@@ -9,6 +9,7 @@ dependencies {
     api(project(":protocols:login:c621"))
     implementation(project(":libs:database"))
     implementation(project(":libs:gslink"))
+    implementation(project(":libs:logging"))
     implementation(libs.spring.boot.starter.grpc.server)
     implementation(libs.caffeine)
     implementation(libs.commons.lang3)

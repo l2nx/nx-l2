@@ -9,6 +9,7 @@ dependencies {
     api(project(":libs:network"))
     implementation(project(":libs:database"))
     implementation(project(":libs:gslink"))
+    implementation(project(":libs:logging"))
     api(project(":engine:core"))
     implementation(libs.bucket4j.core)
     implementation(libs.classgraph)
