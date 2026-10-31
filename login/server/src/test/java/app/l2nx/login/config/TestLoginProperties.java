@@ -19,7 +19,7 @@ public final class TestLoginProperties {
         return LoginProperties.builder()
                 .client(LoginProperties.Client.builder()
                         .host(LOOPBACK)
-                        .ports(List.of(new LoginProperties.ClientPort(clientPort, LoginVariant.C621)))
+                        .ports(List.of(new LoginProperties.ClientListener(clientPort, LoginVariant.C621)))
                         .maxConcurrentTasks(4)
                         .build())
                 .gameServer(LoginProperties.GameServer.builder().acceptNew(true).build())

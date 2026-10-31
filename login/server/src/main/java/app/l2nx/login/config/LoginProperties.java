@@ -42,17 +42,17 @@ public record LoginProperties(
     @Builder(toBuilder = true)
     public record Client(
             @NotBlank String host,
-            @NotEmpty List<@Valid ClientPort> ports,
+            @NotEmpty List<@Valid ClientListener> ports,
             @Positive @DefaultValue("32") int maxConcurrentTasks) {
         @AssertTrue(message = "l2nx.login.client.ports must not repeat a port")
         public boolean isPortsDistinct() {
             return (ports == null)
-                    || (ports.stream().map(ClientPort::port).distinct().count() == ports.size());
+                    || (ports.stream().map(ClientListener::port).distinct().count() == ports.size());
         }
     }
 
     @Builder(toBuilder = true)
-    public record ClientPort(
+    public record ClientListener(
             @Min(1) @Max(65535) int port, @NotNull LoginVariant variant) {}
 
     @Builder(toBuilder = true)

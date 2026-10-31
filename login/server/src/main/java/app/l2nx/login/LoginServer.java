@@ -176,19 +176,19 @@ public class LoginServer implements SmartLifecycle {
         blockingTasks = new BlockingTaskExecutor("l2nx-login-tasks", client.maxConcurrentTasks(), meterRegistry);
         final ConnectionLimiter limiter = new ConnectionLimiter(networkProperties, addressBans::isBanned);
         client.ports().stream()
-                .map(LoginProperties.ClientPort::variant)
+                .map(LoginProperties.ClientListener::variant)
                 .distinct()
                 .forEach(this::warmUp);
-        for (LoginProperties.ClientPort port : client.ports()) {
+        for (LoginProperties.ClientListener listener : client.ports()) {
             clientServers.add(NetworkServer.bind(
-                    "login-" + port.variant().id(),
-                    new InetSocketAddress(client.host(), port.port()),
+                    "login-" + listener.variant().id(),
+                    new InetSocketAddress(client.host(), listener.port()),
                     eventLoops,
                     networkProperties,
                     networkMetrics,
                     limiter,
                     new LoginChannelInitializer(
-                            port.variant(),
+                            listener.variant(),
                             networkProperties,
                             blockingTasks,
                             () -> new LoginKeys(

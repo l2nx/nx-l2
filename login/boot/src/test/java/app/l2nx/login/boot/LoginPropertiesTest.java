@@ -54,7 +54,7 @@ class LoginPropertiesTest {
             runner.run(context -> {
                 final LoginProperties.Client actual =
                         context.getBean(LoginProperties.class).client();
-                assertThat(actual.ports()).containsExactly(new LoginProperties.ClientPort(2106, LoginVariant.C621));
+                assertThat(actual.ports()).containsExactly(new LoginProperties.ClientListener(2106, LoginVariant.C621));
                 assertThat(actual.maxConcurrentTasks()).isEqualTo(32);
             });
         }

@@ -82,7 +82,7 @@ class LoginServerTest {
     @Nested
     class Start {
         @Test
-        void start_shouldShutDownStartedServices_whenClientPortIsTaken() throws Exception {
+        void start_shouldShutDownStartedServices_whenClientListenerPortIsTaken() throws Exception {
             try (ServerSocket blocker = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
                 final LoginServer server =
                         server(TestLoginProperties.create(blocker.getLocalPort(), TestLoginProperties.noRestart()));
