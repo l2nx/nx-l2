@@ -85,6 +85,21 @@ lists what is open.
 - [#122](https://github.com/l2nx/nx-l2/issues/122) E7: defer world membership changes to a sync point instead of snapshots
 - [#123](https://github.com/l2nx/nx-l2/issues/123) Loop wakes up to 15 ms late on Windows and counts on-time timers as overdue
 - [#126](https://github.com/l2nx/nx-l2/issues/126) Default-locale case conversion breaks identifiers under a Turkish locale
+- [#131](https://github.com/l2nx/nx-l2/issues/131) Aggregate per-IP connection limits and bans by IPv6 prefix
+- [#132](https://github.com/l2nx/nx-l2/issues/132) Wire the p267 mappers as Spring beans and move the legacy packet base into the adapter
+- [#133](https://github.com/l2nx/nx-l2/issues/133) Tidy the p267 adapter: dead opcode API, duplicate opcodes, chat type pins, null peer address
+- [#134](https://github.com/l2nx/nx-l2/issues/134) Keep address bans in Caffeine with a CIDR ban list instead of the Mobius ban file
+- [#135](https://github.com/l2nx/nx-l2/issues/135) Keep joined clients through purge, report database failures as system errors and look up game servers by hex id
+- [#136](https://github.com/l2nx/nx-l2/issues/136) Tidy the login server: duplicate account lookup, static SecureRandom, hand-written test polling
+- [#137](https://github.com/l2nx/nx-l2/issues/137) Report session drain failures and check server freshness in load runs
+- [#138](https://github.com/l2nx/nx-l2/issues/138) Remove tautologies and the closed-port race from the load harness tests
+- [#139](https://github.com/l2nx/nx-l2/issues/139) Start periodic systems on the post-startup grid and apply the deadline floor across both timer queues
+- [#140](https://github.com/l2nx/nx-l2/issues/140) Decide whether the frozen server-packet store may grow and pin its size
+- [#141](https://github.com/l2nx/nx-l2/issues/141) Send the character slice's legacy notices through view events or a listed facade
+- [#142](https://github.com/l2nx/nx-l2/issues/142) Pin the set of single-writer classes the build checks
+- [#143](https://github.com/l2nx/nx-l2/issues/143) Exit on direct memory exhaustion too, or narrow the OutOfMemoryError promise in the spec
+- [#144](https://github.com/l2nx/nx-l2/issues/144) Share the over-enchant check between entering the world and UseItem
+- [#145](https://github.com/l2nx/nx-l2/issues/145) Keep module moves buildable and drop the Spring test starter from Spring-free libs
 
 ## Done
 
