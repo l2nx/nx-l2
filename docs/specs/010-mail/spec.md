@@ -111,6 +111,10 @@ CREATE TABLE mails (
 CREATE INDEX mails_inbox_idx ON mails (receiver_id) WHERE receiver_deleted_at IS NULL AND expired_at IS NULL;
 CREATE INDEX mails_outbox_idx ON mails (sender_id) WHERE sender_deleted_at IS NULL AND expired_at IS NULL;
 CREATE INDEX mails_due_idx ON mails (expires_at) WHERE expired_at IS NULL;
+-- full indexes for the ON DELETE SET NULL actions, dropping cash on delivery and returned-mail lookups
+CREATE INDEX mails_sender_id_idx ON mails (sender_id);
+CREATE INDEX mails_receiver_id_idx ON mails (receiver_id);
+CREATE INDEX mails_returned_from_id_idx ON mails (returned_from_id);
 
 -- the item snapshot of an attachment, written once at send
 CREATE TABLE mail_attachments (
@@ -193,6 +197,7 @@ Essence arrives); the wire value of each type is protocol code ([client-protocol
 | `mailbox-limit`               | `240`             | visible mails per box                                                   |
 | `expiry`                      | `360h`            | lifetime of a mail                                                      |
 | `cod-expiry`                  | `12h`             | lifetime of a mail with cash on delivery                                |
+| `max-attachments`             | `8`               | attachments per mail, 1–8 (the snapshot has 8 slots; the client shows 8)  |
 | `send-interval`               | `10s`             | minimum time between two sends of a character (10 s on retail)          |
 | `expiry-poll`                 | `1m`              | cadence of the expiry job                                               |
 
@@ -279,7 +284,7 @@ that action (a settled mail answers 3382 on receive and 3030 on cancel). `MailRe
 | sender   | `BUSY` (trading, store, enchanting), `ACCESS_DENIED`, `JAILED`, `SEND_INTERVAL`, `NOT_ENOUGH_ADENA` |
 | content  | `TOO_MANY_ATTACHMENTS`, `ITEM_NOT_MAILABLE`, `COD_WITHOUT_ATTACHMENTS`, `COD_AMOUNT_INVALID`, `INVALID_TEXT`    |
 | receiver | `RECEIVER_NOT_FOUND`, `RECEIVER_SELF`, `RECEIVER_BLOCKED`, `RECEIVER_GM_ONLY`             |
-| limits   | `RECEIVER_MAILBOX_FULL`, `SENDER_MAILBOX_FULL`, `INVENTORY_FULL`, `WEIGHT_LIMIT`          |
+| limits   | `RECEIVER_MAILBOX_FULL`, `SENDER_MAILBOX_FULL`, `INVENTORY_FULL`, `WEIGHT_LIMIT`, `ADENA_LIMIT`, `SENDER_ADENA_LIMIT`          |
 | state    | `ALREADY_RECEIVED`, `NOT_RETURNABLE`, `HAS_ATTACHMENTS`                                   |
 | system   | `FAILED` (the transaction failed before its commit)                           |
 
@@ -415,7 +420,9 @@ Every refusal is a `MailRefused` to the acting character.
 Lists and open mail are read-only queries off the loop; the result returns to the partition and is emitted as a view
 event. Opening an unread received mail sets `read_at` (a conditional write) and emits `MailStateChanged`. Attachments
 are always shown from the snapshot rows; whether they can still be taken comes from `attachments`. At world entry an
-unread count query emits `MailArrived` when it is above zero.
+unread count query emits `MailArrived` when it is above zero. A box holds at most `mailbox-limit` visible mails, newest
+first; when more are visible (returns are never refused), `ATTACHED` mails take the places first, so no attachment
+drops out of the list.
 
 ### 4.3 Receive
 
@@ -426,7 +433,13 @@ unread count query emits `MailArrived` when it is above zero.
 3. **In the transaction:** condition `attachments = 'ATTACHED'`; move the live items to the receiver; pay the cash on
    delivery to the sender (online absolute, offline delta or a new adena row); settle `RECEIVED`, or `DESTROYED`
    without charging when no live item is left (D18).
-4. **On commit:** apply to both characters, system messages to both, `MailStateChanged`.
+4. **On commit:** apply to both characters, system messages to both, `MailStateChanged`; after a paid mail a fresh
+   received list, since the client keeps the payment flag of a list it already shows.
+
+A payment that would take the sender's adena over the adena limit is refused with `SENDER_ADENA_LIMIT` (the client's
+"the opponent cannot accept the adena"); the receiver can still return the mail. A stackable template the receiver
+(or the paid sender) has no stack of is reserved as awaited (`IncomingTargets.newStackTemplates`): a stack of it
+created during the transaction is not saved and merges into the committed row, so memory and database keep one stack.
 
 ### 4.4 Return, cancel, delete
 
@@ -445,7 +458,9 @@ merged into existing stacks, whether the owner is online or not; an online owner
 commit. An offline receiver of an expired system mail no longer leaves orphaned item rows, a defect of both Mobius
 trees. For an online owner the job first reserves the stacks of the loaded warehouse on the loop, like a receive; a
 stack another transaction holds leaves the mail due for the next poll. The warehouse has no capacity check here, as
-in the legacy return: a refusal would hold the attachments in the mail forever.
+in the legacy return: a refusal would hold the attachments in the mail forever. Adena over the adena limit is refused
+(`ADENA_LIMIT`) and the mail stays due until there is room. A returned mail expires to its original sender (its
+receiver); a mail whose owner no longer exists has its attachments destroyed (D17).
 
 ### 4.6 Character deletion
 

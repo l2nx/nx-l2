@@ -87,6 +87,10 @@ one save point.
   a committed move, and a login would load rows the commit is about to change.
 - **Pending marks** are checked in the mutating operations of the item containers, so every path that uses, drops,
   sells, destroys, equips or moves an item is covered, scripts included.
+- **Awaited stacks:** a stackable template the target has no stack of at reservation is reserved too; a stack of it
+  created meanwhile is not saved and merges into the committed row, so one stack exists in memory and in the database.
+- **Unstored rows:** an item created after the last save travels with its whole row, and the transaction inserts it
+  before moving it.
 - **Apply after commit** changes memory without writing the database again, then releases the marks.
 
 The first consumer is mail ([spec 010 §3.5](../010-mail/spec.md#35-value-transaction-runner-enginecore-persistence)); trade, warehouses, stores and
