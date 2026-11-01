@@ -326,7 +326,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
                 return;
             }
 
-            final AbsorberInfo ai = mob.getAbsorbersList().get(killer.getObjectId());
+            final AbsorberInfo ai = mob.getAbsorberInfo(killer.getObjectId());
             if ((ai == null)
                     || (ai.getObjectId() != killer.getObjectId())
                     || (ai.getAbsorbedHp() > (mob.getMaxHp() / 2.0))) {

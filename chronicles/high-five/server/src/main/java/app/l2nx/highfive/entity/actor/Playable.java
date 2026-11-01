@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.stat.PlayableStat;
@@ -39,7 +40,7 @@ import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.EtcStatusUpdate;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * This class represents all Playable characters in the world.<br>
@@ -49,8 +50,8 @@ import lombok.Setter;
  * <li>Summon</li>
  * </ul>
  */
+@SingleWriter
 public abstract class Playable extends Creature {
-    @Setter
     private Creature lockedTarget = null;
 
     private Player transferDmgTo = null;
@@ -72,28 +73,38 @@ public abstract class Playable extends Creature {
         setInvul(false);
     }
 
+    public void setLockedTarget(Creature lockedTarget) {
+        WorldPartition.checkOwner();
+        this.lockedTarget = lockedTarget;
+    }
+
     @Override
     public PlayableStat getStat() {
+        WorldPartition.checkOwner();
         return (PlayableStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new PlayableStat(this));
     }
 
     @Override
     public PlayableStatus getStatus() {
+        WorldPartition.checkOwner();
         return (PlayableStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new PlayableStatus(this));
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_DEATH, this)) {
             final TerminateReturn returnBack = EventDispatcher.getInstance()
                     .notifyEvent(
@@ -109,15 +120,12 @@ public abstract class Playable extends Creature {
         }
 
         // Killing is only possible one time.
-        synchronized (this) {
-            if (isDead()) {
-                return false;
-            }
-
-            // Now reset currentHp to zero.
-            setCurrentHp(0);
-            setDead(true);
+        if (isDead()) {
+            return false;
         }
+
+        setCurrentHp(0);
+        setDead(true);
 
         // Set target to null and cancel Attack or Cast.
         setTarget(null);
@@ -187,6 +195,7 @@ public abstract class Playable extends Creature {
     }
 
     public boolean checkIfPvP(Creature target) {
+        WorldPartition.checkOwner();
         if (target == null) {
             return false; // Target is null
         }
@@ -233,11 +242,13 @@ public abstract class Playable extends Creature {
      */
     @Override
     public boolean canBeAttacked() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     // Support for Noblesse Blessing skill, where buffs are retained after resurrect.
     public boolean isNoblesseBlessedAffected() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.NOBLESS_BLESSING);
     }
 
@@ -245,6 +256,7 @@ public abstract class Playable extends Creature {
      * @return {@code true} if char can resurrect by himself, {@code false} otherwise
      */
     public boolean isResurrectSpecialAffected() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.RESURRECTION_SPECIAL);
     }
 
@@ -252,6 +264,7 @@ public abstract class Playable extends Creature {
      * @return {@code true} if the Silent Moving mode is active, {@code false} otherwise
      */
     public boolean isSilentMovingAffected() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.SILENT_MOVE);
     }
 
@@ -260,27 +273,33 @@ public abstract class Playable extends Creature {
      * @return
      */
     public boolean isProtectionBlessingAffected() {
+        WorldPartition.checkOwner();
         return isAffected(EffectFlag.PROTECTION_BLESSING);
     }
 
     @Override
     public void updateEffectIcons(boolean partyOnly) {
+        WorldPartition.checkOwner();
         getEffectList().updateEffectIcons(partyOnly);
     }
 
     public boolean isLockedTarget() {
+        WorldPartition.checkOwner();
         return lockedTarget != null;
     }
 
     public Creature getLockedTarget() {
+        WorldPartition.checkOwner();
         return lockedTarget;
     }
 
     public void setTransferDamageTo(Player val) {
+        WorldPartition.checkOwner();
         transferDmgTo = val;
     }
 
     public Player getTransferingDamageTo() {
+        WorldPartition.checkOwner();
         return transferDmgTo;
     }
 
@@ -297,16 +316,19 @@ public abstract class Playable extends Creature {
     public abstract void restoreEffects();
 
     public boolean isOnEvent() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public boolean isPlayable() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Playable asPlayable() {
+        WorldPartition.checkOwner();
         return this;
     }
 }

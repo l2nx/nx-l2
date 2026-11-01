@@ -204,7 +204,7 @@ public class UrbanArea extends InstanceScript {
             startQuestTimer("rebuff", 357000, npc, null);
         } else if ((npc.getId() == TOWN_GUARD) || (npc.getId() == KEYMASTER)) {
             npc.setBusy(false);
-            npc.setBusyMessage("");
+            npc.setBusyMessage(null);
         }
     }
 
@@ -238,7 +238,7 @@ public class UrbanArea extends InstanceScript {
         final InstanceWorld world = InstanceManager.getInstance().getWorld(npc);
         if ((world != null)
                 && !world.getParameters().getBoolean("isAmaskariDead", false)
-                && !(npc.getBusyMessage().equalsIgnoreCase("atk") || npc.isBusy())) {
+                && !("atk".equalsIgnoreCase(npc.getBusyMessage()) || npc.isBusy())) {
             int msgId;
             int range;
             switch (npc.getId()) {

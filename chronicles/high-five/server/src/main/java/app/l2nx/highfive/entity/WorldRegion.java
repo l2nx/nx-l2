@@ -31,7 +31,6 @@ import app.l2nx.highfive.entity.actor.instance.Fence;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.RandomAnimationTaskManager;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import java.util.Collection;
 import java.util.List;
@@ -76,9 +75,7 @@ public class WorldRegion {
 
         // A snapshot: mobs too far from their spawn teleport back, which moves them out of this region. An object an
         // earlier iteration took out of the world is skipped.
-        final ObjectArrayList<WorldObject> objects = ScratchBuffers.acquire();
-        try {
-            ScratchBuffers.copy(visibleObjects, objects);
+        try (ScratchBuffers.Snapshot<WorldObject> objects = ScratchBuffers.snapshot(visibleObjects)) {
             for (int i = 0; i < objects.size(); i++) {
                 final WorldObject wo = objects.get(i);
                 if (!wo.isSpawned()) {
@@ -91,8 +88,6 @@ public class WorldRegion {
                     stopAI(wo);
                 }
             }
-        } finally {
-            ScratchBuffers.release(objects);
         }
     }
 
@@ -326,9 +321,7 @@ public class WorldRegion {
     }
 
     private static <T> boolean anyOf(Collection<T> source, Predicate<T> test) {
-        final ObjectArrayList<T> snapshot = ScratchBuffers.acquire();
-        try {
-            ScratchBuffers.copy(source, snapshot);
+        try (ScratchBuffers.Snapshot<T> snapshot = ScratchBuffers.snapshot(source)) {
             for (int i = 0; i < snapshot.size(); i++) {
                 if (test.test(snapshot.get(i))) {
                     return true;
@@ -336,8 +329,6 @@ public class WorldRegion {
             }
 
             return false;
-        } finally {
-            ScratchBuffers.release(snapshot);
         }
     }
 

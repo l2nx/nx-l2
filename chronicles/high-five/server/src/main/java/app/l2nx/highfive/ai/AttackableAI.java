@@ -30,6 +30,7 @@ import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.WorldRegion;
@@ -39,7 +40,6 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.npc.AISkillScope;
 import app.l2nx.highfive.entity.actor.enums.npc.AIType;
-import app.l2nx.highfive.entity.actor.holders.npc.AggroInfo;
 import app.l2nx.highfive.entity.actor.instance.FestivalMonster;
 import app.l2nx.highfive.entity.actor.instance.FriendlyMob;
 import app.l2nx.highfive.entity.actor.instance.GrandBoss;
@@ -75,7 +75,6 @@ import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -1339,36 +1338,25 @@ public class AttackableAI extends CreatureAI {
     private Creature targetReconsider(boolean randomTarget) {
         final Attackable npc = getActiveChar();
         if (randomTarget) {
-            final List<Creature> result = new ArrayList<>();
-            for (AggroInfo aggro : npc.getAggroList().values()) {
-                if (checkTarget(aggro.getAttacker())) {
-                    result.add(aggro.getAttacker());
+            try (ScratchBuffers.Snapshot<Creature> result = ScratchBuffers.empty()) {
+                npc.collectAttackers(this::checkTarget, result);
+
+                // If npc is aggressive, add characters within aggro range too.
+                if (npc.isAggressive()) {
+                    World.forEachVisibleObjectInRange(npc, Creature.class, npc.getAggroRange(), creature -> {
+                        if (checkTarget(creature)) {
+                            result.add(creature);
+                        }
+                    });
+                }
+
+                if (!result.isEmpty()) {
+                    return result.get(ClockBridge.random().nextInt(result.size()));
                 }
             }
-
-            // If npc is aggressive, add characters within aggro range too.
-            if (npc.isAggressive()) {
-                World.forEachVisibleObjectInRange(npc, Creature.class, npc.getAggroRange(), creature -> {
-                    if (checkTarget(creature)) {
-                        result.add(creature);
-                    }
-                });
-            }
-
-            if (!result.isEmpty()) {
-                return result.get(ClockBridge.random().nextInt(result.size()));
-            }
         }
 
-        long searchValue = Long.MIN_VALUE;
-        Creature creature = null;
-        for (AggroInfo aggro : npc.getAggroList().values()) {
-            if (checkTarget(aggro.getAttacker()) && (aggro.getHate() > searchValue)) {
-                searchValue = aggro.getHate();
-                creature = aggro.getAttacker();
-            }
-        }
-
+        final Creature creature = npc.getMostHatedAttacker(this::checkTarget);
         if ((creature == null) && npc.isAggressive()) {
             final Creature match = World.getFirstVisibleObjectInRange(
                     npc, Creature.class, npc.getAggroRange(), nearby -> checkTarget(nearby));

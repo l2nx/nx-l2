@@ -782,9 +782,7 @@ public class FortSiegeGuardAI extends CreatureAI implements Runnable {
                 return;
             }
 
-            for (Creature aggroed : me.getAggroList().keySet()) {
-                me.addDamageHate(aggroed, 0, aggro);
-            }
+            me.addHateToAttackers(aggro);
 
             if (me.getHating(mostHated) <= 0) {
                 globalAggro = -25;

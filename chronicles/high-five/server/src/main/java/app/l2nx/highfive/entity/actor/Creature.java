@@ -544,6 +544,11 @@ public abstract class Creature extends WorldObject {
         return template;
     }
 
+    // For toString only: logging calls it from any thread, where the checked getter would throw.
+    protected final CreatureTemplate uncheckedTemplate() {
+        return template;
+    }
+
     protected void setTemplate(CreatureTemplate template) {
         this.template = template;
     }
@@ -4064,9 +4069,8 @@ public abstract class Creature extends WorldObject {
 
             if (!triggerSkills.isEmpty()) {
                 // A trigger cast can equip or unequip an item and so change the triggers.
-                final ObjectArrayList<OptionSkillHolder> triggers = ScratchBuffers.acquire();
-                try {
-                    ScratchBuffers.copy(triggerSkills.values(), triggers);
+                try (ScratchBuffers.Snapshot<OptionSkillHolder> triggers =
+                        ScratchBuffers.snapshot(triggerSkills.values())) {
                     for (OptionSkillHolder holder : triggers) {
                         if (((!crit && (holder.skillType() == OptionSkillType.ATTACK))
                                         || ((holder.skillType() == OptionSkillType.CRITICAL) && crit))
@@ -4074,8 +4078,6 @@ public abstract class Creature extends WorldObject {
                             makeTriggerCast(holder.skill(), target);
                         }
                     }
-                } finally {
-                    ScratchBuffers.release(triggers);
                 }
             }
 
@@ -4737,9 +4739,8 @@ public abstract class Creature extends WorldObject {
                     }
 
                     if (!triggerSkills.isEmpty()) {
-                        final ObjectArrayList<OptionSkillHolder> triggers = ScratchBuffers.acquire();
-                        try {
-                            ScratchBuffers.copy(triggerSkills.values(), triggers);
+                        try (ScratchBuffers.Snapshot<OptionSkillHolder> triggers =
+                                ScratchBuffers.snapshot(triggerSkills.values())) {
                             for (OptionSkillHolder holder : triggers) {
                                 if (((skill.isMagic() && (holder.skillType() == OptionSkillType.MAGIC))
                                                 || (skill.isPhysical()
@@ -4748,8 +4749,6 @@ public abstract class Creature extends WorldObject {
                                     makeTriggerCast(holder.skill(), target);
                                 }
                             }
-                        } finally {
-                            ScratchBuffers.release(triggers);
                         }
                     }
                 }

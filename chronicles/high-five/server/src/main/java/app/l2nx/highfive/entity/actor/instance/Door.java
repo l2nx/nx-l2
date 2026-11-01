@@ -667,7 +667,7 @@ public class Door extends Creature {
         final StringBuilder sb = new StringBuilder();
         sb.append(getClass().getSimpleName());
         sb.append('[');
-        sb.append(getTemplate().getId());
+        sb.append(((DoorTemplate) uncheckedTemplate()).getId());
         sb.append("](");
         sb.append(getObjectId());
         sb.append(')');

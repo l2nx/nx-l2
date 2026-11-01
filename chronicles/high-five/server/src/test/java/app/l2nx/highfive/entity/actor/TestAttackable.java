@@ -16,9 +16,10 @@ class TestAttackable extends Attackable {
         super(template());
     }
 
-    private static NpcTemplate template() {
+    static NpcTemplate template() {
         final NpcTemplate template = new NpcTemplate(new StatSet(Map.of("id", NPC_ID, "baseHpMax", 1_000)));
         template.setSkills(Map.of());
+        template.setParameters(new StatSet());
         return template;
     }
 }

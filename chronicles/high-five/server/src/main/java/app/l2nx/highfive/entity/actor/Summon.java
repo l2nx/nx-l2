@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.SummonAI;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -88,15 +89,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 
+@SingleWriter
 public abstract class Summon extends Playable {
-    @Getter
-    @Setter
+
     private Player owner;
 
-    @Getter
     private int attackRange = 36;
 
     private boolean followStatus = true;
@@ -136,8 +134,24 @@ public abstract class Summon extends Playable {
         setXYZInvisible(location.getX(), location.getY(), location.getZ());
     }
 
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    public void setOwner(Player owner) {
+        WorldPartition.checkOwner();
+        this.owner = owner;
+    }
+
+    public int getAttackRange() {
+        WorldPartition.checkOwner();
+        return attackRange;
+    }
+
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
 
         if (PlayerConfig.SUMMON_STORE_SKILL_COOLTIME && !isTeleporting()) {
@@ -171,21 +185,25 @@ public abstract class Summon extends Playable {
 
     @Override
     public SummonStat getStat() {
+        WorldPartition.checkOwner();
         return (SummonStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new SummonStat(this));
     }
 
     @Override
     public SummonStatus getStatus() {
+        WorldPartition.checkOwner();
         return (SummonStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new SummonStatus(this));
     }
 
@@ -196,6 +214,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public NpcTemplate getTemplate() {
+        WorldPartition.checkOwner();
         return (NpcTemplate) super.getTemplate();
     }
 
@@ -204,18 +223,21 @@ public abstract class Summon extends Playable {
 
     @Override
     public void stopAllEffects() {
+        WorldPartition.checkOwner();
         super.stopAllEffects();
         updateAndBroadcastStatus(1);
     }
 
     @Override
     public void stopAllEffectsExceptThoseThatLastThroughDeath() {
+        WorldPartition.checkOwner();
         super.stopAllEffectsExceptThoseThatLastThroughDeath();
         updateAndBroadcastStatus(1);
     }
 
     @Override
     public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
         if (abnormalEffectTask == null) {
             abnormalEffectTask = WorldPartition.loop()
                     .schedule(
@@ -235,10 +257,12 @@ public abstract class Summon extends Playable {
     }
 
     public boolean isMountable() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public long getExpForThisLevel() {
+        WorldPartition.checkOwner();
         if (getLevel() >= ExperienceData.getInstance().getMaxPetLevel()) {
             return 0;
         }
@@ -247,6 +271,7 @@ public abstract class Summon extends Playable {
     }
 
     public long getExpForNextLevel() {
+        WorldPartition.checkOwner();
         if (getLevel() >= (ExperienceData.getInstance().getMaxPetLevel() - 1)) {
             return 0;
         }
@@ -256,25 +281,30 @@ public abstract class Summon extends Playable {
 
     @Override
     public int getKarma() {
+        WorldPartition.checkOwner();
         return owner != null ? owner.getKarma() : 0;
     }
 
     @Override
     public byte getPvpFlag() {
+        WorldPartition.checkOwner();
         return owner != null ? owner.getPvpFlag() : 0;
     }
 
     @Override
     public Team getTeam() {
+        WorldPartition.checkOwner();
         return owner != null ? owner.getTeam() : Team.NONE;
     }
 
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return getTemplate().getId();
     }
 
     public short getSoulShotsPerHit() {
+        WorldPartition.checkOwner();
         if (getTemplate().getSoulShot() > 0) {
             return (short) getTemplate().getSoulShot();
         }
@@ -283,6 +313,7 @@ public abstract class Summon extends Playable {
     }
 
     public short getSpiritShotsPerHit() {
+        WorldPartition.checkOwner();
         if (getTemplate().getSpiritShot() > 0) {
             return (short) getTemplate().getSpiritShot();
         }
@@ -291,6 +322,7 @@ public abstract class Summon extends Playable {
     }
 
     public void followOwner() {
+        WorldPartition.checkOwner();
         setFollowStatus(true);
     }
 
@@ -335,6 +367,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (isNoblesseBlessedAffected()) {
             stopEffects(EffectType.NOBLESSE_BLESSING);
             storeEffect(true);
@@ -352,7 +385,7 @@ public abstract class Summon extends Playable {
                     return;
                 }
 
-                final AggroInfo info = targetMob.getAggroList().get(this);
+                final AggroInfo info = targetMob.getAggroInfo(this);
                 if (info != null) {
                     targetMob.addDamageHate(owner, info.getDamage(), info.getHate());
                 }
@@ -366,6 +399,7 @@ public abstract class Summon extends Playable {
     }
 
     public boolean doDie(Creature killer, boolean decayed) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -390,21 +424,25 @@ public abstract class Summon extends Playable {
     }
 
     public void stopDecay() {
+        WorldPartition.checkOwner();
         DecayTaskManager.getInstance().cancel(this);
     }
 
     @Override
     public void onDecay() {
+        WorldPartition.checkOwner();
         deleteMe(owner);
     }
 
     @Override
     public void broadcastStatusUpdate() {
+        WorldPartition.checkOwner();
         super.broadcastStatusUpdate();
         updateAndBroadcastStatus(1);
     }
 
     public void deleteMe(Player owner) {
+        WorldPartition.checkOwner();
         if (owner != null) {
             owner.sendPacket(new PetDelete(getSummonType(), getObjectId()));
             final Party party = owner.getParty();
@@ -426,6 +464,7 @@ public abstract class Summon extends Playable {
     }
 
     public void unSummon(Player owner) {
+        WorldPartition.checkOwner();
         if (isSpawned() && !isDead()) {
             stopHpMpRegeneration();
 
@@ -477,10 +516,12 @@ public abstract class Summon extends Playable {
     }
 
     public void setAttackRange(int range) {
+        WorldPartition.checkOwner();
         attackRange = (range < 36) ? 36 : range;
     }
 
     public void setFollowStatus(boolean value) {
+        WorldPartition.checkOwner();
         followStatus = value;
         if (followStatus) {
             getAI().setIntentionFollow(owner);
@@ -490,56 +531,69 @@ public abstract class Summon extends Playable {
     }
 
     public boolean getFollowStatus() {
+        WorldPartition.checkOwner();
         return followStatus;
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return (owner != null) && owner.isAutoAttackable(attacker);
     }
 
     public int getControlObjectId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public Weapon getActiveWeapon() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public PetInventory getInventory() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    public void setRestoreSummon(boolean value) {}
+    public void setRestoreSummon(boolean value) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public boolean isInvul() {
+        WorldPartition.checkOwner();
         return super.isInvul() || owner.isSpawnProtected();
     }
 
     @Override
     public Party getParty() {
+        WorldPartition.checkOwner();
         if (owner == null) {
             return null;
         }
@@ -549,11 +603,13 @@ public abstract class Summon extends Playable {
 
     @Override
     public boolean isInParty() {
+        WorldPartition.checkOwner();
         return (owner != null) && owner.isInParty();
     }
 
     @Override
     public boolean useMagic(Skill skill, boolean forceUse, boolean dontMove) {
+        WorldPartition.checkOwner();
         if ((skill == null) || isDead() || (owner == null)) {
             return false;
         }
@@ -688,6 +744,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void setImmobilized(boolean value) {
+        WorldPartition.checkOwner();
         super.setImmobilized(value);
 
         if (value) {
@@ -703,6 +760,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void sendDamageMessage(Creature target, int damage, boolean mcrit, boolean pcrit, boolean miss) {
+        WorldPartition.checkOwner();
         if (miss || (owner == null)) {
             return;
         }
@@ -740,6 +798,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, Skill skill) {
+        WorldPartition.checkOwner();
         super.reduceCurrentHp(damage, attacker, skill);
         if ((owner != null) && (attacker != null)) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_RECEIVED_S3_DAMAGE_FROM_C2);
@@ -752,6 +811,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void doCast(Skill skill) {
+        WorldPartition.checkOwner();
         final Player actingPlayer = getOwner();
         if (!actingPlayer.checkPvpSkill(getTarget(), skill)
                 && !actingPlayer.getAccessLevel().allowPeaceAttack()) {
@@ -766,15 +826,18 @@ public abstract class Summon extends Playable {
 
     @Override
     public boolean isInCombat() {
+        WorldPartition.checkOwner();
         return (owner != null) && owner.isInCombat();
     }
 
     @Override
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         return owner;
     }
 
     public void updateAndBroadcastStatus(int value) {
+        WorldPartition.checkOwner();
         if (owner == null) {
             return;
         }
@@ -794,6 +857,7 @@ public abstract class Summon extends Playable {
     }
 
     public void broadcastNpcInfo(int value) {
+        WorldPartition.checkOwner();
         World.forEachVisibleObject(this, Player.class, player -> {
             if (player == owner) {
                 return;
@@ -804,19 +868,23 @@ public abstract class Summon extends Playable {
     }
 
     public boolean isHungry() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getWeapon() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public int getArmor() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (player == owner) {
             player.sendPacket(new PetInfo(this, 0));
 
@@ -831,25 +899,31 @@ public abstract class Summon extends Playable {
     }
 
     @Override
-    public synchronized void onTeleported() {
+    public void onTeleported() {
+        WorldPartition.checkOwner();
         super.onTeleported();
         sendPacket(new TeleportToLocation(this, getX(), getY(), getZ(), getHeading()));
     }
 
     @Override
     public boolean isUndead() {
+        WorldPartition.checkOwner();
         return getTemplate().getRace() == Race.UNDEAD;
     }
 
-    public void switchMode() {}
+    public void switchMode() {
+        WorldPartition.checkOwner();
+    }
 
     public void cancelAction() {
+        WorldPartition.checkOwner();
         if (!isMovementDisabled()) {
             getAI().setIntentionActive();
         }
     }
 
     public void doSummonAttack(WorldObject target) {
+        WorldPartition.checkOwner();
         if ((owner != null) && (target != null)) {
             setTarget(target);
             getAI().setIntentionAttack(target);
@@ -860,6 +934,7 @@ public abstract class Summon extends Playable {
     }
 
     public boolean canAttack(boolean ctrlPressed) {
+        WorldPartition.checkOwner();
         if (owner == null) {
             return false;
         }
@@ -944,6 +1019,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void sendPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
         if (owner != null) {
             owner.sendPacket(packet);
         }
@@ -951,6 +1027,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void sendPacket(SystemMessageId id) {
+        WorldPartition.checkOwner();
         if (owner != null) {
             owner.sendPacket(id);
         }
@@ -958,21 +1035,25 @@ public abstract class Summon extends Playable {
 
     @Override
     public boolean isSummon() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Summon asSummon() {
+        WorldPartition.checkOwner();
         return this;
     }
 
     @Override
     public boolean isChargedShot(ShotType type) {
+        WorldPartition.checkOwner();
         return (shotsMask & type.getMask()) == type.getMask();
     }
 
     @Override
     public void setChargedShot(ShotType type, boolean charged) {
+        WorldPartition.checkOwner();
         if (charged) {
             shotsMask |= type.getMask();
         } else {
@@ -982,6 +1063,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public void rechargeShots(boolean physical, boolean magic) {
+        WorldPartition.checkOwner();
         Item item;
         IItemHandler handler;
         if ((owner.getAutoSoulShot() == null) || owner.getAutoSoulShot().isEmpty()) {
@@ -1012,15 +1094,18 @@ public abstract class Summon extends Playable {
 
     @Override
     public int getClanId() {
+        WorldPartition.checkOwner();
         return (owner != null) ? owner.getClanId() : 0;
     }
 
     @Override
     public int getAllyId() {
+        WorldPartition.checkOwner();
         return (owner != null) ? owner.getAllyId() : 0;
     }
 
     public int getFormId() {
+        WorldPartition.checkOwner();
         int formId = 0;
         final int npcId = getId();
         if ((npcId == 16041) || (npcId == 16042)) {
@@ -1046,6 +1131,7 @@ public abstract class Summon extends Playable {
 
     @Override
     public boolean isOnEvent() {
+        WorldPartition.checkOwner();
         return (owner != null) && owner.isOnEvent();
     }
 
@@ -1054,7 +1140,7 @@ public abstract class Summon extends Playable {
         final StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
         sb.append('(');
-        sb.append(getId());
+        sb.append(((NpcTemplate) uncheckedTemplate()).getId());
         sb.append(") Owner: ");
         sb.append(owner);
         return sb.toString();

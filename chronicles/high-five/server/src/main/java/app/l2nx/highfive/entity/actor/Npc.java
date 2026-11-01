@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -41,6 +42,7 @@ import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.NpcPersonalAIData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -115,18 +117,13 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
@@ -136,29 +133,22 @@ import org.slf4j.LoggerFactory;
  * It uses a template to fetch some static values.
  */
 @Slf4j
+@SingleWriter
 public class Npc extends Creature {
     /** The interaction distance of the Npc(is used as offset in MovetoLocation method) */
     public static final int INTERACTION_DISTANCE = 250;
     /** Maximum distance where the drop may appear given this NPC position. */
     public static final int RANDOM_ITEM_DROP_LIMIT = 70;
     /** Ids of NPCs that see creatures through the OnCreatureSee event. */
-    private static final Set<Integer> CREATURE_SEE_IDS = ConcurrentHashMap.newKeySet();
+    private static final IntOpenHashSet CREATURE_SEE_IDS = new IntOpenHashSet();
     /** The Spawn object that manage this Npc */
-    @Getter
-    @Setter
     private Spawn spawn;
     /** The flag to specify if this Npc is busy */
-    @Getter
-    @Setter
     private boolean busy = false;
     /** The busy message for this Npc */
-    @Getter
-    @Setter
-    private String busyMessage = "";
+    private String busyMessage;
     /** True if endDecayTask has already been called */
-    @Getter
-    @Setter
-    private volatile boolean decayed = false;
+    private boolean decayed = false;
     /** The castle index in the array of Castle this Npc belongs to */
     private int castleIndex = -2;
     /** The fortress index in the array of Fort this Npc belongs to */
@@ -166,67 +156,47 @@ public class Npc extends Creature {
 
     private boolean inTown = false;
     /** True if this Npc is autoattackable **/
-    @Setter
     private boolean autoAttackable = false;
     /** Time of last social packet broadcast */
     private long lastSocialBroadcast = 0;
     /** Minimum interval between social packets */
     private static final int MINIMUM_SOCIAL_INTERVAL = 6000;
     /** Support for random animation switching */
-    @Setter
     private boolean randomAnimationEnabled = true;
 
-    @Getter
     private boolean randomWalkingEnabled = true;
 
-    @Getter
     private boolean walker = false;
 
-    @Getter
-    @Setter
     private boolean talkable = getTemplate().isTalkable();
 
-    @Getter
     private final boolean questMonster = getTemplate().isQuestMonster();
 
-    @Getter
     private final boolean fakePlayer = getTemplate().isFakePlayer();
 
-    @Getter
     private int leftHandItem; // Normally this shouldn't change from the template, but there exist exceptions.
 
-    @Getter
     private int rightHandItem; // Normally this shouldn't change from the template, but there exist exceptions.
 
-    @Getter
     private int enchantEffect; // Normally this shouldn't change from the template, but there exist exceptions.
 
-    @Getter
-    @Setter
     private double collisionHeight; // Used for npc grow effect skills.
 
-    @Getter
-    @Setter
     private double collisionRadius; // Used for npc grow effect skills.
 
     private int soulshotamount = 0;
     private int spiritshotamount = 0;
 
-    @Getter
     private int displayEffect = 0;
 
     private int shotsMask = 0;
 
-    @Getter
-    @Setter
     private int killingBlowWeapon;
 
-    @Getter
-    @Setter
-    private volatile int scriptValue = 0;
+    private int scriptValue = 0;
 
     /** Map of summoned NPCs by this NPC. */
-    private Map<Integer, Npc> summonedNpcs = null;
+    private Int2ObjectOpenHashMap<Npc> summonedNpcs = null;
 
     private final List<QuestTimer> questTimers = new ArrayList<>();
     private final List<TimerHolder<?>> timerHolders = new ArrayList<>();
@@ -263,19 +233,165 @@ public class Npc extends Creature {
         this(NpcData.getInstance().getTemplate(npcId));
     }
 
+    public Spawn getSpawn() {
+        WorldPartition.checkOwner();
+        return spawn;
+    }
+
+    public void setSpawn(Spawn spawn) {
+        WorldPartition.checkOwner();
+        this.spawn = spawn;
+    }
+
+    public boolean isBusy() {
+        WorldPartition.checkOwner();
+        return busy;
+    }
+
+    public void setBusy(boolean busy) {
+        WorldPartition.checkOwner();
+        this.busy = busy;
+    }
+
+    public String getBusyMessage() {
+        WorldPartition.checkOwner();
+        return busyMessage;
+    }
+
+    public void setBusyMessage(String busyMessage) {
+        WorldPartition.checkOwner();
+        this.busyMessage = busyMessage;
+    }
+
+    public boolean isDecayed() {
+        WorldPartition.checkOwner();
+        return decayed;
+    }
+
+    public void setDecayed(boolean decayed) {
+        WorldPartition.checkOwner();
+        this.decayed = decayed;
+    }
+
+    public void setAutoAttackable(boolean autoAttackable) {
+        WorldPartition.checkOwner();
+        this.autoAttackable = autoAttackable;
+    }
+
+    public void setRandomAnimationEnabled(boolean randomAnimationEnabled) {
+        WorldPartition.checkOwner();
+        this.randomAnimationEnabled = randomAnimationEnabled;
+    }
+
+    public boolean isRandomWalkingEnabled() {
+        WorldPartition.checkOwner();
+        return randomWalkingEnabled;
+    }
+
+    @Override
+    public boolean isWalker() {
+        WorldPartition.checkOwner();
+        return walker;
+    }
+
+    public boolean isTalkable() {
+        WorldPartition.checkOwner();
+        return talkable;
+    }
+
+    public void setTalkable(boolean talkable) {
+        WorldPartition.checkOwner();
+        this.talkable = talkable;
+    }
+
+    public boolean isQuestMonster() {
+        WorldPartition.checkOwner();
+        return questMonster;
+    }
+
+    @Override
+    public boolean isFakePlayer() {
+        WorldPartition.checkOwner();
+        return fakePlayer;
+    }
+
+    public int getLeftHandItem() {
+        WorldPartition.checkOwner();
+        return leftHandItem;
+    }
+
+    public int getRightHandItem() {
+        WorldPartition.checkOwner();
+        return rightHandItem;
+    }
+
+    public int getEnchantEffect() {
+        WorldPartition.checkOwner();
+        return enchantEffect;
+    }
+
+    public double getCollisionHeight() {
+        WorldPartition.checkOwner();
+        return collisionHeight;
+    }
+
+    public void setCollisionHeight(double collisionHeight) {
+        WorldPartition.checkOwner();
+        this.collisionHeight = collisionHeight;
+    }
+
+    public double getCollisionRadius() {
+        WorldPartition.checkOwner();
+        return collisionRadius;
+    }
+
+    public void setCollisionRadius(double collisionRadius) {
+        WorldPartition.checkOwner();
+        this.collisionRadius = collisionRadius;
+    }
+
+    public int getDisplayEffect() {
+        WorldPartition.checkOwner();
+        return displayEffect;
+    }
+
+    public int getKillingBlowWeapon() {
+        WorldPartition.checkOwner();
+        return killingBlowWeapon;
+    }
+
+    public void setKillingBlowWeapon(int killingBlowWeapon) {
+        WorldPartition.checkOwner();
+        this.killingBlowWeapon = killingBlowWeapon;
+    }
+
+    public int getScriptValue() {
+        WorldPartition.checkOwner();
+        return scriptValue;
+    }
+
+    public void setScriptValue(int scriptValue) {
+        WorldPartition.checkOwner();
+        this.scriptValue = scriptValue;
+    }
+
     public int getSoulShotChance() {
+        WorldPartition.checkOwner();
         return getTemplate().getSoulShotChance();
     }
 
     public int getSpiritShotChance() {
+        WorldPartition.checkOwner();
         return getTemplate().getSpiritShotChance();
     }
 
     public int getMinSkillChance() {
+        WorldPartition.checkOwner();
         return getTemplate().getMinSkillChance();
     }
 
     public int getMaxSkillChance() {
+        WorldPartition.checkOwner();
         return getTemplate().getMaxSkillChance();
     }
 
@@ -284,6 +400,7 @@ public class Npc extends Creature {
      * @return {@code true} if the NPC has chances of casting a skill
      */
     public boolean hasSkillChance() {
+        WorldPartition.checkOwner();
         final RandomGenerator random = ClockBridge.random();
         final int minChance = getMinSkillChance();
         final int maxChance = getMaxSkillChance();
@@ -291,18 +408,22 @@ public class Npc extends Creature {
     }
 
     public boolean canMove() {
+        WorldPartition.checkOwner();
         return getTemplate().canMove();
     }
 
     public boolean isChaos() {
+        WorldPartition.checkOwner();
         return getTemplate().isChaos();
     }
 
     public List<Skill> getLongRangeSkills() {
+        WorldPartition.checkOwner();
         return getTemplate().getAISkills(AISkillScope.LONG_RANGE);
     }
 
     public List<Skill> getShortRangeSkills() {
+        WorldPartition.checkOwner();
         return getTemplate().getAISkills(AISkillScope.SHORT_RANGE);
     }
 
@@ -311,6 +432,7 @@ public class Npc extends Creature {
      * @param animationId
      */
     public void onRandomAnimation(int animationId) {
+        WorldPartition.checkOwner();
         // Send a packet SocialAction to all Player in the _KnownPlayers of the Npc.
         final long now = ClockBridge.gameMillis();
         if ((now - lastSocialBroadcast) > MINIMUM_SOCIAL_INTERVAL) {
@@ -323,6 +445,7 @@ public class Npc extends Creature {
      * @return true if the server allows Random Animation.
      */
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return ((GeneralConfig.MAX_NPC_ANIMATION > 0) && isRandomAnimationEnabled() && (getAiType() != AIType.CORPSE));
     }
 
@@ -330,36 +453,43 @@ public class Npc extends Creature {
      * @return {@code true}, if random animation is enabled, {@code false} otherwise.
      */
     public boolean isRandomAnimationEnabled() {
+        WorldPartition.checkOwner();
         return !fakePlayer && randomAnimationEnabled;
     }
 
     public void setRandomWalking(boolean enabled) {
+        WorldPartition.checkOwner();
         randomWalkingEnabled = enabled;
     }
 
     @Override
     public NpcStat getStat() {
+        WorldPartition.checkOwner();
         return (NpcStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new NpcStat(this));
     }
 
     @Override
     public NpcStatus getStatus() {
+        WorldPartition.checkOwner();
         return (NpcStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new NpcStatus(this));
     }
 
     /** Return the NpcTemplate of the Npc. */
     @Override
     public NpcTemplate getTemplate() {
+        WorldPartition.checkOwner();
         return (NpcTemplate) super.getTemplate();
     }
 
@@ -369,11 +499,13 @@ public class Npc extends Creature {
      */
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return getTemplate().getId();
     }
 
     @Override
     public boolean canBeAttacked() {
+        WorldPartition.checkOwner();
         return NpcConfig.ALT_ATTACKABLE_NPCS;
     }
 
@@ -382,6 +514,7 @@ public class Npc extends Creature {
      */
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return getTemplate().getLevel();
     }
 
@@ -389,6 +522,7 @@ public class Npc extends Creature {
      * @return True if the Npc is aggressive (ex : Monster in function of aggroRange).
      */
     public boolean isAggressive() {
+        WorldPartition.checkOwner();
         return false;
     }
 
@@ -396,12 +530,14 @@ public class Npc extends Creature {
      * @return the Aggro Range of this Npc either contained in the NpcTemplate, or overriden by spawnlist AI value.
      */
     public int getAggroRange() {
+        WorldPartition.checkOwner();
         return hasAIValue("aggroRange")
                 ? getAIValue("aggroRange")
                 : getTemplate().getAggroRange();
     }
 
     public boolean isInMyClan(Npc npc) {
+        WorldPartition.checkOwner();
         return getTemplate().isClan(npc.getTemplate().getClans());
     }
 
@@ -410,6 +546,7 @@ public class Npc extends Creature {
      */
     @Override
     public boolean isUndead() {
+        WorldPartition.checkOwner();
         return getTemplate().getRace() == Race.UNDEAD;
     }
 
@@ -418,6 +555,7 @@ public class Npc extends Creature {
      */
     @Override
     public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
         World.forEachVisibleObject(this, Player.class, player -> {
             if (!isVisibleFor(player)) {
                 return;
@@ -435,6 +573,7 @@ public class Npc extends Creature {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return autoAttackable;
     }
 
@@ -442,10 +581,12 @@ public class Npc extends Creature {
      * @return true if this Npc instance can be warehouse manager.
      */
     public boolean isWarehouse() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean canTarget(Player player) {
+        WorldPartition.checkOwner();
         if (player.isOutOfControl()) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return false;
@@ -461,6 +602,7 @@ public class Npc extends Creature {
     }
 
     public boolean canInteract(Player player) {
+        WorldPartition.checkOwner();
         if (player.isCastingNow() || player.isCastingSimultaneouslyNow()) {
             return false;
         } else if (player.isDead() || player.isFakeDeath()) {
@@ -482,6 +624,7 @@ public class Npc extends Creature {
      * @return the Castle this Npc belongs to.
      */
     public Castle getCastle() {
+        WorldPartition.checkOwner();
         // Get castle this NPC belongs to (excluding Attackable).
         if (castleIndex < 0) {
             final TownZone town = TownManager.getTown(getX(), getY(), getZ());
@@ -509,6 +652,7 @@ public class Npc extends Creature {
      * @return {@code true} if the player is clan leader and owner of a castle of fort that this NPC belongs to, {@code false} otherwise
      */
     public boolean isMyLord(Player player) {
+        WorldPartition.checkOwner();
         if (player.isClanLeader()) {
             final int castleId = getCastle() != null ? getCastle().getResidenceId() : -1;
             final int fortId = getFort() != null ? getFort().getResidenceId() : -1;
@@ -520,6 +664,7 @@ public class Npc extends Creature {
     }
 
     public SiegableHall getConquerableHall() {
+        WorldPartition.checkOwner();
         return CHSiegeManager.getInstance().getNearbyClanHall(getX(), getY(), 10000);
     }
 
@@ -529,6 +674,7 @@ public class Npc extends Creature {
      * @return Castle
      */
     public Castle getCastle(long maxDistance) {
+        WorldPartition.checkOwner();
         final int index = CastleManager.getInstance().findNearestCastleIndex(this, maxDistance);
         if (index < 0) {
             return null;
@@ -541,6 +687,7 @@ public class Npc extends Creature {
      * @return the Fort this Npc belongs to.
      */
     public Fort getFort() {
+        WorldPartition.checkOwner();
         // Get Fort this NPC belongs to (excluding Attackable)
         if (fortIndex < 0) {
             final Fort fort = FortManager.getInstance().getFort(getX(), getY(), getZ());
@@ -566,6 +713,7 @@ public class Npc extends Creature {
      * @return Fort
      */
     public Fort getFort(long maxDistance) {
+        WorldPartition.checkOwner();
         final int index = FortManager.getInstance().findNearestFortIndex(this, maxDistance);
         if (index < 0) {
             return null;
@@ -575,6 +723,7 @@ public class Npc extends Creature {
     }
 
     public boolean isInTown() {
+        WorldPartition.checkOwner();
         if (castleIndex < 0) {
             getCastle();
         }
@@ -593,8 +742,9 @@ public class Npc extends Creature {
      * @param command The command string received from client
      */
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (canInteract(player)) {
-            if (busy && (!busyMessage.isEmpty())) {
+            if (busy && (busyMessage != null)) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
 
                 final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
@@ -619,6 +769,7 @@ public class Npc extends Creature {
      */
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
@@ -627,6 +778,7 @@ public class Npc extends Creature {
      */
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         // Get the weapon identifier equipped in the right hand of the Npc.
         final int weaponId = getTemplate().getRHandId();
         if (weaponId < 1) {
@@ -648,6 +800,7 @@ public class Npc extends Creature {
      */
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
@@ -656,6 +809,7 @@ public class Npc extends Creature {
      */
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         // Get the weapon identifier equipped in the right hand of the Npc.
         final int weaponId = getTemplate().getLHandId();
         if (weaponId < 1) {
@@ -678,6 +832,7 @@ public class Npc extends Creature {
      * @param content The text of the NpcMessage
      */
     public void insertObjectIdAndShowChatWindow(Player player, String content) {
+        WorldPartition.checkOwner();
         // Send a Server->Client packet NpcHtmlMessage to the Player in order to display the message of the Npc.
         player.sendPacket(
                 new NpcHtmlMessage(getObjectId(), content.replaceAll("%objectId%", String.valueOf(getObjectId()))));
@@ -695,6 +850,7 @@ public class Npc extends Creature {
      * @return the pathfile of the selected HTML file in function of the npcId and of the page number.
      */
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);
@@ -723,6 +879,7 @@ public class Npc extends Creature {
     }
 
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         showChatWindow(player, 0);
     }
 
@@ -756,6 +913,7 @@ public class Npc extends Creature {
      * @param value The number of the page of the Npc to display
      */
     public void showChatWindow(Player player, int value) {
+        WorldPartition.checkOwner();
         if (!talkable) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
@@ -982,6 +1140,7 @@ public class Npc extends Creature {
      * @param filename The filename that contains the text to send
      */
     public void showChatWindow(Player player, String filename) {
+        WorldPartition.checkOwner();
         // Send a Server->Client NpcHtmlMessage containing the text of the Npc to the Player.
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         html.setFile(player, filename);
@@ -997,6 +1156,7 @@ public class Npc extends Creature {
      * @return the Exp Reward of this Npc (modified by RATE_XP, or from DynamicExpRates.xml if enabled).
      */
     public long getExpReward(int level) {
+        WorldPartition.checkOwner();
         if (DynamicExpRateData.getInstance().isEnabled()) {
             return (long)
                     (getTemplate().getExp() * DynamicExpRateData.getInstance().getDynamicExpRate(level));
@@ -1010,6 +1170,7 @@ public class Npc extends Creature {
      * @return the SP Reward of this Npc (modified by RATE_SP, or from DynamicExpRates.xml if enabled).
      */
     public int getSpReward(int level) {
+        WorldPartition.checkOwner();
         if (DynamicExpRateData.getInstance().isEnabled()) {
             return (int)
                     (getTemplate().getSP() * DynamicExpRateData.getInstance().getDynamicSpRate(level));
@@ -1035,6 +1196,7 @@ public class Npc extends Creature {
      */
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -1126,6 +1288,7 @@ public class Npc extends Creature {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
 
         // Recharge shots
@@ -1154,6 +1317,7 @@ public class Npc extends Creature {
     }
 
     public static void addCreatureSeeId(int id) {
+        WorldPartition.checkOwner();
         CREATURE_SEE_IDS.add(id);
     }
 
@@ -1171,6 +1335,7 @@ public class Npc extends Creature {
      */
     @Override
     public void onDecay() {
+        WorldPartition.checkOwner();
         if (decayed) {
             return;
         }
@@ -1216,6 +1381,7 @@ public class Npc extends Creature {
      */
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         try {
             onDecay();
         } catch (Exception e) {
@@ -1232,6 +1398,7 @@ public class Npc extends Creature {
     }
 
     public void endDecayTask() {
+        WorldPartition.checkOwner();
         if (!decayed) {
             DecayTaskManager.getInstance().cancel(this);
             onDecay();
@@ -1241,37 +1408,44 @@ public class Npc extends Creature {
     // Two functions to change the appearance of the equipped weapons on the NPC.
     // This is only useful for a few NPCs and is most likely going to be called from AI.
     public void setLHandId(int newWeaponId) {
+        WorldPartition.checkOwner();
         leftHandItem = newWeaponId;
         updateAbnormalEffect();
     }
 
     public void setRHandId(int newWeaponId) {
+        WorldPartition.checkOwner();
         rightHandItem = newWeaponId;
         updateAbnormalEffect();
     }
 
     public void setLRHandId(int newLWeaponId, int newRWeaponId) {
+        WorldPartition.checkOwner();
         rightHandItem = newRWeaponId;
         leftHandItem = newLWeaponId;
         updateAbnormalEffect();
     }
 
     public void setEnchant(int newEnchantValue) {
+        WorldPartition.checkOwner();
         enchantEffect = newEnchantValue;
         updateAbnormalEffect();
     }
 
     public boolean isShowName() {
+        WorldPartition.checkOwner();
         return getTemplate().isShowName();
     }
 
     @Override
     public boolean isTargetable() {
+        WorldPartition.checkOwner();
         return getTemplate().isTargetable();
     }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (isVisibleFor(player)) {
             if (fakePlayer) {
                 player.sendPacket(new FakePlayerInfo(this));
@@ -1315,6 +1489,7 @@ public class Npc extends Creature {
     }
 
     public void showNoTeachHtml(Player player) {
+        WorldPartition.checkOwner();
         final int npcId = getId();
         String html = "";
         if (this instanceof Warehouse) {
@@ -1332,8 +1507,8 @@ public class Npc extends Creature {
         final NpcHtmlMessage noTeachMsg = new NpcHtmlMessage(getObjectId());
         if (html == null) {
             log.warn("Npc {} missing noTeach html!", npcId);
-            noTeachMsg.setHtml(
-                    "<html><body>I cannot teach you any skills.<br>You must find your current class teachers.</body></html>");
+            noTeachMsg.setHtml("<html><body>I cannot teach you any skills.<br>You must find your current class"
+                    + " teachers.</body></html>");
         } else {
             noTeachMsg.setHtml(html);
             noTeachMsg.replace("%objectId%", String.valueOf(getObjectId()));
@@ -1343,6 +1518,7 @@ public class Npc extends Creature {
     }
 
     public Npc scheduleDespawn(long delay) {
+        WorldPartition.checkOwner();
         WorldPartition.loop()
                 .schedule(
                         () -> {
@@ -1373,14 +1549,17 @@ public class Npc extends Creature {
 
     @Override
     public boolean isMovementDisabled() {
+        WorldPartition.checkOwner();
         return super.isMovementDisabled() || !canMove() || (getAiType() == AIType.CORPSE);
     }
 
     public AIType getAiType() {
+        WorldPartition.checkOwner();
         return getTemplate().getAIType();
     }
 
     public void setDisplayEffect(int value) {
+        WorldPartition.checkOwner();
         if (value != displayEffect) {
             displayEffect = value;
             broadcastPacket(new ExChangeNpcState(getObjectId(), value));
@@ -1388,20 +1567,24 @@ public class Npc extends Creature {
     }
 
     public int getColorEffect() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     @Override
     public boolean isNpc() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Npc asNpc() {
+        WorldPartition.checkOwner();
         return this;
     }
 
     public void setTeam(Team team, boolean broadcast) {
+        WorldPartition.checkOwner();
         super.setTeam(team);
         if (broadcast) {
             broadcastInfo();
@@ -1410,21 +1593,25 @@ public class Npc extends Creature {
 
     @Override
     public void setTeam(Team team) {
+        WorldPartition.checkOwner();
         super.setTeam(team);
         broadcastInfo();
     }
 
     public void setWalker() {
+        WorldPartition.checkOwner();
         walker = true;
     }
 
     @Override
     public boolean isChargedShot(ShotType type) {
+        WorldPartition.checkOwner();
         return (shotsMask & type.getMask()) == type.getMask();
     }
 
     @Override
     public void setChargedShot(ShotType type, boolean charged) {
+        WorldPartition.checkOwner();
         if (charged) {
             shotsMask |= type.getMask();
         } else {
@@ -1434,6 +1621,7 @@ public class Npc extends Creature {
 
     @Override
     public void rechargeShots(boolean physical, boolean magic) {
+        WorldPartition.checkOwner();
         if (fakePlayer && FakePlayersConfig.FAKE_PLAYER_USE_SHOTS) {
             if (physical) {
                 broadcastPacket(new MagicSkillUse(this, this, 2154, 1, 0, 0));
@@ -1472,6 +1660,7 @@ public class Npc extends Creature {
      * @return {@code true} if stored script value equals given value, {@code false} otherwise
      */
     public boolean isScriptValue(int value) {
+        WorldPartition.checkOwner();
         return scriptValue == value;
     }
 
@@ -1480,6 +1669,7 @@ public class Npc extends Creature {
      * @return given AI parameter value
      */
     public int getAIValue(String paramName) {
+        WorldPartition.checkOwner();
         return hasAIValue(paramName)
                 ? NpcPersonalAIData.getInstance().getAIValue(getSpawn().getName(), paramName)
                 : -1;
@@ -1490,6 +1680,7 @@ public class Npc extends Creature {
      * @return {@code true} if given parameter is set for NPC, {@code false} otherwise
      */
     public boolean hasAIValue(String paramName) {
+        WorldPartition.checkOwner();
         return (getSpawn() != null)
                 && (getSpawn().getName() != null)
                 && NpcPersonalAIData.getInstance().hasAIValue(getSpawn().getName(), paramName);
@@ -1500,6 +1691,7 @@ public class Npc extends Creature {
      * @return {@code true} if both given NPC and this NPC is in the same spawn group, {@code false} otherwise
      */
     public boolean isInMySpawnGroup(Npc npc) {
+        WorldPartition.checkOwner();
         return ((getSpawn() != null)
                 && (npc.getSpawn() != null)
                 && (getSpawn().getName() != null)
@@ -1510,6 +1702,7 @@ public class Npc extends Creature {
      * @return {@code true} if NPC currently located in own spawn point, {@code false} otherwise
      */
     public boolean staysInSpawnLoc() {
+        WorldPartition.checkOwner();
         return ((spawn != null) && (spawn.getX() == getX()) && (spawn.getY() == getY()));
     }
 
@@ -1517,6 +1710,7 @@ public class Npc extends Creature {
      * @return {@code true} if {@link NpcVariables} instance is attached to current player's scripts, {@code false} otherwise.
      */
     public boolean hasVariables() {
+        WorldPartition.checkOwner();
         return getScript(NpcVariables.class) != null;
     }
 
@@ -1524,6 +1718,7 @@ public class Npc extends Creature {
      * @return {@link NpcVariables} instance containing parameters regarding NPC.
      */
     public NpcVariables getVariables() {
+        WorldPartition.checkOwner();
         final NpcVariables vars = getScript(NpcVariables.class);
         return vars != null ? vars : addScript(new NpcVariables());
     }
@@ -1535,6 +1730,7 @@ public class Npc extends Creature {
      * @param reference - WorldObject to pass, if needed
      */
     public void broadcastEvent(String eventName, int radius, WorldObject reference) {
+        WorldPartition.checkOwner();
         World.forEachVisibleObjectInRange(this, Npc.class, radius, obj -> {
             if (obj.hasListener(EventType.ON_NPC_EVENT_RECEIVED)) {
                 EventDispatcher.getInstance()
@@ -1557,6 +1753,7 @@ public class Npc extends Creature {
      * @param reference the reference
      */
     public void sendScriptEvent(String eventName, WorldObject receiver, WorldObject reference) {
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_NPC_EVENT_RECEIVED, receiver)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -1577,6 +1774,7 @@ public class Npc extends Creature {
      * @return Location in given range from this NPC
      */
     public Location getPointInRange(int radiusMin, int radiusMax) {
+        WorldPartition.checkOwner();
         if ((radiusMax == 0) || (radiusMax < radiusMin)) {
             return new Location(getX(), getY(), getZ());
         }
@@ -1596,6 +1794,7 @@ public class Npc extends Creature {
      * @return the dropped item
      */
     public Item dropItem(Creature creature, int itemId, long itemCount) {
+        WorldPartition.checkOwner();
         Item item = null;
         for (int i = 0; i < itemCount; i++) {
             if (ItemData.getInstance().getTemplate(itemId) == null) {
@@ -1648,16 +1847,19 @@ public class Npc extends Creature {
      * @return the dropped item
      */
     public Item dropItem(Creature creature, ItemHolder item) {
+        WorldPartition.checkOwner();
         return dropItem(creature, item.getId(), item.getCount());
     }
 
     @Override
     public String getName() {
+        WorldPartition.checkOwner();
         return getTemplate().getName();
     }
 
     @Override
     public boolean isVisibleFor(Player player) {
+        WorldPartition.checkOwner();
         if (hasListener(EventType.ON_NPC_CAN_BE_SEEN)) {
             final TerminateReturn term = EventDispatcher.getInstance()
                     .notifyEvent(new OnNpcCanBeSeen(this, player), this, TerminateReturn.class);
@@ -1674,12 +1876,9 @@ public class Npc extends Creature {
      * @param npc the summoned NPC
      */
     public void addSummonedNpc(Npc npc) {
+        WorldPartition.checkOwner();
         if (summonedNpcs == null) {
-            synchronized (this) {
-                if (summonedNpcs == null) {
-                    summonedNpcs = new ConcurrentHashMap<>();
-                }
-            }
+            summonedNpcs = new Int2ObjectOpenHashMap<>();
         }
 
         summonedNpcs.put(npc.getObjectId(), npc);
@@ -1692,17 +1891,10 @@ public class Npc extends Creature {
      * @param objectId the summoned NPC object ID
      */
     public void removeSummonedNpc(int objectId) {
+        WorldPartition.checkOwner();
         if (summonedNpcs != null) {
             summonedNpcs.remove(objectId);
         }
-    }
-
-    /**
-     * Gets the summoned NPCs.
-     * @return the summoned NPCs
-     */
-    public Collection<Npc> getSummonedNpcs() {
-        return summonedNpcs != null ? summonedNpcs.values() : Collections.<Npc>emptyList();
     }
 
     /**
@@ -1711,6 +1903,7 @@ public class Npc extends Creature {
      * @return the summoned NPC
      */
     public Npc getSummonedNpc(int objectId) {
+        WorldPartition.checkOwner();
         if (summonedNpcs != null) {
             return summonedNpcs.get(objectId);
         }
@@ -1723,6 +1916,7 @@ public class Npc extends Creature {
      * @return the summoned NPC count
      */
     public int getSummonedNpcCount() {
+        WorldPartition.checkOwner();
         return summonedNpcs != null ? summonedNpcs.size() : 0;
     }
 
@@ -1730,6 +1924,7 @@ public class Npc extends Creature {
      * Resets the summoned NPCs list.
      */
     public void resetSummonedNpcs() {
+        WorldPartition.checkOwner();
         if (summonedNpcs != null) {
             summonedNpcs.clear();
         }
@@ -1741,6 +1936,7 @@ public class Npc extends Creature {
      * @param text the text
      */
     public void broadcastSay(ChatType chatType, String text) {
+        WorldPartition.checkOwner();
         World.broadcastToVisiblePlayers(this, new NpcSay(this, chatType, text));
     }
 
@@ -1751,6 +1947,7 @@ public class Npc extends Creature {
      * @param parameters the NPC string id parameters
      */
     public void broadcastSay(ChatType chatType, NpcStringId npcStringId, String... parameters) {
+        WorldPartition.checkOwner();
         final NpcSay npcSay = new NpcSay(this, chatType, npcStringId);
         if (parameters != null) {
             for (String parameter : parameters) {
@@ -1770,6 +1967,7 @@ public class Npc extends Creature {
      * @param radius the radius
      */
     public void broadcastSay(ChatType chatType, String text, int radius) {
+        WorldPartition.checkOwner();
         World.broadcastToVisiblePlayersInRange(this, new NpcSay(this, chatType, text), radius);
     }
 
@@ -1780,56 +1978,56 @@ public class Npc extends Creature {
      * @param radius the radius
      */
     public void broadcastSay(ChatType chatType, NpcStringId npcStringId, int radius) {
+        WorldPartition.checkOwner();
         World.broadcastToVisiblePlayersInRange(this, new NpcSay(this, chatType, npcStringId), radius);
     }
 
     @Override
     public int getMinShopDistance() {
+        WorldPartition.checkOwner();
         return PrivateStoreRangeConfig.SHOP_MIN_RANGE_FROM_NPC;
     }
 
     public void addQuestTimer(QuestTimer questTimer) {
-        synchronized (questTimers) {
-            questTimers.add(questTimer);
-        }
+        WorldPartition.checkOwner();
+        questTimers.add(questTimer);
     }
 
     public void removeQuestTimer(QuestTimer questTimer) {
-        synchronized (questTimers) {
-            questTimers.remove(questTimer);
-        }
+        WorldPartition.checkOwner();
+        questTimers.remove(questTimer);
     }
 
     public void stopQuestTimers() {
-        synchronized (questTimers) {
-            for (QuestTimer timer : questTimers) {
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<QuestTimer> timers = ScratchBuffers.snapshot(questTimers)) {
+            for (QuestTimer timer : timers) {
                 timer.cancelTask();
             }
-
-            questTimers.clear();
         }
+
+        questTimers.clear();
     }
 
     public void addTimerHolder(TimerHolder<?> timer) {
-        synchronized (timerHolders) {
-            timerHolders.add(timer);
-        }
+        WorldPartition.checkOwner();
+        timerHolders.add(timer);
     }
 
     public void removeTimerHolder(TimerHolder<?> timer) {
-        synchronized (timerHolders) {
-            timerHolders.remove(timer);
-        }
+        WorldPartition.checkOwner();
+        timerHolders.remove(timer);
     }
 
     public void stopTimerHolders() {
-        synchronized (timerHolders) {
-            for (TimerHolder<?> timer : timerHolders) {
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<TimerHolder<?>> timers = ScratchBuffers.snapshot(timerHolders)) {
+            for (TimerHolder<?> timer : timers) {
                 timer.cancelTask();
             }
-
-            timerHolders.clear();
         }
+
+        timerHolders.clear();
     }
 
     @Override
@@ -1837,9 +2035,9 @@ public class Npc extends Creature {
         final StringBuilder sb = new StringBuilder();
         sb.append(getClass().getSimpleName());
         sb.append(':');
-        sb.append(getName());
+        sb.append(((NpcTemplate) uncheckedTemplate()).getName());
         sb.append('(');
-        sb.append(getId());
+        sb.append(((NpcTemplate) uncheckedTemplate()).getId());
         sb.append(")[");
         sb.append(getObjectId());
         sb.append(']');

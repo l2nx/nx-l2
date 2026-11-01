@@ -266,11 +266,12 @@ public class MinionList {
                 initializeNpc(master, minion);
 
                 // Assist master with existing aggro targets.
-                if (!master.getAggroList().isEmpty()) {
-                    minion.getAggroList().putAll(master.getAggroList());
-                    minion.getAI()
-                            .setIntentionAttack(
-                                    minion.getAggroList().keySet().iterator().next());
+                if (!master.isAggroListEmpty()) {
+                    minion.addAggroFrom(master);
+                    final Creature mostHated = minion.getMostHated();
+                    if (mostHated != null) {
+                        minion.getAI().setIntentionAttack(mostHated);
+                    }
                 }
             }
         }

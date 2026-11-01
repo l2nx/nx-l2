@@ -365,12 +365,15 @@ reads world state, which the cutover verifies for every legacy packet.
 
 With one writer the locks and concurrent collections of game state only cost time. They are removed class by
 class, each class a change of its own and in this order: `World` and `WorldRegion` (object registry, visibility),
-`Creature`, `EffectList`, `Player`, the item containers with `Inventory` and `Item`, `Party` and `Clan`. A class is
+`Creature`, then its non-player line `Npc`, `Attackable`, `Playable` and `Summon` (`Playable` as the parent `Summon`
+and `Player` share), `EffectList`, `Player`, the item containers with `Inventory` and `Item`, `Party` and `Clan`. The
+classes below them (`Monster`, `Pet`, `Servitor`, `Guard`, the `instance` package) follow as their own code is
+reworked; until then their overrides run unchecked. A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
-place). Done: `World`, `WorldRegion` and `Creature`. Their runs were the tests, a client run on the live world and
-a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions, skills
-and reuse); the load-run check waits for the load harness to enter the world
+place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable` and `Summon`. Their runs were the
+tests, client runs on the live world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility,
+`CreatureBenchmark` for zones, stat functions, skills and reuse, `AttackableBenchmark` for the aggro list); the load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
 A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
 `Creature`: the attacker list, known relations, fake player drops, `getKnownSkill` instead of a scan), so the
@@ -392,6 +395,12 @@ only when an object enters or leaves a region. The visibility paths measured 7โ€
 `ConcurrentHashMap`. The target design is to defer membership changes to a sync point of the pass instead of copying
 ([#122](https://github.com/l2nx/nx-l2/issues/122), E7): it changes the immediate-removal semantics legacy code
 relies on.
+
+**Iteration order is deterministic.** A replacement collection keeps an order that does not depend on the JVM run,
+since ties in hate, the drop owner and seeded random picks over a list follow it, and replay (ยง9) needs the same
+choice from the same inputs. Keys of game objects compare by `equals` (the object id, as the concurrent maps did),
+never by identity: identity hash order changes on every run. Where order decides an outcome, the map is a linked one
+(`Attackable`'s aggro list is an `Object2ObjectLinkedOpenHashMap` in insertion order).
 
 A migrated class carries the annotation `@SingleWriter`, the one list both build checks read, so a lock cannot
 return: an ArchUnit rule over annotated classes (fields of any `java.util.concurrent` type, futures and

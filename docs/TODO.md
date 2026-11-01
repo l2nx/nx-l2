@@ -138,3 +138,4 @@ lists what is open.
 - [#63](https://github.com/l2nx/nx-l2/issues/63) ClanHallAuctionTest passes only after other tests initialise shared state
 - [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart
 - [#146](https://github.com/l2nx/nx-l2/issues/146) Cut the ownership check cost on the Creature stat path
+- [#148](https://github.com/l2nx/nx-l2/issues/148) refreshId leaves the object under its old hash in aggro lists and attacker sets

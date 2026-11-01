@@ -311,16 +311,15 @@ public class World {
 
         oldRegion.removeVisibleObject(object);
 
-        final ObjectArrayList<WorldObject> snapshot = ScratchBuffers.acquire();
-        try {
-            final WorldRegion[] surroundingRegions = oldRegion.surroundingRegionsArray();
+        final WorldRegion[] surroundingRegions = oldRegion.surroundingRegionsArray();
+        try (ScratchBuffers.Snapshot<WorldObject> snapshot = ScratchBuffers.empty()) {
             for (int i = 0; i < surroundingRegions.length; i++) {
                 final WorldRegion worldRegion = surroundingRegions[i];
                 if (worldRegion.visibleObjectsView().isEmpty()) {
                     continue;
                 }
 
-                ScratchBuffers.copy(worldRegion.visibleObjectsView(), snapshot);
+                snapshot.refill(worldRegion.visibleObjectsView());
                 for (int j = 0; j < snapshot.size(); j++) {
                     final WorldObject wo = snapshot.get(j);
                     if ((wo != object) && wo.isSpawned()) {
@@ -328,8 +327,6 @@ public class World {
                     }
                 }
             }
-        } finally {
-            ScratchBuffers.release(snapshot);
         }
     }
 
@@ -340,9 +337,8 @@ public class World {
             return;
         }
 
-        final ObjectArrayList<WorldObject> snapshot = ScratchBuffers.acquire();
-        try {
-            final WorldRegion[] oldSurroundingRegions = oldRegion.surroundingRegionsArray();
+        final WorldRegion[] oldSurroundingRegions = oldRegion.surroundingRegionsArray();
+        try (ScratchBuffers.Snapshot<WorldObject> snapshot = ScratchBuffers.empty()) {
             for (int i = 0; i < oldSurroundingRegions.length; i++) {
                 final WorldRegion worldRegion = oldSurroundingRegions[i];
                 if (newRegion.isSurroundingRegion(worldRegion)
@@ -350,7 +346,7 @@ public class World {
                     continue;
                 }
 
-                ScratchBuffers.copy(worldRegion.visibleObjectsView(), snapshot);
+                snapshot.refill(worldRegion.visibleObjectsView());
                 for (int j = 0; j < snapshot.size(); j++) {
                     final WorldObject wo = snapshot.get(j);
                     if ((wo != object) && wo.isSpawned()) {
@@ -358,8 +354,10 @@ public class World {
                     }
                 }
             }
+        }
 
-            final WorldRegion[] newSurroundingRegions = newRegion.surroundingRegionsArray();
+        final WorldRegion[] newSurroundingRegions = newRegion.surroundingRegionsArray();
+        try (ScratchBuffers.Snapshot<WorldObject> snapshot = ScratchBuffers.empty()) {
             for (int i = 0; i < newSurroundingRegions.length; i++) {
                 final WorldRegion worldRegion = newSurroundingRegions[i];
                 if (oldRegion.isSurroundingRegion(worldRegion)
@@ -367,7 +365,7 @@ public class World {
                     continue;
                 }
 
-                ScratchBuffers.copy(worldRegion.visibleObjectsView(), snapshot);
+                snapshot.refill(worldRegion.visibleObjectsView());
                 for (int j = 0; j < snapshot.size(); j++) {
                     final WorldObject wo = snapshot.get(j);
                     if ((wo != object) && wo.isSpawned() && (wo.getInstanceId() == object.getInstanceId())) {
@@ -375,8 +373,6 @@ public class World {
                     }
                 }
             }
-        } finally {
-            ScratchBuffers.release(snapshot);
         }
     }
 
@@ -501,8 +497,7 @@ public class World {
             return;
         }
 
-        final ObjectArrayList<WorldObject> candidates = ScratchBuffers.acquire();
-        try {
+        try (ScratchBuffers.Snapshot<WorldObject> candidates = ScratchBuffers.empty()) {
             final WorldRegion[] surroundingRegions = worldRegion.surroundingRegionsArray();
             for (int i = 0; i < surroundingRegions.length; i++) {
                 candidates.addAll(surroundingRegions[i].visibleObjectsView());
@@ -514,8 +509,6 @@ public class World {
                     action.accept(clazz.cast(wo));
                 }
             }
-        } finally {
-            ScratchBuffers.release(candidates);
         }
     }
 
@@ -561,8 +554,7 @@ public class World {
             return null;
         }
 
-        final ObjectArrayList<T> candidates = ScratchBuffers.acquire();
-        try {
+        try (ScratchBuffers.Snapshot<T> candidates = ScratchBuffers.empty()) {
             final WorldRegion[] surroundingRegions = worldRegion.surroundingRegionsArray();
             for (int i = 0; i < surroundingRegions.length; i++) {
                 candidates.clear();
@@ -576,8 +568,6 @@ public class World {
             }
 
             return null;
-        } finally {
-            ScratchBuffers.release(candidates);
         }
     }
 
@@ -942,8 +932,7 @@ public class World {
 
     // A send can close the session and take the player out of its region, so the recipients are collected first.
     private static void sendToVisiblePlayers(WorldObject object, boolean includeSelf, int range, ServerPacket packet) {
-        final ObjectArrayList<Player> players = ScratchBuffers.acquire();
-        try {
+        try (ScratchBuffers.Snapshot<Player> players = ScratchBuffers.empty()) {
             walkVisible(object, Player.class, includeSelf, range, players, World::addMatch);
             if (players.isEmpty()) {
                 return;
@@ -957,17 +946,13 @@ public class World {
             } finally {
                 packet.releaseBroadcast();
             }
-        } finally {
-            ScratchBuffers.release(players);
         }
     }
 
     public static void broadcastToAllOnlinePlayers(ServerPacket packet) {
         WorldPartition.checkOwner();
-        final ObjectArrayList<Player> players = ScratchBuffers.acquire();
-        try {
-            // A failed send can close the session, which takes the player out of the world.
-            ScratchBuffers.copy(allPlayers.values(), players);
+        // A failed send can close the session, which takes the player out of the world.
+        try (ScratchBuffers.Snapshot<Player> players = ScratchBuffers.snapshot(allPlayers.values())) {
             packet.sendInBroadcast();
             try {
                 for (int i = 0; i < players.size(); i++) {
@@ -979,8 +964,6 @@ public class World {
             } finally {
                 packet.releaseBroadcast();
             }
-        } finally {
-            ScratchBuffers.release(players);
         }
     }
 
