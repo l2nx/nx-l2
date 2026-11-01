@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.enums.CategoryType;
@@ -42,10 +43,10 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 
+@SingleWriter
 public class BabyPet extends Pet {
     private static final int BUFF_CONTROL = 5771;
     private static final int AWAKENING = 5753;
@@ -55,36 +56,28 @@ public class BabyPet extends Pet {
     protected SkillHolder minorHeal = null;
     protected SkillHolder recharge = null;
 
-    private Future<?> castTask;
+    private ScheduledFuture<?> castTask;
 
-    @Getter
     protected boolean inSupportMode = true;
 
-    /**
-     * Creates a baby pet.
-     * @param template the baby pet NPC template
-     * @param owner the owner
-     * @param control the summoning item
-     */
     public BabyPet(NpcTemplate template, Player owner, Item control) {
         super(template, owner, control);
         setInstanceType(InstanceType.BabyPet);
     }
 
-    /**
-     * Creates a baby pet.
-     * @param template the baby pet NPC template
-     * @param owner the owner
-     * @param control the summoning item
-     * @param level the level
-     */
     public BabyPet(NpcTemplate template, Player owner, Item control, byte level) {
         super(template, owner, control, level);
         setInstanceType(InstanceType.BabyPet);
     }
 
+    public boolean isInSupportMode() {
+        WorldPartition.checkOwner();
+        return inSupportMode;
+    }
+
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
 
         double healPower = 0;
@@ -111,12 +104,10 @@ public class BabyPet extends Pet {
 
             if (skill.hasEffectType(EffectType.HEAL)) {
                 if (healPower == 0) {
-                    // Set both heal types to the same skill.
                     majorHeal = new SkillHolder(skill);
                     minorHeal = majorHeal;
                     healPower = skill.getPower();
                 } else {
-                    // another heal skill found - search for most powerful
                     if (skill.getPower() > healPower) {
                         majorHeal = new SkillHolder(skill);
                     } else {
@@ -140,6 +131,7 @@ public class BabyPet extends Pet {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -150,7 +142,8 @@ public class BabyPet extends Pet {
     }
 
     @Override
-    public synchronized void unSummon(Player owner) {
+    public void unSummon(Player owner) {
+        WorldPartition.checkOwner();
         stopCastTask();
         abortCast();
         super.unSummon(owner);
@@ -158,12 +151,14 @@ public class BabyPet extends Pet {
 
     @Override
     public void doRevive() {
+        WorldPartition.checkOwner();
         super.doRevive();
         startCastTask();
     }
 
     @Override
     public void onDecay() {
+        WorldPartition.checkOwner();
         super.onDecay();
 
         if (buffs != null) {
@@ -179,6 +174,7 @@ public class BabyPet extends Pet {
 
     @Override
     public void switchMode() {
+        WorldPartition.checkOwner();
         inSupportMode = !inSupportMode;
     }
 
@@ -190,11 +186,9 @@ public class BabyPet extends Pet {
     }
 
     protected void castSkill(Skill skill) {
-        // casting automatically stops any other action (such as autofollow or a move-to).
-        // We need to gather the necessary info to restore the previous state.
+        // A cast cancels follow/move; snapshot the follow status to restore it below.
         final boolean previousFollowStatus = getFollowStatus();
 
-        // Pet not following and owner outside cast range.
         if (!previousFollowStatus && !isInsideRadius3D(getOwner(), skill.getCastRange())) {
             return;
         }
@@ -206,14 +200,8 @@ public class BabyPet extends Pet {
         msg.addSkillName(skill);
         sendPacket(msg);
 
-        // calling useMagic changes the follow status, if the babypet actually casts
-        // (as opposed to failing due some factors, such as too low MP, etc).
-        // if the status has actually been changed, revert it. Else, allow the pet to
-        // continue whatever it was trying to do.
-        // NOTE: This is important since the pet may have been told to attack a target.
-        // reverting the follow status will abort this attack! While aborting the attack
-        // in order to heal is natural, it is not acceptable to abort the attack on its own,
-        // merely because the timer stroke and without taking any other action...
+        // useMagic flips the follow status only if the cast really starts; revert it, or the
+        // timer tick would abort an attack the pet was ordered to make.
         if (previousFollowStatus != getFollowStatus()) {
             setFollowStatus(previousFollowStatus);
         }
@@ -231,12 +219,10 @@ public class BabyPet extends Pet {
         public void run() {
             final Player owner = baby.getOwner();
 
-            // If the owner doesn't meet the conditions avoid casting.
             if ((owner == null) || owner.isDead() || owner.isInvul()) {
                 return;
             }
 
-            // If the pet doesn't meet the conditions avoid casting.
             if (baby.isDead()
                     || baby.isCastingNow()
                     || baby.isBetrayed()
@@ -249,10 +235,6 @@ public class BabyPet extends Pet {
 
             Skill skill = null;
             if (majorHeal != null) {
-                // If the owner's HP is more than 80% for Baby Pets and 70% for Improved Baby pets, do nothing.
-                // If the owner's HP is very low, under 15% for Baby pets and under 30% for Improved Baby Pets, have 75%
-                // chances of using a strong heal.
-                // Otherwise, have 25% chances for weak heal.
                 final double hpPercent = owner.getCurrentHp() / owner.getMaxHp();
                 final boolean isImprovedBaby = isInCategory(CategoryType.BABY_PET_GROUP);
                 if ((isImprovedBaby && (hpPercent < 0.3)) || (!isImprovedBaby && (hpPercent < 0.15))) {
@@ -265,7 +247,6 @@ public class BabyPet extends Pet {
                     }
                 } else if ((majorHeal.getSkill() != minorHeal.getSkill())
                         && ((isImprovedBaby && (hpPercent < 0.7)) || (!isImprovedBaby && (hpPercent < 0.8)))) {
-                    // Cast minorHeal only if it's different than majorHeal, then pet has two heals available.
                     skill = minorHeal.getSkill();
                     if (!baby.isSkillDisabled(skill)
                             && (ClockBridge.random().nextInt(100) <= 25)
@@ -276,9 +257,7 @@ public class BabyPet extends Pet {
                 }
             }
 
-            // Buff Control is not active.
             if (!baby.isAffectedBySkill(BUFF_CONTROL)) {
-                // searching for usable buffs
                 if ((buffs != null) && !buffs.isEmpty()) {
                     for (SkillHolder buff : buffs) {
                         skill = buff.getSkill();
@@ -290,7 +269,6 @@ public class BabyPet extends Pet {
                             continue;
                         }
 
-                        // If owner already have the buff, continue.
                         final BuffInfo buffInfo =
                                 owner.getEffectList().getBuffInfoByAbnormalType(skill.getAbnormalType());
                         if ((buffInfo != null)
@@ -299,7 +277,6 @@ public class BabyPet extends Pet {
                             continue;
                         }
 
-                        // If owner have the buff blocked, continue.
                         if ((owner.getEffectList().getBlockedAbnormalTypes() != null)
                                 && owner.getEffectList()
                                         .getBlockedAbnormalTypes()
@@ -319,7 +296,6 @@ public class BabyPet extends Pet {
                 }
             }
 
-            // buffs/heal not casted, trying recharge, if exist recharge casted only if owner in combat stance.
             if ((recharge != null)
                     && owner.isInCombat()
                     && ((owner.getCurrentMp() / owner.getMaxMp()) < 0.6)

@@ -22,21 +22,19 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class EffectPoint extends Npc {
     private final Player owner;
 
-    /**
-     * Creates an effect point.
-     * @param template the effect point NPC template
-     * @param owner the owner
-     */
     public EffectPoint(NpcTemplate template, Creature owner) {
         super(template);
         setInstanceType(InstanceType.EffectPoint);
@@ -49,20 +47,19 @@ public class EffectPoint extends Npc {
 
     @Override
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         return owner;
     }
 
-    /**
-     * this is called when a player interacts with this NPC
-     * @param player
-     */
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
     @Override
     public void onActionShift(Player player) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return;
         }

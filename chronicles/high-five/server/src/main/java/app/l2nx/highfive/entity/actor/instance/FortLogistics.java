@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -27,21 +28,19 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 
 /**
  * @author Vice
  */
+@SingleWriter
 public class FortLogistics extends Merchant {
     private static final int[] SUPPLY_BOX_IDS = {
         35665, 35697, 35734, 35766, 35803, 35834, 35866, 35903, 35935, 35973, 36010, 36042, 36080, 36117, 36148, 36180,
         36218, 36256, 36293, 36325, 36363
     };
 
-    /**
-     * Creates a fort logistics.
-     * @param template the fort logistics NPC template
-     */
     public FortLogistics(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FortLogistics);
@@ -49,12 +48,13 @@ public class FortLogistics extends Merchant {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (player.getLastFolkNPC().getObjectId() != getObjectId()) {
             return;
         }
 
         final StringTokenizer st = new StringTokenizer(command, " ");
-        final String actualCommand = st.nextToken(); // Get actual command
+        final String actualCommand = st.nextToken();
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         if (actualCommand.equalsIgnoreCase("rewards")) {
             if (isMyLord(player)) {
@@ -104,7 +104,6 @@ public class FortLogistics extends Merchant {
                 } else {
                     final int level = getFort().getSupplyLeveL();
                     if (level > 0) {
-                        // spawn box
                         final NpcTemplate boxTemplate = NpcData.getInstance().getTemplate(SUPPLY_BOX_IDS[level - 1]);
                         final Monster box = new Monster(boxTemplate);
                         box.setCurrentHp(box.getMaxHp());
@@ -132,6 +131,7 @@ public class FortLogistics extends Merchant {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         showMessageWindow(player, 0);
     }
 
@@ -160,6 +160,7 @@ public class FortLogistics extends Merchant {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = "logistics";
@@ -172,6 +173,7 @@ public class FortLogistics extends Merchant {
 
     @Override
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return false;
     }
 }

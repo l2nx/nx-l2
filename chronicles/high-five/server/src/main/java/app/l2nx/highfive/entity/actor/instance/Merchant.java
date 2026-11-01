@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.MerchantPriceConfigTable;
 import app.l2nx.highfive.data.MerchantPriceConfigTable.MerchantPriceConfig;
 import app.l2nx.highfive.data.xml.BuyListData;
@@ -32,34 +33,37 @@ import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.BuyList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBuySellList;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.10.4.9 $ $Date: 2005/04/11 10:06:08 $
  */
 @Slf4j
+@SingleWriter
 public class Merchant extends Folk {
-    @Getter
     private MerchantPriceConfig mpc;
 
-    /**
-     * Creates a merchant,
-     * @param template the merchant NPC template
-     */
     public Merchant(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Merchant);
     }
 
+    public MerchantPriceConfig getMpc() {
+        WorldPartition.checkOwner();
+        return mpc;
+    }
+
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         mpc = MerchantPriceConfigTable.getInstance().getMerchantPriceConfig(this);
     }
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);
@@ -71,10 +75,12 @@ public class Merchant extends Folk {
     }
 
     public void showBuyWindow(Player player, int value) {
+        WorldPartition.checkOwner();
         showBuyWindow(player, value, true);
     }
 
     public void showBuyWindow(Player player, int value, boolean applyTax) {
+        WorldPartition.checkOwner();
         final BuyListHolder buyList = BuyListData.getInstance().getBuyList(value);
         if (buyList == null) {
             log.warn("BuyList not found! BuyListId:{}", value);

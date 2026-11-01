@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -51,63 +52,100 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExSendUIEvent;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.HashMap;
 
 /**
  * Base class for all interactive objects.
  */
+@SingleWriter
 public abstract class WorldObject extends ListenersContainer implements IPositionable {
-    /** Name */
-    @Getter
-    @Setter
     private String name;
-    /** Object ID */
-    @Getter
     private int objectId;
-    /** World Region */
-    @Getter
     private WorldRegion worldRegion;
-    /** Location */
-    @Getter
     private final Location location = new Location(0, 0, -10000);
-    /** Instance type */
-    @Getter
-    @Setter(AccessLevel.PROTECTED)
     private InstanceType instanceType;
 
-    @Getter
-    @Setter
     private boolean spawned;
 
-    @Getter
     private boolean invisible;
 
-    private Map<String, Object> scripts;
+    private HashMap<String, Object> scripts;
 
     public WorldObject(int objectId) {
         setInstanceType(InstanceType.WorldObject);
         this.objectId = objectId;
     }
 
-    /**
-     * Verifies if object is of any given instance types.
-     * @param instanceTypes the instance types to verify
-     * @return {@code true} if object is of any given instance types, {@code false} otherwise
-     */
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public void setName(String name) {
+        WorldPartition.checkOwner();
+        this.name = name;
+    }
+
+    public int getObjectId() {
+        WorldPartition.checkOwner();
+        return objectId;
+    }
+
+    // For toString only: logging calls it from any thread, where the checked getter would throw.
+    protected final int uncheckedObjectId() {
+        return objectId;
+    }
+
+    public WorldRegion getWorldRegion() {
+        WorldPartition.checkOwner();
+        return worldRegion;
+    }
+
+    @Override
+    public Location getLocation() {
+        WorldPartition.checkOwner();
+        return new Location(
+                location.getX(), location.getY(), location.getZ(), location.getHeading(), location.getInstanceId());
+    }
+
+    public InstanceType getInstanceType() {
+        WorldPartition.checkOwner();
+        return instanceType;
+    }
+
+    protected void setInstanceType(InstanceType instanceType) {
+        this.instanceType = instanceType;
+    }
+
+    public boolean isSpawned() {
+        WorldPartition.checkOwner();
+        return spawned;
+    }
+
+    public void setSpawned(boolean spawned) {
+        WorldPartition.checkOwner();
+        this.spawned = spawned;
+    }
+
+    public boolean isInvisible() {
+        WorldPartition.checkOwner();
+        return invisible;
+    }
+
     public boolean isInstanceTypes(InstanceType... instanceTypes) {
+        WorldPartition.checkOwner();
         return instanceType.isTypes(instanceTypes);
     }
 
     public void onAction(Player player) {
+        WorldPartition.checkOwner();
         onAction(player, true);
     }
 
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         final IActionClickHandler handler = ActionClickHandler.getInstance().getHandler(getInstanceType());
         if (handler != null) {
             handler.onAction(player, this, interact);
@@ -117,6 +155,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     }
 
     public void onActionShift(Player player) {
+        WorldPartition.checkOwner();
         final IActionShiftHandler handler = ActionShiftHandler.getInstance().getHandler(getInstanceType());
         if (handler != null) {
             handler.onAction(player, this, true);
@@ -126,12 +165,16 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     }
 
     public void onForcedAttack(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
-    public void onSpawn() {}
+    public void onSpawn() {
+        WorldPartition.checkOwner();
+    }
 
     public boolean decayMe() {
+        WorldPartition.checkOwner();
         spawned = false;
         World.removeVisibleObject(this, worldRegion);
         World.removeObject(this);
@@ -140,26 +183,21 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
 
     // The new id changes hashCode: take the object out of every hash-based collection before calling this.
     public void refreshId() {
+        WorldPartition.checkOwner();
         World.removeObject(this);
         IdManager.getInstance().releaseId(getObjectId());
         objectId = IdManager.getInstance().getNextId();
     }
 
     public boolean spawnMe() {
-        synchronized (this) {
-            // Set the x,y,z position of the WorldObject spawn and update its _worldregion.
-            spawned = true;
-            setWorldRegion(World.getRegion(this));
+        WorldPartition.checkOwner();
+        spawned = true;
+        setWorldRegion(World.getRegion(this));
 
-            // Add the WorldObject spawn in the _allobjects of World.
-            World.addObject(this);
+        World.addObject(this);
 
-            // Add the WorldObject spawn to _visibleObjects and if necessary to _allplayers of its WorldRegion.
-            worldRegion.addVisibleObject(this);
-        }
+        worldRegion.addVisibleObject(this);
 
-        // This can synchronize on others instances, so it's out of synchronized, to avoid deadlocks.
-        // Add the WorldObject spawn in the world as a visible object.
         World.addVisibleObject(this, getWorldRegion());
 
         onSpawn();
@@ -168,353 +206,229 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     }
 
     public void spawnMe(int x, int y, int z) {
-        synchronized (this) {
-            int spawnX = x;
-            if (spawnX > World.WORLD_X_MAX) {
-                spawnX = World.WORLD_X_MAX - 5000;
-            }
-
-            if (spawnX < World.WORLD_X_MIN) {
-                spawnX = World.WORLD_X_MIN + 5000;
-            }
-
-            int spawnY = y;
-            if (spawnY > World.WORLD_Y_MAX) {
-                spawnY = World.WORLD_Y_MAX - 5000;
-            }
-
-            if (spawnY < World.WORLD_Y_MIN) {
-                spawnY = World.WORLD_Y_MIN + 5000;
-            }
-
-            // Set the x,y,z position of the WorldObject. If flagged with _isSpawned, setXYZ will automatically update
-            // world region, so avoid that.
-            setXYZ(spawnX, spawnY, z);
+        WorldPartition.checkOwner();
+        int spawnX = x;
+        if (spawnX > World.WORLD_X_MAX) {
+            spawnX = World.WORLD_X_MAX - 5000;
         }
 
-        // Spawn and update its _worldregion.
+        if (spawnX < World.WORLD_X_MIN) {
+            spawnX = World.WORLD_X_MIN + 5000;
+        }
+
+        int spawnY = y;
+        if (spawnY > World.WORLD_Y_MAX) {
+            spawnY = World.WORLD_Y_MAX - 5000;
+        }
+
+        if (spawnY < World.WORLD_Y_MIN) {
+            spawnY = World.WORLD_Y_MIN + 5000;
+        }
+
+        // Set before spawning: once spawned, setXYZ would update the world region itself.
+        setXYZ(spawnX, spawnY, z);
+
         spawnMe();
     }
 
-    /**
-     * Verify if object can be attacked.
-     * @return {@code true} if object can be attacked, {@code false} otherwise
-     */
     public boolean canBeAttacked() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public abstract boolean isAutoAttackable(Creature attacker);
 
     public int getId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public abstract void sendInfo(Player player);
 
-    public void sendPacket(ServerPacket packet) {}
+    public void sendPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
+    }
 
-    public void sendPacket(SystemMessageId id) {}
+    public void sendPacket(SystemMessageId id) {
+        WorldPartition.checkOwner();
+    }
 
-    /**
-     * Returns this object as an {@code Attackable} if it is an instance of the {@code Attackable} class.<br>
-     * If this object does not extend the {@code Attackable} class, it returns {@code null}.
-     * @return the current object as an {@code Attackable} if applicable, otherwise {@code null}.
-     */
     public Attackable asAttackable() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Creature} if it is an instance of the {@code Creature} class.<br>
-     * If this object does not extend the {@code Creature} class, it returns {@code null}.
-     * @return the current object as a {@code Creature} if applicable, otherwise {@code null}.
-     */
     public Creature asCreature() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Door} if it is an instance of the {@code Door} class.<br>
-     * If this object does not extend the {@code Door} class, it returns {@code null}.
-     * @return the current object as a {@code Door} if applicable, otherwise {@code null}.
-     */
     public Door asDoor() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Monster} if it is an instance of the {@code Monster} class.<br>
-     * If this object does not extend the {@code Monster} class, it returns {@code null}.
-     * @return the current object as a {@code Monster} if applicable, otherwise {@code null}.
-     */
     public Monster asMonster() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as an {@code Npc} if it is an instance of the {@code Npc} class.<br>
-     * If this object does not extend the {@code Npc} class, it returns {@code null}.
-     * @return the current object as an {@code Npc} if applicable, otherwise {@code null}.
-     */
     public Npc asNpc() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Pet} if it is an instance of the {@code Pet} class.<br>
-     * If this object does not extend the {@code Pet} class, it returns {@code null}.
-     * @return the current object as a {@code Pet} if applicable, otherwise {@code null}.
-     */
     public Pet asPet() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Playable} if it is an instance of the {@code Playable} class.<br>
-     * If this object does not extend the {@code Playable} class, it returns {@code null}.
-     * @return the current object as a {@code Playable} if applicable, otherwise {@code null}.
-     */
     public Playable asPlayable() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Player} if it is an instance of the {@code Player} class.<br>
-     * If this object does not extend the {@code Player} class, it returns {@code null}.
-     * @return the current object as a {@code Player} if applicable, otherwise {@code null}.
-     */
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Servitor} if it is an instance of the {@code Servitor} class.<br>
-     * If this object does not extend the {@code Servitor} class, it returns {@code null}.
-     * @return the current object as a {@code Servitor} if applicable, otherwise {@code null}.
-     */
     public Servitor asServitor() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Returns this object as a {@code Summon} if it is an instance of the {@code Summon} class.<br>
-     * If this object does not extend the {@code Summon} class, it returns {@code null}.
-     * @return the current object as a {@code Summon} if applicable, otherwise {@code null}.
-     */
     public Summon asSummon() {
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Verify if object is instance of Artefact.
-     * @return {@code true} if object is instance of Artefact, {@code false} otherwise.
-     */
     public boolean isArtefact() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Attackable.
-     * @return {@code true} if object is instance of Attackable, {@code false} otherwise.
-     */
     public boolean isAttackable() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Creature.
-     * @return {@code true} if object is instance of Creature, {@code false} otherwise.
-     */
     public boolean isCreature() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Cubic.
-     * @return {@code true} if object is instance of Cubic, {@code false} otherwise.
-     */
     public boolean isCubic() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Door.
-     * @return {@code true} if object is instance of Door, {@code false} otherwise.
-     */
     public boolean isDoor() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is a fake player.
-     * @return {@code true} if object is a fake player, {@code false} otherwise.
-     */
     public boolean isFakePlayer() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verifies if this object is a fence.
-     * @return {@code true} if object is Fence, {@code false} otherwise.
-     */
     public boolean isFence() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Item.
-     * @return {@code true} if object is instance of Item, {@code false} otherwise.
-     */
     public boolean isItem() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Monster.
-     * @return {@code true} if object is instance of Monster, {@code false} otherwise.
-     */
     public boolean isMonster() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Npc.
-     * @return {@code true} if object is instance of Npc, {@code false} otherwise.
-     */
     public boolean isNpc() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Pet.
-     * @return {@code true} if object is instance of Pet, {@code false} otherwise.
-     */
     public boolean isPet() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Playable.
-     * @return {@code true} if object is instance of Playable, {@code false} otherwise.
-     */
     public boolean isPlayable() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Player.
-     * @return {@code true} if object is instance of Player, {@code false} otherwise.
-     */
     public boolean isPlayer() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Servitor.
-     * @return {@code true} if object is instance of Servitor, {@code false} otherwise.
-     */
     public boolean isServitor() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Summon.
-     * @return {@code true} if object is instance of Summon, {@code false} otherwise.
-     */
     public boolean isSummon() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verify if object is instance of Trap.
-     * @return {@code true} if object is instance of Trap, {@code false} otherwise.
-     */
     public boolean isTrap() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verifies if this object is a vehicle.
-     * @return {@code true} if object is Vehicle, {@code false} otherwise.
-     */
     public boolean isVehicle() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Verifies if the object is a walker NPC.
-     * @return {@code true} if object is a walker NPC, {@code false} otherwise.
-     */
     public boolean isWalker() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * @return {@code true} if object Can be targeted
-     */
     public boolean isTargetable() {
+        WorldPartition.checkOwner();
         return true;
     }
 
-    /**
-     * Check if the object is in the given zone Id.
-     * @param zone the zone Id to check
-     * @return {@code true} if the object is in that zone Id
-     */
     public boolean isInsideZone(ZoneId zone) {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Check if current object has charged shot.
-     * @param type of the shot to be checked.
-     * @return {@code true} if the object has charged shot
-     */
     public boolean isChargedShot(ShotType type) {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Charging shot into the current object.
-     * @param type of the shot to be charged.
-     * @param charged
-     */
-    public void setChargedShot(ShotType type, boolean charged) {}
+    public void setChargedShot(ShotType type, boolean charged) {
+        WorldPartition.checkOwner();
+    }
 
-    /**
-     * Try to recharge a shot.
-     * @param physical skill are using Soul shots.
-     * @param magical skill are using Spirit shots.
-     */
-    public void rechargeShots(boolean physical, boolean magical) {}
+    public void rechargeShots(boolean physical, boolean magical) {
+        WorldPartition.checkOwner();
+    }
 
-    /**
-     * @param <T>
-     * @param script
-     * @return
-     */
     public <T> T addScript(T script) {
+        WorldPartition.checkOwner();
         if (scripts == null) {
-            // Double-checked locking
-            synchronized (this) {
-                if (scripts == null) {
-                    scripts = new ConcurrentHashMap<>();
-                }
-            }
+            scripts = new HashMap<>();
         }
 
         scripts.put(script.getClass().getName(), script);
         return script;
     }
 
-    /**
-     * @param <T>
-     * @param script
-     * @return
-     */
     @SuppressWarnings("unchecked")
     public <T> T removeScript(Class<T> script) {
+        WorldPartition.checkOwner();
         if (scripts == null) {
             return null;
         }
@@ -522,13 +436,9 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         return (T) scripts.remove(script.getName());
     }
 
-    /**
-     * @param <T>
-     * @param script
-     * @return
-     */
     @SuppressWarnings("unchecked")
     public <T> T getScript(Class<T> script) {
+        WorldPartition.checkOwner();
         if (scripts == null) {
             return null;
         }
@@ -536,9 +446,12 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         return (T) scripts.get(script.getName());
     }
 
-    public void removeStatusListener(Creature object) {}
+    public void removeStatusListener(Creature object) {
+        WorldPartition.checkOwner();
+    }
 
     public void setXYZInvisible(int x, int y, int z) {
+        WorldPartition.checkOwner();
         int correctX = x;
         if (correctX > World.WORLD_X_MAX) {
             correctX = World.WORLD_X_MAX - 5000;
@@ -562,10 +475,12 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     }
 
     public void setLocationInvisible(ILocational loc) {
+        WorldPartition.checkOwner();
         setXYZInvisible(loc.getX(), loc.getY(), loc.getZ());
     }
 
     public void setWorldRegion(WorldRegion region) {
+        WorldPartition.checkOwner();
         if ((region == null) && (worldRegion != null)) {
             worldRegion.removeVisibleObject(this);
         }
@@ -573,67 +488,44 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         worldRegion = region;
     }
 
-    /**
-     * Gets the X coordinate.
-     * @return the X coordinate
-     */
     @Override
     public int getX() {
+        WorldPartition.checkOwner();
         return location.getX();
     }
 
-    /**
-     * Gets the Y coordinate.
-     * @return the Y coordinate
-     */
     @Override
     public int getY() {
+        WorldPartition.checkOwner();
         return location.getY();
     }
 
-    /**
-     * Gets the Z coordinate.
-     * @return the Z coordinate
-     */
     @Override
     public int getZ() {
+        WorldPartition.checkOwner();
         return location.getZ();
     }
 
-    /**
-     * Gets the heading.
-     * @return the heading
-     */
     @Override
     public int getHeading() {
+        WorldPartition.checkOwner();
         return location.getHeading();
     }
 
-    /**
-     * Gets the instance ID.
-     * @return the instance ID
-     */
     @Override
     public int getInstanceId() {
+        WorldPartition.checkOwner();
         return location.getInstanceId();
     }
 
-    /**
-     * Check if object is inside instance world.
-     * @return {@code true} when object is inside any instance world, otherwise {@code false}
-     */
     public boolean isInInstance() {
+        WorldPartition.checkOwner();
         return location.getInstanceId() > 0;
     }
 
-    /**
-     * Sets the x, y, z coordinate.
-     * @param newX the X coordinate
-     * @param newY the Y coordinate
-     * @param newZ the Z coordinate
-     */
     @Override
     public void setXYZ(int newX, int newY, int newZ) {
+        WorldPartition.checkOwner();
         location.setXYZ(newX, newY, newZ);
 
         if (spawned) {
@@ -650,31 +542,22 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         }
     }
 
-    /**
-     * Sets the x, y, z coordinate.
-     * @param loc the location object
-     */
     @Override
     public void setXYZ(ILocational loc) {
+        WorldPartition.checkOwner();
         setXYZ(loc.getX(), loc.getY(), loc.getZ());
     }
 
-    /**
-     * Sets heading of object.
-     * @param newHeading the new heading
-     */
     @Override
     public void setHeading(int newHeading) {
+        WorldPartition.checkOwner();
         location.setHeading(newHeading);
     }
 
-    /**
-     * Sets the instance ID of object.<br>
-     * 0 - Global
-     * @param instanceId the ID of the instance
-     */
+    /** 0 is the global instance. */
     @Override
     public void setInstanceId(int instanceId) {
+        WorldPartition.checkOwner();
         final int oldInstanceId = getInstanceId();
         if ((instanceId < 0) || (oldInstanceId == instanceId)) {
             return;
@@ -720,11 +603,6 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         location.setInstanceId(instanceId);
     }
 
-    /**
-     * Sends an instance update for player.
-     * @param instance the instance to update
-     * @param hide if {@code true} hide the player
-     */
     private void sendInstanceUpdate(Instance instance, boolean hide) {
         final int startTime = (int) ((ClockBridge.gameMillis() - instance.getInstanceStartTime()) / 1000);
         final int endTime = (int) ((instance.getInstanceEndTime() - instance.getInstanceStartTime()) / 1000);
@@ -735,86 +613,49 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         }
     }
 
-    /**
-     * Sets location of object.
-     * @param loc the location object
-     */
     @Override
     public void setLocation(Location loc) {
+        WorldPartition.checkOwner();
         location.setXYZ(loc.getX(), loc.getY(), loc.getZ());
         location.setHeading(loc.getHeading());
         location.setInstanceId(loc.getInstanceId());
     }
 
-    /**
-     * Calculates 2D distance between this WorldObject and given x, y, z.
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @param z the Z coordinate
-     * @return distance between object and given x, y, z.
-     */
     public double calculateDistance2D(int x, int y, int z) {
-        final double dx = x - getX();
-        final double dy = y - getY();
-        return Math.sqrt((dx * dx) + (dy * dy));
+        WorldPartition.checkOwner();
+        return distance2D(x, y);
     }
 
-    /**
-     * Calculates the 2D distance between this WorldObject and given location.
-     * @param loc the location object
-     * @return distance between object and given location.
-     */
     public double calculateDistance2D(ILocational loc) {
+        WorldPartition.checkOwner();
         if (loc == null) {
             return Double.MAX_VALUE;
         }
 
-        return calculateDistance2D(loc.getX(), loc.getY(), loc.getZ());
+        return distance2D(loc.getX(), loc.getY());
     }
 
-    /**
-     * Calculates the 3D distance between this WorldObject and given x, y, z.
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @param z the Z coordinate
-     * @return distance between object and given x, y, z.
-     */
     public double calculateDistance3D(int x, int y, int z) {
-        final double dx = x - getX();
-        final double dy = y - getY();
-        final double dz = z - getZ();
-        return Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
+        WorldPartition.checkOwner();
+        return distance3D(x, y, z);
     }
 
-    /**
-     * Calculates 3D distance between this WorldObject and given location.
-     * @param loc the location object
-     * @return distance between object and given location.
-     */
     public double calculateDistance3D(ILocational loc) {
+        WorldPartition.checkOwner();
         if (loc == null) {
             return Double.MAX_VALUE;
         }
 
-        return calculateDistance3D(loc.getX(), loc.getY(), loc.getZ());
+        return distance3D(loc.getX(), loc.getY(), loc.getZ());
     }
 
-    /**
-     * Calculates the angle in degrees from this object to the given object.<br>
-     * The return value can be described as how much this object has to turn<br>
-     * to have the given object directly in front of it.
-     * @param target the object to which to calculate the angle
-     * @return the angle this object has to turn to have the given object in front of it
-     */
     public double calculateDirectionTo(ILocational target) {
+        WorldPartition.checkOwner();
         return LocationUtil.calculateAngleFrom(this, target);
     }
 
-    /**
-     * Sets this object as invisible or not
-     * @param invisible
-     */
     public void setInvisible(boolean invisible) {
+        WorldPartition.checkOwner();
         this.invisible = invisible;
 
         if (invisible) {
@@ -826,22 +667,16 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
             });
         }
 
-        // Broadcast information regarding the object to those which are suppose to see.
         broadcastInfo();
     }
 
-    /**
-     * @param player
-     * @return {@code true} if player can see an invisible object if it's invisible, {@code false} otherwise.
-     */
     public boolean isVisibleFor(Player player) {
+        WorldPartition.checkOwner();
         return !invisible || player.isGM();
     }
 
-    /**
-     * Broadcasts describing info to known players.
-     */
     public void broadcastInfo() {
+        WorldPartition.checkOwner();
         World.forEachVisibleObject(this, Player.class, player -> {
             if (isVisibleFor(player)) {
                 sendInfo(player);
@@ -850,6 +685,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     }
 
     public boolean isInSurroundingRegion(WorldObject worldObject) {
+        WorldPartition.checkOwner();
         if (worldObject == null) {
             return false;
         }
@@ -868,7 +704,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof WorldObject) && (((WorldObject) obj).getObjectId() == getObjectId());
+        return (obj instanceof WorldObject other) && (other.objectId == objectId);
     }
 
     @Override
@@ -886,5 +722,19 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         sb.append(objectId);
         sb.append(']');
         return sb.toString();
+    }
+
+    // Owner checked once by callers; position read directly because these are the hottest geometry paths.
+    private double distance2D(int x, int y) {
+        final double dx = x - location.getX();
+        final double dy = y - location.getY();
+        return Math.sqrt((dx * dx) + (dy * dy));
+    }
+
+    private double distance3D(int x, int y, int z) {
+        final double dx = x - location.getX();
+        final double dy = y - location.getY();
+        final double dz = z - location.getZ();
+        return Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
     }
 }

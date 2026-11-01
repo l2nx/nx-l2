@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -44,49 +45,34 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import java.util.HashSet;
-import java.util.Set;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
- * Trap instance.
  * @author nBd
  */
+@SingleWriter
 public class Trap extends Npc {
     private static final int TICK = 1000; // 1s
 
-    @Setter
     private boolean hasLifeTime;
 
     private boolean inArena = false;
 
-    @Getter
     private boolean triggered;
 
     private final int lifeTime;
 
-    @Getter
     private Player owner;
 
-    private final Set<Integer> playersWhoDetectedMe = new HashSet<>();
+    private final IntOpenHashSet playersWhoDetectedMe = new IntOpenHashSet();
     private final SkillHolder skill;
 
-    @Getter
-    @Setter
     private int remainingTime;
 
-    // Tasks
     private ScheduledFuture<?> trapTask = null;
 
-    /**
-     * Creates a trap.
-     * @param template the trap NPC template
-     * @param instanceId the instance ID
-     * @param lifeTime the life time
-     */
     public Trap(NpcTemplate template, int instanceId, int lifeTime) {
         super(template);
         setInstanceType(InstanceType.Trap);
@@ -105,19 +91,39 @@ public class Trap extends Npc {
         }
     }
 
-    /**
-     * Creates a trap.
-     * @param template the trap NPC template
-     * @param owner the owner
-     * @param lifeTime the life time
-     */
     public Trap(NpcTemplate template, Player owner, int lifeTime) {
         this(template, owner.getInstanceId(), lifeTime);
         this.owner = owner;
     }
 
+    public void setHasLifeTime(boolean hasLifeTime) {
+        WorldPartition.checkOwner();
+        this.hasLifeTime = hasLifeTime;
+    }
+
+    public boolean isTriggered() {
+        WorldPartition.checkOwner();
+        return triggered;
+    }
+
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    public int getRemainingTime() {
+        WorldPartition.checkOwner();
+        return remainingTime;
+    }
+
+    public void setRemainingTime(int remainingTime) {
+        WorldPartition.checkOwner();
+        this.remainingTime = remainingTime;
+    }
+
     @Override
     public void broadcastPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
         World.forEachVisibleObject(this, Player.class, player -> {
             if (triggered || canBeSeen(player)) {
                 player.sendPacket(packet);
@@ -125,12 +131,8 @@ public class Trap extends Npc {
         });
     }
 
-    /**
-     * Verify if the character can see the trap.
-     * @param creature The creature to verify
-     * @return {@code true} if the character can see the trap, {@code false} otherwise
-     */
     public boolean canBeSeen(Creature creature) {
+        WorldPartition.checkOwner();
         if ((creature != null) && playersWhoDetectedMe.contains(creature.getObjectId())) {
             return true;
         }
@@ -144,12 +146,10 @@ public class Trap extends Npc {
         }
 
         if (creature.isPlayer()) {
-            // observers can't see trap
             if (creature.asPlayer().inObserverMode()) {
                 return false;
             }
 
-            // olympiad competitors can't see trap
             if (owner.isInOlympiadMode()
                     && creature.asPlayer().isInOlympiadMode()
                     && (creature.asPlayer().getOlympiadSide() != owner.getOlympiadSide())) {
@@ -171,7 +171,7 @@ public class Trap extends Npc {
     }
 
     public boolean checkTarget(Creature target) {
-        // Range seems to be reduced from Freya(300) to H5(150).
+        WorldPartition.checkOwner();
         if (!target.isInsideRadius2D(this, 150)) {
             return false;
         }
@@ -180,13 +180,11 @@ public class Trap extends Npc {
             return false;
         }
 
-        // observers
         final Player player = target.asPlayer();
         if (target.isPlayer() && player.inObserverMode()) {
             return false;
         }
 
-        // olympiad own team and their summons not attacked
         if ((owner != null)
                 && owner.isInOlympiadMode()
                 && (player != null)
@@ -199,7 +197,6 @@ public class Trap extends Npc {
             return true;
         }
 
-        // trap owned by players not attack non-flagged players
         if (owner != null) {
             if (target.isAttackable()) {
                 return true;
@@ -215,6 +212,7 @@ public class Trap extends Npc {
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (owner != null) {
             owner.setTrap(null);
             owner = null;
@@ -225,49 +223,59 @@ public class Trap extends Npc {
 
     @Override
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         return owner;
     }
 
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public int getKarma() {
+        WorldPartition.checkOwner();
         return owner != null ? owner.getKarma() : 0;
     }
 
     public byte getPvpFlag() {
+        WorldPartition.checkOwner();
         return owner != null ? owner.getPvpFlag() : 0;
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     public Skill getSkill() {
+        WorldPartition.checkOwner();
         return skill.getSkill();
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return !canBeSeen(attacker);
     }
 
     @Override
     public boolean isTrap() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         inArena = isInsideZone(ZoneId.PVP) && !isInsideZone(ZoneId.SIEGE);
         playersWhoDetectedMe.clear();
@@ -275,6 +283,7 @@ public class Trap extends Npc {
 
     @Override
     public void sendDamageMessage(Creature target, int damage, boolean mcrit, boolean pcrit, boolean miss) {
+        WorldPartition.checkOwner();
         if (miss || (owner == null)) {
             return;
         }
@@ -299,12 +308,14 @@ public class Trap extends Npc {
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (triggered || canBeSeen(player)) {
             player.sendPacket(new TrapInfo(this, player));
         }
     }
 
     public void setDetected(Creature detector) {
+        WorldPartition.checkOwner();
         if (inArena) {
             if (detector.isPlayable()) {
                 sendInfo(detector.asPlayer());
@@ -318,7 +329,6 @@ public class Trap extends Npc {
 
         playersWhoDetectedMe.add(detector.getObjectId());
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_TRAP_ACTION, this)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -336,14 +346,12 @@ public class Trap extends Npc {
     }
 
     public void stopDecay() {
+        WorldPartition.checkOwner();
         DecayTaskManager.getInstance().cancel(this);
     }
 
-    /**
-     * Trigger the trap.
-     * @param target the target
-     */
     public void triggerTrap(Creature target) {
+        WorldPartition.checkOwner();
         if (trapTask != null) {
             trapTask.cancel(true);
             trapTask = null;
@@ -368,6 +376,7 @@ public class Trap extends Npc {
     }
 
     public void unSummon() {
+        WorldPartition.checkOwner();
         if (trapTask != null) {
             trapTask.cancel(true);
             trapTask = null;
@@ -385,13 +394,17 @@ public class Trap extends Npc {
     }
 
     @Override
-    public void updateAbnormalEffect() {}
+    public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
+    }
 
     public boolean hasLifeTime() {
+        WorldPartition.checkOwner();
         return hasLifeTime;
     }
 
     public int getLifeTime() {
+        WorldPartition.checkOwner();
         return lifeTime;
     }
 }

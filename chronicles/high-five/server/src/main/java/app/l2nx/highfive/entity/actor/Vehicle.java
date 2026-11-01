@@ -19,8 +19,10 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
@@ -40,26 +42,25 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArraySet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
 @Slf4j
+@SingleWriter
 public abstract class Vehicle extends Creature {
-    @Getter
     protected int dockId = 0;
 
-    @Getter
-    protected final Collection<Player> passengers = ConcurrentHashMap.newKeySet();
+    // Dense and in boarding order: oust and broadcast walk a copy, which is one arraycopy.
+    private final ObjectArraySet<Player> passengers = new ObjectArraySet<>();
 
-    @Setter
     protected Location oustLoc = null;
 
     private Runnable engine = null;
@@ -69,39 +70,56 @@ public abstract class Vehicle extends Creature {
     private ScheduledFuture<?> monitorTask = null;
     private final Location monitorLocation = new Location(this);
 
-    /**
-     * Creates an abstract vehicle.
-     * @param template the vehicle template
-     */
     public Vehicle(CreatureTemplate template) {
         super(template);
         setInstanceType(InstanceType.Vehicle);
         setFlying(true);
     }
 
+    public int getDockId() {
+        WorldPartition.checkOwner();
+        return dockId;
+    }
+
+    public Collection<Player> getPassengers() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(passengers));
+    }
+
+    public void setOustLoc(Location oustLoc) {
+        WorldPartition.checkOwner();
+        this.oustLoc = oustLoc;
+    }
+
     public boolean isBoat() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean isAirShip() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public boolean canBeControlled() {
+        WorldPartition.checkOwner();
         return engine == null;
     }
 
     public void registerEngine(Runnable r) {
+        WorldPartition.checkOwner();
         engine = r;
     }
 
     public void runEngine(int delay) {
+        WorldPartition.checkOwner();
         if (engine != null) {
             WorldPartition.loop().schedule(engine, delay, TimeUnit.MILLISECONDS);
         }
     }
 
     public void executePath(VehiclePathPoint[] path) {
+        WorldPartition.checkOwner();
         runState = 0;
         currentPath = path;
         if ((currentPath != null) && (currentPath.length > 0)) {
@@ -123,6 +141,7 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public boolean moveToNextRoutePoint() {
+        WorldPartition.checkOwner();
         move = null;
         if (currentPath != null) {
             runState++;
@@ -166,7 +185,6 @@ public abstract class Vehicle extends Creature {
                         move = m;
                         Movement.register(this);
 
-                        // Make sure vehicle is not stuck.
                         if (monitorTask == null) {
                             monitorTask = WorldPartition.loop()
                                     .scheduleAtFixedRate(
@@ -208,38 +226,51 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public VehicleStat getStat() {
+        WorldPartition.checkOwner();
         return (VehicleStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new VehicleStat(this));
     }
 
     public boolean isInDock() {
+        WorldPartition.checkOwner();
         return dockId > 0;
     }
 
     public void setInDock(int d) {
+        WorldPartition.checkOwner();
         dockId = d;
     }
 
     public Location getOustLoc() {
+        WorldPartition.checkOwner();
         return oustLoc != null ? oustLoc : MapRegionData.getInstance().getTeleToLocation(this, TeleportWhereType.TOWN);
     }
 
     public void oustPlayers() {
-        passengers.forEach(this::oustPlayer);
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Player> ousted = ScratchBuffers.snapshot(passengers)) {
+            for (Player player : ousted) {
+                oustPlayer(player);
+            }
+        }
+
         passengers.clear();
     }
 
     public void oustPlayer(Player player) {
+        WorldPartition.checkOwner();
         player.setVehicle(null);
         player.setInVehiclePosition(null);
         removePassenger(player);
     }
 
     public boolean addPassenger(Player player) {
+        WorldPartition.checkOwner();
         if ((player == null)
                 || passengers.contains(player)
                 || ((player.getVehicle() != null) && (player.getVehicle() != this))) {
@@ -251,34 +282,28 @@ public abstract class Vehicle extends Creature {
     }
 
     public void removePassenger(Player player) {
-        try {
-            passengers.remove(player);
-        } catch (Exception e) {
-            // Ignore.
-        }
+        WorldPartition.checkOwner();
+        passengers.remove(player);
     }
 
     public boolean isEmpty() {
+        WorldPartition.checkOwner();
         return passengers.isEmpty();
     }
 
     public void broadcastToPassengers(ServerPacket packet) {
-        for (Player player : passengers) {
-            if (player != null) {
-                player.sendPacket(packet);
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Player> receivers = ScratchBuffers.snapshot(passengers)) {
+            for (Player player : receivers) {
+                if (player != null) {
+                    player.sendPacket(packet);
+                }
             }
         }
     }
 
-    /**
-     * Consume ticket(s) and teleport player from boat if no correct ticket.
-     * @param itemId Ticket itemId
-     * @param count Ticket count
-     * @param oustX
-     * @param oustY
-     * @param oustZ
-     */
     public void payForRide(int itemId, int count, int oustX, int oustY, int oustZ) {
+        WorldPartition.checkOwner();
         World.forEachVisibleObjectInRange(this, Player.class, 1000, player -> {
             if (player.isInBoat() && (player.getBoat() == this)) {
                 if (itemId > 0) {
@@ -303,11 +328,14 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public boolean updatePosition() {
+        WorldPartition.checkOwner();
         final boolean result = super.updatePosition();
-        for (Player player : passengers) {
-            if ((player != null) && (player.getVehicle() == this)) {
-                player.setXYZ(getX(), getY(), getZ());
-                player.revalidateZone(false);
+        try (ScratchBuffers.Snapshot<Player> aboard = ScratchBuffers.snapshot(passengers)) {
+            for (Player player : aboard) {
+                if ((player != null) && (player.getVehicle() == this)) {
+                    player.setXYZ(getX(), getY(), getZ());
+                    player.revalidateZone(false);
+                }
             }
         }
 
@@ -316,6 +344,7 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public void teleToLocation(ILocational loc, boolean allowRandomOffset) {
+        WorldPartition.checkOwner();
         if (isMoving()) {
             stopMove(null);
         }
@@ -324,16 +353,17 @@ public abstract class Vehicle extends Creature {
 
         getAI().setIntentionActive();
 
-        for (Player player : passengers) {
-            if (player != null) {
-                player.teleToLocation(loc, false);
+        try (ScratchBuffers.Snapshot<Player> aboard = ScratchBuffers.snapshot(passengers)) {
+            for (Player player : aboard) {
+                if (player != null) {
+                    player.teleToLocation(loc, false);
+                }
             }
         }
 
         decayMe();
         setXYZ(loc);
 
-        // Temporary fix for heading on teleports.
         if (loc.getHeading() != 0) {
             setHeading(loc.getHeading());
         }
@@ -344,6 +374,7 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public void stopMove(Location loc) {
+        WorldPartition.checkOwner();
         move = null;
         if (loc != null) {
             setXYZ(loc);
@@ -354,6 +385,7 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         engine = null;
 
         try {
@@ -384,43 +416,54 @@ public abstract class Vehicle extends Creature {
     }
 
     @Override
-    public void updateAbnormalEffect() {}
+    public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
-    public void detachAI() {}
+    public void detachAI() {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public boolean isVehicle() {
+        WorldPartition.checkOwner();
         return true;
     }
 }

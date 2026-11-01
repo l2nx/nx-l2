@@ -22,12 +22,15 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.Team;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class UCTower extends Folk {
     private UCTeam team;
 
@@ -38,16 +41,19 @@ public class UCTower extends Folk {
 
     @Override
     public boolean canBeAttacked() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public boolean isAutoAttackable(Creature creature) {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
+        WorldPartition.checkOwner();
         if (attacker.getTeam() == getTeam()) {
             return;
         }
@@ -61,6 +67,7 @@ public class UCTower extends Folk {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -75,6 +82,7 @@ public class UCTower extends Folk {
 
     @Override
     public Team getTeam() {
+        WorldPartition.checkOwner();
         return team.getIndex() == 1 ? Team.BLUE : Team.RED;
     }
 }

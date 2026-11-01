@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.holders.PetData;
@@ -50,11 +51,8 @@ import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
+@SingleWriter
 public class PetManager extends Merchant {
-    /**
-     * Creates a pet manager.
-     * @param template the pet manager NPC template.
-     */
     public PetManager(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.PetManager);
@@ -62,6 +60,7 @@ public class PetManager extends Merchant {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);
@@ -74,6 +73,7 @@ public class PetManager extends Merchant {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         String filename = "data/html/petmanager/" + getId() + ".htm";
         if ((getId() == 36478) && player.hasSummon()) {
             filename = "data/html/petmanager/restore-unsummonpet.htm";
@@ -92,6 +92,7 @@ public class PetManager extends Merchant {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (command.startsWith("exchange")) {
             final String[] params = command.split(" ");
             final int val = Integer.parseInt(params[1]);
@@ -114,8 +115,6 @@ public class PetManager extends Merchant {
             final int val = Integer.parseInt(params[1]);
             boolean ok = false;
             switch (val) {
-                // Info evolve(player, "curent pet summon item", "new pet summon item", "level required to evolve")
-                // To ignore evolve just put value 0 where do you like example: evolve(player, 0, 9882, 55);
                 case 1: {
                     ok = doEvolve(player, this, 2375, 9882, 55);
                     break;
@@ -148,7 +147,6 @@ public class PetManager extends Merchant {
             final int val = Integer.parseInt(params[1]);
             boolean ok = false;
             switch (val) {
-                // Info evolve(player, "curent pet summon item", "new pet summon item", "level required to evolve")
                 case 1: {
                     ok = doRestore(player, this, 10307, 9882, 55);
                     break;
@@ -182,6 +180,7 @@ public class PetManager extends Merchant {
     }
 
     public void exchange(Player player, int itemIdtake, int itemIdgive) {
+        WorldPartition.checkOwner();
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         if (player.destroyItemByItemId(null, itemIdtake, 1, this, true)) {
             player.addItem(ItemProcessType.NONE, itemIdgive, 1, this, true);
@@ -194,6 +193,7 @@ public class PetManager extends Merchant {
     }
 
     public static boolean doEvolve(Player player, Npc npc, int itemIdtake, int itemIdgive, int petminLevel) {
+        WorldPartition.checkOwner();
         if ((itemIdtake == 0) || (itemIdgive == 0) || (petminLevel == 0)) {
             return false;
         }
@@ -238,11 +238,9 @@ public class PetManager extends Merchant {
         final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(npcID);
         currentPet.unSummon(player);
 
-        // Deleting old pet item.
         currentPet.destroyControlItem(player, true);
         item = player.getInventory().addItem(ItemProcessType.RESTORE, itemIdgive, 1, player, npc);
 
-        // Summoning new pet
         final Pet petSummon = Pet.spawnPet(npcTemplate, player, item);
         if (petSummon == null) {
             return false;
@@ -268,7 +266,6 @@ public class PetManager extends Merchant {
         player.sendPacket(new MagicSkillUse(npc, 2046, 1, 1000, 600000));
         player.sendPacket(SystemMessageId.SUMMONING_YOUR_PET);
 
-        // World.storeObject(petSummon);
         petSummon.spawnMe(oldX, oldY, oldZ);
         petSummon.startFeed();
         item.setEnchantLevel(petSummon.getLevel());
@@ -284,6 +281,7 @@ public class PetManager extends Merchant {
     }
 
     public static boolean doRestore(Player player, Npc npc, int itemIdtake, int itemIdgive, int petminLevel) {
+        WorldPartition.checkOwner();
         if ((itemIdtake == 0) || (itemIdgive == 0) || (petminLevel == 0)) {
             return false;
         }
@@ -311,16 +309,13 @@ public class PetManager extends Merchant {
         final int oldpetlvl = item.getEnchantLevel() < petminLevel ? petminLevel : item.getEnchantLevel();
         final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(npcId);
 
-        // Deleting old pet item.
         final Item removedItem = player.getInventory().destroyItem(ItemProcessType.RESTORE, item, player, npc);
         final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
         sm.addItemName(removedItem);
         player.sendPacket(sm);
 
-        // Give new pet item.
         final Item addedItem = player.getInventory().addItem(ItemProcessType.RESTORE, itemIdgive, 1, player, npc);
 
-        // Summoning new pet
         final Pet petSummon = Pet.spawnPet(npcTemplate, player, addedItem);
         if (petSummon == null) {
             return false;
@@ -340,12 +335,10 @@ public class PetManager extends Merchant {
         player.sendPacket(new MagicSkillUse(npc, 2046, 1, 1000, 600000));
         player.sendPacket(SystemMessageId.SUMMONING_YOUR_PET);
 
-        // World.storeObject(petSummon);
         petSummon.spawnMe(player.getX(), player.getY(), player.getZ());
         petSummon.startFeed();
         addedItem.setEnchantLevel(petSummon.getLevel());
 
-        // Inventory update
         final InventoryUpdate iu = new InventoryUpdate();
         iu.addRemovedItem(removedItem);
         player.sendInventoryUpdate(iu);

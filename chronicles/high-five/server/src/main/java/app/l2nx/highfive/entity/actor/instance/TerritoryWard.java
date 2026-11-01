@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -32,14 +33,12 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class TerritoryWard extends Attackable {
-    /**
-     * Creates territory ward.
-     * @param template the territory ward NPC template
-     */
     public TerritoryWard(NpcTemplate template) {
         super(template);
 
@@ -48,6 +47,7 @@ public class TerritoryWard extends Attackable {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if (isInvul()) {
             return false;
         }
@@ -75,11 +75,13 @@ public class TerritoryWard extends Attackable {
 
     @Override
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
 
         if (getCastle() == null) {
@@ -89,6 +91,7 @@ public class TerritoryWard extends Attackable {
 
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
+        WorldPartition.checkOwner();
         if ((skill != null) || !TerritoryWarManager.getInstance().isTWInProgress()) {
             return;
         }
@@ -120,12 +123,12 @@ public class TerritoryWard extends Attackable {
 
     @Override
     public void reduceCurrentHpByDOT(double i, Creature attacker, Skill skill) {
-        // Wards can't be damaged by DOTs.
+        WorldPartition.checkOwner();
     }
 
     @Override
     public boolean doDie(Creature killer) {
-        // Kill the Npc (the corpse disappeared after 7 seconds)
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)
                 || (getCastle() == null)
                 || !TerritoryWarManager.getInstance().isTWInProgress()) {
@@ -157,25 +160,23 @@ public class TerritoryWard extends Attackable {
 
     @Override
     public void onForcedAttack(Player player) {
+        WorldPartition.checkOwner();
         onAction(player);
     }
 
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         if ((player == null) || !canTarget(player)) {
             return;
         }
 
-        // Check if the Player already target the Npc
         if (this != player.getTarget()) {
-            // Set the target of the Player player
             player.setTarget(this);
         } else if (interact) {
             if (isAutoAttackable(player) && (Math.abs(player.getZ() - getZ()) < 100)) {
                 player.getAI().setIntentionAttack(this);
             } else {
-                // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another
-                // packet
                 player.sendPacket(ActionFailed.STATIC_PACKET);
             }
         }

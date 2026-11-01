@@ -22,18 +22,17 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class DawnPriest extends SignsPriest {
-    /**
-     * Creates a dawn priest.
-     * @param template the dawn priest NPC template
-     */
     public DawnPriest(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.DawnPriest);
@@ -41,6 +40,7 @@ public class DawnPriest extends SignsPriest {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (command.startsWith("Chat")) {
             showChatWindow(player);
         } else {
@@ -50,6 +50,7 @@ public class DawnPriest extends SignsPriest {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
 
         String filename = SevenSigns.SEVEN_SIGNS_HTML_PATH;

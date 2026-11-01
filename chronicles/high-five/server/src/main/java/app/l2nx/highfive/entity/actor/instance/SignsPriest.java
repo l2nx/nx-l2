@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -32,14 +33,15 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Dawn/Dusk Seven Signs Priest Instance
  * @author Tempy
  */
 @Slf4j
+@SingleWriter
 public class SignsPriest extends Npc {
     public SignsPriest(NpcTemplate template) {
         super(template);
@@ -48,6 +50,7 @@ public class SignsPriest extends Npc {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if ((player.getLastFolkNPC() == null) || (player.getLastFolkNPC().getObjectId() != getObjectId())) {
             return;
         }
@@ -131,8 +134,7 @@ public class SignsPriest extends Npc {
                             showChatWindow(player, val, "dusk_firstclass", false);
                         }
                         return;
-                    } else if ((cabal == SevenSigns.CABAL_DUSK) && FeatureConfig.ALT_GAME_CASTLE_DUSK) // dusk
-                    {
+                    } else if ((cabal == SevenSigns.CABAL_DUSK) && FeatureConfig.ALT_GAME_CASTLE_DUSK) {
                         // castle owners cannot participate with dusk side
                         final Clan clan = player.getClan();
                         if ((clan != null) && (clan.getCastleId() > 0)) {
@@ -141,9 +143,7 @@ public class SignsPriest extends Npc {
                         }
                     } else if ((cabal == SevenSigns.CABAL_DAWN)
                             && FeatureConfig.ALT_GAME_CASTLE_DAWN
-                            && (player.getPlayerClass().level() >= 2)) // dawn
-                    {
-                        // clans without castle need to pay participation fee
+                            && (player.getPlayerClass().level() >= 2)) {
                         final Clan clan = player.getClan();
                         if ((clan == null) || (clan.getCastleId() == 0)) {
                             showChatWindow(player, SevenSigns.SEVEN_SIGNS_HTML_PATH + "signs_33_dawn_fee.htm");
@@ -172,17 +172,16 @@ public class SignsPriest extends Npc {
                     break;
                 }
                 case 3: // Join Cabal Intro 1
-                case 8: // Festival of Darkness Intro - SevenSigns x [0]1
+                case 8: // Festival of Darkness Intro
                 {
                     showChatWindow(player, val, SevenSigns.getCabalShortName(cabal), false);
                     break;
                 }
-                case 4: // Join a Cabal - SevenSigns 4 [0]1 x
+                case 4: // Join a Cabal
                 {
                     final int newSeal = Integer.parseInt(command.substring(15));
 
-                    // The join dialog refuses characters without a class transfer, a direct bypass has to refuse them
-                    // as well.
+                    // A direct bypass must refuse characters without a class transfer, as the join dialog does.
                     if (player.getPlayerClass().level() == 0) {
                         if (this instanceof DawnPriest) {
                             showChatWindow(player, 33, "dawn_firstclass", false);
@@ -202,7 +201,6 @@ public class SignsPriest extends Npc {
                         return;
                     }
 
-                    // Joining is only offered during the competition period.
                     if (!SevenSigns.getInstance().isCompetitionPeriod()) {
                         showChatWindow(player);
                         return;
@@ -229,10 +227,8 @@ public class SignsPriest extends Npc {
                             return;
                         }
 
-                        // If the player is trying to join the Lords of Dawn, check if they are carrying a Lord's
-                        // certificate. If not then try to take the required amount of adena instead.
-                        // The fee only applies after the second class transfer, the castle restriction on Dusk still
-                        // applies after the first (C3 retail).
+                        // The fee applies only after the second class transfer; the Dusk castle restriction applies
+                        // after the first (retail).
                         if (FeatureConfig.ALT_GAME_CASTLE_DAWN
                                 && (cabal == SevenSigns.CABAL_DAWN)
                                 && (player.getPlayerClass().level() >= 2)) {
@@ -258,14 +254,13 @@ public class SignsPriest extends Npc {
                     if (cabal == SevenSigns.CABAL_DAWN) {
                         player.sendPacket(
                                 SystemMessageId
-                                        .YOU_WILL_PARTICIPATE_IN_THE_SEVEN_SIGNS_AS_A_MEMBER_OF_THE_LORDS_OF_DAWN); // Joined Dawn
+                                        .YOU_WILL_PARTICIPATE_IN_THE_SEVEN_SIGNS_AS_A_MEMBER_OF_THE_LORDS_OF_DAWN);
                     } else {
                         player.sendPacket(
                                 SystemMessageId
-                                        .YOU_WILL_PARTICIPATE_IN_THE_SEVEN_SIGNS_AS_A_MEMBER_OF_THE_REVOLUTIONARIES_OF_DUSK); // Joined Dusk
+                                        .YOU_WILL_PARTICIPATE_IN_THE_SEVEN_SIGNS_AS_A_MEMBER_OF_THE_REVOLUTIONARIES_OF_DUSK);
                     }
 
-                    // Show a confirmation message to the user, indicating which seal they chose.
                     switch (newSeal) {
                         case SevenSigns.SEAL_AVARICE: {
                             player.sendPacket(
@@ -380,7 +375,6 @@ public class SignsPriest extends Npc {
                     }
 
                     if ((contributionCount > 0) && ((redContrib + greenContrib + blueContrib) <= 0)) {
-                        // A requested amount that does not fit under the contribution limit.
                         player.sendPacket(
                                 SystemMessageId.CONTRIBUTION_LEVEL_HAS_EXCEEDED_THE_LIMIT_YOU_MAY_NOT_CONTINUE);
                     } else if (!contribStonesFound) {
@@ -404,7 +398,7 @@ public class SignsPriest extends Npc {
                     }
                     break;
                 }
-                case 6: // Contribute Seal Stones - SevenSigns 6 x
+                case 6: // Contribute Seal Stones
                 {
                     stoneType = Integer.parseInt(command.substring(13));
 
@@ -515,7 +509,6 @@ public class SignsPriest extends Npc {
                                 }
 
                                 if (!stonesFound && ((redStoneCount + greenStoneCount + blueStoneCount) > 0)) {
-                                    // Stones are carried, but none fit under the contribution limit.
                                     player.sendPacket(
                                             SystemMessageId
                                                     .CONTRIBUTION_LEVEL_HAS_EXCEEDED_THE_LIMIT_YOU_MAY_NOT_CONTINUE);
@@ -569,7 +562,7 @@ public class SignsPriest extends Npc {
                     }
                     break;
                 }
-                case 7: // Exchange Ancient Adena for Adena - SevenSigns 7 xxxxxxx
+                case 7: // Exchange Ancient Adena for Adena
                 {
                     long ancientAdenaConvert = 0;
 
@@ -652,7 +645,7 @@ public class SignsPriest extends Npc {
                     }
                     break;
                 }
-                case 17: // Exchange Seal Stones for Ancient Adena (Type Choice) - SevenSigns 17 x
+                case 17: // Exchange Seal Stones for Ancient Adena (Type Choice)
                 {
                     stoneType = Integer.parseInt(command.substring(14));
                     int stoneId = 0;
@@ -765,7 +758,7 @@ public class SignsPriest extends Npc {
                     }
                     break;
                 }
-                case 18: // Exchange Seal Stones for Ancient Adena - SevenSigns 18 xxxx xxxxxx
+                case 18: // Exchange Seal Stones for Ancient Adena
                 {
                     final int convertStoneId = Integer.parseInt(command.substring(14, 18));
                     long convertCount = 0;

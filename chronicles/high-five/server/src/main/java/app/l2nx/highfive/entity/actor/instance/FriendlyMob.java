@@ -22,20 +22,19 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * This class represents Friendly Mobs lying over the world.<br>
  * These friendly mobs should only attack players with karma > 0 and it is always aggro, since it just attacks players with karma.
  */
+@SingleWriter
 public class FriendlyMob extends Attackable {
-    /**
-     * Creates a friendly monster.
-     * @param template the friendly monster NPC template
-     */
     public FriendlyMob(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FriendlyMob);
@@ -43,6 +42,7 @@ public class FriendlyMob extends Attackable {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if (attacker.isPlayer()) {
             return attacker.asPlayer().getKarma() > 0;
         }
@@ -52,6 +52,7 @@ public class FriendlyMob extends Attackable {
 
     @Override
     public boolean isAggressive() {
+        WorldPartition.checkOwner();
         return true;
     }
 }

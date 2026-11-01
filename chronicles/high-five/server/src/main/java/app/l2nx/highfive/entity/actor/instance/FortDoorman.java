@@ -22,18 +22,17 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 
+@SingleWriter
 public class FortDoorman extends Doorman {
-    /**
-     * Creates a fort doorman.
-     * @param template the fort doorman NPC template
-     */
     public FortDoorman(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FortDoorman);
@@ -41,6 +40,7 @@ public class FortDoorman extends Doorman {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
 
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());

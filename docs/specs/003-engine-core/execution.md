@@ -364,23 +364,30 @@ reads world state, which the cutover verifies for every legacy packet.
 ### 7.2 Locks removed from game state (E6)
 
 With one writer the locks and concurrent collections of game state only cost time. They are removed class by
-class, each class a change of its own and in this order: `World` and `WorldRegion` (object registry, visibility),
+class, each step a change of its own and in this order: `World` and `WorldRegion` (object registry, visibility),
 `Creature`, then its non-player line `Npc`, `Attackable`, `Playable` and `Summon` (`Playable` as the parent `Summon`
-and `Player` share), `EffectList`, `Player`, the item containers with `Inventory` and `Item`, `Party` and `Clan`. The
-classes below them (`Monster`, `Pet`, `Servitor`, `Guard`, the `instance` package) follow as their own code is
-reworked; until then their overrides run unchecked. A class is
+and `Player` share); `WorldObject` with every subclass below the migrated ones (the `instance` package, `Tower`,
+`Vehicle`, the subclasses in scripts), since an override in a class that is not migrated runs unchecked, and with its
+event listener base `ListenersContainer`, which templates, zones, residences, the olympiad and the global event
+containers share, so their listener API is loop-only too;
+`EffectList`; `Item` and the item containers; `Player`; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
+world entity is then a single writer. A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
-place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable` and `Summon`. Their runs were the
-tests, client runs on the live world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility,
-`CreatureBenchmark` for zones, stat functions, skills and reuse, `AttackableBenchmark` for the aggro list); the load-run check waits for the load harness to enter the world
+place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable`, `Summon`, `WorldObject` with
+`ListenersContainer`, `Vehicle`, `Tower` and the `instance` package. Their runs were the tests, client runs on the live
+world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions,
+skills and reuse, `AttackableBenchmark` for the aggro list, `WorldObjectBenchmark` for positions and distances); the
+load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
 A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
 `Creature`: the attacker list, known relations, fake player drops, `getKnownSkill` instead of a scan), so the
 snapshot rule below costs no copy on those paths. The `StampedLock` around `Creature.doAttack` was also a re-entry
 guard (`tryWriteLock` fails on the thread that holds it), so an attack ordered from inside an attack is still
 dropped, by a plain flag. The checks cost the stat calculation of `Creature` about 4 ns of its 11 (several checks per
-calculation), accepted for now and tracked in [#146](https://github.com/l2nx/nx-l2/issues/146).
+calculation), accepted for now and tracked in [#146](https://github.com/l2nx/nx-l2/issues/146). With `WorldObject`
+checked, its accessors carry the check too, so a region switch over 500 objects per region, about 6 000 checks, runs
+about twice as long (23 µs to 54 µs; a build with the check emptied measures as before); the same issue tracks it.
 
 **Iteration without concurrent collections.** Legacy code removes and moves objects while it iterates them, which the
 weakly consistent iterators of `ConcurrentHashMap` tolerated and a plain collection does not (a JDK iterator throws
@@ -400,14 +407,17 @@ relies on.
 since ties in hate, the drop owner and seeded random picks over a list follow it, and replay (§9) needs the same
 choice from the same inputs. Keys of game objects compare by `equals` (the object id, as the concurrent maps did),
 never by identity: identity hash order changes on every run. Where order decides an outcome, the map is a linked one
-(`Attackable`'s aggro list is an `Object2ObjectLinkedOpenHashMap` in insertion order).
+(`Attackable`'s aggro list is an `Object2ObjectLinkedOpenHashMap` in insertion order). Within one listener container the
+listeners of a type are notified highest priority first and, at equal priority, in registration order; a creature's
+event then goes to its own, its template's and its kind's global container in that order. The `PriorityBlockingQueue`
+these lists replaced iterated in heap order, so priority held only for its head.
 
 A migrated class carries the annotation `@SingleWriter`, the one list both build checks read, so a lock cannot
 return: an ArchUnit rule over annotated classes (fields of any `java.util.concurrent` type, futures and
 synchronizers included, enums such as `TimeUnit` aside; `volatile` fields; creating or obtaining a concurrent
 object; `Collections.synchronized*` wrappers; lock calls; public non-final fields, whose writes cannot carry a
 check; and the ownership check of §7 as the first call; a `ScheduledFuture` field holding a timer handle of §4 is
-allowed) and PMD 7 (7.28.0, on the main sources of `:chronicles:high-five:server`) with
+allowed) and PMD 7 (7.29.0, on the main sources of `:chronicles:high-five:server`) with
 `AvoidSynchronizedStatement` and `AvoidSynchronizedAtMethodLevel`, limited to annotated types by the standard
 `violationSuppressXPath` property on both rule references (suppress unless an enclosing class, interface, enum or
 record has the annotation; `hasAnnotation` needs the auxiliary classpath, which the PMD Gradle plugin passes). ArchUnit sees a `synchronized` modifier but not a

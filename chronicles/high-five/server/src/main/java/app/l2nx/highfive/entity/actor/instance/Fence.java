@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.FenceData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -28,34 +29,27 @@ import app.l2nx.highfive.entity.actor.enums.creature.FenceState;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExColosseumFenceInfo;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author HorridoJoho
  */
+@SingleWriter
 public class Fence extends WorldObject {
-    @Getter
     private final int xMin;
 
-    @Getter
     private final int xMax;
 
-    @Getter
     private final int yMin;
 
-    @Getter
     private final int yMax;
 
-    @Getter
     private final String name;
 
-    @Getter
     private final int width;
 
-    @Getter
     private final int length;
 
-    @Getter
     private FenceState state;
 
     private int[] heightFences;
@@ -79,18 +73,62 @@ public class Fence extends WorldObject {
         }
     }
 
+    public int getXMin() {
+        WorldPartition.checkOwner();
+        return xMin;
+    }
+
+    public int getXMax() {
+        WorldPartition.checkOwner();
+        return xMax;
+    }
+
+    public int getYMin() {
+        WorldPartition.checkOwner();
+        return yMin;
+    }
+
+    public int getYMax() {
+        WorldPartition.checkOwner();
+        return yMax;
+    }
+
+    @Override
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public int getWidth() {
+        WorldPartition.checkOwner();
+        return width;
+    }
+
+    public int getLength() {
+        WorldPartition.checkOwner();
+        return length;
+    }
+
+    public FenceState getState() {
+        WorldPartition.checkOwner();
+        return state;
+    }
+
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return getObjectId();
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(new ExColosseumFenceInfo(this));
         if (heightFences != null) {
             for (int objId : heightFences) {
@@ -101,6 +139,7 @@ public class Fence extends WorldObject {
 
     @Override
     public boolean decayMe() {
+        WorldPartition.checkOwner();
         if (heightFences != null) {
             final DeleteObject[] deleteObjects = new DeleteObject[heightFences.length];
             for (int i = 0; i < heightFences.length; i++) {
@@ -118,6 +157,7 @@ public class Fence extends WorldObject {
     }
 
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         decayMe();
 
         FenceData.getInstance().removeFence(this);
@@ -125,12 +165,14 @@ public class Fence extends WorldObject {
     }
 
     public void setState(FenceState type) {
+        WorldPartition.checkOwner();
         state = type;
         broadcastInfo();
     }
 
     @Override
     public boolean isFence() {
+        WorldPartition.checkOwner();
         return true;
     }
 }

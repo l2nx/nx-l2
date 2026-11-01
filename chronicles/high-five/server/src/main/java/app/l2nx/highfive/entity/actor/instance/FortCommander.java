@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -35,29 +36,25 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import lombok.AccessLevel;
-import lombok.Setter;
 
+@SingleWriter
 public class FortCommander extends Defender {
-    @Setter(AccessLevel.PACKAGE)
     private boolean canTalk;
 
-    /**
-     * Creates a fort commander.
-     * @param template the fort commander NPC template
-     */
     public FortCommander(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FortCommander);
         canTalk = true;
     }
 
-    /**
-     * Return True if a siege is in progress and the Creature attacker isn't a Defender.
-     * @param attacker The Creature that the Commander try to attack
-     */
+    void setCanTalk(boolean canTalk) {
+        WorldPartition.checkOwner();
+        this.canTalk = canTalk;
+    }
+
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if ((attacker == null) || !attacker.isPlayer()) {
             return false;
         }
@@ -67,12 +64,12 @@ public class FortCommander extends Defender {
                 && getFort().getSiege().isInProgress()
                 && !getFort().getSiege().checkIsDefender(attacker.asPlayer().getClan()));
 
-        // Attackable during siege by all except defenders.
         return isFort;
     }
 
     @Override
     public void addDamageHate(Creature attacker, long damage, long aggro) {
+        WorldPartition.checkOwner();
         if (attacker == null) {
             return;
         }
@@ -84,6 +81,7 @@ public class FortCommander extends Defender {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -95,11 +93,9 @@ public class FortCommander extends Defender {
         return true;
     }
 
-    /**
-     * This method forces guard to return to home location previously set
-     */
     @Override
     public void returnHome() {
+        WorldPartition.checkOwner();
         if (!isInsideRadius2D(getSpawn(), 200)) {
             clearAggroList();
 
@@ -111,6 +107,7 @@ public class FortCommander extends Defender {
 
     @Override
     public void addDamage(Creature creature, int damage, Skill skill) {
+        WorldPartition.checkOwner();
         Creature attacker = creature;
         final Spawn spawn = getSpawn();
         if ((spawn != null) && canTalk()) {
@@ -170,6 +167,7 @@ public class FortCommander extends Defender {
 
     @Override
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return false;
     }
 }

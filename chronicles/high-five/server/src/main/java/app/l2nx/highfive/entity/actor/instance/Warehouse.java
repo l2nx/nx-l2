@@ -22,14 +22,13 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class Warehouse extends Folk {
-    /**
-     * Creates a warehouse NPC.
-     * @param template the warehouse NPC template
-     */
     public Warehouse(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Warehouse);
@@ -37,11 +36,13 @@ public class Warehouse extends Folk {
 
     @Override
     public boolean isWarehouse() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);

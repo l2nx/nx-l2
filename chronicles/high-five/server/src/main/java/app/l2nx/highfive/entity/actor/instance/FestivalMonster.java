@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -28,61 +29,47 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * This class manages all attackable festival NPCs, spawned during the Festival of Darkness.
  * @author Tempy
  */
+@SingleWriter
 public class FestivalMonster extends Monster {
     protected int bonusMultiplier = 1;
 
-    /**
-     * Creates a festival monster.
-     * @param template the festival monster NPC template
-     */
     public FestivalMonster(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FestivalMonster);
     }
 
     public void setOfferingBonus(int bonusMultiplier) {
+        WorldPartition.checkOwner();
         this.bonusMultiplier = bonusMultiplier;
     }
 
-    /**
-     * Return True if the attacker is not another FestivalMonster.
-     */
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return !(attacker instanceof FestivalMonster);
     }
 
-    /**
-     * All mobs in the festival are aggressive, and have high aggro range.
-     */
     @Override
     public boolean isAggressive() {
+        WorldPartition.checkOwner();
         return true;
     }
 
-    /**
-     * All mobs in the festival really don't need random animation.
-     */
     @Override
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Actions:
-     * <ul>
-     * <li>Check if the killing object is a player, and then find the party they belong to.</li>
-     * <li>Add a blood offering item to the leader of the party.</li>
-     * <li>Update the party leader's inventory to show the new item addition.</li>
-     * </ul>
-     */
     @Override
     public void doItemDrop(Creature lastAttacker) {
+        WorldPartition.checkOwner();
         Player killingChar = null;
         if (!lastAttacker.isPlayer()) {
             return;
@@ -112,6 +99,6 @@ public class FestivalMonster extends Monster {
 
         partyLeader.sendInventoryUpdate(iu);
 
-        super.doItemDrop(lastAttacker); // Normal drop
+        super.doItemDrop(lastAttacker);
     }
 }

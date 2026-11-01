@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -32,20 +33,16 @@ import app.l2nx.highfive.managers.RaidBossPointsManager;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * This class manages all Grand Bosses.
  * @version $Revision: 1.0.0.0 $ $Date: 2006/06/16 $
  */
+@SingleWriter
 public class GrandBoss extends Monster {
-    @Setter
     private boolean useRaidCurse = true;
 
-    /**
-     * Creates a grand boss.
-     * @param template the grand boss NPC template
-     */
     public GrandBoss(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.GrandBoss);
@@ -53,14 +50,21 @@ public class GrandBoss extends Monster {
         setLethalable(false);
     }
 
+    public void setUseRaidCurse(boolean useRaidCurse) {
+        WorldPartition.checkOwner();
+        this.useRaidCurse = useRaidCurse;
+    }
+
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         setRandomWalking(false);
         super.onSpawn();
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -99,16 +103,19 @@ public class GrandBoss extends Monster {
 
     @Override
     public float getVitalityPoints(int level, long damage, int maxHp) {
+        WorldPartition.checkOwner();
         return -super.getVitalityPoints(level, damage, maxHp) / 100;
     }
 
     @Override
     public boolean useVitalityRate() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public boolean giveRaidCurse() {
+        WorldPartition.checkOwner();
         return useRaidCurse;
     }
 }

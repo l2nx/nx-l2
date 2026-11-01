@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
@@ -30,23 +31,32 @@ import app.l2nx.highfive.managers.games.KrateisCubeManager;
 import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPVPMatchCCRetire;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author LordWinter
  */
+@SingleWriter
 public class KrateisMatchManager extends Folk {
-    @Getter
-    @Setter
     private int arenaId = 0;
 
     public KrateisMatchManager(NpcTemplate template) {
         super(template);
     }
 
+    public int getArenaId() {
+        WorldPartition.checkOwner();
+        return arenaId;
+    }
+
+    public void setArenaId(int arenaId) {
+        WorldPartition.checkOwner();
+        this.arenaId = arenaId;
+    }
+
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         final KrateiArena arena = KrateisCubeManager.getInstance().getArenaId(getArenaId());
         if (command.startsWith("TeleToArena")) {
             if ((arena != null) && arena.isRegisterPlayer(player)) {
@@ -85,6 +95,7 @@ public class KrateisMatchManager extends Folk {
 
     @Override
     public String getHtmlPath(int npcId, int val) {
+        WorldPartition.checkOwner();
         String pom = "";
 
         if (val == 0) {

@@ -176,8 +176,8 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -206,7 +206,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     private final Map<ListenerRegisterType, Set<Integer>> registeredIds = new ConcurrentHashMap<>();
 
     @Getter
-    private final Queue<AbstractEventListener> listeners = new PriorityBlockingQueue<>();
+    private final Queue<AbstractEventListener> listeners = new ConcurrentLinkedQueue<>();
 
     @Getter(AccessLevel.PRIVATE)
     private final Map<Predicate<Player>, String> startConditions = new LinkedHashMap<>(1);

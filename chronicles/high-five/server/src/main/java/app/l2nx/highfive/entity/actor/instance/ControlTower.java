@@ -22,26 +22,22 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Tower;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashSet;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Class for Control Tower instance.
- */
 @Slf4j
+@SingleWriter
 public class ControlTower extends Tower {
     private Collection<Spawn> guards;
 
-    /**
-     * Creates a control tower.
-     * @param template the control tower NPC template
-     */
     public ControlTower(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.ControlTower);
@@ -49,6 +45,7 @@ public class ControlTower extends Tower {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (getCastle().getSiege().isInProgress()) {
             getCastle().getSiege().killedCT();
 
@@ -56,7 +53,6 @@ public class ControlTower extends Tower {
                 for (Spawn spawn : guards) {
                     try {
                         spawn.stopRespawn();
-                        // spawn.getLastSpawn().doDie(spawn.getLastSpawn());
                     } catch (Exception e) {
                         log.warn("Error at ControlTower", e);
                     }
@@ -70,16 +66,13 @@ public class ControlTower extends Tower {
     }
 
     public void registerGuard(Spawn guard) {
+        WorldPartition.checkOwner();
         getGuards().add(guard);
     }
 
     private Collection<Spawn> getGuards() {
         if (guards == null) {
-            synchronized (this) {
-                if (guards == null) {
-                    guards = ConcurrentHashMap.newKeySet();
-                }
-            }
+            guards = new LinkedHashSet<>();
         }
 
         return guards;

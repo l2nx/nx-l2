@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,39 +33,53 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShowTownMap;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StaticObjectInfo;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
- * Static Object instance.
  * @author godson
  */
+@SingleWriter
 public class StaticObject extends Creature {
-    /** The interaction distance of the StaticObject */
     public static final int INTERACTION_DISTANCE = 150;
 
-    @Getter
     private final int id;
 
-    @Getter
-    private int meshIndex = 0; // 0 - static objects, alternate static objects
+    private int meshIndex = 0;
 
-    @Getter
-    @Setter
     private int type = -1; // 0 - map signs, 1 - throne , 2 - arena signs
 
-    @Getter
     private ShowTownMap map;
 
-    /**
-     * Creates a static object.
-     * @param template the static object
-     * @param staticId the static ID
-     */
     public StaticObject(CreatureTemplate template, int staticId) {
         super(template);
         setInstanceType(InstanceType.StaticObject);
         id = staticId;
+    }
+
+    @Override
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public int getMeshIndex() {
+        WorldPartition.checkOwner();
+        return meshIndex;
+    }
+
+    public int getType() {
+        WorldPartition.checkOwner();
+        return type;
+    }
+
+    public void setType(int type) {
+        WorldPartition.checkOwner();
+        this.type = type;
+    }
+
+    public ShowTownMap getMap() {
+        WorldPartition.checkOwner();
+        return map;
     }
 
     @Override
@@ -74,90 +89,104 @@ public class StaticObject extends Creature {
 
     @Override
     public StaticObjectStat getStat() {
+        WorldPartition.checkOwner();
         return (StaticObjectStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new StaticObjectStat(this));
     }
 
     @Override
     public StaticObjectStatus getStatus() {
+        WorldPartition.checkOwner();
         return (StaticObjectStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new StaticObjectStatus(this));
     }
 
     public void setMap(String texture, int x, int y) {
+        WorldPartition.checkOwner();
         map = new ShowTownMap("town_map." + texture, x, y);
     }
 
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return 1;
     }
 
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * Set the meshIndex of the object.<br>
-     * <br>
-     * <b><u>Values</u>:</b>
-     * <ul>
-     * <li>default textures : 0</li>
-     * <li>alternate textures : 1</li>
-     * </ul>
-     * @param meshIndex
-     */
+    /** 0 = default textures, 1 = alternate textures. */
     public void setMeshIndex(int meshIndex) {
+        WorldPartition.checkOwner();
         this.meshIndex = meshIndex;
         broadcastPacket(new StaticObjectInfo(this));
     }
 
     @Override
-    public void updateAbnormalEffect() {}
+    public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(new StaticObjectInfo(this));
     }
 
     @Override
-    public void moveToLocation(int x, int y, int z, int offset) {}
+    public void moveToLocation(int x, int y, int z, int offset) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void stopMove(Location loc) {}
+    public void stopMove(Location loc) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void doAttack(Creature target) {}
+    public void doAttack(Creature target) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void doCast(Skill skill) {}
+    public void doCast(Skill skill) {
+        WorldPartition.checkOwner();
+    }
 }

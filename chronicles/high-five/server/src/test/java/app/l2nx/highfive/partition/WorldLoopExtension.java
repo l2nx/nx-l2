@@ -13,6 +13,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -50,10 +52,35 @@ public final class WorldLoopExtension
         return new WorldLoopExtension(true);
     }
 
+    // The loop logs a failed task and goes on; a test must see the failure, so it is carried out of the pass.
     public static void runInPass(Runnable body) {
+        callInPass(() -> {
+            body.run();
+            return null;
+        });
+    }
+
+    public static <T> T callInPass(Supplier<T> body) {
         final World world = bound();
-        world.loop().execute(body);
+        final AtomicReference<T> result = new AtomicReference<>();
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        world.loop().execute(() -> {
+            try {
+                result.set(body.get());
+            } catch (Throwable e) {
+                failure.set(e);
+            }
+        });
         world.runPass();
+        if (failure.get() instanceof RuntimeException e) {
+            throw e;
+        } else if (failure.get() instanceof Error e) {
+            throw e;
+        } else if (failure.get() != null) {
+            throw new IllegalStateException(failure.get());
+        }
+
+        return result.get();
     }
 
     public static void passAfter(Duration step) {

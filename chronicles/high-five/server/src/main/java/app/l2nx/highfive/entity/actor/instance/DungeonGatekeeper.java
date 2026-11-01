@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.xml.TeleporterData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -34,15 +35,13 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class DungeonGatekeeper extends Npc {
-    /**
-     * Creates a dungeon gatekeeper.
-     * @param template the dungeon gatekeeper NPC template
-     */
     public DungeonGatekeeper(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.DungeonGatekeeper);
@@ -50,10 +49,11 @@ public class DungeonGatekeeper extends Npc {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
 
         final StringTokenizer st = new StringTokenizer(command, " ");
-        final String actualCommand = st.nextToken(); // Get actual command
+        final String actualCommand = st.nextToken();
         String filename = SevenSigns.SEVEN_SIGNS_HTML_PATH;
         final int sealAvariceOwner = SevenSigns.getInstance().getSealOwner(SevenSigns.SEAL_AVARICE);
         final int sealGnosisOwner = SevenSigns.getInstance().getSealOwner(SevenSigns.SEAL_GNOSIS);
@@ -151,6 +151,7 @@ public class DungeonGatekeeper extends Npc {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);

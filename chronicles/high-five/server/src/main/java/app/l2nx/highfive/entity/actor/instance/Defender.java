@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.FortSiegeGuardAI;
 import app.l2nx.highfive.ai.SiegeGuardAI;
@@ -38,18 +39,16 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class Defender extends Attackable {
-    private Castle castle = null; // the castle which the instance should defend
-    private Fort fort = null; // the fortress which the instance should defend
-    private SiegableHall hall = null; // the siegable hall which the instance should defend
+    private Castle castle = null;
+    private Fort fort = null;
+    private SiegableHall hall = null;
 
-    /**
-     * Creates a defender.
-     * @param template the defender NPC template
-     */
     public Defender(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Defender);
@@ -66,20 +65,15 @@ public class Defender extends Attackable {
         return new SpecialSiegeGuardAI(this);
     }
 
-    /**
-     * Return True if a siege is in progress and the Creature attacker isn't a Defender.
-     * @param attacker The Creature that the SiegeGuard try to attack
-     */
     @Override
     public boolean isAutoAttackable(Creature attacker) {
-        // Attackable during siege by all except defenders.
+        WorldPartition.checkOwner();
         if (!attacker.isPlayable()) {
             return false;
         }
 
         final Player player = attacker.asPlayer();
 
-        // Check if siege is in progress.
         if (((fort != null) && fort.getZone().isActive())
                 || ((castle != null) && castle.getZone().isActive())
                 || ((hall != null) && hall.getSiegeZone().isActive())) {
@@ -87,7 +81,6 @@ public class Defender extends Attackable {
                     ? fort.getResidenceId()
                     : (castle != null ? castle.getResidenceId() : (hall != null ? hall.getId() : 0)));
 
-            // Check if player is an enemy of this defender npc.
             if ((player != null)
                     && (((player.getSiegeState() == 2) && !player.isRegisteredOnThisSiegeField(activeSiegeId))
                             || ((player.getSiegeState() == 1)
@@ -102,14 +95,13 @@ public class Defender extends Attackable {
 
     @Override
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return false;
     }
 
-    /**
-     * This method forces guard to return to home location previously set
-     */
     @Override
     public void returnHome() {
+        WorldPartition.checkOwner();
         if (getWalkSpeed() <= 0) {
             return;
         }
@@ -129,6 +121,7 @@ public class Defender extends Attackable {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
 
         fort = FortManager.getInstance().getFort(getX(), getY(), getZ());
@@ -144,38 +137,33 @@ public class Defender extends Attackable {
         }
     }
 
-    /**
-     * Custom onAction behaviour. Note that super() is not called because guards need extra check to see if a player should interact or ATTACK them when clicked.
-     */
+    // Does not call super: guards must decide between interact and attack on click.
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         if (!canTarget(player)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        // Check if the Player already target the Npc.
         if (this != player.getTarget()) {
-            // Set the target of the Player player.
             player.setTarget(this);
         } else if (interact) {
-            // This max heigth difference might need some tweaking.
             if (isAutoAttackable(player) && !isAlikeDead() && (Math.abs(player.getZ() - getZ()) < 600)) {
                 player.getAI().setIntentionAttack(this);
             }
 
-            // Notify the Player AI with INTERACT.
             if (!isAutoAttackable(player) && !canInteract(player)) {
                 player.getAI().setIntentionInteract(this);
             }
         }
 
-        // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another packet.
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
     @Override
     public void addDamageHate(Creature attacker, long damage, long aggro) {
+        WorldPartition.checkOwner();
         if (attacker == null) {
             return;
         }
@@ -184,7 +172,6 @@ public class Defender extends Attackable {
             if ((damage == 0) && (aggro <= 1) && attacker.isPlayable()) {
                 final Player player = attacker.asPlayer();
 
-                // Check if siege is in progress.
                 if (((fort != null) && fort.getZone().isActive())
                         || ((castle != null) && castle.getZone().isActive())
                         || ((hall != null) && hall.getSiegeZone().isActive())) {
@@ -192,7 +179,6 @@ public class Defender extends Attackable {
                             ? fort.getResidenceId()
                             : (castle != null ? castle.getResidenceId() : (hall != null ? hall.getId() : 0)));
 
-                    // Do not add hate on defenders.
                     if ((player.getSiegeState() == 2) && player.isRegisteredOnThisSiegeField(activeSiegeId)) {
                         return;
                     }

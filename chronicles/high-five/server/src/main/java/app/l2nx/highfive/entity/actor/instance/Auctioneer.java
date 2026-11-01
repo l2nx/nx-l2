@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -37,16 +38,18 @@ import app.l2nx.highfive.entity.residences.ClanHallAuction.Bidder;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class Auctioneer extends Npc {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter DATE_FORMAT_SHORT = DateTimeFormatter.ofPattern("yy/MM/dd");
@@ -55,7 +58,7 @@ public class Auctioneer extends Npc {
     private static final int COND_BUSY_BECAUSE_OF_SIEGE = 1;
     private static final int COND_REGULAR = 3;
 
-    private final Map<Integer, ClanHallAuction> pendingAuctions = new ConcurrentHashMap<>();
+    private final Int2ObjectOpenHashMap<ClanHallAuction> pendingAuctions = new Int2ObjectOpenHashMap<>();
 
     public Auctioneer(NpcTemplate template) {
         super(template);
@@ -64,6 +67,7 @@ public class Auctioneer extends Npc {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         final int condition = validateCondition();
         if (condition <= COND_ALL_FALSE) {
             player.sendMessage("Wrong conditions.");
@@ -77,7 +81,7 @@ public class Auctioneer extends Npc {
             return;
         } else if (condition == COND_REGULAR) {
             final StringTokenizer st = new StringTokenizer(command, " ");
-            final String actualCommand = st.nextToken(); // Get actual command
+            final String actualCommand = st.nextToken();
 
             String val = "";
             if (st.countTokens() >= 1) {
@@ -281,7 +285,7 @@ public class Auctioneer extends Npc {
             } else if (actualCommand.equalsIgnoreCase("list")) {
                 final List<ClanHallAuction> auctions =
                         ClanHallAuctionManager.getInstance().getAuctions();
-                /** Limit for make new page, prevent client crash **/
+                // Page size cap: larger pages crash the client.
                 int limit = 15;
                 int start;
                 int i = 1;
@@ -689,11 +693,12 @@ public class Auctioneer extends Npc {
 
     @Override
     public void showChatWindow(Player player) {
-        String filename; // = "data/html/auction/auction-no.htm";
+        WorldPartition.checkOwner();
+        String filename;
 
         final int condition = validateCondition();
         if (condition == COND_BUSY_BECAUSE_OF_SIEGE) {
-            filename = "data/html/auction/auction-busy.htm"; // Busy because of siege
+            filename = "data/html/auction/auction-busy.htm";
         } else {
             filename = "data/html/auction/auction.htm";
         }
@@ -709,7 +714,7 @@ public class Auctioneer extends Npc {
     private int validateCondition() {
         if ((getCastle() != null) && (getCastle().getResidenceId() > 0)) {
             if (getCastle().getSiege().isInProgress()) {
-                return COND_BUSY_BECAUSE_OF_SIEGE; // Busy because of siege
+                return COND_BUSY_BECAUSE_OF_SIEGE;
             }
 
             return COND_REGULAR;

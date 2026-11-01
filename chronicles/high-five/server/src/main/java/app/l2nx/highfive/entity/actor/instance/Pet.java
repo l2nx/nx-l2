@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
@@ -81,57 +82,38 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 @Slf4j
+@SingleWriter
 public class Pet extends Summon {
 
-    @Getter
     int currentFed;
 
-    @Getter
     final PetInventory inventory;
 
-    @Getter
     private final int controlObjectId;
 
-    @Getter
     private boolean respawned;
 
-    @Getter
     private final boolean mountable;
 
-    private Future<?> feedTask;
+    private ScheduledFuture<?> feedTask;
     private PetData data;
     private PetLevelData leveldata;
 
-    /** The Experience before the last Death Penalty */
     private long expBeforeDeath = 0;
 
     private int curWeightPenalty = 0;
 
-    /**
-     * Creates a pet.
-     * @param template the pet NPC template
-     * @param owner the owner
-     * @param control the summoning item
-     */
     public Pet(NpcTemplate template, Player owner, Item control) {
         this(template, owner, control, (byte)
                 (template.getDisplayId() == 12564 ? owner.getLevel() : template.getLevel()));
     }
 
-    /**
-     * Creates a pet.
-     * @param template the pet NPC template
-     * @param owner the pet NPC template
-     * @param control the summoning item
-     * @param level the level
-     */
     public Pet(NpcTemplate template, Player owner, Item control, byte level) {
         super(template, owner);
         setInstanceType(InstanceType.Pet);
@@ -147,7 +129,36 @@ public class Pet extends Summon {
         getPetLevelData();
     }
 
+    public int getCurrentFed() {
+        WorldPartition.checkOwner();
+        return currentFed;
+    }
+
+    @Override
+    public PetInventory getInventory() {
+        WorldPartition.checkOwner();
+        return inventory;
+    }
+
+    @Override
+    public int getControlObjectId() {
+        WorldPartition.checkOwner();
+        return controlObjectId;
+    }
+
+    public boolean isRespawned() {
+        WorldPartition.checkOwner();
+        return respawned;
+    }
+
+    @Override
+    public boolean isMountable() {
+        WorldPartition.checkOwner();
+        return mountable;
+    }
+
     public PetLevelData getPetLevelData() {
+        WorldPartition.checkOwner();
         if (leveldata == null) {
             leveldata = PetDataTable.getInstance()
                     .getPetLevelData(getTemplate().getId(), getStat().getLevel());
@@ -157,6 +168,7 @@ public class Pet extends Summon {
     }
 
     public PetData getPetData() {
+        WorldPartition.checkOwner();
         if (data == null) {
             data = PetDataTable.getInstance().getPetData(getTemplate().getId());
         }
@@ -165,15 +177,10 @@ public class Pet extends Summon {
     }
 
     public void setPetData(PetLevelData value) {
+        WorldPartition.checkOwner();
         leveldata = value;
     }
 
-    /**
-     * Manage Feeding Task.<br>
-     * Feed or kill the pet depending on hunger level.<br>
-     * If pet has food in inventory and feed level drops below 55% then consume food from inventory.<br>
-     * Send a broadcastStatusUpdate packet for this Pet
-     */
     class FeedTask implements Runnable {
         @Override
         public void run() {
@@ -217,7 +224,6 @@ public class Pet extends Summon {
                     return;
                 }
 
-                // Try to find food in pet inventory.
                 Item food = null;
                 for (int id : foodIds) {
                     food = inventory.getItemByItemId(id);
@@ -226,7 +232,6 @@ public class Pet extends Summon {
                     }
                 }
 
-                // Pet is hungry and food is available - auto feed.
                 if ((food != null) && isHungry()) {
                     final IItemHandler handler = ItemHandler.getInstance().getHandler(food.getEtcItem());
                     if (handler != null) {
@@ -237,7 +242,6 @@ public class Pet extends Summon {
                     }
                 }
 
-                // Notify player if pet uncontrollable due to starvation.
                 if (isUncontrollable()) {
                     sendPacket(
                             SystemMessageId
@@ -255,17 +259,16 @@ public class Pet extends Summon {
         }
     }
 
-    public static synchronized Pet spawnPet(NpcTemplate template, Player owner, Item control) {
+    public static Pet spawnPet(NpcTemplate template, Player owner, Item control) {
+        WorldPartition.checkOwner();
         final Pet existingPet = World.getPet(owner.getObjectId());
-        if (existingPet != null) // Owner has a pet listed in world.
-        {
+        if (existingPet != null) {
             existingPet.unSummon(owner);
         }
 
         final PetData data = PetDataTable.getInstance().getPetData(template.getId());
         final Pet pet = restore(control, template, owner);
 
-        // Add the pet instance to world.
         if (pet != null) {
             pet.setTitle(owner.getName());
             if (data.isSynchLevel() && (pet.getLevel() != owner.getLevel())) {
@@ -282,24 +285,29 @@ public class Pet extends Summon {
 
     @Override
     public PetStat getStat() {
+        WorldPartition.checkOwner();
         return (PetStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new PetStat(this));
     }
 
     @Override
     public int getSummonType() {
+        WorldPartition.checkOwner();
         return 2;
     }
 
     public Item getControlItem() {
+        WorldPartition.checkOwner();
         return getOwner().getInventory().getItemByObjectId(controlObjectId);
     }
 
     public void setCurrentFed(int num) {
+        WorldPartition.checkOwner();
         if (num <= 0) {
             sendPacket(new ExChangeNpcState(getObjectId(), 0x64));
         } else if ((currentFed <= 0) && (num > 0)) {
@@ -309,11 +317,9 @@ public class Pet extends Summon {
         currentFed = num > getMaxFed() ? getMaxFed() : num;
     }
 
-    /**
-     * Returns the pet's currently equipped weapon instance (if any).
-     */
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         for (Item item : inventory.getItems()) {
             if ((item.getItemLocation() == ItemLocation.PET_EQUIP)
                     && (item.getTemplate().getBodyPart() == BodyPart.R_HAND)) {
@@ -324,39 +330,29 @@ public class Pet extends Summon {
         return null;
     }
 
-    /**
-     * Returns the pet's currently equipped weapon (if any).
-     */
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         final Item weapon = getActiveWeaponInstance();
         return weapon == null ? null : (Weapon) weapon.getTemplate();
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
-        // temporary? unavailable
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
-        // temporary? unavailable
+        WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Destroys item from inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param objectId : int Item Instance identifier of the item to be destroyed
-     * @param count : int Quantity of items to be destroyed
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successfull
-     */
     @Override
     public boolean destroyItem(
             ItemProcessType process, int objectId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         final Item item = inventory.destroyItem(process, objectId, count, getOwner(), reference);
         if (item == null) {
             if (sendMessage) {
@@ -366,7 +362,6 @@ public class Pet extends Summon {
             return false;
         }
 
-        // Send Pet inventory update packet.
         final PetInventoryUpdate petIU = new PetInventoryUpdate();
         petIU.addItem(item);
         sendPacket(petIU);
@@ -386,18 +381,10 @@ public class Pet extends Summon {
         return true;
     }
 
-    /**
-     * Destroy item from inventory by using its <b>itemId</b> and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param itemId : int Item identifier of the item to be destroyed
-     * @param count : int Quantity of items to be destroyed
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successfull
-     */
     @Override
     public boolean destroyItemByItemId(
             ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         final Item item = inventory.destroyItemByItemId(process, itemId, count, getOwner(), reference);
         if (item == null) {
             if (sendMessage) {
@@ -407,7 +394,6 @@ public class Pet extends Summon {
             return false;
         }
 
-        // Send Pet inventory update packet.
         final PetInventoryUpdate petIU = new PetInventoryUpdate();
         petIU.addItem(item);
         sendPacket(petIU);
@@ -431,6 +417,7 @@ public class Pet extends Summon {
 
     @Override
     public void doPickupItem(WorldObject object) {
+        WorldPartition.checkOwner();
         if (isDead()) {
             return;
         }
@@ -438,7 +425,6 @@ public class Pet extends Summon {
         getAI().setIntentionIdle();
         broadcastPacket(new StopMove(this));
         if (!object.isItem()) {
-            // Do not try to pickup anything that is not an item :)
             log.warn("{} trying to pickup wrong target.{}", this, object);
             sendPacket(ActionFailed.STATIC_PACKET);
             return;
@@ -446,7 +432,6 @@ public class Pet extends Summon {
 
         final Item target = (Item) object;
 
-        // Cursed weapons
         if (CursedWeaponsManager.getInstance().isCursed(target.getId())) {
             final SystemMessage smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
             smsg.addItemName(target.getId());
@@ -460,65 +445,59 @@ public class Pet extends Summon {
 
         final boolean follow = getFollowStatus();
         SystemMessage smsg = null;
-        synchronized (target) {
-            // Check if the target to pick up is visible.
-            if (!target.isSpawned()) {
-                // Send a Server->Client packet ActionFailed to this Player.
-                sendPacket(ActionFailed.STATIC_PACKET);
-                return;
-            }
-
-            if (!target.getDropProtection().tryPickUp(this)) {
-                sendPacket(ActionFailed.STATIC_PACKET);
-                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
-                smsg.addItemName(target);
-                sendPacket(smsg);
-                return;
-            }
-
-            if (((isInParty() && (getParty().getDistributionType() == PartyDistributionType.FINDERS_KEEPERS))
-                            || !isInParty())
-                    && !inventory.validateCapacity(target)) {
-                sendPacket(ActionFailed.STATIC_PACKET);
-                sendPacket(SystemMessageId.YOUR_PET_CANNOT_CARRY_ANY_MORE_ITEMS);
-                return;
-            }
-
-            if ((target.getOwnerId() != 0)
-                    && (target.getOwnerId() != getOwner().getObjectId())
-                    && !getOwner().isInLooterParty(target.getOwnerId())) {
-                if (target.getId() == Inventory.ADENA_ID) {
-                    smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1_ADENA);
-                    smsg.addLong(target.getCount());
-                } else if (target.getCount() > 1) {
-                    smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S2_S1_S);
-                    smsg.addItemName(target);
-                    smsg.addLong(target.getCount());
-                } else {
-                    smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
-                    smsg.addItemName(target);
-                }
-
-                sendPacket(ActionFailed.STATIC_PACKET);
-                sendPacket(smsg);
-                return;
-            }
-
-            if ((target.getItemLootShedule() != null)
-                    && ((target.getOwnerId() == getOwner().getObjectId())
-                            || getOwner().isInLooterParty(target.getOwnerId()))) {
-                target.resetOwnerTimer();
-            }
-
-            // Remove from the ground!
-            target.pickupMe(this);
-
-            if (GeneralConfig.SAVE_DROPPED_ITEM) {
-                ItemsOnGroundManager.getInstance().removeObject(target);
-            }
+        if (!target.isSpawned()) {
+            sendPacket(ActionFailed.STATIC_PACKET);
+            return;
         }
 
-        // Herbs
+        if (!target.getDropProtection().tryPickUp(this)) {
+            sendPacket(ActionFailed.STATIC_PACKET);
+            smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
+            smsg.addItemName(target);
+            sendPacket(smsg);
+            return;
+        }
+
+        if (((isInParty() && (getParty().getDistributionType() == PartyDistributionType.FINDERS_KEEPERS))
+                        || !isInParty())
+                && !inventory.validateCapacity(target)) {
+            sendPacket(ActionFailed.STATIC_PACKET);
+            sendPacket(SystemMessageId.YOUR_PET_CANNOT_CARRY_ANY_MORE_ITEMS);
+            return;
+        }
+
+        if ((target.getOwnerId() != 0)
+                && (target.getOwnerId() != getOwner().getObjectId())
+                && !getOwner().isInLooterParty(target.getOwnerId())) {
+            if (target.getId() == Inventory.ADENA_ID) {
+                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1_ADENA);
+                smsg.addLong(target.getCount());
+            } else if (target.getCount() > 1) {
+                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S2_S1_S);
+                smsg.addItemName(target);
+                smsg.addLong(target.getCount());
+            } else {
+                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
+                smsg.addItemName(target);
+            }
+
+            sendPacket(ActionFailed.STATIC_PACKET);
+            sendPacket(smsg);
+            return;
+        }
+
+        if ((target.getItemLootShedule() != null)
+                && ((target.getOwnerId() == getOwner().getObjectId())
+                        || getOwner().isInLooterParty(target.getOwnerId()))) {
+            target.resetOwnerTimer();
+        }
+
+        target.pickupMe(this);
+
+        if (GeneralConfig.SAVE_DROPPED_ITEM) {
+            ItemsOnGroundManager.getInstance().removeObject(target);
+        }
+
         if (target.getTemplate().hasExImmediateEffect()) {
             final IItemHandler handler = ItemHandler.getInstance().getHandler(target.getEtcItem());
             if (handler == null) {
@@ -550,14 +529,12 @@ public class Pet extends Summon {
                 sendPacket(smsg);
             }
 
-            // If owner is in party and it is not finders keepers, distribute the item instead of stealing it -.-
             if (getOwner().isInParty()
                     && (getOwner().getParty().getDistributionType() != PartyDistributionType.FINDERS_KEEPERS)) {
                 getOwner().getParty().distributeItem(getOwner(), target);
             } else {
                 final Item item = inventory.addItem(ItemProcessType.PICKUP, target, getOwner(), this);
 
-                // sendPacket(new PetItemList(_inventory.getItems()));
                 sendPacket(new PetInventoryUpdate(item));
             }
         }
@@ -571,14 +548,16 @@ public class Pet extends Summon {
 
     @Override
     public void deleteMe(Player owner) {
+        WorldPartition.checkOwner();
         inventory.transferItemsToOwner();
         super.deleteMe(owner);
-        destroyControlItem(owner, false); // this should also delete the pet from the db
+        destroyControlItem(owner, false);
         CharSummonTable.getInstance().getPets().remove(getOwner().getObjectId());
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         final Player owner = getOwner();
         if ((owner != null) && !owner.isInDuel() && (!isInsideZone(ZoneId.PVP) || isInsideZone(ZoneId.SIEGE))) {
             deathPenalty();
@@ -594,17 +573,16 @@ public class Pet extends Summon {
                         .THE_PET_HAS_BEEN_KILLED_IF_YOU_DON_T_RESURRECT_IT_WITHIN_24_HOURS_THE_PET_S_BODY_WILL_DISAPPEAR_ALONG_WITH_ALL_THE_PET_S_ITEMS);
         DecayTaskManager.getInstance().add(this);
 
-        // Do not decrease exp if is in duel, arena.
         return true;
     }
 
     @Override
     public void doRevive() {
+        WorldPartition.checkOwner();
         getOwner().removeReviving();
 
         super.doRevive();
 
-        // stopDecay
         DecayTaskManager.getInstance().cancel(this);
         startFeed();
         if (!isHungry()) {
@@ -616,24 +594,14 @@ public class Pet extends Summon {
 
     @Override
     public void doRevive(double revivePower) {
-        // Restore the pet's lost experience,.
-        // depending on the % return of the skill used (based on its power).
+        WorldPartition.checkOwner();
         restoreExp(revivePower);
         doRevive();
     }
 
-    /**
-     * Transfers item to another inventory
-     * @param process ItemProcessType identifier of process triggering this action
-     * @param objectId Item Identifier of the item to be transfered
-     * @param count Quantity of items to be transfered
-     * @param target
-     * @param actor the player requesting the item transfer
-     * @param reference Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the new item or the updated item in inventory
-     */
     public Item transferItem(
             ItemProcessType process, int objectId, long count, Inventory target, Player actor, WorldObject reference) {
+        WorldPartition.checkOwner();
         final Item oldItem = inventory.getItemByObjectId(objectId);
         final Item playerOldItem = target.getItemByItemId(oldItem.getId());
         final Item newItem = inventory.transferItem(process, objectId, count, target, actor, reference);
@@ -641,7 +609,6 @@ public class Pet extends Summon {
             return null;
         }
 
-        // Send inventory update packet.
         final PetInventoryUpdate petIU = new PetInventoryUpdate();
         if ((oldItem.getCount() > 0) && (oldItem != newItem)) {
             petIU.addModifiedItem(oldItem);
@@ -651,7 +618,6 @@ public class Pet extends Summon {
 
         sendPacket(petIU);
 
-        // Send target update packet.
         if (!newItem.isStackable()) {
             final Player owner = getOwner();
             if (owner != null) {
@@ -671,16 +637,10 @@ public class Pet extends Summon {
         return newItem;
     }
 
-    /**
-     * Remove the Pet from DB and its associated item from the player inventory
-     * @param owner The owner from whose inventory we should delete the item
-     * @param evolve
-     */
     public void destroyControlItem(Player owner, boolean evolve) {
-        // Remove the pet instance from world.
+        WorldPartition.checkOwner();
         World.removePet(owner.getObjectId());
 
-        // Delete from inventory.
         try {
             Item removedItem;
             if (evolve) {
@@ -717,6 +677,7 @@ public class Pet extends Summon {
     }
 
     public void dropAllItems() {
+        WorldPartition.checkOwner();
         try {
             for (Item item : inventory.getItems()) {
                 dropItemHere(item);
@@ -727,6 +688,7 @@ public class Pet extends Summon {
     }
 
     public void dropItemHere(Item item, boolean protect) {
+        WorldPartition.checkOwner();
         final Item dropit =
                 inventory.dropItem(ItemProcessType.DROP, item.getObjectId(), item.getCount(), getOwner(), this);
         if (dropit != null) {
@@ -740,6 +702,7 @@ public class Pet extends Summon {
     }
 
     public void dropItemHere(Item dropit) {
+        WorldPartition.checkOwner();
         dropItemHere(dropit, false);
     }
 
@@ -769,8 +732,7 @@ public class Pet extends Summon {
         long exp = row.exp();
         final PetLevelData info = PetDataTable.getInstance().getPetLevelData(pet.getId(), pet.getLevel());
 
-        // DS: update experience based by level.
-        // Avoiding pet delevels due to exp per level values changed.
+        // Avoids de-leveling when exp-per-level values changed.
         if ((info != null) && (exp < info.getPetMaxExp())) {
             exp = info.getPetMaxExp();
         }
@@ -792,17 +754,20 @@ public class Pet extends Summon {
 
     @Override
     public void setRestoreSummon(boolean value) {
+        WorldPartition.checkOwner();
         restoreSummon = value;
     }
 
     @Override
     public void stopSkillEffects(SkillFinishType type, int skillId) {
+        WorldPartition.checkOwner();
         super.stopSkillEffects(type, skillId);
         SummonEffectTable.getInstance().removePetEffects(getControlObjectId(), skillId);
     }
 
     @Override
     public void storeMe() {
+        WorldPartition.checkOwner();
         if (controlObjectId == 0) {
             // This is a summon, not a pet, don't store anything.
             return;
@@ -846,14 +811,13 @@ public class Pet extends Summon {
 
     @Override
     public void storeEffect(boolean storeEffects) {
+        WorldPartition.checkOwner();
         if (!PlayerConfig.SUMMON_STORE_SKILL_COOLTIME) {
             return;
         }
 
-        // Clear list for overwrite.
         SummonEffectTable.getInstance().clearPetEffects(getControlObjectId());
 
-        // Store all effect data along with calculated remaining.
         final List<SummonEffectRow> rows = new ArrayList<>();
         if (storeEffects) {
             for (Entry<Skill, StoredEffect> entry : effectsToStore().entrySet()) {
@@ -879,6 +843,7 @@ public class Pet extends Summon {
 
     @Override
     public void restoreEffects() {
+        WorldPartition.checkOwner();
         try {
             if (!SummonEffectTable.getInstance().containsPetId(getControlObjectId())) {
                 for (SummonEffectRow row : CharSummonTable.getInstance().findPetEffects(controlObjectId)) {
@@ -903,7 +868,8 @@ public class Pet extends Summon {
         }
     }
 
-    public synchronized void stopFeed() {
+    public void stopFeed() {
+        WorldPartition.checkOwner();
         if (feedTask == null) {
             return;
         }
@@ -912,8 +878,8 @@ public class Pet extends Summon {
         feedTask = null;
     }
 
-    public synchronized void startFeed() {
-        // Stop feeding task if it is active.
+    public void startFeed() {
+        WorldPartition.checkOwner();
         stopFeed();
         if (!isDead() && (getOwner().getSummon() == this)) {
             feedTask = WorldPartition.loop().scheduleAtFixedRate(new FeedTask(), 10000, 10000, TimeUnit.MILLISECONDS);
@@ -921,7 +887,8 @@ public class Pet extends Summon {
     }
 
     @Override
-    public synchronized void unSummon(Player owner) {
+    public void unSummon(Player owner) {
+        WorldPartition.checkOwner();
         stopFeed();
         super.unSummon(owner);
 
@@ -934,13 +901,9 @@ public class Pet extends Summon {
         }
     }
 
-    /**
-     * Restore the specified % of experience this Pet has lost.
-     * @param restorePercent
-     */
     public void restoreExp(double restorePercent) {
+        WorldPartition.checkOwner();
         if (expBeforeDeath > 0) {
-            // Restore the specified % of lost experience.
             getStat().addExp(Math.round(((expBeforeDeath - getStat().getExp()) * restorePercent) / 100));
             expBeforeDeath = 0;
         }
@@ -952,19 +915,17 @@ public class Pet extends Summon {
         final int level = getStat().getLevel();
         final double percentLost = (-0.07 * level) + 6.5;
 
-        // Calculate the Experience loss.
         final long lostExp = Math.round(
                 ((getStat().getExpForLevel(level + 1) - getStat().getExpForLevel(level)) * percentLost) / 100);
 
-        // Get the Experience before applying penalty.
         expBeforeDeath = getStat().getExp();
 
-        // Set the new Experience value of the Pet.
         getStat().addExp(-lostExp);
     }
 
     @Override
-    public synchronized void addExpAndSp(double addToExp, double addToSp) {
+    public void addExpAndSp(double addToExp, double addToSp) {
+        WorldPartition.checkOwner();
         if (getId() == 12564) {
             getStat().addExpAndSp(Math.round(addToExp * RatesConfig.SINEATER_XP_RATE), addToSp);
         } else {
@@ -974,30 +935,36 @@ public class Pet extends Summon {
 
     @Override
     public long getExpForThisLevel() {
+        WorldPartition.checkOwner();
         return getStat().getExpForLevel(getLevel());
     }
 
     @Override
     public long getExpForNextLevel() {
+        WorldPartition.checkOwner();
         return getStat().getExpForLevel(getLevel() + 1);
     }
 
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return getStat().getLevel();
     }
 
     public int getMaxFed() {
+        WorldPartition.checkOwner();
         return getStat().getMaxFeed();
     }
 
     @Override
     public int getCriticalHit(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         return getStat().getCriticalHit(target, skill);
     }
 
     @Override
     public int getSkillLevel(int skillId) {
+        WorldPartition.checkOwner();
         if (getKnownSkill(skillId) == null) {
             return 0;
         }
@@ -1007,6 +974,7 @@ public class Pet extends Summon {
     }
 
     public void updateRefOwner(Player owner) {
+        WorldPartition.checkOwner();
         final int oldOwnerId = getOwner().getObjectId();
         setOwner(owner);
         World.removePet(oldOwnerId);
@@ -1014,10 +982,12 @@ public class Pet extends Summon {
     }
 
     public int getInventoryLimit() {
+        WorldPartition.checkOwner();
         return NpcConfig.INVENTORY_MAXIMUM_PET;
     }
 
     public void refreshOverloaded() {
+        WorldPartition.checkOwner();
         if ((getInventory() == null) || (getOwner() == null)) {
             return;
         }
@@ -1053,6 +1023,7 @@ public class Pet extends Summon {
 
     @Override
     public void updateAndBroadcastStatus(int value) {
+        WorldPartition.checkOwner();
         if ((getInventory() != null) && (getOwner() != null)) {
             refreshOverloaded();
         }
@@ -1062,48 +1033,51 @@ public class Pet extends Summon {
 
     @Override
     public boolean isHungry() {
+        WorldPartition.checkOwner();
         return currentFed
                 < ((getPetData().getHungryLimit() / 100f) * getPetLevelData().getPetMaxFeed());
     }
 
-    /**
-     * Verifies if a pet can be controlled by it's owner.<br>
-     * Starving pets cannot be controlled.
-     * @return {@code true} if the per cannot be controlled
-     */
     public boolean isUncontrollable() {
+        WorldPartition.checkOwner();
         return currentFed <= 0;
     }
 
     @Override
     public int getWeapon() {
+        WorldPartition.checkOwner();
         final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
         return weapon != null ? weapon.getId() : 0;
     }
 
     @Override
     public int getArmor() {
+        WorldPartition.checkOwner();
         final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_CHEST);
         return weapon != null ? weapon.getId() : 0;
     }
 
     public int getJewel() {
+        WorldPartition.checkOwner();
         final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_NECK);
         return weapon != null ? weapon.getId() : 0;
     }
 
     @Override
     public short getSoulShotsPerHit() {
+        WorldPartition.checkOwner();
         return getPetLevelData().getPetSoulShot();
     }
 
     @Override
     public short getSpiritShotsPerHit() {
+        WorldPartition.checkOwner();
         return getPetLevelData().getPetSpiritShot();
     }
 
     @Override
     public void setName(String name) {
+        WorldPartition.checkOwner();
         final Item controlItem = getControlItem();
         if (controlItem != null) {
             if (controlItem.getCustomType2() == (name == null ? 1 : 0)) {
@@ -1126,36 +1100,43 @@ public class Pet extends Summon {
     }
 
     public boolean canEatFoodId(int itemId) {
+        WorldPartition.checkOwner();
         return data.getFood().contains(itemId);
     }
 
     @Override
     public boolean isPet() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Pet asPet() {
+        WorldPartition.checkOwner();
         return this;
     }
 
     @Override
     public double getRunSpeed() {
+        WorldPartition.checkOwner();
         return super.getRunSpeed() * (isUncontrollable() ? 0.5d : 1.0d);
     }
 
     @Override
     public double getWalkSpeed() {
+        WorldPartition.checkOwner();
         return super.getWalkSpeed() * (isUncontrollable() ? 0.5d : 1.0d);
     }
 
     @Override
     public double getMovementSpeedMultiplier() {
+        WorldPartition.checkOwner();
         return super.getMovementSpeedMultiplier() * (isUncontrollable() ? 0.5d : 1.0d);
     }
 
     @Override
     public double getMoveSpeed() {
+        WorldPartition.checkOwner();
         if (isInsideZone(ZoneId.WATER)) {
             return isRunning() ? getSwimRunSpeed() : getSwimWalkSpeed();
         }

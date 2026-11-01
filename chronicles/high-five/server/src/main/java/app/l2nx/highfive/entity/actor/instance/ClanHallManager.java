@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.ServerConfig;
@@ -43,11 +44,13 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AgitDecoInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.io.File;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 
+@SingleWriter
 public class ClanHallManager extends Merchant {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -58,10 +61,6 @@ public class ClanHallManager extends Merchant {
 
     private int clanHallId = -1;
 
-    /**
-     * Creates clan hall manager.
-     * @param template the clan hall manager NPC template
-     */
     public ClanHallManager(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.ClanHallManager);
@@ -69,11 +68,13 @@ public class ClanHallManager extends Merchant {
 
     @Override
     public boolean isWarehouse() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (getClanHall().isSiegableHall() && ((SiegableHall) getClanHall()).isInSiege()) {
             return;
         }
@@ -85,7 +86,7 @@ public class ClanHallManager extends Merchant {
 
         if (condition == COND_OWNER) {
             final StringTokenizer st = new StringTokenizer(command, " ");
-            final String actualCommand = st.nextToken(); // Get actual command
+            final String actualCommand = st.nextToken();
             String val = "";
             if (st.countTokens() >= 1) {
                 val = st.nextToken();
@@ -1659,7 +1660,6 @@ public class ClanHallManager extends Merchant {
                 return;
             } else if (actualCommand.equalsIgnoreCase("support")) {
                 if (player.isCursedWeaponEquipped()) {
-                    // Custom system message
                     player.sendMessage("The wielder of a cursed weapon cannot receive outside heals or buffs");
                     return;
                 }
@@ -1684,8 +1684,6 @@ public class ClanHallManager extends Merchant {
                         } else {
                             final int mpCost = skill.getMpConsume() + skill.getMpInitialConsume();
 
-                            // If Clan Hall Buff are free or current MP is greater than MP cost, the skill should be
-                            // casted.
                             if ((getCurrentMp() >= mpCost) || FeatureConfig.CH_BUFF_FREE) {
                                 doCast(skill);
                             } else {
@@ -1772,6 +1770,7 @@ public class ClanHallManager extends Merchant {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
         String fileName = "data/html/clanHallManager/chamberlain-no.htm";
 
@@ -1813,10 +1812,8 @@ public class ClanHallManager extends Merchant {
         return COND_ALL_FALSE;
     }
 
-    /**
-     * @return the PledgeHall this Npc belongs to.
-     */
     public ClanHall getClanHall() {
+        WorldPartition.checkOwner();
         if (clanHallId < 0) {
             ClanHall temp = ClanHallTable.getInstance().getNearbyClanHall(getX(), getY(), 500);
             if (temp == null) {

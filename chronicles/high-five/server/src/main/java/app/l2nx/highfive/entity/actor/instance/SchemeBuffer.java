@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.SchemeBufferConfig;
 import app.l2nx.highfive.data.SchemeBufferTable;
@@ -35,6 +36,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -46,45 +48,30 @@ import java.util.StringTokenizer;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Scheme Buffer NPC handler supporting scheme management and manual buff casting.<br>
- * Provides extra pages (Buffs/Dances/Songs/etc.) and auto-buff presets without exposing internal groups in the edit UI.
- * <ul>
- * <li>Creates, edits, deletes and casts player schemes.</li>
- * <li>Manually casts skills by category with pagination and target selection.</li>
- * <li>Applies class-based auto-buffs using MAGE_GROUP / FIGHTER_GROUP.</li>
- * </ul>
  * @author Mobius, BazookaRpm
  */
+@SingleWriter
 public class SchemeBuffer extends Npc {
-    // Constants.
     private static final int PAGE_LIMIT = 6;
     private static final int SCHEME_NAME_MAX_LENGTH = 14;
     private static final int TYPES_PER_ROW = 4;
 
     // UI widths (avoid overflow with scrollbars).
     private static final int UI_WIDTH = 256;
-    private static final int UI_HALF_WIDTH = UI_WIDTH / 2; // 128.
+    private static final int UI_HALF_WIDTH = UI_WIDTH / 2;
     private static final int ICON_COL_WIDTH = 40;
     private static final int BTN_COL_WIDTH = 32;
-    private static final int NAME_COL_WIDTH = UI_WIDTH - ICON_COL_WIDTH - BTN_COL_WIDTH; // 184.
+    private static final int NAME_COL_WIDTH = UI_WIDTH - ICON_COL_WIDTH - BTN_COL_WIDTH;
     private static final int FOOTER_SIDE_WIDTH = 70;
-    private static final int PAGE_CENTER_WIDTH = UI_WIDTH - (FOOTER_SIDE_WIDTH * 2); // 116.
+    private static final int PAGE_CENTER_WIDTH = UI_WIDTH - (FOOTER_SIDE_WIDTH * 2);
 
-    /**
-     * Creates a SchemeBuffer instance.
-     * @param template
-     */
     public SchemeBuffer(NpcTemplate template) {
         super(template);
     }
 
-    /**
-     * Handles Scheme Buffer bypass commands.
-     * @param player
-     * @param commandValue
-     */
     @Override
     public void onBypassFeedback(Player player, String commandValue) {
+        WorldPartition.checkOwner();
         if ((player == null) || (commandValue == null) || commandValue.isEmpty()) {
             return;
         }
@@ -352,22 +339,13 @@ public class SchemeBuffer extends Npc {
         super.onBypassFeedback(player, commandValue);
     }
 
-    /**
-     * Returns the HTML path used by this NPC.
-     * @param npcId
-     * @param value
-     * @return the HTML file path.
-     */
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         return "data/html/mods/SchemeBuffer/" + ((value == 0) ? Integer.toString(npcId) : (npcId + "-" + value))
                 + ".htm";
     }
 
-    /**
-     * Shows the main menu window.
-     * @param player
-     */
     private void showMainMenu(Player player) {
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         html.setFile(player, getHtmlPath(getId(), 0));
@@ -375,10 +353,6 @@ public class SchemeBuffer extends Npc {
         player.sendPacket(html);
     }
 
-    /**
-     * Shows the scheme list and actions window.
-     * @param player
-     */
     private void showGiveBuffsWindow(Player player) {
         final StringBuilder htmlBuilder = new StringBuilder(200);
         final Map<String, List<Integer>> playerSchemes =
@@ -434,13 +408,6 @@ public class SchemeBuffer extends Npc {
         player.sendPacket(html);
     }
 
-    /**
-     * Shows the scheme edit window for adding and removing skills.
-     * @param player
-     * @param groupType
-     * @param schemeName
-     * @param page
-     */
     private void showEditSchemeWindow(Player player, String groupType, String schemeName, int page) {
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         final List<Integer> schemeSkills = SchemeBufferTable.getInstance().getScheme(player.getObjectId(), schemeName);
@@ -457,13 +424,6 @@ public class SchemeBuffer extends Npc {
         player.sendPacket(html);
     }
 
-    /**
-     * Shows manual casting window by category with pagination and target selection.
-     * @param player
-     * @param category
-     * @param pageValue
-     * @param targetType
-     */
     private void showManualWindow(Player player, String category, int pageValue, String targetType) {
         final SchemeBufferTable schemeBufferTable = SchemeBufferTable.getInstance();
         final SkillData skillData = SkillData.getInstance();
@@ -487,7 +447,6 @@ public class SchemeBuffer extends Npc {
 
         final StringBuilder htmlBuilder = new StringBuilder(skillIds.size() * 200);
 
-        // Tabs (Me / Pet) - fixed width to avoid clipping.
         htmlBuilder.append("<table width=\"").append(UI_WIDTH).append("\"><tr>");
 
         htmlBuilder.append("<td width=\"").append(UI_HALF_WIDTH).append("\" align=\"center\">");
@@ -650,11 +609,6 @@ public class SchemeBuffer extends Npc {
         player.sendPacket(html);
     }
 
-    /**
-     * Applies auto-buff preset based on player class to player or pet.
-     * @param player
-     * @param targetType
-     */
     private void applyAutoBuff(Player player, String targetType) {
         final SchemeBufferTable schemeBufferTable = SchemeBufferTable.getInstance();
         final SkillData skillData = SkillData.getInstance();
@@ -691,14 +645,6 @@ public class SchemeBuffer extends Npc {
         showMainMenu(player);
     }
 
-    /**
-     * Builds paginated skill list for scheme edit window.
-     * @param player
-     * @param groupType
-     * @param schemeName
-     * @param pageValue
-     * @return the HTML fragment.
-     */
     private String getGroupSkillList(Player player, String groupType, String schemeName, int pageValue) {
         final SchemeBufferTable schemeBufferTable = SchemeBufferTable.getInstance();
         final SkillData skillData = SkillData.getInstance();
@@ -854,12 +800,6 @@ public class SchemeBuffer extends Npc {
         return htmlBuilder.toString();
     }
 
-    /**
-     * Builds the category selector frame for scheme editing.
-     * @param groupType
-     * @param schemeName
-     * @return the HTML fragment.
-     */
     private static String getTypesFrame(String groupType, String schemeName) {
         final StringBuilder htmlBuilder = new StringBuilder(500);
         htmlBuilder.append("<table>");
@@ -898,11 +838,6 @@ public class SchemeBuffer extends Npc {
         return htmlBuilder.toString();
     }
 
-    /**
-     * Parses a non-negative integer without exceptions.
-     * @param value
-     * @return the parsed value, or {@code null} if invalid or out of range.
-     */
     private static Integer parseUnsignedInt(String value) {
         if ((value == null) || value.isEmpty()) {
             return null;
@@ -924,11 +859,6 @@ public class SchemeBuffer extends Npc {
         return result;
     }
 
-    /**
-     * Computes the total fee for a skill list.
-     * @param list
-     * @return the fee.
-     */
     private static int getFee(List<Integer> list) {
         if (SchemeBufferConfig.BUFFER_STATIC_BUFF_COST > 0) {
             return list.size() * SchemeBufferConfig.BUFFER_STATIC_BUFF_COST;
@@ -944,12 +874,6 @@ public class SchemeBuffer extends Npc {
         return fee;
     }
 
-    /**
-     * Counts skills in a list as dances/songs or non-dances.
-     * @param skills
-     * @param dances
-     * @return the count.
-     */
     private static int getCountOf(List<Integer> skills, boolean dances) {
         final SkillData skillData = SkillData.getInstance();
 

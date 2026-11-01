@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -36,9 +37,11 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
 import java.util.Locale;
 
+@SingleWriter
 public class RaceManager extends Npc {
     protected static final int[] TICKET_PRICES = {100, 500, 1000, 5000, 10000, 20000, 50000, 100000};
 
@@ -48,6 +51,7 @@ public class RaceManager extends Npc {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (command.startsWith("BuyTicket")) {
             if (!GeneralConfig.ALLOW_RACE
                     || (MonsterRaceManager.getInstance().getCurrentRaceState() != RaceState.ACCEPTING_BETS)) {
@@ -157,7 +161,6 @@ public class RaceManager extends Npc {
                 msg.addItemName(4443);
                 player.sendPacket(msg);
 
-                // Refresh lane bet.
                 MonsterRaceManager.getInstance().setBetOnLane(ticket, TICKET_PRICES[priceId - 1], true);
                 super.onBypassFeedback(player, "Chat 0");
                 return;
@@ -187,7 +190,6 @@ public class RaceManager extends Npc {
                                 .getTemplate()
                                 .getName());
 
-                // Odd
                 final double odd = MonsterRaceManager.getInstance().getOdds().get(i);
                 html.replace("Odd" + n, (odd > 0D) ? String.format(Locale.ENGLISH, "%.1f", odd) : "&$804;");
             }
@@ -223,12 +225,9 @@ public class RaceManager extends Npc {
                 return;
             }
 
-            // Generate data.
             final StringBuilder sb = new StringBuilder();
 
-            // Retrieve player's tickets.
             for (Item ticket : player.getInventory().getAllItemsByItemId(4443)) {
-                // Don't list current race tickets.
                 if (ticket.getEnchantLevel() == MonsterRaceManager.getInstance().getRaceNumber()) {
                     continue;
                 }
@@ -251,14 +250,12 @@ public class RaceManager extends Npc {
             player.sendPacket(html);
             player.sendPacket(ActionFailed.STATIC_PACKET);
         } else if (command.startsWith("ShowTicket")) {
-            // Retrieve ticket objectId.
             final int val = Integer.parseInt(command.substring(11));
             if (!GeneralConfig.ALLOW_RACE || (val == 0)) {
                 super.onBypassFeedback(player, "Chat 0");
                 return;
             }
 
-            // Retrieve ticket on player's inventory.
             final Item ticket = player.getInventory().getItemByObjectId(val);
             if (ticket == null) {
                 super.onBypassFeedback(player, "Chat 0");
@@ -267,7 +264,6 @@ public class RaceManager extends Npc {
 
             final int raceId = ticket.getEnchantLevel();
 
-            // Retrieve HistoryInfo for that race.
             final HistoryInfo info =
                     MonsterRaceManager.getInstance().getHistory().get(raceId - 1);
             if (info == null) {
@@ -293,14 +289,12 @@ public class RaceManager extends Npc {
             player.sendPacket(html);
             player.sendPacket(ActionFailed.STATIC_PACKET);
         } else if (command.startsWith("CalculateWin")) {
-            // Retrieve ticket objectId.
             final int val = Integer.parseInt(command.substring(13));
             if (!GeneralConfig.ALLOW_RACE || (val == 0)) {
                 super.onBypassFeedback(player, "Chat 0");
                 return;
             }
 
-            // Delete ticket on player's inventory.
             final Item ticket = player.getInventory().getItemByObjectId(val);
             if (ticket == null) {
                 super.onBypassFeedback(player, "Chat 0");
@@ -309,7 +303,6 @@ public class RaceManager extends Npc {
 
             final int raceId = ticket.getEnchantLevel();
 
-            // Retrieve HistoryInfo for that race.
             final HistoryInfo info =
                     MonsterRaceManager.getInstance().getHistory().get(raceId - 1);
             if (info == null) {
@@ -317,7 +310,6 @@ public class RaceManager extends Npc {
                 return;
             }
 
-            // Destroy the ticket.
             if (player.destroyItem(ItemProcessType.FEE, ticket, this, true)) {
                 final int lane = ticket.getCustomType1();
                 final int bet = ticket.getCustomType2() * 100;
@@ -336,10 +328,8 @@ public class RaceManager extends Npc {
                 return;
             }
 
-            // Generate data.
             final StringBuilder sb = new StringBuilder();
 
-            // Use whole history, pickup from 'last element' and stop at 'latest element - 7'.
             final List<HistoryInfo> history = MonsterRaceManager.getInstance().getHistory();
             for (int i = history.size() - 1; i >= Math.max(0, history.size() - 7); i--) {
                 final HistoryInfo info = history.get(i);

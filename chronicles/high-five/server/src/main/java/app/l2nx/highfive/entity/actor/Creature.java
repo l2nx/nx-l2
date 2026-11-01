@@ -305,7 +305,7 @@ public abstract class Creature extends WorldObject {
     private boolean cursorKeyMovement = false;
 
     private WorldObject target;
-    /** Represents the time where the attack should end, in nanoseconds. */
+    /** In nanoseconds. */
     private long attackEndTime;
 
     private int bowAttackEndTime;
@@ -721,16 +721,12 @@ public abstract class Creature extends WorldObject {
     public boolean destroyItemByItemId(
             ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
         WorldPartition.checkOwner();
-        // Default: NPCs consume virtual items for their skills.
-        // TODO: should be logged if even happens.. should be false
         return true;
     }
 
     public boolean destroyItem(
             ItemProcessType process, int objectId, long count, WorldObject reference, boolean sendMessage) {
         WorldPartition.checkOwner();
-        // Default: NPCs consume virtual items for their skills.
-        // TODO: should be logged if even happens.. should be false
         return true;
     }
 
@@ -885,13 +881,11 @@ public abstract class Creature extends WorldObject {
         }
     }
 
-    // TODO: Add target logic.
     public void broadcastSkillPacket(ServerPacket packet, WorldObject target) {
         WorldPartition.checkOwner();
         broadcastPacket(packet);
     }
 
-    // TODO: Add targets logic.
     public void broadcastSkillPacket(ServerPacket packet, Collection<WorldObject> targets) {
         WorldPartition.checkOwner();
         broadcastPacket(packet);
@@ -1059,7 +1053,6 @@ public abstract class Creature extends WorldObject {
             setHeading(heading);
         }
 
-        // Allow recall of the detached characters.
         if (isPlayer()) {
             final Player player = asPlayer();
             final GameClient client = player.getClient();
@@ -1829,7 +1822,6 @@ public abstract class Creature extends WorldObject {
             }
         }
 
-        // TODO: Unhardcode using event listeners!
         if (skill.hasEffectType(EffectType.RESURRECTION)
                 && (isResurrectionBlocked() || target.isResurrectionBlocked())) {
             sendPacket(SystemMessageId.REJECT_RESURRECTION);
@@ -1980,7 +1972,6 @@ public abstract class Creature extends WorldObject {
             switch (skill.getId()) {
                 case 1312: // Fishing
                 {
-                    // Done in Player.startFishing()
                     break;
                 }
                 case 2046: // Wolf Collar
@@ -2116,12 +2107,10 @@ public abstract class Creature extends WorldObject {
             }
         }
 
-        // TODO: combine check and consume
         if ((skill.getItemConsumeId() > 0) && (getInventory() != null)) {
             final Item requiredItems = getInventory().getItemByItemId(skill.getItemConsumeId());
 
             if ((requiredItems == null) || (requiredItems.getCount() < skill.getItemConsumeCount())) {
-                // Checked: when a summon skill failed, server show required consume item count.
                 if (skill.hasEffectType(EffectType.SUMMON)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.SUMMONING_A_SERVITOR_COSTS_S2_S1);
                     sm.addItemName(skill.getItemConsumeId());
@@ -2869,9 +2858,7 @@ public abstract class Creature extends WorldObject {
 
         broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_STOP_FAKEDEATH));
 
-        // TODO: Temp hack: players see FD on ppl that are moving: Teleport to someone who uses FD - if he gets up he
-        // will fall down again for that client -
-        // even tho he is actually standing... Probably bad info in CharInfo packet?
+        // TODO: temp hack: remote clients see a moving fake-death player fall again after getting up.
         broadcastPacket(new Revive(this));
     }
 
@@ -3258,7 +3245,6 @@ public abstract class Creature extends WorldObject {
                 skillCast2 = null;
             }
 
-            // TODO: Handle removing spawned npc.
             if (isChanneling()) {
                 getSkillChannelizer().stopChanneling();
             }
@@ -3280,10 +3266,7 @@ public abstract class Creature extends WorldObject {
         }
     }
 
-    /**
-     * @return true when the move is finished. X and Y are computed server-side so players cannot
-     * tamper with their speed; Z is taken from the client's ValidatePosition packet.
-     */
+    /** @return true when the move is finished. X and Y are computed server-side so players cannot tamper with speed; Z comes from ValidatePosition. */
     public boolean updatePosition() {
         WorldPartition.checkOwner();
         if (!isSpawned()) {
@@ -3325,9 +3308,8 @@ public abstract class Creature extends WorldObject {
                 final int x = xPrev + x1;
                 final int y = yPrev + y1;
                 if (!GeoEngine.getInstance().canMoveToTarget(xPrev, yPrev, zPrev, x, y, zPrev, getInstanceId())) {
-                    // Stop at the current position, not lastServerPosition (which is where the move started).
-                    // Snapping back to lastServerPosition while the client renders the player at the wall causes a
-                    // large WASD desync that grows with each pivot against geometry.
+                    // Stop at the current position, not lastServerPosition: snapping back while the client renders the
+                    // player at the wall causes a growing WASD desync.
                     move.onGeodataPathIndex = -1;
                     stopMove(getLocation());
                     return true;
@@ -3597,7 +3579,6 @@ public abstract class Creature extends WorldObject {
 
         if ((offset > 0) || (distance < 1)) {
             // approximation for moving closer when z coordinates are different
-            // TODO: handle Z axis movement better
             offset -= Math.abs(dz);
             if (offset < 5) {
                 offset = 5;
@@ -4919,7 +4900,6 @@ public abstract class Creature extends WorldObject {
         }
     }
 
-    /** (level + 89) / 100. */
     public double getLevelMod() {
         WorldPartition.checkOwner();
         return ((getLevel() + 89) / 100d);
@@ -5570,32 +5550,36 @@ public abstract class Creature extends WorldObject {
     }
 
     @Override
-    public Collection<AbstractEventListener> getListeners(EventType type) {
+    public boolean hasListener(EventType type) {
         WorldPartition.checkOwner();
-        final Collection<AbstractEventListener> objectListeners = super.getListeners(type);
-        final Collection<AbstractEventListener> templateListeners = template.getListeners(type);
-        final Collection<AbstractEventListener> globalListeners = isMonster()
-                ? Containers.Monsters().getListeners(type)
-                : isNpc()
-                        ? Containers.Npcs().getListeners(type)
-                        : isPlayer() ? Containers.Players().getListeners(type) : Collections.emptyList();
-
-        if (objectListeners.isEmpty() && templateListeners.isEmpty() && globalListeners.isEmpty()) {
-            return Collections.emptyList();
-        } else if (!objectListeners.isEmpty() && templateListeners.isEmpty() && globalListeners.isEmpty()) {
-            return objectListeners;
-        } else if (!templateListeners.isEmpty() && objectListeners.isEmpty() && globalListeners.isEmpty()) {
-            return templateListeners;
-        } else if (!globalListeners.isEmpty() && objectListeners.isEmpty() && templateListeners.isEmpty()) {
-            return globalListeners;
+        if (super.hasListener(type) || template.hasListener(type)) {
+            return true;
         }
 
-        final Collection<AbstractEventListener> allListeners =
-                new ArrayList<>(objectListeners.size() + templateListeners.size() + globalListeners.size());
-        allListeners.addAll(objectListeners);
-        allListeners.addAll(templateListeners);
-        allListeners.addAll(globalListeners);
-        return allListeners;
+        if (isMonster()) {
+            return Containers.Monsters().hasListener(type);
+        } else if (isNpc()) {
+            return Containers.Npcs().hasListener(type);
+        } else if (isPlayer()) {
+            return Containers.Players().hasListener(type);
+        }
+
+        return false;
+    }
+
+    // The same sources and order as hasListener: own, template, then the global container of the kind.
+    @Override
+    public void collectListeners(EventType type, List<? super AbstractEventListener> into) {
+        WorldPartition.checkOwner();
+        collectOwn(type, into);
+        template.collectListeners(type, into);
+        if (isMonster()) {
+            Containers.Monsters().collectListeners(type, into);
+        } else if (isNpc()) {
+            Containers.Npcs().collectListeners(type, into);
+        } else if (isPlayer()) {
+            Containers.Players().collectListeners(type, into);
+        }
     }
 
     public Race getRace() {

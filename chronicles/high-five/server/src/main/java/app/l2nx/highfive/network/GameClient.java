@@ -135,8 +135,8 @@ public class GameClient {
     }
 
     /**
-     * Runs once, from the session drain, after the connection closed. A detached client frees its account here too; its
-     * character stays in the world until the owner's next selection ({@link #load}) saves and removes it.
+     * Runs once from the session drain; a detached client's character stays in the world until the owner's next
+     * selection ({@link #load}) saves it.
      */
     public void onDisconnection() {
         ACCOUNTING_LOG.trace("Client disconnected: {}", this);
@@ -149,8 +149,7 @@ public class GameClient {
 
     public void closeNow() {
         final OutboundQueue outbound = connection.outbound();
-        // A pending close-on-write ends the connection once its last frame is out: a kick or a refused login sends
-        // its message that way and then frees the login, whose disconnect would otherwise drop the message.
+        // A pending close-on-write closes after its last frame; closing now would drop that message.
         if ((outbound != null) && outbound.isClosing()) {
             return;
         }
@@ -370,8 +369,9 @@ public class GameClient {
                 }
                 case AUTHED: {
                     if (player != null) {
-                        return "[Character: " + player.getName() + "[" + player.getObjectId() + "]" + " - Account: "
-                                + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
+                        // The player's toString, since logging calls this from any thread and its getters are checked.
+                        return "[Character: " + player + " - Account: " + accountName + " - IP: "
+                                + (ip == null ? "disconnected" : ip) + "]";
                     }
                     return "[Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
                 }

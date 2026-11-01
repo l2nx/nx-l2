@@ -22,44 +22,48 @@
  */
 package app.l2nx.highfive.mechanics.events;
 
-import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.function.Predicate;
 
 /**
  * @author UnAfraid, Mobius
  */
+@SingleWriter
 public class ListenersContainer {
-    private Map<EventType, Queue<AbstractEventListener>> listeners = null;
+    private EnumMap<EventType, ObjectArrayList<AbstractEventListener>> listeners;
 
-    /**
-     * Registers listener for a callback when specified event is executed.
-     * @param listener
-     * @return
-     */
     public AbstractEventListener addListener(AbstractEventListener listener) {
+        WorldPartition.checkOwner();
         if (listener == null) {
             throw new NullPointerException("Listener cannot be null!");
         }
 
-        getListeners()
-                .computeIfAbsent(listener.getType(), _ -> new PriorityBlockingQueue<>())
-                .add(listener);
+        if (listeners == null) {
+            listeners = new EnumMap<>(EventType.class);
+        }
+
+        final ObjectArrayList<AbstractEventListener> registered =
+                listeners.computeIfAbsent(listener.getType(), _ -> new ObjectArrayList<>());
+        // Higher priority first; equal priorities keep registration order.
+        int index = registered.size();
+        while ((index > 0) && (registered.get(index - 1).getPriority() < listener.getPriority())) {
+            index--;
+        }
+
+        registered.add(index, listener);
         return listener;
     }
 
-    /**
-     * Unregisters listener for a callback when specified event is executed.
-     * @param listener
-     * @return
-     */
     public AbstractEventListener removeListener(AbstractEventListener listener) {
+        WorldPartition.checkOwner();
         if (listener == null) {
             throw new NullPointerException("Listener cannot be null!");
         }
@@ -69,13 +73,13 @@ public class ListenersContainer {
         }
 
         final EventType type = listener.getType();
-        final Queue<AbstractEventListener> eventListenerQueue = listeners.get(type);
-        if (eventListenerQueue == null) {
+        final ObjectArrayList<AbstractEventListener> registered = listeners.get(type);
+        if (registered == null) {
             throw new IllegalAccessError("Listeners container doesn't had " + type + " event type added!");
         }
 
-        eventListenerQueue.remove(listener);
-        if (eventListenerQueue.isEmpty()) {
+        registered.remove(listener);
+        if (registered.isEmpty()) {
             listeners.remove(type);
         }
 
@@ -83,24 +87,30 @@ public class ListenersContainer {
     }
 
     public void removeListenerIf(EventType type, Predicate<? super AbstractEventListener> filter) {
-        if (listeners == null) {
-            return;
-        }
-
-        for (AbstractEventListener listener : getListeners(type)) {
-            if (filter.test(listener)) {
-                listener.unregisterMe();
+        WorldPartition.checkOwner();
+        // Own listeners only: template and global listeners are shared with other creatures.
+        try (Snapshot<AbstractEventListener> copy = ScratchBuffers.empty()) {
+            collectOwn(type, copy);
+            for (AbstractEventListener listener : copy) {
+                if (filter.test(listener)) {
+                    listener.unregisterMe();
+                }
             }
         }
     }
 
     public void removeListenerIf(Predicate<? super AbstractEventListener> filter) {
+        WorldPartition.checkOwner();
         if (listeners == null) {
             return;
         }
 
-        for (Queue<AbstractEventListener> queue : getListeners().values()) {
-            for (AbstractEventListener listener : queue) {
+        try (Snapshot<AbstractEventListener> copy = ScratchBuffers.empty()) {
+            for (ObjectArrayList<AbstractEventListener> registered : listeners.values()) {
+                copy.addAll(registered);
+            }
+
+            for (AbstractEventListener listener : copy) {
                 if (filter.test(listener)) {
                     listener.unregisterMe();
                 }
@@ -109,56 +119,34 @@ public class ListenersContainer {
     }
 
     public boolean hasListener(EventType type) {
-        if ((listeners != null) && listeners.containsKey(type)) {
-            return true;
-        }
-
-        if (this instanceof Creature) {
-            final Creature creature = (Creature) this;
-            if (creature.getTemplate().hasListener(type)) {
-                return true;
-            }
-
-            if (creature.isMonster()) {
-                return Containers.Monsters().hasListener(type);
-            } else if (creature.isNpc()) {
-                return Containers.Npcs().hasListener(type);
-            } else if (creature.isPlayer()) {
-                return Containers.Players().hasListener(type);
-            }
-        }
-
-        return false;
+        WorldPartition.checkOwner();
+        return (listeners != null) && listeners.containsKey(type);
     }
 
-    /**
-     * @param type
-     * @return {@code List} of {@link AbstractEventListener} by the specified type
-     */
-    public Collection<AbstractEventListener> getListeners(EventType type) {
+    /** Read-only snapshot in notification order. */
+    public List<AbstractEventListener> getListeners(EventType type) {
+        WorldPartition.checkOwner();
+        if (!hasListener(type)) {
+            return List.of();
+        }
+
+        final ObjectArrayList<AbstractEventListener> copy = new ObjectArrayList<>();
+        collectListeners(type, copy);
+        return ObjectLists.unmodifiable(copy);
+    }
+
+    public void collectListeners(EventType type, List<? super AbstractEventListener> into) {
+        WorldPartition.checkOwner();
+        collectOwn(type, into);
+    }
+
+    // Unchecked: callers have checked the owner already.
+    protected final void collectOwn(EventType type, List<? super AbstractEventListener> into) {
         if (listeners != null) {
-            final Collection<AbstractEventListener> eventListenerQueue = listeners.get(type);
-            if (eventListenerQueue != null) {
-                return eventListenerQueue;
+            final ObjectArrayList<AbstractEventListener> registered = listeners.get(type);
+            if (registered != null) {
+                into.addAll(registered);
             }
         }
-
-        return Collections.emptyList();
-    }
-
-    /**
-     * Creates the listeners container map if doesn't exist.
-     * @return the listeners container map.
-     */
-    private Map<EventType, Queue<AbstractEventListener>> getListeners() {
-        if (listeners == null) {
-            synchronized (this) {
-                if (listeners == null) {
-                    listeners = new ConcurrentHashMap<>();
-                }
-            }
-        }
-
-        return listeners;
     }
 }

@@ -24,15 +24,14 @@ import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author UnAfraid
  */
-public abstract class AbstractEventListener implements Comparable<AbstractEventListener> {
+public abstract class AbstractEventListener {
+    // Fixed at construction: the container orders a listener by priority when it is added.
     @Getter
-    @Setter
-    private int priority = 0;
+    private final int priority;
 
     @Getter
     private final ListenersContainer container;
@@ -44,29 +43,19 @@ public abstract class AbstractEventListener implements Comparable<AbstractEventL
     private final Object owner;
 
     public AbstractEventListener(ListenersContainer container, EventType type, Object owner) {
+        this(container, type, owner, 0);
+    }
+
+    protected AbstractEventListener(ListenersContainer container, EventType type, Object owner, int priority) {
+        this.priority = priority;
         this.container = container;
         this.type = type;
         this.owner = owner;
     }
 
-    /**
-     * Method invoked by EventDispatcher that will use the callback.
-     * @param <R>
-     * @param event
-     * @param returnBackClass
-     * @return
-     */
     public abstract <R extends AbstractEventReturn> R executeEvent(IBaseEvent event, Class<R> returnBackClass);
 
-    /**
-     * Unregisters detaches and unregisters current listener.
-     */
     public void unregisterMe() {
         container.removeListener(this);
-    }
-
-    @Override
-    public int compareTo(AbstractEventListener o) {
-        return Integer.compare(o.getPriority(), getPriority());
     }
 }

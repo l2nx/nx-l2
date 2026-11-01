@@ -19,22 +19,20 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
- * This class manages all chest.
  * @author Julian
  */
+@SingleWriter
 public class Chest extends Monster {
-    private volatile boolean specialDrop;
+    private boolean specialDrop;
 
-    /**
-     * Creates a chest.
-     * @param template the chest NPC template
-     */
     public Chest(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Chest);
@@ -44,17 +42,20 @@ public class Chest extends Monster {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         specialDrop = false;
         setMustRewardExpSp(true);
     }
 
-    public synchronized void setSpecialDrop() {
+    public void setSpecialDrop() {
+        WorldPartition.checkOwner();
         specialDrop = true;
     }
 
     @Override
     public void doItemDrop(NpcTemplate npcTemplate, Creature lastAttacker) {
+        WorldPartition.checkOwner();
         int id = getTemplate().getId();
         if (!specialDrop) {
             if ((id >= 18265) && (id <= 18286)) {
@@ -79,11 +80,13 @@ public class Chest extends Monster {
 
     @Override
     public boolean isMovementDisabled() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public boolean hasRandomAnimation() {
+        WorldPartition.checkOwner();
         return false;
     }
 }

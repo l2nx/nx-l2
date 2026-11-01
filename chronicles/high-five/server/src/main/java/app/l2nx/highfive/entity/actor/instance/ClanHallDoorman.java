@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -31,21 +32,19 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
+@SingleWriter
 public class ClanHallDoorman extends Doorman {
-    private volatile boolean init = false;
+    private boolean init = false;
     private ClanHall clanHall = null;
     private boolean hasEvolve = false;
 
-    // List of clan halls with evolve function, should be sorted.
+    // Must stay sorted: looked up with Arrays.binarySearch.
     private static final int[] CH_WITH_EVOLVE = {36, 37, 38, 39, 40, 41, 51, 52, 53, 54, 55, 56, 57};
 
-    /**
-     * Creates a clan hall doorman.
-     * @param template the doorman NPC template
-     */
     public ClanHallDoorman(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.ClanHallDoorman);
@@ -53,6 +52,7 @@ public class ClanHallDoorman extends Doorman {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (hasEvolve && command.startsWith("evolve") && isOwnerClan(player)) {
             final StringTokenizer st = new StringTokenizer(command, " ");
             if (st.countTokens() < 2) {
@@ -100,6 +100,7 @@ public class ClanHallDoorman extends Doorman {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
 
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
@@ -151,16 +152,11 @@ public class ClanHallDoorman extends Doorman {
 
     private ClanHall getClanHall() {
         if (!init) {
-            synchronized (this) {
-                if (!init) {
-                    clanHall = ClanHallTable.getInstance().getNearbyClanHall(getX(), getY(), 500);
-                    if (clanHall != null) {
-                        hasEvolve = Arrays.binarySearch(CH_WITH_EVOLVE, clanHall.getId()) >= 0;
-                    }
-
-                    init = true;
-                }
+            clanHall = ClanHallTable.getInstance().getNearbyClanHall(getX(), getY(), 500);
+            if (clanHall != null) {
+                hasEvolve = Arrays.binarySearch(CH_WITH_EVOLVE, clanHall.getId()) >= 0;
             }
+            init = true;
         }
 
         return clanHall;

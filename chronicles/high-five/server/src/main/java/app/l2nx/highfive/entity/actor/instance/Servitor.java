@@ -23,6 +23,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.CharSummonTable;
 import app.l2nx.highfive.data.sql.SummonEffectTable;
@@ -48,10 +49,8 @@ import app.l2nx.highfive.repository.pet.model.SummonEffectRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
@@ -59,31 +58,22 @@ import org.springframework.dao.DataAccessException;
  * @author UnAfraid
  */
 @Slf4j
+@SingleWriter
 public class Servitor extends Summon implements Runnable {
 
-    @Getter
-    @Setter
     private float expMultiplier = 0;
 
-    @Getter
-    @Setter
     private ItemHolder itemConsume;
 
-    @Getter
     private int lifeTime;
 
-    @Getter
-    @Setter
     private int lifeTimeRemaining;
 
-    @Getter
     private int itemConsumeInterval;
 
     private int consumeItemIntervalRemaining;
-    protected Future<?> summonLifeTask;
+    protected ScheduledFuture<?> summonLifeTask;
 
-    @Getter
-    @Setter
     private int referenceSkill;
 
     public Servitor(NpcTemplate template, Player owner) {
@@ -92,8 +82,59 @@ public class Servitor extends Summon implements Runnable {
         setShowSummonAnimation(true);
     }
 
+    public float getExpMultiplier() {
+        WorldPartition.checkOwner();
+        return expMultiplier;
+    }
+
+    public void setExpMultiplier(float expMultiplier) {
+        WorldPartition.checkOwner();
+        this.expMultiplier = expMultiplier;
+    }
+
+    public ItemHolder getItemConsume() {
+        WorldPartition.checkOwner();
+        return itemConsume;
+    }
+
+    public void setItemConsume(ItemHolder itemConsume) {
+        WorldPartition.checkOwner();
+        this.itemConsume = itemConsume;
+    }
+
+    public int getLifeTime() {
+        WorldPartition.checkOwner();
+        return lifeTime;
+    }
+
+    public int getLifeTimeRemaining() {
+        WorldPartition.checkOwner();
+        return lifeTimeRemaining;
+    }
+
+    public void setLifeTimeRemaining(int lifeTimeRemaining) {
+        WorldPartition.checkOwner();
+        this.lifeTimeRemaining = lifeTimeRemaining;
+    }
+
+    public int getItemConsumeInterval() {
+        WorldPartition.checkOwner();
+        return itemConsumeInterval;
+    }
+
+    public int getReferenceSkill() {
+        WorldPartition.checkOwner();
+        return referenceSkill;
+    }
+
+    public void setReferenceSkill(int referenceSkill) {
+        WorldPartition.checkOwner();
+        this.referenceSkill = referenceSkill;
+    }
+
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         if (summonLifeTask == null) {
             summonLifeTask = WorldPartition.loop().scheduleAtFixedRate(this, 0, 5000, TimeUnit.MILLISECONDS);
@@ -102,26 +143,31 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return getTemplate() != null ? getTemplate().getLevel() : 0;
     }
 
     @Override
     public int getSummonType() {
+        WorldPartition.checkOwner();
         return 1;
     }
 
     public void setItemConsumeInterval(int interval) {
+        WorldPartition.checkOwner();
         itemConsumeInterval = interval;
         consumeItemIntervalRemaining = interval;
     }
 
     public void setLifeTime(int lifeTime) {
+        WorldPartition.checkOwner();
         this.lifeTime = lifeTime;
         lifeTimeRemaining = lifeTime;
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -135,21 +181,26 @@ public class Servitor extends Summon implements Runnable {
     }
 
     @Override
-    public void doPickupItem(WorldObject object) {}
+    public void doPickupItem(WorldObject object) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public void setRestoreSummon(boolean value) {
+        WorldPartition.checkOwner();
         restoreSummon = value;
     }
 
     @Override
     public void stopSkillEffects(SkillFinishType type, int skillId) {
+        WorldPartition.checkOwner();
         super.stopSkillEffects(type, skillId);
         SummonEffectTable.getInstance().removeServitorEffects(getOwner(), getReferenceSkill(), skillId);
     }
 
     @Override
     public void storeMe() {
+        WorldPartition.checkOwner();
         if ((referenceSkill == 0) || isDead()) {
             return;
         }
@@ -161,16 +212,15 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public void storeEffect(boolean storeEffects) {
+        WorldPartition.checkOwner();
         if (!PlayerConfig.SUMMON_STORE_SKILL_COOLTIME
                 || (getOwner() == null)
                 || getOwner().isInOlympiadMode()) {
             return;
         }
 
-        // Clear list for overwrite.
         SummonEffectTable.getInstance().clearServitorEffects(getOwner(), getReferenceSkill());
 
-        // Store all effect data along with calculated remaining.
         final List<SummonEffectRow> rows = new ArrayList<>();
         if (storeEffects) {
             for (Entry<Skill, StoredEffect> entry : effectsToStore().entrySet()) {
@@ -197,6 +247,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public void restoreEffects() {
+        WorldPartition.checkOwner();
         if (getOwner().isInOlympiadMode()) {
             return;
         }
@@ -230,6 +281,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public void unSummon(Player owner) {
+        WorldPartition.checkOwner();
         if (summonLifeTask != null) {
             summonLifeTask.cancel(false);
         }
@@ -244,22 +296,26 @@ public class Servitor extends Summon implements Runnable {
     @Override
     public boolean destroyItem(
             ItemProcessType process, int objectId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         return getOwner().destroyItem(process, objectId, count, reference, sendMessage);
     }
 
     @Override
     public boolean destroyItemByItemId(
             ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         return getOwner().destroyItemByItemId(process, itemId, count, reference, sendMessage);
     }
 
     @Override
     public byte getAttackElement() {
+        WorldPartition.checkOwner();
         return getOwner() != null ? getOwner().getAttackElement() : super.getAttackElement();
     }
 
     @Override
     public int getAttackElementValue(byte attackAttribute) {
+        WorldPartition.checkOwner();
         return getOwner() != null
                 ? getOwner().getAttackElementValue(attackAttribute)
                 : super.getAttackElementValue(attackAttribute);
@@ -267,6 +323,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public int getDefenseElementValue(byte defenseAttribute) {
+        WorldPartition.checkOwner();
         return getOwner() != null
                 ? getOwner().getDefenseElementValue(defenseAttribute)
                 : super.getDefenseElementValue(defenseAttribute);
@@ -274,16 +331,19 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public boolean isServitor() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Servitor asServitor() {
+        WorldPartition.checkOwner();
         return this;
     }
 
     @Override
     public void run() {
+        WorldPartition.checkOwner();
         final int usedtime = 5000;
         lifeTimeRemaining -= usedtime;
         if (isDead() || !isSpawned()) {
@@ -293,7 +353,6 @@ public class Servitor extends Summon implements Runnable {
             return;
         }
 
-        // check if the summon's lifetime has ran out
         if (lifeTimeRemaining < 0) {
             sendPacket(SystemMessageId.YOUR_SERVITOR_PASSED_AWAY);
             unSummon(getOwner());
@@ -303,7 +362,6 @@ public class Servitor extends Summon implements Runnable {
         if (itemConsumeInterval > 0) {
             consumeItemIntervalRemaining -= usedtime;
 
-            // check if it is time to consume another item
             if ((consumeItemIntervalRemaining <= 0)
                     && (itemConsume.getCount() > 0)
                     && (itemConsume.getId() > 0)
@@ -313,7 +371,6 @@ public class Servitor extends Summon implements Runnable {
                     msg.addItemName(itemConsume.getId());
                     sendPacket(msg);
 
-                    // Reset
                     consumeItemIntervalRemaining = itemConsumeInterval;
                 } else {
                     sendPacket(
@@ -330,6 +387,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public double getMAtk(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getMAtk(target, skill);
@@ -341,6 +399,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public double getMDef(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getMDef(target, skill);
@@ -352,6 +411,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public double getPAtk(Creature target) {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getPAtk(target);
@@ -363,6 +423,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public double getPDef(Creature target) {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getPDef(target);
@@ -374,6 +435,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public int getMAtkSpd() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getMAtkSpd();
@@ -385,6 +447,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public int getMaxHp() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getMaxHp();
@@ -395,6 +458,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public int getMaxMp() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getMaxMp();
@@ -405,6 +469,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public int getCriticalHit(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getCriticalHit(target, skill);
@@ -416,6 +481,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public double getPAtkSpd() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return super.getPAtkSpd();

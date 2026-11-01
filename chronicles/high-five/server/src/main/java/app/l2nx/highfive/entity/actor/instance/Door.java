@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.DoorAI;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -56,13 +57,12 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.StaticObjectInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class Door extends Creature {
     public static final byte OPEN_BY_CLICK = 1;
     public static final byte OPEN_BY_TIME = 2;
@@ -70,35 +70,21 @@ public class Door extends Creature {
     public static final byte OPEN_BY_SKILL = 8;
     public static final byte OPEN_BY_CYCLE = 16;
 
-    /** The castle index in the array of Castle this Npc belongs to */
     private int castleIndex = -2;
-    /** The fort index in the array of Fort this Npc belongs to */
     private int fortIndex = -2;
 
-    @Getter
-    @Setter
     private ClanHall clanHall;
 
-    @Getter
     boolean open = false;
 
-    @Getter
     private boolean attackableDoor = false;
 
-    @Getter
     private boolean targetable;
 
-    @Getter
-    @Setter
     private int meshIndex = 1;
 
-    // used for autoclose on open
-    private Future<?> autoCloseTask;
+    private ScheduledFuture<?> autoCloseTask;
 
-    /**
-     * Creates a door.
-     * @param template the door template
-     */
     public Door(DoorTemplate template) {
         super(template);
         setInstanceType(InstanceType.Door);
@@ -125,6 +111,42 @@ public class Door extends Creature {
         }
     }
 
+    public ClanHall getClanHall() {
+        WorldPartition.checkOwner();
+        return clanHall;
+    }
+
+    public void setClanHall(ClanHall clanHall) {
+        WorldPartition.checkOwner();
+        this.clanHall = clanHall;
+    }
+
+    public boolean isOpen() {
+        WorldPartition.checkOwner();
+        return open;
+    }
+
+    public boolean isAttackableDoor() {
+        WorldPartition.checkOwner();
+        return attackableDoor;
+    }
+
+    @Override
+    public boolean isTargetable() {
+        WorldPartition.checkOwner();
+        return targetable;
+    }
+
+    public int getMeshIndex() {
+        WorldPartition.checkOwner();
+        return meshIndex;
+    }
+
+    public void setMeshIndex(int meshIndex) {
+        WorldPartition.checkOwner();
+        this.meshIndex = meshIndex;
+    }
+
     @Override
     protected CreatureAI initAI() {
         return new DoorAI(this);
@@ -141,82 +163,73 @@ public class Door extends Creature {
 
     @Override
     public DoorTemplate getTemplate() {
+        WorldPartition.checkOwner();
         return (DoorTemplate) super.getTemplate();
     }
 
     @Override
     public DoorStatus getStatus() {
+        WorldPartition.checkOwner();
         return (DoorStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new DoorStatus(this));
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new DoorStat(this));
     }
 
     @Override
     public DoorStat getStat() {
+        WorldPartition.checkOwner();
         return (DoorStat) super.getStat();
     }
 
-    /**
-     * @return {@code true} if door is open-able by skill.
-     */
     public boolean isOpenableBySkill() {
+        WorldPartition.checkOwner();
         return (getTemplate().getOpenType() & OPEN_BY_SKILL) == OPEN_BY_SKILL;
     }
 
-    /**
-     * @return {@code true} if door is open-able by item.
-     */
     public boolean isOpenableByItem() {
+        WorldPartition.checkOwner();
         return (getTemplate().getOpenType() & OPEN_BY_ITEM) == OPEN_BY_ITEM;
     }
 
-    /**
-     * @return {@code true} if door is open-able by double-click.
-     */
     public boolean isOpenableByClick() {
+        WorldPartition.checkOwner();
         return (getTemplate().getOpenType() & OPEN_BY_CLICK) == OPEN_BY_CLICK;
     }
 
-    /**
-     * @return {@code true} if door is open-able by time.
-     */
     public boolean isOpenableByTime() {
+        WorldPartition.checkOwner();
         return (getTemplate().getOpenType() & OPEN_BY_TIME) == OPEN_BY_TIME;
     }
 
-    /**
-     * @return {@code true} if door is open-able by Field Cycle system.
-     */
     public boolean isOpenableByCycle() {
+        WorldPartition.checkOwner();
         return (getTemplate().getOpenType() & OPEN_BY_CYCLE) == OPEN_BY_CYCLE;
     }
 
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return getTemplate().getLevel();
     }
 
-    /**
-     * Gets the door ID.
-     * @return the door ID
-     */
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return getTemplate().getId();
     }
 
-    /**
-     * @param open The door open status.
-     */
     public void setOpen(boolean open) {
+        WorldPartition.checkOwner();
         this.open = open;
         if (getChildId() > 0) {
             final Door sibling = getSiblingDoor(getChildId());
@@ -229,14 +242,17 @@ public class Door extends Creature {
     }
 
     public boolean isShowHp() {
+        WorldPartition.checkOwner();
         return getTemplate().isShowHp();
     }
 
     public void setIsAttackableDoor(boolean value) {
+        WorldPartition.checkOwner();
         attackableDoor = value;
     }
 
     public int getDamage() {
+        WorldPartition.checkOwner();
         final int dmg = 6 - (int) Math.ceil((getCurrentHp() / getMaxHp()) * 6);
         if (dmg > 6) {
             return 6;
@@ -251,6 +267,7 @@ public class Door extends Creature {
 
     // TODO: Replace index with the castle id itself.
     public Castle getCastle() {
+        WorldPartition.checkOwner();
         if (castleIndex < 0) {
             castleIndex = CastleManager.getInstance().getCastleIndex(this);
         }
@@ -264,6 +281,7 @@ public class Door extends Creature {
 
     // TODO: Replace index with the fort id itself.
     public Fort getFort() {
+        WorldPartition.checkOwner();
         if (fortIndex < 0) {
             fortIndex = FortManager.getInstance().getFortIndex(this);
         }
@@ -276,6 +294,7 @@ public class Door extends Creature {
     }
 
     public boolean isEnemy() {
+        WorldPartition.checkOwner();
         if ((getCastle() != null)
                 && (getCastle().getResidenceId() > 0)
                 && getCastle().getZone().isActive()
@@ -302,7 +321,7 @@ public class Door extends Creature {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
-        // Doors can`t be attacked by NPCs.
+        WorldPartition.checkOwner();
         if (!attacker.isPlayable()) {
             return false;
         }
@@ -327,7 +346,6 @@ public class Door extends Creature {
                     && hall.getSiege().checkIsAttacker(actingPlayer.getClan());
         }
 
-        // Attackable only during siege by everyone (not owner).
         if (TerritoryWarManager.getInstance().isTWInProgress()) {
             final int activeSiegeId = (getFort() != null
                     ? getFort().getResidenceId()
@@ -359,33 +377,37 @@ public class Door extends Creature {
     }
 
     @Override
-    public void updateAbnormalEffect() {}
+    public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
+    }
 
-    /**
-     * Return null.
-     */
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public void broadcastStatusUpdate() {
+        WorldPartition.checkOwner();
         final StaticObjectInfo su = new StaticObjectInfo(this, false);
         final StaticObjectInfo targetableSu = new StaticObjectInfo(this, true);
         final DoorStatusUpdate dsu = new DoorStatusUpdate(this);
@@ -412,6 +434,7 @@ public class Door extends Creature {
     }
 
     public void openMe() {
+        WorldPartition.checkOwner();
         if (getGroupName() != null) {
             manageGroupOpen(true, getGroupName());
             return;
@@ -425,8 +448,8 @@ public class Door extends Creature {
     }
 
     public void closeMe() {
-        // Remove close task.
-        final Future<?> oldTask = autoCloseTask;
+        WorldPartition.checkOwner();
+        final ScheduledFuture<?> oldTask = autoCloseTask;
         if (oldTask != null) {
             autoCloseTask = null;
             oldTask.cancel(false);
@@ -463,10 +486,6 @@ public class Door extends Creature {
         }
     }
 
-    /**
-     * Door notify child about open state change
-     * @param open true if opened
-     */
     private void notifyChildEvent(boolean open) {
         final byte openThis =
                 open ? getTemplate().getMasterDoorOpen() : getTemplate().getMasterDoorClose();
@@ -478,43 +497,53 @@ public class Door extends Creature {
     }
 
     public String getDoorName() {
+        WorldPartition.checkOwner();
         return getTemplate().getName();
     }
 
     public int getX(int i) {
+        WorldPartition.checkOwner();
         return getTemplate().getNodeX()[i];
     }
 
     public int getY(int i) {
+        WorldPartition.checkOwner();
         return getTemplate().getNodeY()[i];
     }
 
     public int getZMin() {
+        WorldPartition.checkOwner();
         return getTemplate().getNodeZ();
     }
 
     public int getZMax() {
+        WorldPartition.checkOwner();
         return getTemplate().getNodeZ() + getTemplate().getHeight();
     }
 
     public int getEmitter() {
+        WorldPartition.checkOwner();
         return getTemplate().getEmmiter();
     }
 
     public boolean isWall() {
+        WorldPartition.checkOwner();
         return getTemplate().isWall();
     }
 
     public String getGroupName() {
+        WorldPartition.checkOwner();
         return getTemplate().getGroupName();
     }
 
     public int getChildId() {
+        WorldPartition.checkOwner();
         return getTemplate().getChildDoorId();
     }
 
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
+        WorldPartition.checkOwner();
         if (isWall() && !isInInstance()) {
             if (!attacker.isServitor()) {
                 return;
@@ -530,11 +559,13 @@ public class Door extends Creature {
 
     @Override
     public void reduceCurrentHpByDOT(double i, Creature attacker, Skill skill) {
+        WorldPartition.checkOwner();
         // doors can't be damaged by DOTs
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -555,19 +586,28 @@ public class Door extends Creature {
     }
 
     @Override
-    public void moveToLocation(int x, int y, int z, int offset) {}
+    public void moveToLocation(int x, int y, int z, int offset) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void stopMove(Location loc) {}
+    public void stopMove(Location loc) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void doAttack(Creature target) {}
+    public void doAttack(Creature target) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void doCast(Skill skill) {}
+    public void doCast(Skill skill) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (isVisibleFor(player)) {
             player.sendPacket(new StaticObjectInfo(this, player.isGM()));
             player.sendPacket(new DoorStatusUpdate(this));
@@ -578,19 +618,17 @@ public class Door extends Creature {
     }
 
     public void setTargetable(boolean value) {
+        WorldPartition.checkOwner();
         targetable = value;
         broadcastStatusUpdate();
     }
 
     public boolean checkCollision() {
+        WorldPartition.checkOwner();
         return getTemplate().isCheckCollision();
     }
 
-    /**
-     * All doors are stored at DoorTable except instance doors
-     * @param doorId
-     * @return
-     */
+    // Instance doors are not in DoorData.
     private Door getSiblingDoor(int doorId) {
         if (!isInInstance()) {
             return DoorData.getInstance().getDoor(doorId);
@@ -601,7 +639,7 @@ public class Door extends Creature {
             return inst.getDoor(doorId);
         }
 
-        return null; // 2 late
+        return null;
     }
 
     private void startAutoCloseTask() {
@@ -610,12 +648,11 @@ public class Door extends Creature {
             return;
         }
 
-        // Clanhall doors should not auto close.
         if (template.getClanHallId() > 0) {
             return;
         }
 
-        final Future<?> oldTask = autoCloseTask;
+        final ScheduledFuture<?> oldTask = autoCloseTask;
         if (oldTask != null) {
             autoCloseTask = null;
             oldTask.cancel(false);
@@ -654,11 +691,13 @@ public class Door extends Creature {
 
     @Override
     public boolean isDoor() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Door asDoor() {
+        WorldPartition.checkOwner();
         return this;
     }
 
@@ -669,7 +708,7 @@ public class Door extends Creature {
         sb.append('[');
         sb.append(((DoorTemplate) uncheckedTemplate()).getId());
         sb.append("](");
-        sb.append(getObjectId());
+        sb.append(uncheckedObjectId());
         sb.append(')');
         return sb.toString();
     }

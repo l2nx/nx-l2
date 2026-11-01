@@ -22,14 +22,13 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class Trainer extends Folk {
-    /**
-     * Creates a trainer.
-     * @param template the trainer NPC template
-     */
     public Trainer(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Trainer);
@@ -37,6 +36,7 @@ public class Trainer extends Folk {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);

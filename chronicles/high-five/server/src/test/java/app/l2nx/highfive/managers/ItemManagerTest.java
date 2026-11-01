@@ -40,7 +40,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -89,14 +88,14 @@ class ItemManagerTest {
         void destroyItemsOfTemplate_shouldDestroyItemInMemory_whenClanWarehouseHoldsIt() {
             final ItemContainer warehouse = loadClanWarehouse();
             final Item token = item();
-            warehouse.addItem(ItemProcessType.NONE, token, null, null);
+            WorldLoopExtension.runInPass(() -> warehouse.addItem(ItemProcessType.NONE, token, null, null));
 
             WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
             assertThat(warehouse.getItems()).doesNotContain(token);
             assertThat(token.getCount()).isZero();
             assertThat(token.getItemLocation()).isEqualTo(ItemLocation.VOID);
-            assertThat(findObject(token.getObjectId())).isNull();
+            assertThat(findObject(objectIdOf(token))).isNull();
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
         }
 
@@ -106,19 +105,23 @@ class ItemManagerTest {
 
             WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
-            assertThat(findObject(inTransit.getObjectId())).isSameAs(inTransit);
-            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(inTransit.getObjectId()));
+            final int inTransitId = objectIdOf(inTransit);
+            assertThat(findObject(inTransitId)).isSameAs(inTransit);
+            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(inTransitId));
         }
 
         @Test
         void destroyItemsOfTemplate_shouldRemoveItemFromGround_whenItLiesThere() {
             final Item dropped = item();
-            dropped.setSpawned(true);
 
-            WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
+            final boolean spawnedAfter = WorldLoopExtension.callInPass(() -> {
+                dropped.setSpawned(true);
+                manager.destroyItemsOfTemplate(EVENT_ITEM);
+                return dropped.isSpawned();
+            });
 
-            assertThat(dropped.isSpawned()).isFalse();
-            assertThat(findObject(dropped.getObjectId())).isNull();
+            assertThat(spawnedAfter).isFalse();
+            assertThat(findObject(objectIdOf(dropped))).isNull();
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
         }
 
@@ -127,9 +130,10 @@ class ItemManagerTest {
             final Item token = item();
 
             assertThatThrownBy(() -> manager.destroyItemsOfTemplate(EVENT_ITEM))
-                    .isInstanceOf(IllegalStateException.class);
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("touched from thread");
 
-            assertThat(findObject(token.getObjectId())).isSameAs(token);
+            assertThat(findObject(objectIdOf(token))).isSameAs(token);
             verifyNoInteractions(items);
         }
     }
@@ -152,14 +156,19 @@ class ItemManagerTest {
     }
 
     private static WorldObject findObject(int objectId) {
-        final AtomicReference<WorldObject> found = new AtomicReference<>();
-        WorldLoopExtension.runInPass(() -> found.set(World.findObject(objectId)));
-        return found.get();
+        return WorldLoopExtension.callInPass(() -> World.findObject(objectId));
+    }
+
+    private static int objectIdOf(WorldObject object) {
+        return WorldLoopExtension.callInPass(object::getObjectId);
     }
 
     private Item item() {
-        final Item item = new Item(registry.allocateTransient(), eventTemplate);
-        WorldLoopExtension.runInPass(() -> World.addObject(item));
+        final Item item = WorldLoopExtension.callInPass(() -> {
+            final Item created = new Item(registry.allocateTransient(), eventTemplate);
+            World.addObject(created);
+            return created;
+        });
         spawned.add(item);
         return item;
     }

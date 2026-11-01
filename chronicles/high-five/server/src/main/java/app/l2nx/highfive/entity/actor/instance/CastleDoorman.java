@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -29,6 +30,7 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import java.util.StringTokenizer;
 
+@SingleWriter
 public class CastleDoorman extends Doorman {
     public CastleDoorman(NpcTemplate template) {
         super(template);
@@ -68,7 +70,6 @@ public class CastleDoorman extends Doorman {
         if ((player.getClan() != null) && player.hasAccess(ClanAccess.CASTLE_OPEN_DOOR)) {
             final SiegableHall hall = getConquerableHall();
 
-            // Save in variable because it's a costly call.
             if (hall != null) {
                 if (player.getClanId() == hall.getOwnerId()) {
                     return true;

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -27,25 +28,17 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableAttack;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableKill;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
- * This class extends Guard class for quests, that require tracking of onAttack and onKill events from monsters' attacks.
  * @author GKR
  */
+@SingleWriter
 public class QuestGuard extends Guard {
-    @Setter
     private boolean autoAttackable = true;
 
-    @Getter
-    @Setter
     private boolean passive = false;
 
-    /**
-     * Creates a quest guard.
-     * @param template the quest guard NPC template
-     */
     public QuestGuard(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.QuestGuard);
@@ -53,7 +46,24 @@ public class QuestGuard extends Guard {
     }
 
     @Override
+    public void setAutoAttackable(boolean autoAttackable) {
+        WorldPartition.checkOwner();
+        this.autoAttackable = autoAttackable;
+    }
+
+    public boolean isPassive() {
+        WorldPartition.checkOwner();
+        return passive;
+    }
+
+    public void setPassive(boolean passive) {
+        WorldPartition.checkOwner();
+        this.passive = passive;
+    }
+
+    @Override
     public void addDamage(Creature attacker, int damage, Skill skill) {
+        WorldPartition.checkOwner();
         super.addDamage(attacker, damage, skill);
 
         if (attacker.isAttackable()
@@ -89,6 +99,7 @@ public class QuestGuard extends Guard {
 
     @Override
     public void addDamageHate(Creature attacker, long damage, long aggro) {
+        WorldPartition.checkOwner();
         if (!passive && !attacker.isPlayer()) {
             super.addDamageHate(attacker, damage, aggro);
         }
@@ -96,6 +107,7 @@ public class QuestGuard extends Guard {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return autoAttackable && !attacker.isPlayer();
     }
 }

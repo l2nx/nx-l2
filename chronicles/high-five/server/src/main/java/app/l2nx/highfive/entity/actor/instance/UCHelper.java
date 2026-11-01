@@ -22,12 +22,15 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 
+@SingleWriter
 public class UCHelper extends Folk {
     private static final Location[][] LOCATIONS = {
         {new Location(-84451, -45452, -10728), new Location(-84580, -45587, -10728)},
@@ -43,6 +46,7 @@ public class UCHelper extends Folk {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         final StringTokenizer token = new StringTokenizer(command, " ");
         final String actualCommand = token.nextToken();
         if (actualCommand.startsWith("coliseum")) {
@@ -56,6 +60,7 @@ public class UCHelper extends Folk {
 
     @Override
     public String getHtmlPath(int npcId, int val) {
+        WorldPartition.checkOwner();
         String pom = "";
 
         if (val == 0) {

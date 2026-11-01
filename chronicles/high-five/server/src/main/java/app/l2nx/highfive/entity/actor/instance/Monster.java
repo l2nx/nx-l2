@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import app.l2nx.highfive.entity.WorldObject;
@@ -32,9 +33,8 @@ import app.l2nx.highfive.entity.actor.holders.npc.MinionList;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.effects.EffectFlag;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * This class manages all Monsters.
@@ -44,30 +44,33 @@ import lombok.Setter;
  * <li>GrandBoss</li>
  * </ul>
  */
+@SingleWriter
 public class Monster extends Attackable {
     protected boolean enableMinions = true;
 
-    @Getter
-    @Setter
     private Monster leader = null;
 
     private MinionList minionList = null;
 
-    /**
-     * Creates a monster.
-     * @param template the monster NPC template
-     */
     public Monster(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Monster);
         setAutoAttackable(true);
     }
 
-    /**
-     * Return True if the attacker is not another Monster.
-     */
+    public Monster getLeader() {
+        WorldPartition.checkOwner();
+        return leader;
+    }
+
+    public void setLeader(Monster leader) {
+        WorldPartition.checkOwner();
+        this.leader = leader;
+    }
+
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if (isFakePlayer()) {
             return FakePlayersConfig.FAKE_PLAYER_AUTO_ATTACKABLE
                     || isInCombat()
@@ -75,7 +78,6 @@ public class Monster extends Attackable {
                     || (getScriptValue() > 0);
         }
 
-        // Check if the Monster target is aggressive.
         if (NpcConfig.GUARD_ATTACK_AGGRO_MOB && isAggressive() && (attacker instanceof Guard)) {
             return true;
         }
@@ -84,8 +86,6 @@ public class Monster extends Attackable {
             return attacker.isFakePlayer();
         }
 
-        // Anything considers monsters friendly except Players, Attackables (Guards, Friendly NPC), Traps and
-        // EffectPoints.
         if (!attacker.isPlayable()
                 && !attacker.isAttackable()
                 && !(attacker instanceof Trap)
@@ -96,16 +96,15 @@ public class Monster extends Attackable {
         return super.isAutoAttackable(attacker);
     }
 
-    /**
-     * Return True if the Monster is Aggressive (aggroRange > 0).
-     */
     @Override
     public boolean isAggressive() {
+        WorldPartition.checkOwner();
         return getTemplate().isAggressive() && !isAffected(EffectFlag.PASSIVE);
     }
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         if (!isTeleporting() && (leader != null)) {
             setRandomWalking(false);
             setIsRaidMinion(leader.isRaid());
@@ -117,7 +116,8 @@ public class Monster extends Attackable {
     }
 
     @Override
-    public synchronized void onTeleported() {
+    public void onTeleported() {
+        WorldPartition.checkOwner();
         super.onTeleported();
 
         if (hasMinions()) {
@@ -127,6 +127,7 @@ public class Monster extends Attackable {
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (hasMinions()) {
             getMinionList().onMasterDie(true);
         }
@@ -139,20 +140,19 @@ public class Monster extends Attackable {
     }
 
     public void enableMinions(boolean value) {
+        WorldPartition.checkOwner();
         enableMinions = value;
     }
 
     public boolean hasMinions() {
+        WorldPartition.checkOwner();
         return minionList != null;
     }
 
     public MinionList getMinionList() {
+        WorldPartition.checkOwner();
         if (minionList == null) {
-            synchronized (this) {
-                if (minionList == null) {
-                    minionList = new MinionList(this);
-                }
-            }
+            minionList = new MinionList(this);
         }
 
         return minionList;
@@ -160,33 +160,32 @@ public class Monster extends Attackable {
 
     @Override
     public boolean isMonster() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Monster asMonster() {
+        WorldPartition.checkOwner();
         return this;
     }
 
-    /**
-     * @return true if this Monster (or its master) is registered in WalkingManager
-     */
     @Override
     public boolean isWalker() {
+        WorldPartition.checkOwner();
         return ((leader == null) ? super.isWalker() : leader.isWalker());
     }
 
-    /**
-     * @return {@code true} if this Monster is not raid minion, master state otherwise.
-     */
     @Override
     public boolean giveRaidCurse() {
+        WorldPartition.checkOwner();
         return (isRaidMinion() && (leader != null)) ? leader.giveRaidCurse() : super.giveRaidCurse();
     }
 
     @Override
     public void doCast(Skill skill, Creature target, List<WorldObject> targets) {
-        // Might need some exceptions here, but it will prevent the monster buffing player bug.
+        WorldPartition.checkOwner();
+        // Monsters must not buff the player they target.
         if (!skill.hasNegativeEffect() && (getTarget() != null) && getTarget().isPlayer()) {
             setCastingNow(false);
             setCastingSimultaneouslyNow(false);

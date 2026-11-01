@@ -82,12 +82,12 @@ class SendChatHandlerTest {
         void handle_shouldShowTheSpamMessageOnlyPastTheGmCap_whenAGmSpeaks(int length, boolean spam) {
             when(player.isGM()).thenReturn(true);
 
-            handler.handle(
+            WorldLoopExtension.runInPass(() -> handler.handle(
                     player,
                     SendChat.builder()
                             .text("a".repeat(length))
                             .type(ChatType.GENERAL)
-                            .build());
+                            .build()));
 
             verify(port, spam ? times(1) : never()).emit(MessageShown.of(MessageKey.CHAT_INPUT_SPAM_BAN));
         }
@@ -112,7 +112,7 @@ class SendChatHandlerTest {
             final String target = "a".repeat(CharacterService.MAX_NAME_LENGTH);
             final IChatHandler whispers = whispers();
             try {
-                handler.handle(player, whisper(target));
+                WorldLoopExtension.runInPass(() -> handler.handle(player, whisper(target)));
             } finally {
                 ChatHandler.getInstance().removeHandler(whispers);
             }

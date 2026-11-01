@@ -19,13 +19,16 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @version $Revision: $ $Date: $
  * @author Luca Baldi
  */
+@SingleWriter
 public class Adventurer extends Folk {
     public Adventurer(NpcTemplate template) {
         super(template);
@@ -34,6 +37,7 @@ public class Adventurer extends Folk {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);

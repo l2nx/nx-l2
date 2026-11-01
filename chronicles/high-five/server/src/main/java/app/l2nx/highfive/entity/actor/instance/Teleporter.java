@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.TeleporterData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -29,6 +30,7 @@ import app.l2nx.highfive.entity.teleporter.TeleportHolder;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +39,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author NightMarez
  */
 @Slf4j
+@SingleWriter
 public class Teleporter extends Merchant {
 
     private static final CommonSkill[] FORBIDDEN_TRANSFORM = {
@@ -50,12 +53,13 @@ public class Teleporter extends Merchant {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return attacker.isMonster() || super.isAutoAttackable(attacker);
     }
 
     @Override
     public void onBypassFeedback(Player player, String command) {
-        // Check if transformed
+        WorldPartition.checkOwner();
         for (CommonSkill skill : FORBIDDEN_TRANSFORM) {
             if (player.isAffectedBySkill(skill.getId())) {
                 sendHtmlMessage(player, "data/html/teleporter/epictransformed.htm");
@@ -63,7 +67,6 @@ public class Teleporter extends Merchant {
             }
         }
 
-        // Process bypass
         final StringTokenizer st = new StringTokenizer(command, " ");
         switch (st.nextToken()) {
             case "showNoblesSelect": {
@@ -83,7 +86,6 @@ public class Teleporter extends Merchant {
                 break;
             }
             case "teleport": {
-                // Check for required count of params.
                 if (st.countTokens() != 2) {
                     log.warn("{} send unhandled teleport command: {}", player, command);
                     return;
@@ -128,6 +130,7 @@ public class Teleporter extends Merchant {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom;
         if (value == 0) {
             pom = String.valueOf(npcId);
@@ -140,20 +143,17 @@ public class Teleporter extends Merchant {
 
     @Override
     public void showChatWindow(Player player) {
-        // Teleporter isn't on castle ground.
+        WorldPartition.checkOwner();
         if (CastleManager.getInstance().getCastle(this) == null) {
             super.showChatWindow(player);
             return;
         }
 
-        // Teleporter is on castle ground.
         String filename = "data/html/teleporter/castleteleporter-no.htm";
-        if ((player.getClan() != null) && (getCastle().getOwnerId() == player.getClanId())) // Clan owns castle
-        {
-            filename = getHtmlPath(getId(), 0); // Owner message window
-        } else if (getCastle().getSiege().isInProgress()) // Teleporter is busy due siege.
-        {
-            filename = "data/html/teleporter/castleteleporter-busy.htm"; // Busy because of siege
+        if ((player.getClan() != null) && (getCastle().getOwnerId() == player.getClanId())) {
+            filename = getHtmlPath(getId(), 0);
+        } else if (getCastle().getSiege().isInProgress()) {
+            filename = "data/html/teleporter/castleteleporter-busy.htm";
         }
 
         sendHtmlMessage(player, filename);

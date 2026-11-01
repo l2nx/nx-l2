@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.AirShipAI;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
@@ -31,11 +32,13 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExGetOffAirShip;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExGetOnAirShip;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExMoveToLocationAirShip;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExStopMoveAirShip;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Flying airships. Very similar to Maktakien boats (see Boat) but these do fly :P
  * @author DrHouse, DS
  */
+@SingleWriter
 public class AirShip extends Vehicle {
     public AirShip(CreatureTemplate template) {
         super(template);
@@ -45,56 +48,72 @@ public class AirShip extends Vehicle {
 
     @Override
     public boolean isAirShip() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     public boolean isOwner(Player player) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getOwnerId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public boolean isCaptain(Player player) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getCaptainId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public int getHelmObjectId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public int getHelmItemId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public boolean setCaptain(Player player) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public int getFuel() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
-    public void setFuel(int f) {}
+    public void setFuel(int f) {
+        WorldPartition.checkOwner();
+    }
 
     public int getMaxFuel() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
-    public void setMaxFuel(int mf) {}
+    public void setMaxFuel(int mf) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     @Override
     public boolean moveToNextRoutePoint() {
+        WorldPartition.checkOwner();
         final boolean result = super.moveToNextRoutePoint();
         if (result) {
             broadcastPacket(new ExMoveToLocationAirShip(this));
@@ -105,6 +124,7 @@ public class AirShip extends Vehicle {
 
     @Override
     public boolean addPassenger(Player player) {
+        WorldPartition.checkOwner();
         if (!super.addPassenger(player)) {
             return false;
         }
@@ -120,6 +140,7 @@ public class AirShip extends Vehicle {
 
     @Override
     public void oustPlayer(Player player) {
+        WorldPartition.checkOwner();
         super.oustPlayer(player);
 
         final Location loc = getOustLoc();
@@ -133,6 +154,7 @@ public class AirShip extends Vehicle {
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (!super.deleteMe()) {
             return false;
         }
@@ -143,6 +165,7 @@ public class AirShip extends Vehicle {
 
     @Override
     public void stopMove(Location loc) {
+        WorldPartition.checkOwner();
         super.stopMove(loc);
 
         broadcastPacket(new ExStopMoveAirShip(this));
@@ -150,11 +173,13 @@ public class AirShip extends Vehicle {
 
     @Override
     public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
         broadcastPacket(new ExAirShipInfo(this));
     }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (isVisibleFor(player)) {
             player.sendPacket(new ExAirShipInfo(this));
         }

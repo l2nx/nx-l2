@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -34,10 +35,12 @@ import app.l2nx.highfive.mechanics.undergroundColiseum.UCBestTeam;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCWaiting;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class UCManager extends Folk {
 
     public UCManager(NpcTemplate template) {
@@ -47,6 +50,7 @@ public class UCManager extends Folk {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         final StringTokenizer token = new StringTokenizer(command, " ");
         final String actualCommand = token.nextToken();
@@ -232,6 +236,7 @@ public class UCManager extends Folk {
 
     @Override
     public String getHtmlPath(int npcId, int val) {
+        WorldPartition.checkOwner();
         String pom = "";
 
         if (val == 0) {

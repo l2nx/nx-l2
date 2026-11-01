@@ -19,14 +19,17 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * This class is a super-class for ControlTower and FlameTower.
  * @author Zoey76
  */
+@SingleWriter
 public abstract class Tower extends Npc {
     public Tower(NpcTemplate template) {
         super(template);
@@ -35,7 +38,7 @@ public abstract class Tower extends Npc {
 
     @Override
     public boolean canBeAttacked() {
-        // Attackable during siege by attacker only.
+        WorldPartition.checkOwner();
         return (getCastle() != null)
                 && (getCastle().getResidenceId() > 0)
                 && getCastle().getSiege().isInProgress();
@@ -43,7 +46,7 @@ public abstract class Tower extends Npc {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
-        // Attackable during siege by attacker only.
+        WorldPartition.checkOwner();
         return (attacker != null)
                 && attacker.isPlayer()
                 && (getCastle() != null)
@@ -54,27 +57,26 @@ public abstract class Tower extends Npc {
 
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         if (!canTarget(player)) {
             return;
         }
 
         if (this != player.getTarget()) {
-            // Set the target of the Player player.
             player.setTarget(this);
         } else if (interact
                 && isAutoAttackable(player)
                 && (Math.abs(player.getZ() - getZ()) < 100)
                 && GeoEngine.getInstance().canSeeTarget(player, this)) {
-            // Notify the Player AI with INTERACT.
             player.getAI().setIntentionAttack(this);
         }
 
-        // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another packet.
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
     @Override
     public void onForcedAttack(Player player) {
+        WorldPartition.checkOwner();
         onAction(player);
     }
 }

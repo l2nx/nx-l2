@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 
@@ -31,6 +32,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 // This class is only truly used by the handlers in order to check the correctness
 // of the target.  However, no additional tasks are needed, since they are all
 // handled by scripted AI.
+@SingleWriter
 public class FeedableBeast extends Monster {
     public FeedableBeast(NpcTemplate template) {
         super(template);

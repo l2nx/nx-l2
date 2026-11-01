@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
@@ -29,11 +30,8 @@ import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.script.QuestState;
 
+@SingleWriter
 public class VillageMasterKamael extends VillageMaster {
-    /**
-     * Creates a village master.
-     * @param template the village master NPC template
-     */
     public VillageMasterKamael(NpcTemplate template) {
         super(template);
     }
@@ -54,7 +52,6 @@ public class VillageMasterKamael extends VillageMaster {
 
     @Override
     protected boolean checkQuests(Player player) {
-        // Noble players can add subbclasses without quests.
         if (player.isNoble()) {
             return true;
         }

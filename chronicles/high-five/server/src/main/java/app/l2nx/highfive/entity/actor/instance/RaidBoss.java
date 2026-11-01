@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -35,25 +36,14 @@ import app.l2nx.highfive.managers.RaidBossSpawnManager;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
-/**
- * This class manages all RaidBoss.<br>
- * In a group mob, there are one master called RaidBoss and several slaves called Minions.
- */
+@SingleWriter
 public class RaidBoss extends Monster {
-    @Getter
-    @Setter
     private RaidBossStatus raidStatus;
 
-    @Setter
     private boolean useRaidCurse = true;
 
-    /**
-     * Creates a raid boss.
-     * @param template the raid boss template
-     */
     public RaidBoss(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.RaidBoss);
@@ -61,14 +51,31 @@ public class RaidBoss extends Monster {
         setLethalable(false);
     }
 
+    public RaidBossStatus getRaidStatus() {
+        WorldPartition.checkOwner();
+        return raidStatus;
+    }
+
+    public void setRaidStatus(RaidBossStatus raidStatus) {
+        WorldPartition.checkOwner();
+        this.raidStatus = raidStatus;
+    }
+
+    public void setUseRaidCurse(boolean useRaidCurse) {
+        WorldPartition.checkOwner();
+        this.useRaidCurse = useRaidCurse;
+    }
+
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         setRandomWalking(false);
         super.onSpawn();
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -108,16 +115,19 @@ public class RaidBoss extends Monster {
 
     @Override
     public float getVitalityPoints(int level, long damage, int maxHp) {
+        WorldPartition.checkOwner();
         return -super.getVitalityPoints(level, damage, maxHp) / 100;
     }
 
     @Override
     public boolean useVitalityRate() {
+        WorldPartition.checkOwner();
         return PlayerConfig.RAIDBOSS_USE_VITALITY;
     }
 
     @Override
     public boolean giveRaidCurse() {
+        WorldPartition.checkOwner();
         return useRaidCurse;
     }
 }

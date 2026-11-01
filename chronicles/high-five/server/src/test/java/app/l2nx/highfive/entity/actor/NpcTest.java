@@ -21,7 +21,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -53,7 +52,9 @@ class NpcTest {
         void ownerCheckedCall_shouldThrow_whenCalledOffTheLoop(Consumer<Npc> call) {
             final Npc npc = npcOnTheLoop();
 
-            assertThatThrownBy(() -> call.accept(npc)).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> call.accept(npc))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("touched from thread");
         }
 
         static Stream<Named<Consumer<Npc>>> ownerCheckedCalls() {
@@ -72,11 +73,10 @@ class NpcTest {
         @Test
         void getScriptValue_shouldAnswer_whenCalledOnTheLoop() {
             final Npc npc = npcOnTheLoop();
-            final AtomicInteger actual = new AtomicInteger(-1);
 
-            WorldLoopExtension.runInPass(() -> actual.set(npc.getScriptValue()));
+            final int actual = WorldLoopExtension.callInPass(npc::getScriptValue);
 
-            assertThat(actual.get()).isZero();
+            assertThat(actual).isZero();
         }
     }
 
@@ -85,15 +85,14 @@ class NpcTest {
         @Test
         void setScriptValue_shouldBeReadBack() {
             final int expected = 7;
-            final AtomicInteger actual = new AtomicInteger();
 
-            WorldLoopExtension.runInPass(() -> {
+            final int actual = WorldLoopExtension.callInPass(() -> {
                 final Npc npc = new Npc(TestAttackable.template());
                 npc.setScriptValue(expected);
-                actual.set(npc.getScriptValue());
+                return npc.getScriptValue();
             });
 
-            assertThat(actual.get()).isEqualTo(expected);
+            assertThat(actual).isEqualTo(expected);
         }
     }
 
@@ -184,11 +183,11 @@ class NpcTest {
     class BusyMessage {
         @Test
         void getBusyMessage_shouldAnswerNull_whenNoneWasSet() {
-            final AtomicReference<String> actual = new AtomicReference<>("unset");
 
-            WorldLoopExtension.runInPass(() -> actual.set(new Npc(TestAttackable.template()).getBusyMessage()));
+            final String actual =
+                    WorldLoopExtension.callInPass(() -> new Npc(TestAttackable.template()).getBusyMessage());
 
-            assertThat(actual.get()).isNull();
+            assertThat(actual).isNull();
         }
     }
 
@@ -197,29 +196,26 @@ class NpcTest {
         @Test
         void toString_shouldNameTheNpc_whenCalledOffTheLoop() {
             final Npc npc = npcOnTheLoop();
+            final int objectId = WorldLoopExtension.callInPass(npc::getObjectId);
 
             final String actual = npc.toString();
 
-            assertThat(actual)
-                    .startsWith("Npc:")
-                    .contains("(" + TestAttackable.NPC_ID + ")[" + npc.getObjectId() + "]");
+            assertThat(actual).startsWith("Npc:").contains("(" + TestAttackable.NPC_ID + ")[" + objectId + "]");
         }
 
         @Test
         void toString_shouldNameTheAttackable_whenCalledOffTheLoop() {
-            final AtomicReference<Npc> attackable = new AtomicReference<>();
-            WorldLoopExtension.runInPass(() -> attackable.set(new TestAttackable()));
+            final Npc attackable = WorldLoopExtension.callInPass(TestAttackable::new);
 
-            final String actual = attackable.get().toString();
+            final String actual = attackable.toString();
 
             assertThat(actual).startsWith("TestAttackable:").contains("(" + TestAttackable.NPC_ID + ")");
         }
     }
 
     private static Npc npcOnTheLoop() {
-        final AtomicReference<Npc> npc = new AtomicReference<>();
-        WorldLoopExtension.runInPass(() -> npc.set(new Npc(TestAttackable.template())));
-        assertThat(npc.get()).as("npc built on the loop").isNotNull();
-        return npc.get();
+        final Npc npc = WorldLoopExtension.callInPass(() -> new Npc(TestAttackable.template()));
+        assertThat(npc).as("npc built on the loop").isNotNull();
+        return npc;
     }
 }

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -32,71 +33,57 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameChangePoints;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameExtendedChangePoints;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author BiggBoss
  */
+@SingleWriter
 public class Block extends Monster {
-    @Getter
     private int colorEffect;
 
-    /**
-     * Creates a block.
-     * @param template the block NPC template
-     */
     public Block(NpcTemplate template) {
         super(template);
     }
 
-    /**
-     * Will change the color of the block and update the appearance in the known players clients
-     * @param attacker
-     * @param holder
-     * @param team
-     */
+    @Override
+    public int getColorEffect() {
+        WorldPartition.checkOwner();
+        return colorEffect;
+    }
+
     public void changeColor(Player attacker, ArenaParticipantsHolder holder, int team) {
-        // Do not update color while sending old info.
-        synchronized (this) {
-            final BlockCheckerManager event = holder.getEvent();
-            if (colorEffect == 0x53) {
-                // Change color
-                colorEffect = 0x00;
+        WorldPartition.checkOwner();
+        final BlockCheckerManager event = holder.getEvent();
+        if (colorEffect == 0x53) {
+            colorEffect = 0x00;
 
-                // BroadCast to all known players.
-                broadcastPacket(new AbstractNpcInfo.NpcInfo(this, attacker));
-                increaseTeamPointsAndSend(attacker, team, event);
-            } else {
-                // Change color
-                colorEffect = 0x53;
+            broadcastPacket(new AbstractNpcInfo.NpcInfo(this, attacker));
+            increaseTeamPointsAndSend(attacker, team, event);
+        } else {
+            colorEffect = 0x53;
 
-                // BroadCast to all known players.
-                broadcastPacket(new AbstractNpcInfo.NpcInfo(this, attacker));
-                increaseTeamPointsAndSend(attacker, team, event);
-            }
+            broadcastPacket(new AbstractNpcInfo.NpcInfo(this, attacker));
+            increaseTeamPointsAndSend(attacker, team, event);
+        }
 
-            // 30% chance to drop the event items
-            final int random = ClockBridge.random().nextInt(100);
+        final int random = ClockBridge.random().nextInt(100);
 
-            // Bond
-            if ((random > 69) && (random <= 84)) {
-                dropItem(13787, event, attacker);
-            } else if (random > 84) {
-                dropItem(13788, event, attacker);
-            }
+        if ((random > 69) && (random <= 84)) {
+            dropItem(13787, event, attacker);
+        } else if (random > 84) {
+            dropItem(13788, event, attacker);
         }
     }
 
-    /**
-     * Sets if the block is red or blue. Mainly used in block spawn
-     * @param isRed
-     */
     public void setRed(boolean isRed) {
+        WorldPartition.checkOwner();
         colorEffect = isRed ? 0x53 : 0x00;
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if (attacker.isPlayer()) {
             return attacker.isPlayer() && (attacker.asPlayer().getBlockCheckerArena() > -1);
         }
@@ -106,11 +93,13 @@ public class Block extends Monster {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         if (!canTarget(player)) {
             return;
         }

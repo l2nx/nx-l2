@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
@@ -43,6 +44,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SortedWareHouseWithdrawalList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.WareHouseDepositList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.WareHouseWithdrawalList;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
@@ -53,6 +55,7 @@ import org.apache.commons.lang3.math.NumberUtils;
  * Fortress Foreman implementation used for: Area Teleports, Support Magic, Clan Warehouse, Exp Loss Reduction
  */
 @Slf4j
+@SingleWriter
 public class FortManager extends Merchant {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -60,10 +63,6 @@ public class FortManager extends Merchant {
     protected static final int COND_BUSY_BECAUSE_OF_SIEGE = 1;
     protected static final int COND_OWNER = 2;
 
-    /**
-     * Creates a fort manager.
-     * @param template the fort manager NPC template
-     */
     public FortManager(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FortManager);
@@ -71,6 +70,7 @@ public class FortManager extends Merchant {
 
     @Override
     public boolean isWarehouse() {
+        WorldPartition.checkOwner();
         return true;
     }
 
@@ -82,7 +82,7 @@ public class FortManager extends Merchant {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
-        // BypassValidation Exploit plug.
+        WorldPartition.checkOwner();
         if (player.getLastFolkNPC().getObjectId() != getObjectId()) {
             return;
         }
@@ -94,7 +94,7 @@ public class FortManager extends Merchant {
             return;
         } else if (condition == COND_OWNER) {
             final StringTokenizer st = new StringTokenizer(command, " ");
-            final String actualCommand = st.nextToken(); // Get actual command
+            final String actualCommand = st.nextToken();
             String val = "";
             if (st.countTokens() >= 1) {
                 val = st.nextToken();
@@ -115,7 +115,7 @@ public class FortManager extends Merchant {
                 return;
             } else if (actualCommand.equalsIgnoreCase("banish_foreigner")) {
                 if (player.hasAccess(ClanAccess.CASTLE_BANISH)) {
-                    getFort().banishForeigners(); // Move non-clan members off fortress area.
+                    getFort().banishForeigners();
                     final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
                     html.setFile(player, "data/html/fortress/foreman-expeled.htm");
                     html.replace("%objectId%", String.valueOf(getObjectId()));
@@ -171,9 +171,7 @@ public class FortManager extends Merchant {
                     player.sendPacket(html);
                 }
                 return;
-            } else if (actualCommand.equalsIgnoreCase("operate_door")) // door
-            // control
-            {
+            } else if (actualCommand.equalsIgnoreCase("operate_door")) {
                 if (player.hasAccess(ClanAccess.CASTLE_OPEN_DOOR)) {
                     if (!val.isEmpty()) {
                         final boolean open = (Integer.parseInt(val) == 1);
@@ -360,8 +358,7 @@ public class FortManager extends Merchant {
                                         cost = FeatureConfig.FS_HPREG1_FEE;
                                         break;
                                     }
-                                    default: // 400
-                                    {
+                                    default: {
                                         cost = FeatureConfig.FS_HPREG2_FEE;
                                         break;
                                     }
@@ -391,8 +388,7 @@ public class FortManager extends Merchant {
                                         cost = FeatureConfig.FS_MPREG1_FEE;
                                         break;
                                     }
-                                    default: // 50
-                                    {
+                                    default: {
                                         cost = FeatureConfig.FS_MPREG2_FEE;
                                         break;
                                     }
@@ -422,8 +418,7 @@ public class FortManager extends Merchant {
                                         cost = FeatureConfig.FS_EXPREG1_FEE;
                                         break;
                                     }
-                                    default: // 50
-                                    {
+                                    default: {
                                         cost = FeatureConfig.FS_EXPREG2_FEE;
                                         break;
                                     }
@@ -469,8 +464,7 @@ public class FortManager extends Merchant {
                                             fee = FeatureConfig.FS_HPREG1_FEE;
                                             break;
                                         }
-                                        default: // 400
-                                        {
+                                        default: {
                                             fee = FeatureConfig.FS_HPREG2_FEE;
                                             break;
                                         }
@@ -519,8 +513,7 @@ public class FortManager extends Merchant {
                                             fee = FeatureConfig.FS_MPREG1_FEE;
                                             break;
                                         }
-                                        default: // 50
-                                        {
+                                        default: {
                                             fee = FeatureConfig.FS_MPREG2_FEE;
                                             break;
                                         }
@@ -569,8 +562,7 @@ public class FortManager extends Merchant {
                                             fee = FeatureConfig.FS_EXPREG1_FEE;
                                             break;
                                         }
-                                        default: // 50
-                                        {
+                                        default: {
                                             fee = FeatureConfig.FS_EXPREG2_FEE;
                                             break;
                                         }
@@ -1006,8 +998,7 @@ public class FortManager extends Merchant {
                 html.replace("%mp%", String.valueOf((int) getStatus().getCurrentMp()));
                 sendHtmlMessage(player, html);
                 return;
-            } else if (actualCommand.equalsIgnoreCase("goto")) // goto listId locId
-            {
+            } else if (actualCommand.equalsIgnoreCase("goto")) {
                 final FortFunction func = getFort().getFunction(Fort.FUNC_TELEPORT);
                 if (func == null) {
                     return;
@@ -1033,15 +1024,16 @@ public class FortManager extends Merchant {
 
     @Override
     public void showChatWindow(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
         String filename = "data/html/fortress/foreman-no.htm";
 
         final int condition = validateCondition(player);
         if (condition > COND_ALL_FALSE) {
             if (condition == COND_BUSY_BECAUSE_OF_SIEGE) {
-                filename = "data/html/fortress/foreman-busy.htm"; // Busy because of siege
+                filename = "data/html/fortress/foreman-busy.htm";
             } else if (condition == COND_OWNER) {
-                filename = "data/html/fortress/foreman.htm"; // Owner message window
+                filename = "data/html/fortress/foreman.htm";
             }
         }
 
@@ -1055,10 +1047,10 @@ public class FortManager extends Merchant {
     protected int validateCondition(Player player) {
         if ((getFort() != null) && (getFort().getResidenceId() > 0) && (player.getClan() != null)) {
             if (getFort().getZone().isActive()) {
-                return COND_BUSY_BECAUSE_OF_SIEGE; // Busy because of siege
+                return COND_BUSY_BECAUSE_OF_SIEGE;
             } else if ((getFort().getOwnerClan() != null)
                     && (getFort().getOwnerClan().getId() == player.getClanId())) {
-                return COND_OWNER; // Owner
+                return COND_OWNER;
             }
         }
 

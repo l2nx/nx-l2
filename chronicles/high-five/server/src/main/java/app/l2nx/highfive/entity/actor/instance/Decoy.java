@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -37,17 +38,16 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.CharInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+@SingleWriter
 public class Decoy extends Creature {
-    @Getter
     private final Player owner;
 
-    private Future<?> decoyLifeTask;
-    private Future<?> hateSpam;
+    private ScheduledFuture<?> decoyLifeTask;
+    private ScheduledFuture<?> hateSpam;
 
     public Decoy(NpcTemplate template, Player owner, int totalLifeTime) {
         this(template, owner, totalLifeTime, true);
@@ -74,8 +74,14 @@ public class Decoy extends Creature {
         }
     }
 
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -111,7 +117,8 @@ public class Decoy extends Creature {
         }
     }
 
-    public synchronized void unSummon(Player owner) {
+    public void unSummon(Player owner) {
+        WorldPartition.checkOwner();
         if (hateSpam != null) {
             hateSpam.cancel(true);
             hateSpam = null;
@@ -131,12 +138,14 @@ public class Decoy extends Creature {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         sendPacket(new CharInfo(this, false));
     }
 
     @Override
     public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
         World.forEachVisibleObject(this, Player.class, player -> {
             if (isVisibleFor(player)) {
                 player.sendPacket(new CharInfo(this, false));
@@ -145,71 +154,85 @@ public class Decoy extends Creature {
     }
 
     public void stopDecay() {
+        WorldPartition.checkOwner();
         DecayTaskManager.getInstance().cancel(this);
     }
 
     @Override
     public void onDecay() {
+        WorldPartition.checkOwner();
         deleteMe(owner);
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return owner.isAutoAttackable(attacker);
     }
 
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public Weapon getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         return null;
     }
 
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return getTemplate().getId();
     }
 
     @Override
     public int getLevel() {
+        WorldPartition.checkOwner();
         return getTemplate().getLevel();
     }
 
     public void deleteMe(Player owner) {
+        WorldPartition.checkOwner();
         decayMe();
         owner.setDecoy(null);
     }
 
     @Override
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         return owner;
     }
 
     @Override
     public NpcTemplate getTemplate() {
+        WorldPartition.checkOwner();
         return (NpcTemplate) super.getTemplate();
     }
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(new CharInfo(this, false));
     }
 
     @Override
     public void sendPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
         if (owner != null) {
             owner.sendPacket(packet);
         }
@@ -217,6 +240,7 @@ public class Decoy extends Creature {
 
     @Override
     public void sendPacket(SystemMessageId id) {
+        WorldPartition.checkOwner();
         if (owner != null) {
             owner.sendPacket(id);
         }

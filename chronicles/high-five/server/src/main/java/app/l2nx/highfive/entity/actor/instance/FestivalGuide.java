@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -28,27 +29,32 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Festival of Darkness Guide (Seven Signs)
  * @author Tempy
  */
+@SingleWriter
 public class FestivalGuide extends Npc {
-    @Getter
     private final int festivalType;
 
-    @Getter
     private final int festivalOracle;
 
     private final int blueStonesNeeded;
     private final int greenStonesNeeded;
     private final int redStonesNeeded;
 
-    /**
-     * Creates a festival guide.
-     * @param template the festival guide NPC template
-     */
+    public int getFestivalType() {
+        WorldPartition.checkOwner();
+        return festivalType;
+    }
+
+    public int getFestivalOracle() {
+        WorldPartition.checkOwner();
+        return festivalOracle;
+    }
+
     public FestivalGuide(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FestivalGuide);
@@ -155,6 +161,7 @@ public class FestivalGuide extends Npc {
     }
 
     public int getStoneCount(int stoneType) {
+        WorldPartition.checkOwner();
         switch (stoneType) {
             case SevenSigns.SEAL_STONE_BLUE_ID: {
                 return blueStonesNeeded;
@@ -172,11 +179,11 @@ public class FestivalGuide extends Npc {
     }
 
     public void showChatWindow(Player player, int value, String suffix, boolean isDescription) {
+        WorldPartition.checkOwner();
         String filename = SevenSigns.SEVEN_SIGNS_HTML_PATH + "festival/";
         filename += (isDescription) ? "desc_" : "festival_";
         filename += (suffix != null) ? value + suffix + ".htm" : value + ".htm";
 
-        // Send a Server->Client NpcHtmlMessage containing the text of the Npc to the Player
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         html.setFile(player, filename);
         html.replace("%objectId%", String.valueOf(getObjectId()));
@@ -187,7 +194,6 @@ public class FestivalGuide extends Npc {
             html.replace("%minFestivalPartyMembers%", String.valueOf(FeatureConfig.ALT_FESTIVAL_MIN_PLAYER));
         }
 
-        // If the stats or bonus table is required, construct them.
         if (value == 5) {
             html.replace("%statsTable%", getStatsTable());
         }
@@ -196,7 +202,6 @@ public class FestivalGuide extends Npc {
             html.replace("%bonusTable%", getBonusTable());
         }
 
-        // festival's fee
         if (value == 1) {
             html.replace("%blueStoneNeeded%", String.valueOf(blueStonesNeeded));
             html.replace("%greenStoneNeeded%", String.valueOf(greenStonesNeeded));
@@ -205,14 +210,13 @@ public class FestivalGuide extends Npc {
 
         player.sendPacket(html);
 
-        // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another packet
+        // ActionFailed stops the client waiting for another packet
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
     private static String getStatsTable() {
         final StringBuilder tableHtml = new StringBuilder(1000);
 
-        // Get the scores for each of the festival level ranges (types).
         for (int i = 0; i < 5; i++) {
             final int dawnScore = SevenSignsFestival.getInstance().getHighestScore(SevenSigns.CABAL_DAWN, i);
             final int duskScore = SevenSignsFestival.getInstance().getHighestScore(SevenSigns.CABAL_DUSK, i);
@@ -235,7 +239,6 @@ public class FestivalGuide extends Npc {
     private static String getBonusTable() {
         final StringBuilder tableHtml = new StringBuilder(500);
 
-        // Get the accumulated scores for each of the festival level ranges (types).
         for (int i = 0; i < 5; i++) {
             final int accumScore = SevenSignsFestival.getInstance().getAccumulatedBonus(i);
             final String festivalName = SevenSignsFestival.getFestivalName(i);

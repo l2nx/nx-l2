@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -34,15 +35,13 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcFirstTalk;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * This class manages all Guards in the world. It inherits all methods from Attackable and adds some more such as tracking PK and aggressive Monster.
  */
+@SingleWriter
 public class Guard extends Attackable {
-    /**
-     * Creates a guard.
-     * @param template the guard NPC template
-     */
     public Guard(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Guard);
@@ -50,6 +49,7 @@ public class Guard extends Attackable {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if (attacker.isMonster() && !attacker.isFakePlayer()) {
             return true;
         }
@@ -69,6 +69,7 @@ public class Guard extends Attackable {
 
     @Override
     public void addDamage(Creature attacker, int damage, Skill skill) {
+        WorldPartition.checkOwner();
         super.addDamage(attacker, damage, skill);
         getAI().startFollow(attacker);
         addDamageHate(attacker, 0, 10);
@@ -78,37 +79,18 @@ public class Guard extends Attackable {
         });
     }
 
-    /**
-     * Set the home location of its GuardInstance.
-     */
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         setRandomWalking(false);
         super.onSpawn();
 
         getAI().setIntentionActive();
-
-        // Check the region where this mob is, do not activate the AI if region is inactive.
-        // final WorldRegion region = World.getRegion(this);
-        // if ((region != null) && (!region.isActive()))
-        // {
-        // getAI().stopAITask();
-        // }
     }
 
-    /**
-     * Return the pathfile of the selected HTML file in function of the GuardInstance Identifier and of the page number.<br>
-     * <br>
-     * <b><u>Format of the pathfile</u>:</b>
-     * <ul>
-     * <li>if page number = 0 : <b>data/html/guard/12006.htm</b> (npcId-page number)</li>
-     * <li>if page number > 0 : <b>data/html/guard/12006-1.htm</b> (npcId-page number)</li>
-     * </ul>
-     * @param npcId The Identifier of the Npc whose text must be display
-     * @param value The number of the page to display
-     */
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);
@@ -119,31 +101,9 @@ public class Guard extends Attackable {
         return "data/html/guard/" + pom + ".htm";
     }
 
-    /**
-     * Manage actions when a player click on the GuardInstance.<br>
-     * <br>
-     * <b><u>Actions on first click on the GuardInstance (Select it)</u>:</b>
-     * <ul>
-     * <li>Set the GuardInstance as target of the Player player (if necessary)</li>
-     * <li>Send a Server->Client packet MyTargetSelected to the Player player (display the select window)</li>
-     * <li>Set the Player Intention to IDLE</li>
-     * <li>Send a Server->Client packet ValidateLocation to correct the GuardInstance position and heading on the client</li>
-     * </ul>
-     * <br>
-     * <b><u>Actions on second click on the GuardInstance (Attack it/Interact with it)</u>:</b>
-     * <ul>
-     * <li>If Player is in the _aggroList of the GuardInstance, set the Player Intention to ATTACK</li>
-     * <li>If Player is NOT in the _aggroList of the GuardInstance, set the Player Intention to INTERACT (after a distance verification) and show message</li>
-     * </ul>
-     * <br>
-     * <b><u>Example of use</u>:</b>
-     * <ul>
-     * <li>Client packet : Action, AttackRequest</li>
-     * </ul>
-     * @param player The Player that start an action on the GuardInstance
-     */
     @Override
     public void onAction(Player player, boolean interactValue) {
+        WorldPartition.checkOwner();
         if (!canTarget(player)) {
             return;
         }
@@ -166,24 +126,17 @@ public class Guard extends Attackable {
             player.getAI().setIntentionAttack(this);
         }
 
-        // Check if the Player already target the GuardInstance.
         if (getObjectId() != player.getTargetId()) {
-            // Set the target of the Player player.
             player.setTarget(this);
         } else if (interact) {
-            // Check if the Player is in the _aggroList of the GuardInstance.
             if (isInAggroList(player)) {
-                // Set the Player Intention to ATTACK.
                 player.getAI().setIntentionAttack(this);
             } else {
-                // Calculate the distance between the Player and the Npc.
                 if (!canInteract(player)) {
-                    // Set the Player Intention to INTERACT.
                     player.getAI().setIntentionInteract(this);
                 } else {
                     player.setLastFolkNPC(this);
 
-                    // Open a chat window on client with the text of the GuardInstance.
                     if (hasListener(EventType.ON_NPC_QUEST_START)) {
                         player.setLastQuestNpcObject(getObjectId());
                     }
@@ -199,7 +152,6 @@ public class Guard extends Attackable {
             }
         }
 
-        // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another packet.
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 }

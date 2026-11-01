@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.BoatAI;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
@@ -28,16 +29,14 @@ import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.VehicleDeparture;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.VehicleInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.VehicleStarted;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author Maktakien, DS
  */
+@SingleWriter
 public class Boat extends Vehicle {
 
-    /**
-     * Creates a boat.
-     * @param template the boat template
-     */
     public Boat(CreatureTemplate template) {
         super(template);
         setInstanceType(InstanceType.Boat);
@@ -46,16 +45,19 @@ public class Boat extends Vehicle {
 
     @Override
     public boolean isBoat() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     @Override
     public boolean moveToNextRoutePoint() {
+        WorldPartition.checkOwner();
         final boolean result = super.moveToNextRoutePoint();
         if (result) {
             broadcastPacket(new VehicleDeparture(this));
@@ -66,18 +68,20 @@ public class Boat extends Vehicle {
 
     @Override
     public void oustPlayer(Player player) {
+        WorldPartition.checkOwner();
         super.oustPlayer(player);
 
         final Location loc = getOustLoc();
         if (player.isOnline()) {
             player.teleToLocation(loc.getX(), loc.getY(), loc.getZ());
         } else {
-            player.setXYZInvisible(loc.getX(), loc.getY(), loc.getZ()); // disconnects handling
+            player.setXYZInvisible(loc.getX(), loc.getY(), loc.getZ()); // offline player: no client to teleport
         }
     }
 
     @Override
     public void stopMove(Location loc) {
+        WorldPartition.checkOwner();
         super.stopMove(loc);
 
         broadcastPacket(new VehicleStarted(this, 0));
@@ -86,6 +90,7 @@ public class Boat extends Vehicle {
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(new VehicleInfo(this));
     }
 }

@@ -22,6 +22,8 @@
  */
 package app.l2nx.highfive.mechanics.events;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
@@ -38,28 +40,14 @@ public class EventDispatcher {
 
     protected EventDispatcher() {}
 
-    /**
-     * @param type EventType
-     * @return {@code true} if global containers have a listener of the given type.
-     */
     public boolean hasListener(EventType type) {
         return Containers.Global().hasListener(type);
     }
 
-    /**
-     * @param type EventType
-     * @param container ListenersContainer
-     * @return {@code true} if container has a listener of the given type.
-     */
     public boolean hasListener(EventType type, ListenersContainer container) {
         return Containers.Global().hasListener(type) || ((container != null) && container.hasListener(type));
     }
 
-    /**
-     * @param type EventType
-     * @param containers ListenersContainer...
-     * @return {@code true} if containers have a listener of the given type.
-     */
     public boolean hasListener(EventType type, ListenersContainer... containers) {
         boolean hasListeners = Containers.Global().hasListener(type);
         if (!hasListeners) {
@@ -74,44 +62,22 @@ public class EventDispatcher {
         return hasListeners;
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @return
-     */
     public <T extends AbstractEventReturn> T notifyEvent(IBaseEvent event) {
         return notifyEvent(event, null, null);
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @param callbackClass
-     * @return
-     */
     public <T extends AbstractEventReturn> T notifyEvent(IBaseEvent event, Class<T> callbackClass) {
         return notifyEvent(event, null, callbackClass);
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @param container
-     * @return
-     */
     public <T extends AbstractEventReturn> T notifyEvent(IBaseEvent event, ListenersContainer container) {
         return notifyEvent(event, container, null);
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @param container
-     * @param callbackClass
-     * @return
-     */
     public <T extends AbstractEventReturn> T notifyEvent(
             IBaseEvent event, ListenersContainer container, Class<T> callbackClass) {
+        // Outside the try: an off-loop call must fail at its caller, not as a lost event in the log.
+        WorldPartition.checkOwner();
         try {
             return notifyEventImpl(event, container, callbackClass);
         } catch (Exception e) {
@@ -121,12 +87,6 @@ public class EventDispatcher {
         return null;
     }
 
-    /**
-     * Scheduling current listener notification asynchronously after specified delay.
-     * @param event
-     * @param container
-     * @param delay
-     */
     public void notifyEventAsyncDelayed(IBaseEvent event, ListenersContainer container, long delay) {
         if (event == null) {
             throw new NullPointerException("Event cannot be null!");
@@ -135,11 +95,6 @@ public class EventDispatcher {
         WorldPartition.loop().schedule(() -> notifyEvent(event, container, null), delay, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Executing current listener notification asynchronously
-     * @param event
-     * @param container
-     */
     public void notifyEventAsync(IBaseEvent event, ListenersContainer container) {
         if (event == null) {
             throw new NullPointerException("Event cannot be null!");
@@ -148,11 +103,6 @@ public class EventDispatcher {
         WorldPartition.loop().execute(() -> notifyEventToSingleContainer(event, container, null));
     }
 
-    /**
-     * Executing current listener notification asynchronously
-     * @param event
-     * @param containers
-     */
     public void notifyEventAsync(IBaseEvent event, ListenersContainer... containers) {
         if (event == null) {
             throw new NullPointerException("Event cannot be null!");
@@ -161,13 +111,6 @@ public class EventDispatcher {
         WorldPartition.loop().execute(() -> notifyEventToMultipleContainers(event, containers, null));
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @param container
-     * @param callbackClass
-     * @return
-     */
     private <T extends AbstractEventReturn> T notifyEventToSingleContainer(
             IBaseEvent event, ListenersContainer container, Class<T> callbackClass) {
         if (event == null) {
@@ -175,19 +118,7 @@ public class EventDispatcher {
         }
 
         try {
-            // Local listener container.
-            T callback = null;
-            if (container != null) {
-                callback = notifyToListeners(container.getListeners(event.getType()), event, callbackClass, callback);
-            }
-
-            // Global listener container.
-            if ((callback == null) || !callback.abort()) {
-                callback = notifyToListeners(
-                        Containers.Global().getListeners(event.getType()), event, callbackClass, callback);
-            }
-
-            return callback;
+            return notifyEventImpl(event, container, callbackClass);
         } catch (Exception e) {
             log.warn("Couldn't notify event {}", event.getClass().getSimpleName(), e);
         }
@@ -195,13 +126,6 @@ public class EventDispatcher {
         return null;
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @param containers
-     * @param callbackClass
-     * @return
-     */
     private <T extends AbstractEventReturn> T notifyEventToMultipleContainers(
             IBaseEvent event, ListenersContainer[] containers, Class<T> callbackClass) {
         if (event == null) {
@@ -211,19 +135,15 @@ public class EventDispatcher {
         try {
             T callback = null;
             if (containers != null) {
-                // Local listener containers.
                 for (ListenersContainer container : containers) {
                     if ((callback == null) || !callback.abort()) {
-                        callback = notifyToListeners(
-                                container.getListeners(event.getType()), event, callbackClass, callback);
+                        callback = notifyContainer(container, event, callbackClass, callback);
                     }
                 }
             }
 
-            // Global listener container.
             if ((callback == null) || !callback.abort()) {
-                callback = notifyToListeners(
-                        Containers.Global().getListeners(event.getType()), event, callbackClass, callback);
+                callback = notifyContainer(Containers.Global(), event, callbackClass, callback);
             }
 
             return callback;
@@ -234,42 +154,33 @@ public class EventDispatcher {
         return null;
     }
 
-    /**
-     * @param <T>
-     * @param event
-     * @param container
-     * @param callbackClass
-     * @return {@link AbstractEventReturn} object that may keep data from the first listener, or last that breaks notification.
-     */
     private <T extends AbstractEventReturn> T notifyEventImpl(
             IBaseEvent event, ListenersContainer container, Class<T> callbackClass) {
         if (event == null) {
             throw new NullPointerException("Event cannot be null!");
         }
 
-        // Local listener container.
         T callback = null;
         if (container != null) {
-            callback = notifyToListeners(container.getListeners(event.getType()), event, callbackClass, callback);
+            callback = notifyContainer(container, event, callbackClass, callback);
         }
 
-        // Global listener container.
         if ((callback == null) || !callback.abort()) {
-            callback = notifyToListeners(
-                    Containers.Global().getListeners(event.getType()), event, callbackClass, callback);
+            callback = notifyContainer(Containers.Global(), event, callbackClass, callback);
         }
 
         return callback;
     }
 
-    /**
-     * @param <T>
-     * @param listeners
-     * @param event
-     * @param returnBackClass
-     * @param callbackValue
-     * @return
-     */
+    // A listener may unregister itself or others while it runs, so dispatch walks a copy.
+    private <T extends AbstractEventReturn> T notifyContainer(
+            ListenersContainer container, IBaseEvent event, Class<T> returnBackClass, T callbackValue) {
+        try (Snapshot<AbstractEventListener> copy = ScratchBuffers.empty()) {
+            container.collectListeners(event.getType(), copy);
+            return copy.isEmpty() ? callbackValue : notifyToListeners(copy, event, returnBackClass, callbackValue);
+        }
+    }
+
     private <T extends AbstractEventReturn> T notifyToListeners(
             Collection<AbstractEventListener> listeners, IBaseEvent event, Class<T> returnBackClass, T callbackValue) {
         T callback = callbackValue;
@@ -278,13 +189,9 @@ public class EventDispatcher {
                 final T rb = listener.executeEvent(event, returnBackClass);
                 if (rb == null) {
                     continue;
-                } else if ((callback == null)
-                        || rb.override()) // Let's check if this listener wants to override previous return object or
-                // we simply don't have one.
-                {
+                } else if ((callback == null) || rb.override()) {
                     callback = rb;
-                } else if (rb.abort()) // This listener wants to abort the notification to others.
-                {
+                } else if (rb.abort()) {
                     break;
                 }
             } catch (Exception e) {

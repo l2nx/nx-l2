@@ -22,15 +22,13 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 
+@SingleWriter
 public class VillageMasterDElf extends VillageMaster {
-    /**
-     * Creates a village master.
-     * @param template the village master NPC template
-     */
     public VillageMasterDElf(NpcTemplate template) {
         super(template);
     }

@@ -19,27 +19,27 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.olympiad.Olympiad;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Olympiad NPCs Instance
  * @author godson
  */
+@SingleWriter
 public class OlympiadManager extends Npc {
-    /**
-     * Creates an olympiad manager.
-     * @param template the olympiad manager NPC template
-     */
     public OlympiadManager(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.OlympiadManager);
     }
 
     public void showChatWindow(Player player, int value, String suffix) {
+        WorldPartition.checkOwner();
         String filename = Olympiad.OLYMPIAD_HTML_PATH;
         filename += "noble_desc" + value;
         filename += (suffix != null) ? suffix + ".htm" : ".htm";

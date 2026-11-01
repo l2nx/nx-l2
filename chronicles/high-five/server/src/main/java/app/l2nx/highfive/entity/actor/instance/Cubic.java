@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.CubicData;
@@ -48,20 +49,19 @@ import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.partition.WorldPartition;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid, Mobius, BazookaRpm
  */
 @Slf4j
+@SingleWriter
 public class Cubic {
 
-    // Type of Cubics
     public static final int STORM_CUBIC = 1;
     public static final int VAMPIRIC_CUBIC = 2;
     public static final int LIFE_CUBIC = 3;
@@ -72,56 +72,33 @@ public class Cubic {
     public static final int SPARK_CUBIC = 8;
     public static final int ATTRACT_CUBIC = 9;
 
-    // Max range of cubic skills.
     // TODO: Check/fix the max range
     public static final int MAX_MAGIC_RANGE = 900;
 
-    // Cubic skills
     public static final int SKILL_CUBIC_HEAL = 4051;
 
-    @Getter
     private final Player owner;
 
-    @Getter
-    @Setter
     private Creature target;
 
-    @Getter
     private final int id;
 
-    @Getter
     private final CubicTemplate template;
 
-    @Getter
     private final int cubicPower;
 
     private final int cubicDelay;
     private final int cubicSkillChance;
 
-    @Getter
     private final int cubicMaxCount;
 
     private final boolean givenByOther;
 
-    @Getter
     private final List<CubicSkill> cubicSkills;
 
-    private Future<?> disappearTask;
-    private Future<?> actionTask;
+    private ScheduledFuture<?> disappearTask;
+    private ScheduledFuture<?> actionTask;
 
-    /**
-     * Creates a cubic instance for the specified owner and template level.<br>
-     * Schedules its disappearance and starts heal cubics immediately when required.
-     * @param owner
-     * @param cubicId
-     * @param level
-     * @param cubicPower
-     * @param cubicDelay
-     * @param cubicSkillChance
-     * @param cubicMaxCount
-     * @param cubicDuration
-     * @param givenByOther
-     */
     public Cubic(
             Player owner,
             int cubicId,
@@ -140,7 +117,7 @@ public class Cubic {
             this.cubicDelay = cubicDelay * 1000;
             this.cubicSkillChance = cubicSkillChance;
             this.cubicMaxCount = cubicMaxCount;
-            cubicSkills = java.util.Collections.emptyList();
+            cubicSkills = Collections.emptyList();
             log.warn("Missing cubic template. cubicId: {} level: {} ownerId: {}", cubicId, level, owner.getObjectId());
         } else {
             this.cubicPower = cubicPower > 0 ? cubicPower : template.getBaseMAtk();
@@ -160,31 +137,62 @@ public class Cubic {
         }
     }
 
-    /**
-     * Starts the cubic action task when the template and skill list are valid.
-     */
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    public Creature getTarget() {
+        WorldPartition.checkOwner();
+        return target;
+    }
+
+    public void setTarget(Creature target) {
+        WorldPartition.checkOwner();
+        this.target = target;
+    }
+
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public CubicTemplate getTemplate() {
+        WorldPartition.checkOwner();
+        return template;
+    }
+
+    public int getCubicPower() {
+        WorldPartition.checkOwner();
+        return cubicPower;
+    }
+
+    public int getCubicMaxCount() {
+        WorldPartition.checkOwner();
+        return cubicMaxCount;
+    }
+
+    public List<CubicSkill> getCubicSkills() {
+        WorldPartition.checkOwner();
+        return cubicSkills;
+    }
+
     public void doAction() {
+        WorldPartition.checkOwner();
         if ((actionTask == null) && (template != null) && !cubicSkills.isEmpty()) {
-            synchronized (this) {
-                if (actionTask == null) {
-                    if (template.getTargetType() == CubicTargetType.HEAL) {
-                        actionTask = WorldPartition.loop()
-                                .scheduleAtFixedRate(new CubicHeal(this), 0, cubicDelay, TimeUnit.MILLISECONDS);
-                    } else {
-                        actionTask = WorldPartition.loop()
-                                .scheduleAtFixedRate(
-                                        new CubicAction(this, cubicSkillChance), 0, cubicDelay, TimeUnit.MILLISECONDS);
-                    }
-                }
+            if (template.getTargetType() == CubicTargetType.HEAL) {
+                actionTask = WorldPartition.loop()
+                        .scheduleAtFixedRate(new CubicHeal(this), 0, cubicDelay, TimeUnit.MILLISECONDS);
+            } else {
+                actionTask = WorldPartition.loop()
+                        .scheduleAtFixedRate(
+                                new CubicAction(this, cubicSkillChance), 0, cubicDelay, TimeUnit.MILLISECONDS);
             }
         }
     }
 
-    /**
-     * Selects the next non-priority cubic skill according to the template selection mode.
-     * @return The selected cubic skill or {@code null}.
-     */
     public CubicSkill getCubicSkill() {
+        WorldPartition.checkOwner();
         if (getNormalCubicSkillCount() == 0) {
             return null;
         }
@@ -274,10 +282,8 @@ public class Cubic {
         return getRandomCubicSkill();
     }
 
-    /**
-     * Stops the scheduled cubic action task and clears the current target.
-     */
     public void stopAction() {
+        WorldPartition.checkOwner();
         target = null;
         if (actionTask != null) {
             actionTask.cancel(true);
@@ -285,21 +291,16 @@ public class Cubic {
         }
     }
 
-    /**
-     * Cancels the scheduled cubic disappearance task.
-     */
     public void cancelDisappear() {
+        WorldPartition.checkOwner();
         if (disappearTask != null) {
             disappearTask.cancel(true);
             disappearTask = null;
         }
     }
 
-    /**
-     * Selects a valid offensive target for this cubic.<br>
-     * Handles event, duel, Olympiad, PvE aggro and PvP target rules.
-     */
     public void getCubicTarget() {
+        WorldPartition.checkOwner();
         try {
             this.target = null;
             final WorldObject ownerTarget = owner.getTarget();
@@ -307,7 +308,6 @@ public class Cubic {
                 return;
             }
 
-            // Custom event targeting.
             if (owner.isOnEvent()) {
                 final Player target = ownerTarget.asPlayer();
                 if ((target != null)
@@ -318,7 +318,6 @@ public class Cubic {
                 return;
             }
 
-            // Duel targeting.
             if (owner.isInDuel()) {
                 final Player playerA =
                         DuelManager.getInstance().getDuel(owner.getDuelId()).getPlayerA();
@@ -376,7 +375,6 @@ public class Cubic {
                 return;
             }
 
-            // Olympiad targeting.
             if (owner.isInOlympiadMode()) {
                 if (owner.isOlympiadStart() && ownerTarget.isPlayable()) {
                     final Player targetPlayer = ownerTarget.asPlayer();
@@ -389,9 +387,7 @@ public class Cubic {
                 return;
             }
 
-            // Test the owner's target and use it when valid.
             if (ownerTarget.isCreature() && (ownerTarget != owner.getSummon()) && (ownerTarget != owner)) {
-                // Target mobs that have aggro on the owner or the owner's summon.
                 if (ownerTarget.isAttackable()) {
                     final Attackable attackable = ownerTarget.asAttackable();
                     if (attackable.isInAggroList(owner) && !attackable.isDead()) {
@@ -405,7 +401,6 @@ public class Cubic {
                     }
                 }
 
-                // Get target in PvP or siege.
                 Player enemy = null;
                 if (((owner.getPvpFlag() > 0) && !owner.isInsideZone(ZoneId.PEACE)) || owner.isInsideZone(ZoneId.PVP)) {
                     if (!ownerTarget.asCreature().isDead()) {
@@ -465,11 +460,6 @@ public class Cubic {
         }
     }
 
-    /**
-     * Applies cubic effects to a validated target.
-     * @param skill
-     * @param target
-     */
     private void applyCubicEffects(Skill skill, Creature target) {
         if ((target == null)
                 || ((target != owner)
@@ -496,12 +486,8 @@ public class Cubic {
         }
     }
 
-    /**
-     * Applies continuous cubic effects to all valid targets.
-     * @param skill
-     * @param targets
-     */
     public void useCubicContinuous(Skill skill, List<Creature> targets) {
+        WorldPartition.checkOwner();
         for (Creature target : targets) {
             if ((target == null) || target.isDead()) {
                 continue;
@@ -516,11 +502,9 @@ public class Cubic {
                 }
             }
 
-            // Apply effects.
             applyCubicEffects(skill, target);
 
-            // If this is a negative effect skill notify the duel manager, so it can be removed after the duel (player &
-            // target must be in the same duel).
+            // Negative effects are tracked by the duel so they are removed when it ends.
             if (target.isPlayer()) {
                 final Player player = target.asPlayer();
                 if (player.isInDuel() && skill.hasNegativeEffect() && (owner.getDuelId() == player.getDuelId())) {
@@ -530,12 +514,8 @@ public class Cubic {
         }
     }
 
-    /**
-     * Applies cubic magic damage to all valid targets.
-     * @param skill
-     * @param targets
-     */
     public void useCubicMdam(Skill skill, List<Creature> targets) {
+        WorldPartition.checkOwner();
         for (Creature target : targets) {
             if (target == null) {
                 continue;
@@ -553,13 +533,11 @@ public class Cubic {
             final byte shld = Formulas.calcShldUse(owner, target, skill);
             int damage = (int) Formulas.calcMagicDam(this, target, skill, mcrit, shld);
             if (damage > 0) {
-                // Manage attack or cast break of the target.
                 if (!target.isRaid() && Formulas.calcAtkBreak(target, damage)) {
                     target.breakAttack();
                     target.breakCast();
                 }
 
-                // Shield Deflect Magic: If target is reflecting the skill then no damage is done.
                 if (target.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, target, skill)
                         > ClockBridge.random().nextInt(100)) {
                     damage = 0;
@@ -571,12 +549,8 @@ public class Cubic {
         }
     }
 
-    /**
-     * Applies cubic drain damage and restores part of the owner's HP.
-     * @param skill
-     * @param targets
-     */
     public void useCubicDrain(Skill skill, List<Creature> targets) {
+        WorldPartition.checkOwner();
         for (Creature target : targets) {
             if (target.isAlikeDead()) {
                 continue;
@@ -594,11 +568,9 @@ public class Cubic {
                     : (owner.getCurrentHp() + hpAdd));
             owner.setCurrentHp(hp);
 
-            // Check if the target should be damaged.
             if ((damage > 0) && !target.isDead()) {
                 target.reduceCurrentHp(damage, this.owner, skill);
 
-                // Manage attack or cast break of the target.
                 if (!target.isRaid() && Formulas.calcAtkBreak(target, damage)) {
                     target.breakAttack();
                     target.breakCast();
@@ -609,12 +581,8 @@ public class Cubic {
         }
     }
 
-    /**
-     * Applies cubic disable or aggression effects to all valid targets.
-     * @param skill
-     * @param targets
-     */
     public void useCubicDisabler(Skill skill, List<Creature> targets) {
+        WorldPartition.checkOwner();
         for (Creature target : targets) {
             if ((target == null) || target.isDead()) {
                 continue;
@@ -622,11 +590,9 @@ public class Cubic {
 
             if (skill.hasEffectType(EffectType.STUN, EffectType.PARALYZE, EffectType.ROOT)
                     && Formulas.calcCubicSkillSuccess(this, target, skill, Formulas.SHIELD_DEFENSE_FAILED)) {
-                // Apply effects.
                 applyCubicEffects(skill, target);
 
-                // If this is a negative effect skill notify the duel manager, so it can be removed after the duel
-                // (player & target must be in the same duel).
+                // Negative effects are tracked by the duel so they are removed when it ends.
                 if (target.isPlayer()) {
                     final Player player = target.asPlayer();
                     if (player.isInDuel() && skill.hasNegativeEffect() && (owner.getDuelId() == player.getDuelId())) {
@@ -642,24 +608,18 @@ public class Cubic {
                             .notifyActionAggression(owner, (int) ((150 * skill.getPower()) / (target.getLevel() + 7)));
                 }
 
-                // Apply effects.
                 applyCubicEffects(skill, target);
             }
         }
     }
 
-    /**
-     * Checks if the target is inside the owner's maximum cubic range.
-     * @param owner
-     * @param target
-     * @return {@code true} if the target is inside range.
-     */
     public static boolean isInCubicRange(Creature owner, Creature target) {
+        WorldPartition.checkOwner();
         if ((owner == null) || (target == null)) {
             return false;
         }
 
-        // Temporary range check until real behavior of cubics is known/coded.
+        // TODO: Replace with real cubic range behavior once it is known.
         final long range = MAX_MAGIC_RANGE;
         final long x = owner.getX() - target.getX();
         final long y = owner.getY() - target.getY();
@@ -667,10 +627,8 @@ public class Cubic {
         return (((x * x) + (y * y) + (z * z)) <= (range * range));
     }
 
-    /**
-     * Selects the friendly target with the lowest HP percentage inside cubic range.
-     */
     public void cubicTargetForHeal() {
+        WorldPartition.checkOwner();
         Creature target = null;
         double percentleft = 100.0;
         Party party = owner.getParty();
@@ -682,9 +640,7 @@ public class Cubic {
         }
 
         if ((party != null) && !owner.isInOlympiadMode()) {
-            // Check party members and their summons inside cubic range.
             for (Creature partyMember : party.getMembers()) {
-                // Select the party member with the lowest HP percentage inside cubic range.
                 if (!partyMember.isDead()
                         && isInCubicRange(owner, partyMember)
                         && (partyMember.getCurrentHp() < partyMember.getMaxHp())
@@ -701,12 +657,10 @@ public class Cubic {
                             continue;
                         }
 
-                        // Check if the party member's summon is inside cubic range.
                         if (!isInCubicRange(owner, summon)) {
                             continue;
                         }
 
-                        // Select the summon when it has the lowest HP percentage.
                         if ((summon.getCurrentHp() < summon.getMaxHp())
                                 && (percentleft > (summon.getCurrentHp() / summon.getMaxHp()))) {
                             percentleft = (summon.getCurrentHp() / summon.getMaxHp());
@@ -735,11 +689,8 @@ public class Cubic {
         this.target = target;
     }
 
-    /**
-     * Checks if this cubic was given by another player.
-     * @return {@code true} if the cubic was given by another player.
-     */
     public boolean givenByOther() {
+        WorldPartition.checkOwner();
         return givenByOther;
     }
 }

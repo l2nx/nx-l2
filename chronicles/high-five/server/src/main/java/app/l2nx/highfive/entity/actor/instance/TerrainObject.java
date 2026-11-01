@@ -22,17 +22,16 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class TerrainObject extends Npc {
-    /**
-     * Creates a terrain object.
-     * @param template the terrain object NPC template
-     */
     public TerrainObject(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.TerrainObject);
@@ -40,11 +39,13 @@ public class TerrainObject extends Npc {
 
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
     @Override
     public void onActionShift(Player player) {
+        WorldPartition.checkOwner();
         if (player.isGM()) {
             super.onActionShift(player);
         } else {

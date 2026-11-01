@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -41,19 +42,13 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.StopMove;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
+import java.util.LinkedHashSet;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 
-// While a tamed beast behaves a lot like a pet (ingame) and does have
-// an owner, in all other aspects, it acts like a mob.
-// In addition, it can be fed in order to increase its duration.
-// This class handles the running tasks, AI, and feed of the mob.
-// The (mostly optional) AI on feeding the spawn is handled by the datapack ai script.
+// Has an owner like a pet but otherwise acts like a mob; feeding extends its duration.
+@SingleWriter
 public class TamedBeast extends FeedableBeast {
-    @Getter
     private int foodType;
 
     private static final int MAX_DISTANCE_FROM_HOME = 30000;
@@ -63,21 +58,17 @@ public class TamedBeast extends FeedableBeast {
     private static final int DURATION_INCREASE_INTERVAL = 20000; // 20 secs (gained upon feeding)
     private static final int BUFF_INTERVAL = 5000; // 5 seconds
 
-    @Getter
-    @Setter
     private int remainingTime = MAX_DURATION;
 
     private int homeX;
     private int homeY;
     private int homeZ;
 
-    @Getter
     protected Player owner;
 
-    private Future<?> buffTask = null;
-    private Future<?> durationCheckTask = null;
+    private ScheduledFuture<?> buffTask = null;
+    private ScheduledFuture<?> durationCheckTask = null;
 
-    @Getter
     protected boolean freyaBeast;
 
     private Collection<Skill> beastSkills = null;
@@ -113,8 +104,33 @@ public class TamedBeast extends FeedableBeast {
         }
     }
 
+    public int getFoodType() {
+        WorldPartition.checkOwner();
+        return foodType;
+    }
+
+    public int getRemainingTime() {
+        WorldPartition.checkOwner();
+        return remainingTime;
+    }
+
+    public void setRemainingTime(int remainingTime) {
+        WorldPartition.checkOwner();
+        this.remainingTime = remainingTime;
+    }
+
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    public boolean isFreyaBeast() {
+        WorldPartition.checkOwner();
+        return freyaBeast;
+    }
+
     public void onReceiveFood() {
-        // Eating food extends the duration by 20secs, to a max of 20minutes.
+        WorldPartition.checkOwner();
         remainingTime += DURATION_INCREASE_INTERVAL;
         if (remainingTime > MAX_DURATION) {
             remainingTime = MAX_DURATION;
@@ -122,25 +138,27 @@ public class TamedBeast extends FeedableBeast {
     }
 
     public Location getHome() {
+        WorldPartition.checkOwner();
         return new Location(homeX, homeY, homeZ);
     }
 
     public void setHome(int x, int y, int z) {
+        WorldPartition.checkOwner();
         homeX = x;
         homeY = y;
         homeZ = z;
     }
 
     public void setHome(Creature c) {
+        WorldPartition.checkOwner();
         setHome(c.getX(), c.getY(), c.getZ());
     }
 
     public void setFoodType(int foodItemId) {
+        WorldPartition.checkOwner();
         if (foodItemId > 0) {
             foodType = foodItemId;
 
-            // Start the duration checks.
-            // Start the buff tasks.
             if (durationCheckTask != null) {
                 durationCheckTask.cancel(true);
             }
@@ -156,6 +174,7 @@ public class TamedBeast extends FeedableBeast {
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -169,7 +188,6 @@ public class TamedBeast extends FeedableBeast {
             durationCheckTask.cancel(true);
         }
 
-        // Clean up variables.
         if ((owner != null) && (owner.getTrainedBeasts() != null)) {
             owner.getTrainedBeasts().remove(this);
         }
@@ -184,18 +202,22 @@ public class TamedBeast extends FeedableBeast {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return !freyaBeast;
     }
 
     public void addBeastSkill(Skill skill) {
+        WorldPartition.checkOwner();
         if (beastSkills == null) {
-            beastSkills = ConcurrentHashMap.newKeySet();
+            // Skill has identity equality: insertion order keeps the cast sequence the same on every run.
+            beastSkills = new LinkedHashSet<>();
         }
 
         beastSkills.add(skill);
     }
 
     public void castBeastSkills() {
+        WorldPartition.checkOwner();
         if ((owner == null) || (beastSkills == null)) {
             return;
         }
@@ -227,28 +249,24 @@ public class TamedBeast extends FeedableBeast {
     }
 
     public void setOwner(Player owner) {
+        WorldPartition.checkOwner();
         if (owner != null) {
             this.owner = owner;
             setTitle(owner.getName());
 
-            // Broadcast the new title.
             setShowSummonAnimation(true);
             broadcastPacket(new AbstractNpcInfo.NpcInfo(this, owner));
             owner.addTrainedBeast(this);
 
-            // Always and automatically follow the owner.
             getAI().startFollow(this.owner, 100);
             if (!freyaBeast) {
-                // Instead of calculating this value each time, let's get this now and pass it on.
                 int totalBuffsAvailable = 0;
                 for (Skill skill : getTemplate().getSkills().values()) {
-                    // If the skill is a buff, check if the owner has it already [ owner.getEffect(Skill skill) ].
                     if (skill.isContinuous() && !skill.isDebuff()) {
                         totalBuffsAvailable++;
                     }
                 }
 
-                // Start the buff tasks.
                 if (buffTask != null) {
                     buffTask.cancel(true);
                 }
@@ -261,16 +279,18 @@ public class TamedBeast extends FeedableBeast {
                                 TimeUnit.MILLISECONDS);
             }
         } else {
-            deleteMe(); // despawn if no owner
+            deleteMe();
         }
     }
 
     public boolean isTooFarFromHome() {
+        WorldPartition.checkOwner();
         return !isInsideRadius3D(homeX, homeY, homeZ, MAX_DISTANCE_FROM_HOME);
     }
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (buffTask != null) {
             buffTask.cancel(true);
         }
@@ -278,7 +298,6 @@ public class TamedBeast extends FeedableBeast {
         durationCheckTask.cancel(true);
         stopHpMpRegeneration();
 
-        // Clean up variables.
         if ((owner != null) && (owner.getTrainedBeasts() != null)) {
             owner.getTrainedBeasts().remove(this);
         }
@@ -290,42 +309,33 @@ public class TamedBeast extends FeedableBeast {
         foodType = 0;
         remainingTime = 0;
 
-        // Remove the spawn.
         return super.deleteMe();
     }
 
-    // Notification triggered by the owner when the owner is attacked.
-    // Tamed mobs will heal/recharge or debuff the enemy according to their skills.
     public void onOwnerGotAttacked(Creature attacker) {
-        // Check if the owner is no longer around...if so, despawn.
+        WorldPartition.checkOwner();
         if ((owner == null) || !owner.isOnline()) {
             deleteMe();
             return;
         }
 
-        // If the owner is too far away, stop anything else and immediately run towards the owner.
         if (!owner.isInsideRadius3D(this, MAX_DISTANCE_FROM_OWNER)) {
             getAI().startFollow(owner);
             return;
         }
 
-        // If the owner is dead, do nothing...
         if (owner.isDead() || freyaBeast) {
             return;
         }
 
-        // If the tamed beast is currently in the middle of casting, let it complete its skill...
         if (isCastingNow()) {
             return;
         }
 
         final float hPRatio = ((float) owner.getCurrentHp()) / owner.getMaxHp();
 
-        // If the owner has a lot of HP, then debuff the enemy with a random debuff among the available skills.
-        // Use of more than one debuff at this moment is acceptable.
         if (hPRatio >= 0.8) {
             for (Skill skill : getTemplate().getSkills().values()) {
-                // if the skill is a debuff, check if the attacker has it already [ attacker.getEffect(Skill skill) ]
                 if (skill.isDebuff()
                         && (ClockBridge.random().nextInt(3) < 1)
                         && ((attacker != null) && attacker.isAffectedBySkill(skill.getId()))) {
@@ -334,17 +344,14 @@ public class TamedBeast extends FeedableBeast {
             }
         }
 
-        // for HP levels between 80% and 50%, do not react to attack events (so that MP can regenerate a bit)
-        // for lower HP ranges, heal or recharge the owner with 1 skill use per attack.
+        // Between 80% and 50% HP it deliberately does nothing, so MP can regenerate.
         else if (hPRatio < 0.5) {
             int chance = 1;
             if (hPRatio < 0.25) {
                 chance = 2;
             }
 
-            // If the owner has a lot of HP, then debuff the enemy with a random debuff among the available skills.
             for (Skill skill : getTemplate().getSkills().values()) {
-                // If the skill is a buff, check if the owner has it already [ owner.getEffect(Skill skill) ].
                 if ((ClockBridge.random().nextInt(5) < chance)
                         && skill.hasEffectType(
                                 EffectType.CPHEAL,
@@ -357,14 +364,6 @@ public class TamedBeast extends FeedableBeast {
         }
     }
 
-    /**
-     * Prepare and cast a skill:<br>
-     * First smoothly prepare the beast for casting, by abandoning other actions.<br>
-     * Next, call super.doCast(skill) in order to actually cast the spell.<br>
-     * Finally, return to auto-following the owner.
-     * @param skill
-     * @param target
-     */
     protected void sitCastAndFollow(Skill skill, Creature target) {
         stopMove(null);
         broadcastPacket(new StopMove(this));
@@ -398,39 +397,27 @@ public class TamedBeast extends FeedableBeast {
             } else {
                 tamedBeast.setRemainingTime(tamedBeast.getRemainingTime() - DURATION_CHECK_INTERVAL);
 
-                // I tried to avoid this as much as possible...but it seems I can't avoid hardcoding.
-                // ids further, except by carrying an additional variable just for these two lines...
-                // Find which food item needs to be consumed.
                 if (foodTypeSkillId == 2188) {
                     item = owner.getInventory().getItemByItemId(6643);
                 } else if (foodTypeSkillId == 2189) {
                     item = owner.getInventory().getItemByItemId(6644);
                 }
 
-                // If the owner has enough food, call the item handler (use the food and triffer all necessary actions).
                 if ((item != null) && (item.getCount() >= 1)) {
                     final WorldObject oldTarget = owner.getTarget();
                     owner.setTarget(tamedBeast);
 
-                    // Emulate a call to the owner using food, but bypass all checks for range, etc.
-                    // This also causes a call to the AI tasks handling feeding, which may call onReceiveFood as
-                    // required.
                     owner.callSkill(
                             SkillData.getInstance().getSkill(foodTypeSkillId, 1),
                             Collections.singletonList(tamedBeast));
                     owner.setTarget(oldTarget);
                 } else {
-                    // if the owner has no food, the beast immediately despawns, except when it was only
-                    // newly spawned. Newly spawned beasts can last up to 5 minutes
+                    // No food: despawn, unless newly spawned (those get a 5 minute grace period).
                     if (tamedBeast.getRemainingTime() < (MAX_DURATION - 300000)) {
                         tamedBeast.setRemainingTime(-1);
                     }
                 }
 
-                // There are too many conflicting reports about whether distance from home should be taken into
-                // consideration. Disabled for now.
-                // if (_tamedBeast.isTooFarFromHome())
-                // _tamedBeast.setRemainingTime(-1);
                 if (tamedBeast.getRemainingTime() <= 0) {
                     tamedBeast.deleteMe();
                 }
@@ -451,25 +438,20 @@ public class TamedBeast extends FeedableBeast {
         public void run() {
             final Player owner = tamedBeast.getOwner();
 
-            // Check if the owner is no longer around...if so, despawn.
             if ((owner == null) || !owner.isOnline()) {
                 deleteMe();
                 return;
             }
 
-            // If the owner is too far away, stop anything else and immediately run towards the owner.
             if (!isInsideRadius3D(owner, MAX_DISTANCE_FROM_OWNER)) {
                 getAI().startFollow(owner);
                 return;
             }
 
-            // If the owner is dead, do nothing...
             if (owner.isDead()) {
                 return;
             }
 
-            // If the tamed beast is currently casting a spell, do not interfere (do not attempt to cast anything new
-            // yet).
             if (isCastingNow()) {
                 return;
             }
@@ -479,9 +461,7 @@ public class TamedBeast extends FeedableBeast {
             final int rand = numBuffs > 0 ? ClockBridge.random().nextInt(numBuffs) : 0;
             Skill buffToGive = null;
 
-            // Get this npc's skills: getSkills().
             for (Skill skill : tamedBeast.getTemplate().getSkills().values()) {
-                // If the skill is a buff, check if the owner has it already [ owner.getEffect(Skill skill) ].
                 if (skill.isContinuous() && !skill.isDebuff()) {
                     if (i++ == rand) {
                         buffToGive = skill;
@@ -493,7 +473,7 @@ public class TamedBeast extends FeedableBeast {
                 }
             }
 
-            // If the owner has less than 60% of this beast's available buff, cast a random buff.
+            // Casts when the owner has fewer than two thirds of the available buffs.
             if (((numBuffs * 2) / 3) > totalBuffsOnOwner) {
                 tamedBeast.sitCastAndFollow(buffToGive, owner);
             }
@@ -504,20 +484,17 @@ public class TamedBeast extends FeedableBeast {
 
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         if ((player == null) || !canTarget(player)) {
             return;
         }
 
-        // Check if the Player already target the Npc.
         if (this != player.getTarget()) {
-            // Set the target of the Player player.
             player.setTarget(this);
         } else if (interact) {
             if (isAutoAttackable(player) && (Math.abs(player.getZ() - getZ()) < 100)) {
                 player.getAI().setIntentionAttack(this);
             } else {
-                // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another
-                // packet.
                 player.sendPacket(ActionFailed.STATIC_PACKET);
             }
         }

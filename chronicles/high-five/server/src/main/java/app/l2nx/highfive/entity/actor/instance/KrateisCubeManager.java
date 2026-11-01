@@ -22,16 +22,19 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author LordWinter
  */
+@SingleWriter
 public class KrateisCubeManager extends Folk {
     public KrateisCubeManager(NpcTemplate template) {
         super(template);
@@ -39,6 +42,7 @@ public class KrateisCubeManager extends Folk {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (command.startsWith("Register")) {
             if ((player.getInventoryLimit() * 0.8) <= player.getInventory().getSize()) {
                 player.sendPacket(
@@ -123,6 +127,7 @@ public class KrateisCubeManager extends Folk {
 
     @Override
     public String getHtmlPath(int npcId, int val) {
+        WorldPartition.checkOwner();
         String pom = "";
 
         if (val == 0) {

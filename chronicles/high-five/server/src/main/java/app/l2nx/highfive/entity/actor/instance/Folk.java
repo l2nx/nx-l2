@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -37,15 +38,13 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AcquireSkillList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@SingleWriter
 public class Folk extends Npc {
-    /**
-     * Creates a NPC.
-     * @param template the NPC template
-     */
     public Folk(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Folk);
@@ -54,25 +53,23 @@ public class Folk extends Npc {
 
     @Override
     public FolkStatus getStatus() {
+        WorldPartition.checkOwner();
         return (FolkStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new FolkStatus(this));
     }
 
     public List<PlayerClass> getClassesToTeach() {
+        WorldPartition.checkOwner();
         return getTemplate().getTeachInfo();
     }
 
-    /**
-     * Displays Skill Tree for a given player, npc and class Id.
-     * @param player the active character.
-     * @param npc the last folk.
-     * @param playerClass the player's active class identifier as a {@link PlayerClass} enum value
-     */
     public static void showSkillList(Player player, Npc npc, PlayerClass playerClass) {
+        WorldPartition.checkOwner();
         final int npcId = npc.getTemplate().getId();
         if (npcId == 32611) // Tolonis (Officer)
         {
@@ -87,8 +84,7 @@ public class Folk extends Npc {
                 }
             }
 
-            if (counts == 0) // No more skills to learn, come back when you level.
-            {
+            if (counts == 0) {
                 final int minLevel = SkillTreeData.getInstance()
                         .getMinLevelForNewSkill(
                                 player, SkillTreeData.getInstance().getCollectSkillTree());

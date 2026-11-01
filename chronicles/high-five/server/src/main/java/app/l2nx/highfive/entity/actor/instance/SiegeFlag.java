@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -41,27 +42,16 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.TimeUnit;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
 
+@SingleWriter
 public class SiegeFlag extends Npc {
     private Clan clan;
     private Siegable siege;
 
-    @Getter
     private final boolean advancedHeadquarter;
 
-    @Setter(AccessLevel.PACKAGE)
     private boolean canTalk;
 
-    /**
-     * Creates a siege flag.
-     * @param player
-     * @param template
-     * @param advanced
-     * @param outPost
-     */
     public SiegeFlag(Player player, NpcTemplate template, boolean advanced, boolean outPost) {
         super(template);
         setInstanceType(InstanceType.SiegeFlag);
@@ -111,18 +101,31 @@ public class SiegeFlag extends Npc {
         setInvul(false);
     }
 
+    public boolean isAdvancedHeadquarter() {
+        WorldPartition.checkOwner();
+        return advancedHeadquarter;
+    }
+
+    void setCanTalk(boolean canTalk) {
+        WorldPartition.checkOwner();
+        this.canTalk = canTalk;
+    }
+
     @Override
     public boolean canBeAttacked() {
+        WorldPartition.checkOwner();
         return !isInvul();
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return !isInvul();
     }
 
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -141,25 +144,23 @@ public class SiegeFlag extends Npc {
 
     @Override
     public void onForcedAttack(Player player) {
+        WorldPartition.checkOwner();
         onAction(player);
     }
 
     @Override
     public void onAction(Player player, boolean interact) {
+        WorldPartition.checkOwner();
         if ((player == null) || !canTarget(player)) {
             return;
         }
 
-        // Check if the Player already target the Npc.
         if (this != player.getTarget()) {
-            // Set the target of the Player player.
             player.setTarget(this);
         } else if (interact) {
             if (isAutoAttackable(player) && (Math.abs(player.getZ() - getZ()) < 100)) {
                 player.getAI().setIntentionAttack(this);
             } else {
-                // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another
-                // packet.
                 player.sendPacket(ActionFailed.STATIC_PACKET);
             }
         }
@@ -167,16 +168,19 @@ public class SiegeFlag extends Npc {
 
     @Override
     public SiegeFlagStatus getStatus() {
+        WorldPartition.checkOwner();
         return (SiegeFlagStatus) super.getStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new SiegeFlagStatus(this));
     }
 
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, Skill skill) {
+        WorldPartition.checkOwner();
         super.reduceCurrentHp(damage, attacker, skill);
         if (canTalk()
                 && (((getCastle() != null) && getCastle().getSiege().isInProgress())
@@ -184,7 +188,6 @@ public class SiegeFlag extends Npc {
                         || ((getConquerableHall() != null)
                                 && getConquerableHall().isInSiege()))
                 && (clan != null)) {
-            // Send warning to owners of headquarters that theirs base is under attack.
             clan.broadcastToOnlineMembers(new SystemMessage(SystemMessageId.YOUR_BASE_IS_BEING_ATTACKED));
             setCanTalk(false);
             WorldPartition.loop().schedule(new ScheduleTalkTask(), 20000, TimeUnit.MILLISECONDS);

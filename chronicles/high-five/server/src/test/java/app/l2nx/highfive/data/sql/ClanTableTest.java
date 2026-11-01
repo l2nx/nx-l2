@@ -143,7 +143,7 @@ class ClanTableTest {
             clan.setCastleId(CASTLE);
             when(castles.getCastleByOwner(clan)).thenReturn(castle);
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(castle, clanRepository);
             order.verify(castle).removeOwner(clan);
@@ -155,7 +155,7 @@ class ClanTableTest {
         void destroyClan_shouldFreeHallForNpcAuction_whenClanOwnsAuctionableHall() {
             final AuctionableHall hall = hallOwnedByClan();
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             assertThat(hall.getOwnerId()).isZero();
             assertThat(hall.isFree()).isTrue();
@@ -170,7 +170,7 @@ class ClanTableTest {
             final ClanHallAuction sale = mock(ClanHallAuction.class);
             when(auctions.getAuction(HALL)).thenReturn(sale);
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(sale, auctions, clanRepository);
             order.verify(sale).cancelAuction();
@@ -184,7 +184,7 @@ class ClanTableTest {
             clan.setFortId(FORT);
             when(forts.getFortByOwner(clan)).thenReturn(fort);
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(fort, clanRepository);
             order.verify(fort).removeOwner(true);
@@ -199,7 +199,7 @@ class ClanTableTest {
             clan.setHideoutId(HALL);
             when(siegableHalls.getConquerableHalls()).thenReturn(Map.of(HALL, hall));
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(hall, clanRepository);
             order.verify(hall).free();
@@ -214,7 +214,7 @@ class ClanTableTest {
             when(castles.getCastleByOwner(clan)).thenReturn(castle);
             when(castleSieges.getSieges()).thenReturn(List.of(siege));
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(castle, siege);
             order.verify(castle).removeOwner(clan);
@@ -229,7 +229,7 @@ class ClanTableTest {
             when(forts.getFortByOwner(clan)).thenReturn(fort);
             when(fortSieges.getSieges()).thenReturn(List.of(siege));
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(fort, siege);
             order.verify(fort).removeOwner(true);
@@ -244,7 +244,7 @@ class ClanTableTest {
             clan.setHideoutId(HALL);
             when(siegableHalls.getConquerableHalls()).thenReturn(Map.of(HALL, hall));
 
-            table.destroyClan(CLAN_ID);
+            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
 
             final InOrder order = inOrder(hall);
             order.verify(hall).free();

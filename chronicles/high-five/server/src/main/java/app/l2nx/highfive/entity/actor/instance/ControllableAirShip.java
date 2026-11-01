@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.stat.ControllableAirShipStat;
@@ -31,62 +32,85 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 
+@SingleWriter
 public class ControllableAirShip extends AirShip {
     private static final int HELM = 13556;
     private static final int LOW_FUEL = 40;
 
-    @Getter
     private int fuel = 0;
 
-    @Getter
-    @Setter
     private int maxFuel = 0;
 
-    @Getter
     private final int ownerId;
 
-    @Getter
     private int helmObjectId;
 
     private Player captain = null;
 
-    private Future<?> consumeFuelTask;
-    private Future<?> checkTask;
+    private ScheduledFuture<?> consumeFuelTask;
+    private ScheduledFuture<?> checkTask;
 
-    /**
-     * Creates a controllable air ship.
-     * @param template the controllable air ship template
-     * @param ownerId the owner ID
-     */
     public ControllableAirShip(CreatureTemplate template, int ownerId) {
         super(template);
         setInstanceType(InstanceType.ControllableAirShip);
         this.ownerId = ownerId;
-        helmObjectId = IdManager.getInstance().getNextId(); // not forget to release !
+        helmObjectId = IdManager.getInstance().getNextId(); // must be released when the ship is deleted
+    }
+
+    @Override
+    public int getFuel() {
+        WorldPartition.checkOwner();
+        return fuel;
+    }
+
+    @Override
+    public int getMaxFuel() {
+        WorldPartition.checkOwner();
+        return maxFuel;
+    }
+
+    @Override
+    public void setMaxFuel(int maxFuel) {
+        WorldPartition.checkOwner();
+        this.maxFuel = maxFuel;
+    }
+
+    @Override
+    public int getOwnerId() {
+        WorldPartition.checkOwner();
+        return ownerId;
+    }
+
+    @Override
+    public int getHelmObjectId() {
+        WorldPartition.checkOwner();
+        return helmObjectId;
     }
 
     @Override
     public ControllableAirShipStat getStat() {
+        WorldPartition.checkOwner();
         return (ControllableAirShipStat) super.getStat();
     }
 
     @Override
     public void initCharStat() {
+        WorldPartition.checkOwner();
         setStat(new ControllableAirShipStat(this));
     }
 
     @Override
     public boolean canBeControlled() {
+        WorldPartition.checkOwner();
         return super.canBeControlled() && !isInDock();
     }
 
     @Override
     public boolean isOwner(Player player) {
+        WorldPartition.checkOwner();
         if (ownerId == 0) {
             return false;
         }
@@ -96,21 +120,25 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public boolean isCaptain(Player player) {
+        WorldPartition.checkOwner();
         return (captain != null) && (player == captain);
     }
 
     @Override
     public int getCaptainId() {
+        WorldPartition.checkOwner();
         return captain != null ? captain.getObjectId() : 0;
     }
 
     @Override
     public int getHelmItemId() {
+        WorldPartition.checkOwner();
         return HELM;
     }
 
     @Override
     public boolean setCaptain(Player player) {
+        WorldPartition.checkOwner();
         if (player == null) {
             captain = null;
         } else {
@@ -169,6 +197,7 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public void setFuel(int f) {
+        WorldPartition.checkOwner();
         final int old = fuel;
         if (f < 0) {
             fuel = 0;
@@ -190,8 +219,9 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public void oustPlayer(Player player) {
+        WorldPartition.checkOwner();
         if (player == captain) {
-            setCaptain(null); // no need to broadcast userinfo here
+            setCaptain(null);
         }
 
         super.oustPlayer(player);
@@ -199,6 +229,7 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         checkTask = WorldPartition.loop().scheduleAtFixedRate(new CheckTask(), 60000, 10000, TimeUnit.MILLISECONDS);
         consumeFuelTask =
@@ -207,6 +238,7 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (!super.deleteMe()) {
             return false;
         }
@@ -227,6 +259,7 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public void refreshId() {
+        WorldPartition.checkOwner();
         super.refreshId();
         IdManager.getInstance().releaseId(helmObjectId);
         helmObjectId = IdManager.getInstance().getNextId();
@@ -234,6 +267,7 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         super.sendInfo(player);
         if (captain != null) {
             captain.sendInfo(player);

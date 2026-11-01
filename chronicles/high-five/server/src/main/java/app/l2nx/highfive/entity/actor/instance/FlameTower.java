@@ -19,47 +19,52 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Tower;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
-import lombok.Setter;
 
 /**
  * Class for Flame Control Tower instance.
  * @author JIV
  */
+@SingleWriter
 public class FlameTower extends Tower {
-    @Setter
     private int upgradeLevel = 0;
 
     private List<Integer> zoneList;
 
-    /**
-     * Creates a flame tower.
-     * @param template the flame tower NPC template
-     */
     public FlameTower(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FlameTower);
     }
 
+    public void setUpgradeLevel(int upgradeLevel) {
+        WorldPartition.checkOwner();
+        this.upgradeLevel = upgradeLevel;
+    }
+
     @Override
     public boolean doDie(Creature killer) {
+        WorldPartition.checkOwner();
         enableZones(false);
         return super.doDie(killer);
     }
 
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         enableZones(false);
         return super.deleteMe();
     }
 
     public void enableZones(boolean value) {
+        WorldPartition.checkOwner();
         if ((zoneList != null) && (upgradeLevel != 0)) {
             final int maxIndex = upgradeLevel * 2;
             for (int i = 0; i < maxIndex; i++) {
@@ -72,6 +77,7 @@ public class FlameTower extends Tower {
     }
 
     public void setZoneList(List<Integer> list) {
+        WorldPartition.checkOwner();
         zoneList = list;
         enableZones(true);
     }

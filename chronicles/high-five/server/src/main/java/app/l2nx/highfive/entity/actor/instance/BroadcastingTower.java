@@ -19,21 +19,19 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author NightMarez
- * @version $Revision: 1.3.2.2.2.5 $ $Date: 2005/03/27 15:29:32 $
  */
+@SingleWriter
 public class BroadcastingTower extends Npc {
-    /**
-     * Creates an observation.
-     * @param template the observation NPC template
-     */
     public BroadcastingTower(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.BroadcastingTower);
@@ -41,6 +39,7 @@ public class BroadcastingTower extends Npc {
 
     @Override
     public void showChatWindow(Player player, int value) {
+        WorldPartition.checkOwner();
         String filename = null;
         if (isInsideRadius2D(-79884, 86529, 0, 50)
                 || isInsideRadius2D(-78858, 111358, 0, 50)

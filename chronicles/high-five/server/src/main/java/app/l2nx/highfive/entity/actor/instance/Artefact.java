@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -29,12 +30,10 @@ import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class Artefact extends Npc {
-    /**
-     * Creates a castle siege artifact.
-     * @param template the artifact NPC template
-     */
     public Artefact(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Artefact);
@@ -42,34 +41,42 @@ public class Artefact extends Npc {
 
     @Override
     public void onSpawn() {
+        WorldPartition.checkOwner();
         super.onSpawn();
         getCastle().registerArtefact(this);
     }
 
     @Override
     public boolean isArtefact() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public boolean canBeAttacked() {
+        WorldPartition.checkOwner();
         return false;
     }
 
     @Override
     public void onForcedAttack(Player player) {
-        // Send a Server->Client ActionFailed to the Player in order to avoid that the client wait another packet.
+        WorldPartition.checkOwner();
         player.sendPacket(ActionFailed.STATIC_PACKET);
     }
 
     @Override
-    public void reduceCurrentHp(double damage, Creature attacker, Skill skill) {}
+    public void reduceCurrentHp(double damage, Creature attacker, Skill skill) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
-    public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {}
+    public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
+        WorldPartition.checkOwner();
+    }
 }

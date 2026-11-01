@@ -36,9 +36,8 @@ public class AnnotationEventListener extends AbstractEventListener {
 
     public AnnotationEventListener(
             ListenersContainer container, EventType type, Method callback, Object owner, int priority) {
-        super(container, type, owner);
+        super(container, type, owner, priority);
         this.callback = callback;
-        setPriority(priority);
     }
 
     @Override

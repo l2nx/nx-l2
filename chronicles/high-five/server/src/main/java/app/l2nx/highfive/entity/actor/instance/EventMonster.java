@@ -19,45 +19,45 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author Gnacik
  */
+@SingleWriter
 public class EventMonster extends Monster {
-    // Block offensive skills usage on event mobs.
-    // mainly for AoE skills, disallow kill many event mobs
-    // with one skill
-    public boolean block_skill_attack = false;
+    // Blocks offensive skills so one AoE cannot kill many event mobs.
+    private boolean blockSkillAttack = false;
 
-    // Event mobs should drop items to ground.
-    // But item pickup must be protected to killer.
+    // Drops land on the ground; pickup is restricted to the killer.
     // TODO: Some mobs need protect drop for spawner
-    public boolean drop_on_ground = false;
+    private boolean dropOnGround = false;
 
-    /**
-     * Creates an event monster.
-     * @param template the event monster NPC template
-     */
     public EventMonster(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.EventMob);
     }
 
     public void eventSetBlockOffensiveSkills(boolean value) {
-        block_skill_attack = value;
+        WorldPartition.checkOwner();
+        blockSkillAttack = value;
     }
 
     public void eventSetDropOnGround(boolean value) {
-        drop_on_ground = value;
+        WorldPartition.checkOwner();
+        dropOnGround = value;
     }
 
     public boolean eventDropOnGround() {
-        return drop_on_ground;
+        WorldPartition.checkOwner();
+        return dropOnGround;
     }
 
     public boolean eventSkillAttackBlocked() {
-        return block_skill_attack;
+        WorldPartition.checkOwner();
+        return blockSkillAttack;
     }
 }

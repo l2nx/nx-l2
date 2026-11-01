@@ -22,11 +22,13 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 
+@SingleWriter
 public class RiftInvader extends Monster {
-    // Not longer needed since rift monster targeting control now is handled by the room zones for any mob.
+    // Targeting is handled by the room zones, so no overrides are needed.
     public RiftInvader(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.RiftInvader);

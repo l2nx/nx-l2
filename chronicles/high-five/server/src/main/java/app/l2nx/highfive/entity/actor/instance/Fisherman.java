@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
@@ -41,13 +42,11 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AcquireSkillList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
 
+@SingleWriter
 public class Fisherman extends Merchant {
-    /**
-     * Creates a fisherman.
-     * @param template the fisherman NPC template
-     */
     public Fisherman(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Fisherman);
@@ -55,6 +54,7 @@ public class Fisherman extends Merchant {
 
     @Override
     public String getHtmlPath(int npcId, int value) {
+        WorldPartition.checkOwner();
         String pom = "";
         if (value == 0) {
             pom = Integer.toString(npcId);
@@ -67,6 +67,7 @@ public class Fisherman extends Merchant {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (command.equalsIgnoreCase("FishSkillList")) {
             showFishSkillList(player);
         } else if (command.startsWith("FishingChampionship")) {
@@ -91,6 +92,7 @@ public class Fisherman extends Merchant {
     }
 
     public static void showFishSkillList(Player player) {
+        WorldPartition.checkOwner();
         final List<SkillLearn> skills = SkillTreeData.getInstance().getAvailableFishingSkills(player);
         final AcquireSkillList asl = new AcquireSkillList(AcquireSkillType.FISHING);
         int count = 0;
