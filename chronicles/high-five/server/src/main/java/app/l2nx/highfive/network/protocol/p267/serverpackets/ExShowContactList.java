@@ -22,13 +22,10 @@ package app.l2nx.highfive.network.protocol.p267.serverpackets;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
-import java.util.Set;
+import java.util.List;
 
-/**
- * @author UnAfraid, mrTJO
- */
 public class ExShowContactList extends ServerPacket {
-    private final Set<String> contacts;
+    private final List<String> contacts;
 
     public ExShowContactList(Player player) {
         contacts = player.getContactList().getAllContacts();

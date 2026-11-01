@@ -144,7 +144,8 @@ public class Servitor extends Summon implements Runnable {
     @Override
     public int getLevel() {
         WorldPartition.checkOwner();
-        return getTemplate() != null ? getTemplate().getLevel() : 0;
+        final NpcTemplate template = (NpcTemplate) uncheckedTemplate();
+        return (template != null) ? template.getLevel() : 0;
     }
 
     @Override

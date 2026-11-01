@@ -22,30 +22,29 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.SiegeFlag;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class SiegeFlagStatus extends NpcStatus {
     public SiegeFlagStatus(SiegeFlag activeChar) {
         super(activeChar);
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
-    }
-
-    @Override
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
-        if (getActiveChar().isAdvancedHeadquarter()) {
-            super.reduceHp(value / 2, attacker, awake, isDOT, isHpConsumption);
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
+        if (((SiegeFlag) creature()).isAdvancedHeadquarter()) {
+            super.doReduceHp(value / 2, attacker, awake, isDOT, isHpConsumption);
         }
 
-        super.reduceHp(value, attacker, awake, isDOT, isHpConsumption);
+        super.doReduceHp(value, attacker, awake, isDOT, isHpConsumption);
     }
 
     @Override
     public SiegeFlag getActiveChar() {
-        return (SiegeFlag) super.getActiveChar();
+        WorldPartition.checkOwner();
+        return (SiegeFlag) creature();
     }
 }

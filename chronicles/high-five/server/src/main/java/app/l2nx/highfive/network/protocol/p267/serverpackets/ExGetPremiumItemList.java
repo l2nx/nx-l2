@@ -23,11 +23,9 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.holders.PremiumItem;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import java.util.Map;
 import java.util.Map.Entry;
 
-/**
- * @author Gnacik
- */
 public class ExGetPremiumItemList extends ServerPacket {
     private final Player player;
 
@@ -38,14 +36,15 @@ public class ExGetPremiumItemList extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.EX_GET_PREMIUM_ITEM_LIST.writeId(this, buffer);
-        buffer.writeInt(player.getPremiumItemList().size());
-        for (Entry<Integer, PremiumItem> entry : player.getPremiumItemList().entrySet()) {
+        final Map<Integer, PremiumItem> premiumItems = player.getPremiumItemList();
+        buffer.writeInt(premiumItems.size());
+        for (Entry<Integer, PremiumItem> entry : premiumItems.entrySet()) {
             final PremiumItem item = entry.getValue();
             buffer.writeInt(entry.getKey());
             buffer.writeInt(player.getObjectId());
             buffer.writeInt(item.getItemId());
             buffer.writeLong(item.getCount());
-            buffer.writeInt(0); // ?
+            buffer.writeInt(0);
             buffer.writeString(item.getSender());
         }
     }

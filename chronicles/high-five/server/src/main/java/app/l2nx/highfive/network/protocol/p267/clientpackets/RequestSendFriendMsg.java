@@ -27,10 +27,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.L2FriendSay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Receive Private (Friend) Message - 0xCC Format: c SS S: Message S: Receiving Player
- * @author Tempy
- */
 public class RequestSendFriendMsg extends ClientPacket {
 
     private static final Logger CHAT_LOG = LoggerFactory.getLogger("chat");
@@ -56,7 +52,7 @@ public class RequestSendFriendMsg extends ClientPacket {
         }
 
         final Player targetPlayer = World.getPlayer(receiver);
-        if ((targetPlayer == null) || !targetPlayer.getFriendList().contains(player.getObjectId())) {
+        if ((targetPlayer == null) || !targetPlayer.isFriend(player.getObjectId())) {
             player.sendPacket(SystemMessageId.THAT_PLAYER_IS_NOT_ONLINE);
             return;
         }

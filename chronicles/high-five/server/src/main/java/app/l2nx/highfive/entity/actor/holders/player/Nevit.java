@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -39,15 +40,13 @@ import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 
 /**
- * Nevit's Blessing handler.
  * @author Janiko
  */
+@SingleWriter
 public class Nevit {
-    @Getter
-    public Player player;
+    private final Player player;
 
     private ScheduledFuture<?> adventTask;
     private ScheduledFuture<?> nevitEffectTask;
@@ -70,17 +69,14 @@ public class Nevit {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
 
-        // Reset Nevit's Blessing
         if ((player.getLastAccess() < cal.getTimeInMillis()) && (ClockBridge.wallMillis() > cal.getTimeInMillis())) {
             player.getVariables().set("hunting_time", 0);
         }
 
-        // Send Packets
         player.sendPacket(new ExNevitAdventPointInfoPacket(getAdventPoints()));
         player.sendPacket(new ExNevitAdventTimeChange(getAdventTime(), true));
         startNevitEffect(player.getVariables().getInt("nevit_b", 0));
 
-        // Set percent
         final int percent = calcPercent(player.getVariables().getInt("hunting_points", 0));
         if ((percent >= 45) && (percent < 50)) {
             player.sendPacket(SystemMessageId.YOU_ARE_STARTING_TO_FEEL_THE_EFFECTS_OF_NEVIT_S_ADVENT_BLESSING);
@@ -102,6 +98,7 @@ public class Nevit {
     }
 
     public void addPoints(int value) {
+        WorldPartition.checkOwner();
         if (getEffectTime() > 0) {
             setAdventPoints(0);
         } else {
@@ -137,35 +134,30 @@ public class Nevit {
     }
 
     public void startAdventTask() {
-        if (adventTask == null) {
-            synchronized (this) {
-                if ((adventTask == null) && (getAdventTime() < PlayerConfig.NEVIT_ADVENT_TIME)) {
-                    adventTask = WorldPartition.loop().schedule(new AdventTask(), 30000, TimeUnit.MILLISECONDS);
-                    player.sendPacket(new ExNevitAdventTimeChange(getAdventTime(), false));
-                }
-            }
+        WorldPartition.checkOwner();
+        if ((adventTask == null) && (getAdventTime() < PlayerConfig.NEVIT_ADVENT_TIME)) {
+            adventTask = WorldPartition.loop().schedule(this::onAdventTick, 30000, TimeUnit.MILLISECONDS);
+            player.sendPacket(new ExNevitAdventTimeChange(getAdventTime(), false));
         }
     }
 
-    public class AdventTask implements Runnable {
-        @Override
-        public void run() {
-            setAdventTime(getAdventTime() + 30);
-            if (getAdventTime() >= PlayerConfig.NEVIT_ADVENT_TIME) {
-                setAdventTime(PlayerConfig.NEVIT_ADVENT_TIME);
-                stopAdventTask(true);
-            } else {
-                addPoints(72);
-                if ((getAdventTime() % 60) == 0) {
-                    player.sendPacket(new ExNevitAdventTimeChange(getAdventTime(), false));
-                }
+    private void onAdventTick() {
+        setAdventTime(getAdventTime() + 30);
+        if (getAdventTime() >= PlayerConfig.NEVIT_ADVENT_TIME) {
+            setAdventTime(PlayerConfig.NEVIT_ADVENT_TIME);
+            stopAdventTask(true);
+        } else {
+            addPoints(72);
+            if ((getAdventTime() % 60) == 0) {
+                player.sendPacket(new ExNevitAdventTimeChange(getAdventTime(), false));
             }
-
-            stopAdventTask(false);
         }
+
+        stopAdventTask(false);
     }
 
-    public synchronized void stopAdventTask(boolean sendPacket) {
+    public void stopAdventTask(boolean sendPacket) {
+        WorldPartition.checkOwner();
         if (adventTask != null) {
             adventTask.cancel(true);
             adventTask = null;
@@ -176,7 +168,8 @@ public class Nevit {
         }
     }
 
-    public synchronized void startNevitEffect(int timeValue) {
+    public void startNevitEffect(int timeValue) {
+        WorldPartition.checkOwner();
         int time = timeValue;
         if (getEffectTime() > 0) {
             stopNevitEffectTask(false);
@@ -191,29 +184,28 @@ public class Nevit {
                     SystemMessageId
                             .THE_ANGEL_NEVIT_HAS_BLESSED_YOU_FROM_ABOVE_YOU_ARE_IMBUED_WITH_FULL_VITALITY_AS_WELL_AS_A_VITALITY_REPLENISHING_EFFECT_AND_SHOULD_YOU_DIE_YOU_WILL_NOT_LOSE_EXP);
             player.startAbnormalVisualEffect(true, AbnormalVisualEffect.NAVIT_ADVENT);
-            nevitEffectTask = WorldPartition.loop().schedule(new NevitEffectEnd(), time * 1000, TimeUnit.MILLISECONDS);
+            nevitEffectTask =
+                    WorldPartition.loop().schedule(this::onNevitEffectEnd, time * 1000, TimeUnit.MILLISECONDS);
         }
     }
 
-    public class NevitEffectEnd implements Runnable {
-        @Override
-        public void run() {
-            if (PlayerConfig.NEVIT_IGNORE_ADVENT_TIME) {
-                setAdventTime(0);
-            }
-
-            player.getVariables().remove("nevit_b");
-            player.sendPacket(new ExNevitAdventEffect(0));
-            player.sendPacket(new ExNevitAdventPointInfoPacket(getAdventPoints()));
-            player.sendPacket(
-                    SystemMessageId
-                            .NEVIT_S_ADVENT_BLESSING_HAS_ENDED_CONTINUE_YOUR_JOURNEY_AND_YOU_WILL_SURELY_MEET_HIS_FAVOR_AGAIN_SOMETIME_SOON);
-            player.stopAbnormalVisualEffect(true, AbnormalVisualEffect.NAVIT_ADVENT);
-            stopNevitEffectTask(false);
+    private void onNevitEffectEnd() {
+        if (PlayerConfig.NEVIT_IGNORE_ADVENT_TIME) {
+            setAdventTime(0);
         }
+
+        player.getVariables().remove("nevit_b");
+        player.sendPacket(new ExNevitAdventEffect(0));
+        player.sendPacket(new ExNevitAdventPointInfoPacket(getAdventPoints()));
+        player.sendPacket(
+                SystemMessageId
+                        .NEVIT_S_ADVENT_BLESSING_HAS_ENDED_CONTINUE_YOUR_JOURNEY_AND_YOU_WILL_SURELY_MEET_HIS_FAVOR_AGAIN_SOMETIME_SOON);
+        player.stopAbnormalVisualEffect(true, AbnormalVisualEffect.NAVIT_ADVENT);
+        stopNevitEffectTask(false);
     }
 
-    public synchronized void stopNevitEffectTask(boolean saveTime) {
+    public void stopNevitEffectTask(boolean saveTime) {
+        WorldPartition.checkOwner();
         if (nevitEffectTask != null) {
             if (saveTime) {
                 final int time = getEffectTime();
@@ -230,6 +222,7 @@ public class Nevit {
     }
 
     public int getObjectId() {
+        WorldPartition.checkOwner();
         return player.getObjectId();
     }
 
@@ -242,26 +235,31 @@ public class Nevit {
     }
 
     public boolean isAdventBlessingActive() {
+        WorldPartition.checkOwner();
         return ((nevitEffectTask != null) && (nevitEffectTask.getDelay(TimeUnit.MILLISECONDS) > 0));
     }
 
-    public static int calcPercent(int points) {
+    private static int calcPercent(int points) {
         return (int) ((100.0D / PlayerConfig.NEVIT_MAX_POINTS) * points);
     }
 
     public void setAdventPoints(int points) {
+        WorldPartition.checkOwner();
         player.getVariables().set("hunting_points", points);
     }
 
     public void setAdventTime(int time) {
+        WorldPartition.checkOwner();
         player.getVariables().set("hunting_time", time);
     }
 
     public int getAdventPoints() {
+        WorldPartition.checkOwner();
         return PlayerConfig.NEVIT_ENABLED ? player.getVariables().getInt("hunting_points", 0) : 0;
     }
 
     public int getAdventTime() {
+        WorldPartition.checkOwner();
         return PlayerConfig.NEVIT_ENABLED ? player.getVariables().getInt("hunting_time", 0) : 0;
     }
 }

@@ -22,35 +22,39 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PetStatus extends SummonStatus {
-    @Getter
-    @Setter
-    private int currentFed = 0; // Current Fed of the Pet
+    private int currentFed = 0;
 
     public PetStatus(Pet activeChar) {
         super(activeChar);
     }
 
-    @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
+    public int getCurrentFed() {
+        WorldPartition.checkOwner();
+        return currentFed;
+    }
+
+    public void setCurrentFed(int value) {
+        WorldPartition.checkOwner();
+        currentFed = value;
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
-        final Pet pet = getActiveChar();
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
+        final Pet pet = (Pet) creature();
         if (pet.isDead()) {
             return;
         }
 
-        super.reduceHp(value, attacker, awake, isDOT, isHpConsumption);
+        super.doReduceHp(value, attacker, awake, isDOT, isHpConsumption);
 
         if (attacker == null) {
             return;
@@ -68,6 +72,7 @@ public class PetStatus extends SummonStatus {
 
     @Override
     public Pet getActiveChar() {
-        return super.getActiveChar().asPet();
+        WorldPartition.checkOwner();
+        return (Pet) creature();
     }
 }

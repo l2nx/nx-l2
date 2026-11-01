@@ -26,35 +26,34 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.MacroType;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SendMacroList;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterMacro;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 @Slf4j
+@SingleWriter
 public class MacroList {
 
     private final Player owner;
 
-    @Getter
     private int revision;
 
     private int macroId;
 
-    @Getter
-    private final Map<Integer, Macro> allMacroses = Collections.synchronizedMap(new LinkedHashMap<>());
+    // Registration order is the order the client lists the macros in.
+    private final Int2ObjectLinkedOpenHashMap<Macro> macros = new Int2ObjectLinkedOpenHashMap<>();
 
     public MacroList(Player owner) {
         this.owner = owner;
@@ -62,25 +61,49 @@ public class MacroList {
         macroId = 1000;
     }
 
-    public void registerMacro(Macro macro) {
-        if (macro.getId() == 0) {
-            macro.setId(macroId++);
-            while (allMacroses.containsKey(macro.getId())) {
-                macro.setId(macroId++);
-            }
+    public int getRevision() {
+        WorldPartition.checkOwner();
+        return revision;
+    }
 
-            allMacroses.put(macro.getId(), macro);
-            registerMacroInDb(macro);
-        } else {
-            allMacroses.put(macro.getId(), macro);
-            registerMacroInDb(macro);
+    public int getMacroCount() {
+        WorldPartition.checkOwner();
+        return macros.size();
+    }
+
+    /**
+     * @return whether a macro other than {@code exceptId} already has this name, ignoring case
+     */
+    public boolean isNameTaken(String name, int exceptId) {
+        WorldPartition.checkOwner();
+        for (Macro macro : macros.values()) {
+            if ((macro.getId() != exceptId) && macro.getName().equalsIgnoreCase(name)) {
+                return true;
+            }
         }
 
+        return false;
+    }
+
+    public void registerMacro(Macro macro) {
+        WorldPartition.checkOwner();
+        Macro registered = macro;
+        if (registered.getId() == 0) {
+            while (macros.containsKey(macroId)) {
+                macroId++;
+            }
+
+            registered = macro.withId(macroId++);
+        }
+
+        macros.put(registered.getId(), registered);
+        registerMacroInDb(registered);
         sendUpdate();
     }
 
     public void deleteMacro(int id) {
-        final Macro removed = allMacroses.remove(id);
+        WorldPartition.checkOwner();
+        final Macro removed = macros.remove(id);
         if (removed != null) {
             deleteMacroFromDb(removed);
         }
@@ -95,15 +118,16 @@ public class MacroList {
     }
 
     public void sendUpdate() {
+        WorldPartition.checkOwner();
         revision++;
-        final Collection<Macro> allMacros = allMacroses.values();
-        synchronized (allMacroses) {
-            if (allMacros.isEmpty()) {
-                owner.sendPacket(new SendMacroList(revision, 0, null));
-            } else {
-                for (Macro m : allMacros) {
-                    owner.sendPacket(new SendMacroList(revision, allMacros.size(), m));
-                }
+        if (macros.isEmpty()) {
+            owner.sendPacket(new SendMacroList(revision, 0, null));
+            return;
+        }
+
+        try (ScratchBuffers.Snapshot<Macro> sent = ScratchBuffers.snapshot(macros.values())) {
+            for (Macro m : sent) {
+                owner.sendPacket(new SendMacroList(revision, sent.size(), m));
             }
         }
     }
@@ -148,30 +172,28 @@ public class MacroList {
     }
 
     public boolean restoreMe() {
-        allMacroses.clear();
+        WorldPartition.checkOwner();
+        macros.clear();
         try {
             for (CharacterMacro stored : PlayerPersistenceManager.getInstance().findMacros(owner.getObjectId())) {
                 final List<MacroCmd> commands = new ArrayList<>();
-                final StringTokenizer st1 =
-                        new StringTokenizer(stored.commands() == null ? "" : stored.commands(), ";");
-                while (st1.hasMoreTokens()) {
-                    final StringTokenizer st = new StringTokenizer(st1.nextToken(), ",");
-                    if (st.countTokens() < 3) {
-                        continue;
-                    }
+                if (stored.commands() != null) {
+                    final StringTokenizer st1 = new StringTokenizer(stored.commands(), ";");
+                    while (st1.hasMoreTokens()) {
+                        final StringTokenizer st = new StringTokenizer(st1.nextToken(), ",");
+                        if (st.countTokens() < 3) {
+                            continue;
+                        }
 
-                    final MacroType type = MacroType.values()[Integer.parseInt(st.nextToken())];
-                    final int d1 = Integer.parseInt(st.nextToken());
-                    final int d2 = Integer.parseInt(st.nextToken());
-                    String cmd = "";
-                    if (st.hasMoreTokens()) {
-                        cmd = st.nextToken();
+                        final MacroType type = MacroType.values()[Integer.parseInt(st.nextToken())];
+                        final int d1 = Integer.parseInt(st.nextToken());
+                        final int d2 = Integer.parseInt(st.nextToken());
+                        final String cmd = st.hasMoreTokens() ? st.nextToken() : null;
+                        commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
                     }
-
-                    commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
                 }
 
-                allMacroses.put(
+                macros.put(
                         stored.macroId(),
                         new Macro(
                                 stored.macroId(),

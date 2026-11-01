@@ -30,6 +30,7 @@ import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.engine.core.clock.GameClock;
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -89,6 +90,7 @@ import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.IntSnapshot;
 import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -373,14 +375,24 @@ import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
 import app.l2nx.highfive.taskmanagers.PlayerAutoSaveTaskManager;
 import app.l2nx.highfive.taskmanagers.PvpFlagTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMaps;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSets;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import it.unimi.dsi.fastutil.objects.ObjectSets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -388,17 +400,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DataAccessException;
@@ -408,6 +414,7 @@ import org.springframework.dao.DataAccessException;
  * There is always a client-thread connected to this (except if a player-store is activated upon logout).
  */
 @Slf4j
+@SingleWriter
 public class Player extends Playable {
     public static final String NEWBIE_KEY = "NEWBIE";
 
@@ -415,7 +422,6 @@ public class Player extends Playable {
 
     public static final int REQUEST_TIMEOUT = 15;
 
-    @Getter
     private int pcCafePoints = 0;
 
     // @formatter:off
@@ -436,43 +442,30 @@ public class Player extends Playable {
     private static final int NEVIT_HOURGLASS_PAUSED = 1;
     private static final int NEVIT_HOURGLASS_MAINTAIN = 10;
 
-    @Getter
     private GameClient client;
 
     private String ipAddress = "N/A";
 
-    @Getter
     private final UUID accountId;
 
-    @Getter
-    @Setter
     private long deleteTimer;
 
-    @Getter
-    @Setter
     private Calendar createDate = ClockBridge.calendar();
 
-    @Getter
     private String lang = null;
 
     private String htmlPrefix = "";
 
-    @Getter
-    private volatile boolean online = false;
+    private boolean online = false;
 
-    @Getter
-    @Setter
     private boolean offlinePlay = false;
 
     private boolean enteredWorld = false;
     private long onlineTime;
     private long onlineBeginTime;
 
-    @Getter
-    @Setter(lombok.AccessLevel.PROTECTED)
     private long lastAccess;
 
-    @Setter
     private long uptime;
 
     private final InventoryUpdate inventoryUpdate = new InventoryUpdate();
@@ -483,549 +476,328 @@ public class Player extends Playable {
     private ScheduledFuture<?> broadcastCharInfoTask;
     private ScheduledFuture<?> broadcastStatusUpdateTask;
 
-    @Getter
     private boolean changingClass = false;
 
-    @Getter
     protected int baseClass;
 
-    @Getter
     protected int activeClass;
 
-    @Getter
     protected int classIndex = 0;
 
-    /** Data for mounted pets. */
     private int controlItemId;
 
     private PetLevelData leveldata;
 
-    @Getter
     private int currentFeed;
 
-    protected Future<?> mountFeedTask;
+    protected ScheduledFuture<?> mountFeedTask;
     private ScheduledFuture<?> dismountTask;
     private boolean petItems = false;
 
-    /** The list of sub-classes this character has. */
-    @Getter
-    private final Map<Integer, SubClassHolder> subClasses = new ConcurrentHashMap<>();
+    /** The list of sub-classes this character has, by class index. */
+    private final Int2ObjectSortedMap<SubClassHolder> subClasses = new Int2ObjectRBTreeMap<>();
 
-    @Getter
     private final PlayerAppearance appearance;
 
-    /** The Experience of the Player before the last Death Penalty */
-    @Getter
-    @Setter
     private long expBeforeDeath;
 
-    /** The number of player killed during a PvP (the player killed was PvP Flagged) */
-    @Getter
     private int pvpKills;
 
-    /** The PK counter of the Player (= Number of non PvP Flagged player killed) */
-    @Getter
+    /** Kills of players without a PvP flag. */
     private int pkKills;
 
-    /** The PvP Flag state of the Player (0=White, 1=Purple) */
-    @Getter
+    /** 0 = white, 1 = purple. */
     private byte pvpFlag;
 
-    /** The Fame of this Player */
-    @Getter
     private int fame;
 
     private ScheduledFuture<?> fameTask;
 
-    /** Vitality recovery task */
     private ScheduledFuture<?> vitalityTask;
 
     private ScheduledFuture<?> teleportWatchdog;
 
-    /** The Siege state of the Player */
-    @Getter
-    @Setter
     private byte siegeState = 0;
 
-    /** The id of castle/fort which the Player is registered for siege */
-    @Getter
-    @Setter
+    /** Id of the castle or fort the player is registered to siege. */
     private int siegeSide = 0;
 
     private int curWeightPenalty = 0;
 
-    private int lastCompassZone; // The last compass zone update send to the client.
+    private int lastCompassZone;
 
-    @Getter
-    @Setter
     private boolean in7sDungeon = false;
 
-    @Getter
     private final ContactList contactList = new ContactList(this);
 
-    @Getter
-    private int bookmarkSlot = 0; // The Teleport Bookmark Slot
+    private int bookmarkSlot = 0;
 
-    private final Map<Integer, TeleportBookmark> tpbookmarks = new ConcurrentHashMap<>();
+    /** By bookmark id, which orders the client's list. */
+    private final Int2ObjectSortedMap<TeleportBookmark> tpbookmarks = new Int2ObjectRBTreeMap<>();
 
     private boolean canFeed;
 
-    @Getter
-    @Setter
     private boolean inSiege;
 
-    @Getter
-    @Setter
     private boolean inHideoutSiege = false;
 
-    /** Olympiad */
-    @Getter
-    @Setter
     private boolean inOlympiadMode = false;
 
-    @Getter
-    @Setter
     private boolean olympiadStart = false;
 
-    @Getter
-    @Setter
     private int olympiadGameId = -1;
 
-    @Getter
-    @Setter
     private int olympiadSide = -1;
-    /** Olympiad buff count. */
-    @Getter
-    @Setter
     private int olympiadBuffCount = 0;
 
-    /** Duel */
-    @Getter
     private boolean inDuel = false;
 
     private boolean startingDuel = false;
 
-    @Getter
-    @Setter
     private int duelState = Duel.DUELSTATE_NODUEL;
 
-    @Getter
     private int duelId = 0;
 
     private SystemMessageId noDuelReason = SystemMessageId.THERE_IS_NO_OPPONENT_TO_RECEIVE_YOUR_CHALLENGE_FOR_A_DUEL;
 
-    /** Boat and AirShip */
-    @Getter
     private Vehicle vehicle = null;
 
-    @Getter
-    @Setter
     private Location inVehiclePosition;
 
-    public ScheduledFuture<?> taskForFish;
+    private ScheduledFuture<?> taskForFish;
 
-    @Getter
     private MountType mountType = MountType.NONE;
 
-    @Getter
     private int mountNpcId;
 
-    @Getter
     private int mountLevel;
-    /** Store object used to summon the strider you are mounting **/
-    @Getter
-    @Setter
+    /** Object id of the control item that summoned the mounted strider. */
     private int mountObjectID = 0;
 
-    @Getter
-    @Setter
-    public int teleMode = 0;
+    private int teleMode = 0;
 
-    @Getter
-    @Setter
     private boolean inCrystallize;
 
-    @Getter
-    @Setter
     private boolean crafting;
 
-    @Getter
-    @Setter
     private long offlineStartTime = 0;
 
-    @Getter
     private Transform transformation;
 
-    private final Map<Integer, Skill> transformSkills = new ConcurrentHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<Skill> transformSkills = new Int2ObjectLinkedOpenHashMap<>();
 
-    /** The table containing all RecipeList of the Player */
-    private final Map<Integer, RecipeList> dwarvenRecipeBook = new ConcurrentHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<RecipeList> dwarvenRecipeBook = new Int2ObjectLinkedOpenHashMap<>();
 
-    private final Map<Integer, RecipeList> commonRecipeBook = new ConcurrentHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<RecipeList> commonRecipeBook = new Int2ObjectLinkedOpenHashMap<>();
 
-    /** Premium Items */
-    @Getter
-    private final Map<Integer, PremiumItem> premiumItemList = new ConcurrentHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<PremiumItem> premiumItemList = new Int2ObjectLinkedOpenHashMap<>();
 
-    /** True if the Player is sitting */
-    @Getter
     private boolean sitting;
 
     private boolean sittingInProgress;
 
     /** Location before entering Observer Mode */
-    @Getter
     private final Location lastLocation = new Location(0, 0, 0);
 
     private boolean observerMode = false;
 
-    /** Stored from last ValidatePosition **/
-    @Getter
     private final Location lastServerPosition = new Location(0, 0, 0);
 
-    private final AtomicBoolean blinkActive = new AtomicBoolean();
+    private boolean blinkActive;
 
-    /** The number of recommendation obtained by the Player */
-    @Getter
-    private int recomHave; // How much I was recommended by others.
-    /** The number of recommendation that the Player can give */
-    @Getter
-    private int recomLeft; // How many recommendations I can give to others.
-    /** Recommendation Bonus task **/
+    private int recomHave;
+    private int recomLeft;
     private ScheduledFuture<?> nevitHourglassTask;
-    /** Recommendation task **/
     private ScheduledFuture<?> recoGiveTask;
-    /** Recommendation Two Hours bonus **/
-    @Getter
-    @Setter
     protected boolean recoTwoHoursGiven = false;
 
-    @Getter
     private final PlayerInventory inventory = new PlayerInventory(this);
 
-    @Getter
     private final PlayerFreight freight = new PlayerFreight(this);
 
-    @Getter
     private final PlayerWarehouse warehouse = new PlayerWarehouse(this);
 
     private PlayerRefund refund;
 
-    @Getter
     private PrivateStoreType privateStoreType = PrivateStoreType.NONE;
 
-    @Getter
-    @Setter
     private TradeList activeTradeList;
 
-    @Getter
-    @Setter
     private ItemContainer activeWarehouse;
 
-    private Map<Integer, ManufactureItem> manufactureItems;
+    private final Int2ObjectLinkedOpenHashMap<ManufactureItem> manufactureItems = new Int2ObjectLinkedOpenHashMap<>();
 
-    @Getter
     private String storeName = "";
 
     private TradeList sellList;
     private TradeList buyList;
 
-    // Multisell
-    @Getter
-    @Setter
     private PreparedListContainer multiSell = null;
 
     /** Bitmask used to keep track of one-time/newbie quest rewards */
-    @Getter
-    @Setter
     private int newbie;
 
-    @Getter
     private boolean noble = false;
 
-    @Getter
     private boolean hero = false;
 
-    /** Premium System */
-    @Setter
     private boolean premiumStatus = false;
 
-    /** Faction System */
-    @Getter
     private boolean good = false;
 
-    @Getter
     private boolean evil = false;
 
-    /** The Npc corresponding to the last Folk which one the player talked. */
-    @Getter
-    @Setter
     private Npc lastFolkNPC = null;
 
-    /** Last NPC Id talked on a quest */
-    @Getter
-    @Setter
     private int lastQuestNpcObject = 0;
 
-    /** The table containing all Quests began by the Player */
-    private final Map<String, QuestState> quests = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final TreeMap<String, QuestState> quests = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    /** The list containing all shortcuts of this player. */
     private final Shortcuts shortcuts = new Shortcuts(this);
 
-    /** The list containing all macros of this player. */
-    @Getter
     private final MacroList macros = new MacroList(this);
 
-    private final Set<Player> snoopListener = ConcurrentHashMap.newKeySet(1);
-    private final Set<Player> snoopedPlayer = ConcurrentHashMap.newKeySet(1);
+    private final ObjectLinkedOpenHashSet<Player> snoopListener = new ObjectLinkedOpenHashSet<>(1);
+    private final ObjectLinkedOpenHashSet<Player> snoopedPlayer = new ObjectLinkedOpenHashSet<>(1);
 
-    /** Hennas */
-    @Getter
     private final Henna[] hennaList = new Henna[3];
 
-    @Getter
     private int hennaStatSTR;
 
-    @Getter
     private int hennaStatINT;
 
-    @Getter
     private int hennaStatDEX;
 
-    @Getter
     private int hennaStatMEN;
 
-    @Getter
     private int hennaStatWIT;
 
-    @Getter
     private int hennaStatCON;
 
-    /** The Summon of the Player */
     private Summon summon = null;
-    /** The Decoy of the Player */
-    @Getter
-    @Setter
     private Decoy decoy = null;
-    /** The Trap of the Player */
-    @Getter
-    @Setter
     private Trap trap = null;
-    /** The Agathion of the Player */
-    @Getter
-    @Setter
     private int agathionId = 0;
 
-    // Apparently, a Player CAN have both a summon AND a tamed beast at the same time!!
-    // After Freya players can control more than one tamed beast.
-    @Getter
-    private Collection<TamedBeast> trainedBeasts = null;
+    // A player can hold a summon and tamed beasts at once, and several beasts since Freya.
+    private ObjectLinkedOpenHashSet<TamedBeast> trainedBeasts = null;
 
-    @Getter
-    @Setter
     private boolean minimapAllowed = false;
 
-    // client radar
-    // TODO: This needs to be better integrated and saved/loaded
-    @Getter
     private final Radar radar;
 
     private ScheduledFuture<?> taskWarnUserTakeBreak;
 
-    // Party matching
-    // private int _partymatching = 0;
-    @Getter
-    @Setter
     private int partyRoom = 0;
-    // private int _partywait = 0;
 
-    // Clan related attributes
-    /** The Clan Identifier of the Player */
-    @Getter
     private int clanId;
 
-    /** The Clan object of the Player */
-    @Getter
     private Clan clan;
 
-    /** Apprentice and Sponsor IDs */
-    @Getter
-    @Setter
     private int apprentice = 0;
 
-    @Getter
-    @Setter
     private int sponsor = 0;
 
-    @Getter
-    @Setter
     private long clanJoinExpiryTime;
 
-    @Getter
-    @Setter
     private long clanCreateExpiryTime;
 
-    @Getter
-    @Setter
     private int powerGrade = 0;
 
-    @Getter
     private ClanPrivileges clanPrivileges = new ClanPrivileges();
 
-    /** Player's pledge class (knight, Baron, etc.) */
-    @Getter
     private int pledgeClass = 0;
 
-    @Getter
-    @Setter
     private int pledgeType = 0;
 
-    /** Level at which the player joined the clan as an academy member */
-    @Getter
-    @Setter
     private int lvlJoinedAcademy = 0;
 
-    @Getter
-    @Setter
     private int wantsPeace = 0;
 
-    // Death Penalty Buff Level
-    @Getter
-    @Setter
     private int deathPenaltyBuffLevel = 0;
 
-    // charges
-    private final AtomicInteger charges = new AtomicInteger();
+    private int charges;
     private ScheduledFuture<?> chargeTask = null;
 
-    // Absorbed Souls
-    @Getter
     private int chargedSouls = 0;
 
     private ScheduledFuture<?> soulTask = null;
 
-    // WorldPosition used by TARGET_SIGNET_GROUND
-    @Getter
-    @Setter
+    // Target of TARGET_SIGNET_GROUND skills.
     private Location currentSkillWorldPosition;
 
     private AccessLevel accessLevel;
 
-    private boolean messageRefusal = false; // message refusal mode
+    private boolean messageRefusal = false;
 
-    @Getter
-    private boolean silenceMode = false; // silence mode
+    private boolean silenceMode = false;
 
-    private List<Integer> silenceModeExcluded; // silence mode
+    private List<Integer> silenceModeExcluded;
 
-    @Setter
     private boolean dietMode = false; // ignore weight penalty
 
-    @Setter
-    private boolean tradeRefusal = false; // Trade refusal
+    private boolean tradeRefusal = false;
 
-    @Setter
-    private boolean exchangeRefusal = false; // Exchange refusal
+    private boolean exchangeRefusal = false;
 
-    @Getter
-    @Setter
     private Party party;
 
-    @Getter
-    @Setter
-    PartyDistributionType partyDistributionType;
+    private PartyDistributionType partyDistributionType;
 
-    // This is needed to find the inviting player for Party response.
-    // There can only be one active party request at once.
-    @Setter
+    // The inviter, needed for the party response; only one party request can be active at once.
     private Player activeRequester;
 
     private long requestExpireTime = 0;
 
-    @Getter
     private final RequestPartner request = new RequestPartner(this);
 
     private Item arrowItem;
     private Item boltItem;
 
-    // Used for protection after teleport.
     private long spawnProtectEndTime = 0;
     private long teleportProtectEndTime = 0;
 
-    // Protects a char from aggro mobs when getting up from fake death.
+    // Protects from aggro mobs while getting up from fake death.
     private long recentFakeDeathEndTime = 0;
 
-    @Getter
-    @Setter
     private boolean fakeDeath;
 
-    /** The fists Weapon of the Player (used when no weapon is equipped) */
-    @Getter
-    @Setter
     private Weapon fistsWeaponItem;
 
-    @Getter
-    private final Map<Integer, String> accountChars = new LinkedHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<String> accountChars = new Int2ObjectLinkedOpenHashMap<>();
 
-    // private byte _updateKnownCounter = 0;
-
-    @Getter
     private int expertiseArmorPenalty = 0;
 
-    @Getter
     private int expertiseWeaponPenalty = 0;
 
-    @Getter
-    @Setter
     private int expertisePenaltyBonus = 0;
 
-    @Getter
-    @Setter
     private boolean enchanting = false;
 
-    @Getter
     private int activeEnchantItemId = ID_NONE;
 
-    @Getter
-    @Setter
     private int activeEnchantSupportItemId = ID_NONE;
 
-    @Getter
-    @Setter
     private int activeEnchantAttrItemId = ID_NONE;
 
-    @Getter
-    @Setter
     private long activeEnchantTimestamp = 0;
 
-    @Getter
     protected boolean inventoryDisabled = false;
-    /** Player's cubics. */
-    private final Map<Integer, Cubic> cubics = new ConcurrentSkipListMap<>();
+    private final Int2ObjectSortedMap<Cubic> cubics = new Int2ObjectRBTreeMap<>();
 
-    private final ConcurrentLinkedDeque<Integer> cubicOrder = new ConcurrentLinkedDeque<>();
-    /** Active shots. */
-    @Getter
-    protected Set<Integer> autoSoulShot = ConcurrentHashMap.newKeySet(1);
+    /** Cubic ids, the oldest summoned first. */
+    private final IntLinkedOpenHashSet cubicOrder = new IntLinkedOpenHashSet();
 
-    /** Event parameters */
-    @Setter
+    private final IntLinkedOpenHashSet autoSoulShot = new IntLinkedOpenHashSet(1);
+
     private boolean registeredOnEvent = false;
 
-    @Getter
-    @Setter
     private boolean onSoloEvent = false;
 
-    @Getter
-    @Setter
     private boolean onEvent = false;
 
-    @Setter
     private byte blockCheckerArena = -1;
 
-    @Getter
-    @Setter
     private KrateiArena krateiArena = null;
 
     private int ucKills = 0;
@@ -1035,34 +807,23 @@ public class Player extends Playable {
     public static final int UC_STATE_POINT = 1;
     public static final int UC_STATE_ARENA = 2;
 
-    /** new loto ticket **/
     private final int[] loto = new int[5];
-    /** New race ticket. */
     private final int[] raceTickets = new int[2];
 
-    @Getter
     private final BlockList blockList = new BlockList(this);
 
     private Fish fish;
 
-    @Getter
-    @Setter
     private Item lure;
 
-    @Getter
     private Fishing fishCombat;
 
-    @Getter
-    @Setter
     private boolean fishing = false;
 
-    @Getter
     private int fishX = 0;
 
-    @Getter
     private int fishY = 0;
 
-    @Getter
     private int fishZ = 0;
 
     private ScheduledFuture<?> taskRentPet;
@@ -1070,46 +831,31 @@ public class Player extends Playable {
 
     /** Last Html Npcs, 0 = last html was not bound to an npc */
     private final int[] htmlActionOriginObjectIds = new int[HtmlActionScope.values().length];
-    /**
-     * Origin of the last incoming html action request.<br>
-     * This can be used for htmls continuing the conversation with an npc.
-     */
-    @Getter
+
     private int lastHtmlActionOriginId;
 
-    /** Bypass validations */
     @SuppressWarnings("unchecked")
     private final List<String>[] htmlActionCaches = new List[HtmlActionScope.values().length];
 
     private Forum forumMail;
     private Forum forumMemo;
 
-    /** Current skill in use. Note that Creature has _lastSkillCast, but this has the button presses */
-    @Getter
+    /** The skill button last pressed; distinct from the cast state Creature tracks. */
     private SkillUseHolder currentSkill;
 
-    @Getter
     private SkillUseHolder currentPetSkill;
 
-    /** Skills queued because a skill is already in progress */
-    @Getter
     private SkillUseHolder queuedSkill;
 
-    @Getter
-    @Setter
     private int cursedWeaponEquippedId = 0;
 
-    @Getter
-    @Setter
     private boolean combatFlagEquipped = false;
 
-    @Setter
     private boolean canRevive = true;
 
     private int reviveRequested = 0;
     private double revivePower = 0;
 
-    @Getter
     private boolean revivingPet = false;
 
     private double cpUpdateIncCheck = .0;
@@ -1123,67 +869,40 @@ public class Player extends Playable {
     private double originalHp = .0;
     private double originalMp = .0;
 
-    /** Char Coords from Client */
-    @Getter
-    @Setter
     private int clientX;
 
-    @Getter
-    @Setter
     private int clientY;
 
-    @Getter
-    @Setter
     private int clientZ;
 
-    @Getter
-    @Setter
     private int clientHeading;
 
-    // During fall validations will be disabled for 1000 ms.
+    // Position validation is disabled for this many ms after a fall.
     private static final int FALLING_VALIDATION_DELAY = 1000;
-    private volatile long fallingTimestamp = 0;
-    private volatile int fallingDamage = 0;
-    private Future<?> fallingDamageTask = null;
+    private long fallingTimestamp = 0;
+    private int fallingDamage = 0;
+    private ScheduledFuture<?> fallingDamageTask = null;
 
-    @Getter
     private int multiSocialTarget = 0;
 
-    @Getter
     private int multiSociaAction = 0;
 
-    @Getter
-    @Setter
     private MovieHolder movieHolder = null;
 
-    @Getter
-    @Setter
     private String adminConfirmCmd = null;
 
-    private volatile long lastItemAuctionInfoRequest = 0;
+    private long lastItemAuctionInfoRequest = 0;
 
-    @Getter
-    @Setter
     private long pvpFlagLasts;
 
-    @Getter
     private long notMoveUntil = 0;
 
-    /** Map containing all custom skills of this player. */
-    private Map<Integer, Skill> customSkills = null;
+    private Int2ObjectLinkedOpenHashMap<Skill> customSkills = null;
 
-    private volatile int actionMask;
+    private int actionMask;
 
-    @Setter
     private Map<Stat, Double> servitorShare;
 
-    /**
-     * Creates a player.
-     * @param objectId the object ID
-     * @param template the player template
-     * @param accountId the account of the character
-     * @param app the player appearance
-     */
     private Player(int objectId, PlayerTemplate template, UUID accountId, PlayerAppearance app) {
         super(objectId, template);
         setInstanceType(InstanceType.Player);
@@ -1198,150 +917,1371 @@ public class Player extends Playable {
         app.setOwner(this);
         appearance = app;
 
-        // Create an AI.
         getAI();
 
-        // Create a Radar object.
         radar = new Radar(this);
         startVitalityTask();
     }
 
-    /**
-     * Creates a player.
-     * @param template the player template
-     * @param accountId the account of the character
-     * @param app the player appearance
-     */
     private Player(PlayerTemplate template, UUID accountId, PlayerAppearance app) {
         this(IdManager.getInstance().getNextId(), template, accountId, app);
     }
 
+    public int getPcCafePoints() {
+        WorldPartition.checkOwner();
+        return pcCafePoints;
+    }
+
+    public GameClient getClient() {
+        WorldPartition.checkOwner();
+        return client;
+    }
+
+    public UUID getAccountId() {
+        WorldPartition.checkOwner();
+        return accountId;
+    }
+
+    public long getDeleteTimer() {
+        WorldPartition.checkOwner();
+        return deleteTimer;
+    }
+
+    public void setDeleteTimer(long deleteTimer) {
+        WorldPartition.checkOwner();
+        this.deleteTimer = deleteTimer;
+    }
+
+    public Calendar getCreateDate() {
+        WorldPartition.checkOwner();
+        return createDate;
+    }
+
+    public void setCreateDate(Calendar createDate) {
+        WorldPartition.checkOwner();
+        this.createDate = createDate;
+    }
+
+    public String getLang() {
+        WorldPartition.checkOwner();
+        return lang;
+    }
+
+    public boolean isOnline() {
+        WorldPartition.checkOwner();
+        return online;
+    }
+
+    public boolean isOfflinePlay() {
+        WorldPartition.checkOwner();
+        return offlinePlay;
+    }
+
+    public void setOfflinePlay(boolean offlinePlay) {
+        WorldPartition.checkOwner();
+        this.offlinePlay = offlinePlay;
+    }
+
+    public long getLastAccess() {
+        WorldPartition.checkOwner();
+        return lastAccess;
+    }
+
+    protected void setLastAccess(long lastAccess) {
+        WorldPartition.checkOwner();
+        this.lastAccess = lastAccess;
+    }
+
+    public void setUptime(long uptime) {
+        WorldPartition.checkOwner();
+        this.uptime = uptime;
+    }
+
+    public boolean isChangingClass() {
+        WorldPartition.checkOwner();
+        return changingClass;
+    }
+
+    public int getBaseClass() {
+        WorldPartition.checkOwner();
+        return baseClass;
+    }
+
+    public int getActiveClass() {
+        WorldPartition.checkOwner();
+        return activeClass;
+    }
+
+    public int getClassIndex() {
+        WorldPartition.checkOwner();
+        return classIndex;
+    }
+
+    public int getCurrentFeed() {
+        WorldPartition.checkOwner();
+        return currentFeed;
+    }
+
+    public Map<Integer, SubClassHolder> getSubClasses() {
+        WorldPartition.checkOwner();
+        return Int2ObjectSortedMaps.unmodifiable(new Int2ObjectRBTreeMap<>(subClasses));
+    }
+
+    /** @return the sub-class of the given class index, {@code null} for none */
+    public SubClassHolder getSubClass(int classIndex) {
+        WorldPartition.checkOwner();
+        return subClasses.get(classIndex);
+    }
+
+    public boolean hasSubClass(int classIndex) {
+        WorldPartition.checkOwner();
+        return subClasses.containsKey(classIndex);
+    }
+
+    public boolean hasSubClasses() {
+        WorldPartition.checkOwner();
+        return !subClasses.isEmpty();
+    }
+
+    public PlayerAppearance getAppearance() {
+        WorldPartition.checkOwner();
+        return appearance;
+    }
+
+    public long getExpBeforeDeath() {
+        WorldPartition.checkOwner();
+        return expBeforeDeath;
+    }
+
+    public void setExpBeforeDeath(long expBeforeDeath) {
+        WorldPartition.checkOwner();
+        this.expBeforeDeath = expBeforeDeath;
+    }
+
+    public int getPvpKills() {
+        WorldPartition.checkOwner();
+        return pvpKills;
+    }
+
+    public int getPkKills() {
+        WorldPartition.checkOwner();
+        return pkKills;
+    }
+
+    public byte getPvpFlag() {
+        WorldPartition.checkOwner();
+        return pvpFlag;
+    }
+
+    public int getFame() {
+        WorldPartition.checkOwner();
+        return fame;
+    }
+
+    public byte getSiegeState() {
+        WorldPartition.checkOwner();
+        return siegeState;
+    }
+
+    public void setSiegeState(byte siegeState) {
+        WorldPartition.checkOwner();
+        this.siegeState = siegeState;
+    }
+
+    public int getSiegeSide() {
+        WorldPartition.checkOwner();
+        return siegeSide;
+    }
+
+    public void setSiegeSide(int siegeSide) {
+        WorldPartition.checkOwner();
+        this.siegeSide = siegeSide;
+    }
+
+    public boolean isIn7sDungeon() {
+        WorldPartition.checkOwner();
+        return in7sDungeon;
+    }
+
+    public void setIn7sDungeon(boolean in7sDungeon) {
+        WorldPartition.checkOwner();
+        this.in7sDungeon = in7sDungeon;
+    }
+
+    public ContactList getContactList() {
+        WorldPartition.checkOwner();
+        return contactList;
+    }
+
+    public int getBookmarkSlot() {
+        WorldPartition.checkOwner();
+        return bookmarkSlot;
+    }
+
+    public boolean isInSiege() {
+        WorldPartition.checkOwner();
+        return inSiege;
+    }
+
+    public void setInSiege(boolean inSiege) {
+        WorldPartition.checkOwner();
+        this.inSiege = inSiege;
+    }
+
+    public boolean isInHideoutSiege() {
+        WorldPartition.checkOwner();
+        return inHideoutSiege;
+    }
+
+    public void setInHideoutSiege(boolean inHideoutSiege) {
+        WorldPartition.checkOwner();
+        this.inHideoutSiege = inHideoutSiege;
+    }
+
+    public boolean isInOlympiadMode() {
+        WorldPartition.checkOwner();
+        return inOlympiadMode;
+    }
+
+    public void setInOlympiadMode(boolean inOlympiadMode) {
+        WorldPartition.checkOwner();
+        this.inOlympiadMode = inOlympiadMode;
+    }
+
+    public boolean isOlympiadStart() {
+        WorldPartition.checkOwner();
+        return olympiadStart;
+    }
+
+    public void setOlympiadStart(boolean olympiadStart) {
+        WorldPartition.checkOwner();
+        this.olympiadStart = olympiadStart;
+    }
+
+    public int getOlympiadGameId() {
+        WorldPartition.checkOwner();
+        return olympiadGameId;
+    }
+
+    public void setOlympiadGameId(int olympiadGameId) {
+        WorldPartition.checkOwner();
+        this.olympiadGameId = olympiadGameId;
+    }
+
+    public int getOlympiadSide() {
+        WorldPartition.checkOwner();
+        return olympiadSide;
+    }
+
+    public void setOlympiadSide(int olympiadSide) {
+        WorldPartition.checkOwner();
+        this.olympiadSide = olympiadSide;
+    }
+
+    public int getOlympiadBuffCount() {
+        WorldPartition.checkOwner();
+        return olympiadBuffCount;
+    }
+
+    public void setOlympiadBuffCount(int olympiadBuffCount) {
+        WorldPartition.checkOwner();
+        this.olympiadBuffCount = olympiadBuffCount;
+    }
+
+    public boolean isInDuel() {
+        WorldPartition.checkOwner();
+        return inDuel;
+    }
+
+    public int getDuelState() {
+        WorldPartition.checkOwner();
+        return duelState;
+    }
+
+    public void setDuelState(int duelState) {
+        WorldPartition.checkOwner();
+        this.duelState = duelState;
+    }
+
+    public int getDuelId() {
+        WorldPartition.checkOwner();
+        return duelId;
+    }
+
+    public Vehicle getVehicle() {
+        WorldPartition.checkOwner();
+        return vehicle;
+    }
+
+    public Location getInVehiclePosition() {
+        WorldPartition.checkOwner();
+        return inVehiclePosition;
+    }
+
+    public void setInVehiclePosition(Location inVehiclePosition) {
+        WorldPartition.checkOwner();
+        this.inVehiclePosition = inVehiclePosition;
+    }
+
+    public MountType getMountType() {
+        WorldPartition.checkOwner();
+        return mountType;
+    }
+
+    public int getMountNpcId() {
+        WorldPartition.checkOwner();
+        return mountNpcId;
+    }
+
+    public int getMountLevel() {
+        WorldPartition.checkOwner();
+        return mountLevel;
+    }
+
+    public int getMountObjectID() {
+        WorldPartition.checkOwner();
+        return mountObjectID;
+    }
+
+    public void setMountObjectID(int mountObjectID) {
+        WorldPartition.checkOwner();
+        this.mountObjectID = mountObjectID;
+    }
+
+    public int getTeleMode() {
+        WorldPartition.checkOwner();
+        return teleMode;
+    }
+
+    public void setTeleMode(int teleMode) {
+        WorldPartition.checkOwner();
+        this.teleMode = teleMode;
+    }
+
+    public boolean isInCrystallize() {
+        WorldPartition.checkOwner();
+        return inCrystallize;
+    }
+
+    public void setInCrystallize(boolean inCrystallize) {
+        WorldPartition.checkOwner();
+        this.inCrystallize = inCrystallize;
+    }
+
+    public boolean isCrafting() {
+        WorldPartition.checkOwner();
+        return crafting;
+    }
+
+    public void setCrafting(boolean crafting) {
+        WorldPartition.checkOwner();
+        this.crafting = crafting;
+    }
+
+    public long getOfflineStartTime() {
+        WorldPartition.checkOwner();
+        return offlineStartTime;
+    }
+
+    public void setOfflineStartTime(long offlineStartTime) {
+        WorldPartition.checkOwner();
+        this.offlineStartTime = offlineStartTime;
+    }
+
+    @Override
+    protected Transform transformation() {
+        return transformation;
+    }
+
+    public Map<Integer, PremiumItem> getPremiumItemList() {
+        WorldPartition.checkOwner();
+        return Int2ObjectMaps.unmodifiable(new Int2ObjectLinkedOpenHashMap<>(premiumItemList));
+    }
+
+    /** @return the premium item of the given number, {@code null} for none */
+    public PremiumItem getPremiumItem(int itemNum) {
+        WorldPartition.checkOwner();
+        return premiumItemList.get(itemNum);
+    }
+
+    public boolean hasPremiumItems() {
+        WorldPartition.checkOwner();
+        return !premiumItemList.isEmpty();
+    }
+
+    public void removePremiumItem(int itemNum) {
+        WorldPartition.checkOwner();
+        premiumItemList.remove(itemNum);
+    }
+
+    public boolean isSitting() {
+        WorldPartition.checkOwner();
+        return sitting;
+    }
+
+    public Location getLastLocation() {
+        WorldPartition.checkOwner();
+        return lastLocation;
+    }
+
+    public Location getLastServerPosition() {
+        WorldPartition.checkOwner();
+        return lastServerPosition;
+    }
+
+    public int getRecomHave() {
+        WorldPartition.checkOwner();
+        return recomHave;
+    }
+
+    public int getRecomLeft() {
+        WorldPartition.checkOwner();
+        return recomLeft;
+    }
+
+    public boolean isRecoTwoHoursGiven() {
+        WorldPartition.checkOwner();
+        return recoTwoHoursGiven;
+    }
+
+    public void setRecoTwoHoursGiven(boolean recoTwoHoursGiven) {
+        WorldPartition.checkOwner();
+        this.recoTwoHoursGiven = recoTwoHoursGiven;
+    }
+
+    public PlayerInventory getInventory() {
+        WorldPartition.checkOwner();
+        return inventory;
+    }
+
+    public PlayerFreight getFreight() {
+        WorldPartition.checkOwner();
+        return freight;
+    }
+
+    public PlayerWarehouse getWarehouse() {
+        WorldPartition.checkOwner();
+        return warehouse;
+    }
+
+    public PrivateStoreType getPrivateStoreType() {
+        WorldPartition.checkOwner();
+        return privateStoreType;
+    }
+
+    public TradeList getActiveTradeList() {
+        WorldPartition.checkOwner();
+        return activeTradeList;
+    }
+
+    public void setActiveTradeList(TradeList activeTradeList) {
+        WorldPartition.checkOwner();
+        this.activeTradeList = activeTradeList;
+    }
+
+    public ItemContainer getActiveWarehouse() {
+        WorldPartition.checkOwner();
+        return activeWarehouse;
+    }
+
+    public void setActiveWarehouse(ItemContainer activeWarehouse) {
+        WorldPartition.checkOwner();
+        this.activeWarehouse = activeWarehouse;
+    }
+
+    public String getStoreName() {
+        WorldPartition.checkOwner();
+        return storeName;
+    }
+
+    public PreparedListContainer getMultiSell() {
+        WorldPartition.checkOwner();
+        return multiSell;
+    }
+
+    public void setMultiSell(PreparedListContainer multiSell) {
+        WorldPartition.checkOwner();
+        this.multiSell = multiSell;
+    }
+
+    public int getNewbie() {
+        WorldPartition.checkOwner();
+        return newbie;
+    }
+
+    public void setNewbie(int newbie) {
+        WorldPartition.checkOwner();
+        this.newbie = newbie;
+    }
+
+    public boolean isNoble() {
+        WorldPartition.checkOwner();
+        return noble;
+    }
+
+    public boolean isHero() {
+        WorldPartition.checkOwner();
+        return hero;
+    }
+
+    public void setPremiumStatus(boolean premiumStatus) {
+        WorldPartition.checkOwner();
+        this.premiumStatus = premiumStatus;
+    }
+
+    public boolean isGood() {
+        WorldPartition.checkOwner();
+        return good;
+    }
+
+    public boolean isEvil() {
+        WorldPartition.checkOwner();
+        return evil;
+    }
+
+    public Npc getLastFolkNPC() {
+        WorldPartition.checkOwner();
+        return lastFolkNPC;
+    }
+
+    public void setLastFolkNPC(Npc lastFolkNPC) {
+        WorldPartition.checkOwner();
+        this.lastFolkNPC = lastFolkNPC;
+    }
+
+    public int getLastQuestNpcObject() {
+        WorldPartition.checkOwner();
+        return lastQuestNpcObject;
+    }
+
+    public void setLastQuestNpcObject(int lastQuestNpcObject) {
+        WorldPartition.checkOwner();
+        this.lastQuestNpcObject = lastQuestNpcObject;
+    }
+
+    public MacroList getMacros() {
+        WorldPartition.checkOwner();
+        return macros;
+    }
+
+    /** @return a copy of the three henna slots, {@code null} for an empty slot */
+    public Henna[] getHennaList() {
+        WorldPartition.checkOwner();
+        return hennaList.clone();
+    }
+
+    public int getHennaStatSTR() {
+        WorldPartition.checkOwner();
+        return hennaStatSTR;
+    }
+
+    public int getHennaStatINT() {
+        WorldPartition.checkOwner();
+        return hennaStatINT;
+    }
+
+    public int getHennaStatDEX() {
+        WorldPartition.checkOwner();
+        return hennaStatDEX;
+    }
+
+    public int getHennaStatMEN() {
+        WorldPartition.checkOwner();
+        return hennaStatMEN;
+    }
+
+    public int getHennaStatWIT() {
+        WorldPartition.checkOwner();
+        return hennaStatWIT;
+    }
+
+    public int getHennaStatCON() {
+        WorldPartition.checkOwner();
+        return hennaStatCON;
+    }
+
+    public Decoy getDecoy() {
+        WorldPartition.checkOwner();
+        return decoy;
+    }
+
+    public void setDecoy(Decoy decoy) {
+        WorldPartition.checkOwner();
+        this.decoy = decoy;
+    }
+
+    public Trap getTrap() {
+        WorldPartition.checkOwner();
+        return trap;
+    }
+
+    public void setTrap(Trap trap) {
+        WorldPartition.checkOwner();
+        this.trap = trap;
+    }
+
+    public int getAgathionId() {
+        WorldPartition.checkOwner();
+        return agathionId;
+    }
+
+    public void setAgathionId(int agathionId) {
+        WorldPartition.checkOwner();
+        this.agathionId = agathionId;
+    }
+
+    /** @return a snapshot of the tamed beasts, {@code null} when the player never had one */
+    public Collection<TamedBeast> getTrainedBeasts() {
+        WorldPartition.checkOwner();
+        return trainedBeasts == null ? null : ObjectSets.unmodifiable(new ObjectLinkedOpenHashSet<>(trainedBeasts));
+    }
+
+    public void removeTrainedBeast(TamedBeast tamedBeast) {
+        WorldPartition.checkOwner();
+        if (trainedBeasts != null) {
+            trainedBeasts.remove(tamedBeast);
+        }
+    }
+
+    public boolean isMinimapAllowed() {
+        WorldPartition.checkOwner();
+        return minimapAllowed;
+    }
+
+    public void setMinimapAllowed(boolean minimapAllowed) {
+        WorldPartition.checkOwner();
+        this.minimapAllowed = minimapAllowed;
+    }
+
+    public Radar getRadar() {
+        WorldPartition.checkOwner();
+        return radar;
+    }
+
+    public int getPartyRoom() {
+        WorldPartition.checkOwner();
+        return partyRoom;
+    }
+
+    public void setPartyRoom(int partyRoom) {
+        WorldPartition.checkOwner();
+        this.partyRoom = partyRoom;
+    }
+
+    public int getClanId() {
+        WorldPartition.checkOwner();
+        return clanId;
+    }
+
+    public Clan getClan() {
+        WorldPartition.checkOwner();
+        return clan;
+    }
+
+    public int getApprentice() {
+        WorldPartition.checkOwner();
+        return apprentice;
+    }
+
+    public void setApprentice(int apprentice) {
+        WorldPartition.checkOwner();
+        this.apprentice = apprentice;
+    }
+
+    public int getSponsor() {
+        WorldPartition.checkOwner();
+        return sponsor;
+    }
+
+    public void setSponsor(int sponsor) {
+        WorldPartition.checkOwner();
+        this.sponsor = sponsor;
+    }
+
+    public long getClanJoinExpiryTime() {
+        WorldPartition.checkOwner();
+        return clanJoinExpiryTime;
+    }
+
+    public void setClanJoinExpiryTime(long clanJoinExpiryTime) {
+        WorldPartition.checkOwner();
+        this.clanJoinExpiryTime = clanJoinExpiryTime;
+    }
+
+    public long getClanCreateExpiryTime() {
+        WorldPartition.checkOwner();
+        return clanCreateExpiryTime;
+    }
+
+    public void setClanCreateExpiryTime(long clanCreateExpiryTime) {
+        WorldPartition.checkOwner();
+        this.clanCreateExpiryTime = clanCreateExpiryTime;
+    }
+
+    public int getPowerGrade() {
+        WorldPartition.checkOwner();
+        return powerGrade;
+    }
+
+    public void setPowerGrade(int powerGrade) {
+        WorldPartition.checkOwner();
+        this.powerGrade = powerGrade;
+    }
+
+    public ClanPrivileges getClanPrivileges() {
+        WorldPartition.checkOwner();
+        return clanPrivileges;
+    }
+
+    public int getPledgeClass() {
+        WorldPartition.checkOwner();
+        return pledgeClass;
+    }
+
+    public int getPledgeType() {
+        WorldPartition.checkOwner();
+        return pledgeType;
+    }
+
+    public void setPledgeType(int pledgeType) {
+        WorldPartition.checkOwner();
+        this.pledgeType = pledgeType;
+    }
+
+    public int getLvlJoinedAcademy() {
+        WorldPartition.checkOwner();
+        return lvlJoinedAcademy;
+    }
+
+    public void setLvlJoinedAcademy(int lvlJoinedAcademy) {
+        WorldPartition.checkOwner();
+        this.lvlJoinedAcademy = lvlJoinedAcademy;
+    }
+
+    public int getWantsPeace() {
+        WorldPartition.checkOwner();
+        return wantsPeace;
+    }
+
+    public void setWantsPeace(int wantsPeace) {
+        WorldPartition.checkOwner();
+        this.wantsPeace = wantsPeace;
+    }
+
+    public int getDeathPenaltyBuffLevel() {
+        WorldPartition.checkOwner();
+        return deathPenaltyBuffLevel;
+    }
+
+    public void setDeathPenaltyBuffLevel(int deathPenaltyBuffLevel) {
+        WorldPartition.checkOwner();
+        this.deathPenaltyBuffLevel = deathPenaltyBuffLevel;
+    }
+
+    public int getChargedSouls() {
+        WorldPartition.checkOwner();
+        return chargedSouls;
+    }
+
+    public Location getCurrentSkillWorldPosition() {
+        WorldPartition.checkOwner();
+        return currentSkillWorldPosition;
+    }
+
+    public void setCurrentSkillWorldPosition(Location currentSkillWorldPosition) {
+        WorldPartition.checkOwner();
+        this.currentSkillWorldPosition = currentSkillWorldPosition;
+    }
+
+    public boolean isSilenceMode() {
+        WorldPartition.checkOwner();
+        return silenceMode;
+    }
+
+    public void setDietMode(boolean dietMode) {
+        WorldPartition.checkOwner();
+        this.dietMode = dietMode;
+    }
+
+    public void setTradeRefusal(boolean tradeRefusal) {
+        WorldPartition.checkOwner();
+        this.tradeRefusal = tradeRefusal;
+    }
+
+    public void setExchangeRefusal(boolean exchangeRefusal) {
+        WorldPartition.checkOwner();
+        this.exchangeRefusal = exchangeRefusal;
+    }
+
+    public Party getParty() {
+        WorldPartition.checkOwner();
+        return party;
+    }
+
+    public void setParty(Party party) {
+        WorldPartition.checkOwner();
+        this.party = party;
+    }
+
+    public PartyDistributionType getPartyDistributionType() {
+        WorldPartition.checkOwner();
+        return partyDistributionType;
+    }
+
+    public void setPartyDistributionType(PartyDistributionType partyDistributionType) {
+        WorldPartition.checkOwner();
+        this.partyDistributionType = partyDistributionType;
+    }
+
+    public void setActiveRequester(Player activeRequester) {
+        WorldPartition.checkOwner();
+        this.activeRequester = activeRequester;
+    }
+
+    public RequestPartner getRequest() {
+        WorldPartition.checkOwner();
+        return request;
+    }
+
+    public boolean isFakeDeath() {
+        WorldPartition.checkOwner();
+        return fakeDeath;
+    }
+
+    public void setFakeDeath(boolean fakeDeath) {
+        WorldPartition.checkOwner();
+        this.fakeDeath = fakeDeath;
+    }
+
+    public Weapon getFistsWeaponItem() {
+        WorldPartition.checkOwner();
+        return fistsWeaponItem;
+    }
+
+    public void setFistsWeaponItem(Weapon fistsWeaponItem) {
+        WorldPartition.checkOwner();
+        this.fistsWeaponItem = fistsWeaponItem;
+    }
+
+    /** @return the other characters of the account by object id, in the order of the character list */
+    public Map<Integer, String> getAccountChars() {
+        WorldPartition.checkOwner();
+        return Int2ObjectMaps.unmodifiable(new Int2ObjectLinkedOpenHashMap<>(accountChars));
+    }
+
+    public int getExpertiseArmorPenalty() {
+        WorldPartition.checkOwner();
+        return expertiseArmorPenalty;
+    }
+
+    public int getExpertiseWeaponPenalty() {
+        WorldPartition.checkOwner();
+        return expertiseWeaponPenalty;
+    }
+
+    public int getExpertisePenaltyBonus() {
+        WorldPartition.checkOwner();
+        return expertisePenaltyBonus;
+    }
+
+    public void setExpertisePenaltyBonus(int expertisePenaltyBonus) {
+        WorldPartition.checkOwner();
+        this.expertisePenaltyBonus = expertisePenaltyBonus;
+    }
+
+    public boolean isEnchanting() {
+        WorldPartition.checkOwner();
+        return enchanting;
+    }
+
+    public void setEnchanting(boolean enchanting) {
+        WorldPartition.checkOwner();
+        this.enchanting = enchanting;
+    }
+
+    public int getActiveEnchantItemId() {
+        WorldPartition.checkOwner();
+        return activeEnchantItemId;
+    }
+
+    public int getActiveEnchantSupportItemId() {
+        WorldPartition.checkOwner();
+        return activeEnchantSupportItemId;
+    }
+
+    public void setActiveEnchantSupportItemId(int activeEnchantSupportItemId) {
+        WorldPartition.checkOwner();
+        this.activeEnchantSupportItemId = activeEnchantSupportItemId;
+    }
+
+    public int getActiveEnchantAttrItemId() {
+        WorldPartition.checkOwner();
+        return activeEnchantAttrItemId;
+    }
+
+    public void setActiveEnchantAttrItemId(int activeEnchantAttrItemId) {
+        WorldPartition.checkOwner();
+        this.activeEnchantAttrItemId = activeEnchantAttrItemId;
+    }
+
+    public long getActiveEnchantTimestamp() {
+        WorldPartition.checkOwner();
+        return activeEnchantTimestamp;
+    }
+
+    public void setActiveEnchantTimestamp(long activeEnchantTimestamp) {
+        WorldPartition.checkOwner();
+        this.activeEnchantTimestamp = activeEnchantTimestamp;
+    }
+
+    public boolean isInventoryDisabled() {
+        WorldPartition.checkOwner();
+        return inventoryDisabled;
+    }
+
+    public Set<Integer> getAutoSoulShot() {
+        WorldPartition.checkOwner();
+        return IntSets.unmodifiable(new IntLinkedOpenHashSet(autoSoulShot));
+    }
+
+    public boolean hasAutoSoulShot(int itemId) {
+        WorldPartition.checkOwner();
+        return autoSoulShot.contains(itemId);
+    }
+
+    public boolean hasAutoSoulShots() {
+        WorldPartition.checkOwner();
+        return !autoSoulShot.isEmpty();
+    }
+
+    public void setRegisteredOnEvent(boolean registeredOnEvent) {
+        WorldPartition.checkOwner();
+        this.registeredOnEvent = registeredOnEvent;
+    }
+
+    public boolean isOnSoloEvent() {
+        WorldPartition.checkOwner();
+        return onSoloEvent;
+    }
+
+    public void setOnSoloEvent(boolean onSoloEvent) {
+        WorldPartition.checkOwner();
+        this.onSoloEvent = onSoloEvent;
+    }
+
+    public boolean isOnEvent() {
+        WorldPartition.checkOwner();
+        return onEvent;
+    }
+
+    public void setOnEvent(boolean onEvent) {
+        WorldPartition.checkOwner();
+        this.onEvent = onEvent;
+    }
+
+    public void setBlockCheckerArena(byte blockCheckerArena) {
+        WorldPartition.checkOwner();
+        this.blockCheckerArena = blockCheckerArena;
+    }
+
+    public KrateiArena getKrateiArena() {
+        WorldPartition.checkOwner();
+        return krateiArena;
+    }
+
+    public void setKrateiArena(KrateiArena krateiArena) {
+        WorldPartition.checkOwner();
+        this.krateiArena = krateiArena;
+    }
+
+    public BlockList getBlockList() {
+        WorldPartition.checkOwner();
+        return blockList;
+    }
+
+    public Item getLure() {
+        WorldPartition.checkOwner();
+        return lure;
+    }
+
+    public void setLure(Item lure) {
+        WorldPartition.checkOwner();
+        this.lure = lure;
+    }
+
+    public Fishing getFishCombat() {
+        WorldPartition.checkOwner();
+        return fishCombat;
+    }
+
+    public boolean isFishing() {
+        WorldPartition.checkOwner();
+        return fishing;
+    }
+
+    public void setFishing(boolean fishing) {
+        WorldPartition.checkOwner();
+        this.fishing = fishing;
+    }
+
+    public int getFishX() {
+        WorldPartition.checkOwner();
+        return fishX;
+    }
+
+    public int getFishY() {
+        WorldPartition.checkOwner();
+        return fishY;
+    }
+
+    public int getFishZ() {
+        WorldPartition.checkOwner();
+        return fishZ;
+    }
+
+    public int getLastHtmlActionOriginId() {
+        WorldPartition.checkOwner();
+        return lastHtmlActionOriginId;
+    }
+
+    public SkillUseHolder getCurrentSkill() {
+        WorldPartition.checkOwner();
+        return currentSkill;
+    }
+
+    public SkillUseHolder getCurrentPetSkill() {
+        WorldPartition.checkOwner();
+        return currentPetSkill;
+    }
+
+    public SkillUseHolder getQueuedSkill() {
+        WorldPartition.checkOwner();
+        return queuedSkill;
+    }
+
+    public int getCursedWeaponEquippedId() {
+        WorldPartition.checkOwner();
+        return cursedWeaponEquippedId;
+    }
+
+    public void setCursedWeaponEquippedId(int cursedWeaponEquippedId) {
+        WorldPartition.checkOwner();
+        this.cursedWeaponEquippedId = cursedWeaponEquippedId;
+    }
+
+    public boolean isCombatFlagEquipped() {
+        WorldPartition.checkOwner();
+        return combatFlagEquipped;
+    }
+
+    public void setCombatFlagEquipped(boolean combatFlagEquipped) {
+        WorldPartition.checkOwner();
+        this.combatFlagEquipped = combatFlagEquipped;
+    }
+
+    public void setCanRevive(boolean canRevive) {
+        WorldPartition.checkOwner();
+        this.canRevive = canRevive;
+    }
+
+    public boolean isRevivingPet() {
+        WorldPartition.checkOwner();
+        return revivingPet;
+    }
+
+    public int getClientX() {
+        WorldPartition.checkOwner();
+        return clientX;
+    }
+
+    public void setClientX(int clientX) {
+        WorldPartition.checkOwner();
+        this.clientX = clientX;
+    }
+
+    public int getClientY() {
+        WorldPartition.checkOwner();
+        return clientY;
+    }
+
+    public void setClientY(int clientY) {
+        WorldPartition.checkOwner();
+        this.clientY = clientY;
+    }
+
+    public int getClientZ() {
+        WorldPartition.checkOwner();
+        return clientZ;
+    }
+
+    public void setClientZ(int clientZ) {
+        WorldPartition.checkOwner();
+        this.clientZ = clientZ;
+    }
+
+    public int getClientHeading() {
+        WorldPartition.checkOwner();
+        return clientHeading;
+    }
+
+    public void setClientHeading(int clientHeading) {
+        WorldPartition.checkOwner();
+        this.clientHeading = clientHeading;
+    }
+
+    public int getMultiSocialTarget() {
+        WorldPartition.checkOwner();
+        return multiSocialTarget;
+    }
+
+    public int getMultiSociaAction() {
+        WorldPartition.checkOwner();
+        return multiSociaAction;
+    }
+
+    public MovieHolder getMovieHolder() {
+        WorldPartition.checkOwner();
+        return movieHolder;
+    }
+
+    public void setMovieHolder(MovieHolder movieHolder) {
+        WorldPartition.checkOwner();
+        this.movieHolder = movieHolder;
+    }
+
+    public String getAdminConfirmCmd() {
+        WorldPartition.checkOwner();
+        return adminConfirmCmd;
+    }
+
+    public void setAdminConfirmCmd(String adminConfirmCmd) {
+        WorldPartition.checkOwner();
+        this.adminConfirmCmd = adminConfirmCmd;
+    }
+
+    public long getPvpFlagLasts() {
+        WorldPartition.checkOwner();
+        return pvpFlagLasts;
+    }
+
+    public void setPvpFlagLasts(long pvpFlagLasts) {
+        WorldPartition.checkOwner();
+        this.pvpFlagLasts = pvpFlagLasts;
+    }
+
+    public long getNotMoveUntil() {
+        WorldPartition.checkOwner();
+        return notMoveUntil;
+    }
+
+    public void setServitorShare(Map<Stat, Double> servitorShare) {
+        WorldPartition.checkOwner();
+        this.servitorShare = servitorShare;
+    }
+
+    public boolean isMarried() {
+        WorldPartition.checkOwner();
+        return married;
+    }
+
+    public void setMarried(boolean married) {
+        WorldPartition.checkOwner();
+        this.married = married;
+    }
+
+    public int getPartnerId() {
+        WorldPartition.checkOwner();
+        return partnerId;
+    }
+
+    public void setPartnerId(int partnerId) {
+        WorldPartition.checkOwner();
+        this.partnerId = partnerId;
+    }
+
+    public long getCoupleId() {
+        WorldPartition.checkOwner();
+        return coupleId;
+    }
+
+    public void setCoupleId(long coupleId) {
+        WorldPartition.checkOwner();
+        this.coupleId = coupleId;
+    }
+
+    public boolean isEngageRequest() {
+        WorldPartition.checkOwner();
+        return engageRequest;
+    }
+
+    public int getEngageId() {
+        WorldPartition.checkOwner();
+        return engageId;
+    }
+
+    public boolean isMarryRequest() {
+        WorldPartition.checkOwner();
+        return marryRequest;
+    }
+
+    public void setMarryRequest(boolean marryRequest) {
+        WorldPartition.checkOwner();
+        this.marryRequest = marryRequest;
+    }
+
+    public boolean isMarryAccepted() {
+        WorldPartition.checkOwner();
+        return marryAccepted;
+    }
+
+    public void setMarryAccepted(boolean marryAccepted) {
+        WorldPartition.checkOwner();
+        this.marryAccepted = marryAccepted;
+    }
+
+    public int getLastPetitionGmId() {
+        WorldPartition.checkOwner();
+        return lastPetitionGmId;
+    }
+
+    public void setLastPetitionGmId(int lastPetitionGmId) {
+        WorldPartition.checkOwner();
+        this.lastPetitionGmId = lastPetitionGmId;
+    }
+
+    public AutoPlaySettingsHolder getAutoPlaySettings() {
+        WorldPartition.checkOwner();
+        return autoPlaySettings;
+    }
+
+    public AutoUseSettingsHolder getAutoUseSettings() {
+        WorldPartition.checkOwner();
+        return autoUseSettings;
+    }
+
     public void startPvPFlag() {
+        WorldPartition.checkOwner();
         updatePvPFlag(1);
         PvpFlagTaskManager.getInstance().add(this);
     }
 
     public void stopPvpRegTask() {
+        WorldPartition.checkOwner();
         PvpFlagTaskManager.getInstance().remove(this);
     }
 
     public void stopPvPFlag() {
+        WorldPartition.checkOwner();
         stopPvpRegTask();
         updatePvPFlag(0);
     }
 
-    // L2JMOD Wedding
-    @Getter
-    @Setter
     private boolean married = false;
 
-    @Getter
-    @Setter
     private int partnerId = 0;
 
-    @Getter
-    @Setter
     private long coupleId = 0;
 
-    @Getter
     private boolean engageRequest = false;
 
-    @Getter
     private int engageId = 0;
 
-    @Getter
-    @Setter
     private boolean marryRequest = false;
 
-    @Getter
-    @Setter
     private boolean marryAccepted = false;
 
-    // Item Mall
     private static final String GAME_POINTS_VAR = "PRIME_POINTS"; // Keep compatibility with later clients.
 
     // The GM who answered the last petition, for the petition feedback; 0 for none.
-    @Getter
-    @Setter
     private int lastPetitionGmId = 0;
 
     private boolean hasCharmOfCourage = false;
 
-    @Getter
     private final AutoPlaySettingsHolder autoPlaySettings = new AutoPlaySettingsHolder();
 
-    @Getter
     private final AutoUseSettingsHolder autoUseSettings = new AutoUseSettingsHolder();
 
-    private final AtomicBoolean autoPlaying = new AtomicBoolean();
+    private boolean autoPlaying;
 
     private final List<QuestTimer> questTimers = new ArrayList<>();
     private final List<TimerHolder<?>> timerHolders = new ArrayList<>();
 
-    // Selling buffs system
-    @Setter
     private boolean sellingBuffs = false;
 
-    private List<SellBuffHolder> sellBuffs = null;
+    private final ObjectArrayList<SellBuffHolder> sellBuffs = new ObjectArrayList<>();
 
     public boolean isSellingBuffs() {
+        WorldPartition.checkOwner();
         return sellingBuffs;
     }
 
-    public List<SellBuffHolder> getSellingBuffs() {
-        if (sellBuffs == null) {
-            sellBuffs = new ArrayList<>();
-        }
-
-        return sellBuffs;
+    public void setSellingBuffs(boolean sellingBuffs) {
+        WorldPartition.checkOwner();
+        this.sellingBuffs = sellingBuffs;
     }
 
-    /**
-     * Create a new Player and add it in the characters table of the database.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Create a new Player with an account name</li>
-     * <li>Set the name, the Hair Style, the Hair Color and the Face type of the Player</li>
-     * <li>Add the player in the characters table of the database</li>
-     * </ul>
-     * @param template The PlayerTemplate to apply to the Player
-     * @param accountId the account of the session that creates the character
-     * @param name The name of the Player
-     * @param app the player's appearance
-     * @return The Player added to the database or null
-     */
+    public List<SellBuffHolder> getSellingBuffs() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(sellBuffs));
+    }
+
+    public boolean hasSellingBuffs() {
+        WorldPartition.checkOwner();
+        return !sellBuffs.isEmpty();
+    }
+
+    public int getSellingBuffCount() {
+        WorldPartition.checkOwner();
+        return sellBuffs.size();
+    }
+
+    public SellBuffHolder getSellingBuff(int skillId) {
+        WorldPartition.checkOwner();
+        for (SellBuffHolder holder : sellBuffs) {
+            if (holder.getSkillId() == skillId) {
+                return holder;
+            }
+        }
+
+        return null;
+    }
+
+    public void addSellingBuff(SellBuffHolder holder) {
+        WorldPartition.checkOwner();
+        sellBuffs.add(holder);
+    }
+
+    public boolean removeSellingBuff(SellBuffHolder holder) {
+        WorldPartition.checkOwner();
+        return sellBuffs.remove(holder);
+    }
+
+    /** @return the new player, or {@code null} when the insert failed */
     public static Player create(PlayerTemplate template, UUID accountId, String name, PlayerAppearance app) {
+        WorldPartition.checkOwner();
         final Player player = new Player(template, accountId, app);
 
-        // Set the name of the Player.
         player.setName(name);
 
-        // Set Character's create time.
         player.setCreateDate(ClockBridge.calendar());
 
-        // Set the base class ID to that of the actual class ID.
         player.setBaseClass(player.getPlayerClass());
 
-        // Kept for backwards compatibility.
         player.setNewbie(1);
 
-        // Give 20 recommendations.
         player.setRecomLeft(20);
 
-        // Add the player in the characters table of the database.
         return player.createDb() ? player : null;
     }
 
-    /**
-     * @return the login of the client's session, {@code null} for a player in the world without a client (an offline
-     *     trader restored at start)
-     */
+    /** @return {@code null} for a player without a client (an offline trader restored at start) */
     public String getAccountName() {
+        WorldPartition.checkOwner();
         return client == null ? null : client.getAccountName();
     }
 
     public int getRelation(Player target) {
+        WorldPartition.checkOwner();
         int result = 0;
         if (clan != null) {
             result |= RelationChanged.RELATION_CLAN_MEMBER;
@@ -1367,41 +2307,41 @@ public class Player extends Playable {
 
                 switch (i) {
                     case 0: {
-                        result |= RelationChanged.RELATION_PARTYLEADER; // 0x10
+                        result |= RelationChanged.RELATION_PARTYLEADER;
                         break;
                     }
                     case 1: {
-                        result |= RelationChanged.RELATION_PARTY4; // 0x8
+                        result |= RelationChanged.RELATION_PARTY4;
                         break;
                     }
                     case 2: {
                         result |= RelationChanged.RELATION_PARTY3
                                 + RelationChanged.RELATION_PARTY2
-                                + RelationChanged.RELATION_PARTY1; // 0x7
+                                + RelationChanged.RELATION_PARTY1;
                         break;
                     }
                     case 3: {
-                        result |= RelationChanged.RELATION_PARTY3 + RelationChanged.RELATION_PARTY2; // 0x6
+                        result |= RelationChanged.RELATION_PARTY3 + RelationChanged.RELATION_PARTY2;
                         break;
                     }
                     case 4: {
-                        result |= RelationChanged.RELATION_PARTY3 + RelationChanged.RELATION_PARTY1; // 0x5
+                        result |= RelationChanged.RELATION_PARTY3 + RelationChanged.RELATION_PARTY1;
                         break;
                     }
                     case 5: {
-                        result |= RelationChanged.RELATION_PARTY3; // 0x4
+                        result |= RelationChanged.RELATION_PARTY3;
                         break;
                     }
                     case 6: {
-                        result |= RelationChanged.RELATION_PARTY2 + RelationChanged.RELATION_PARTY1; // 0x3
+                        result |= RelationChanged.RELATION_PARTY2 + RelationChanged.RELATION_PARTY1;
                         break;
                     }
                     case 7: {
-                        result |= RelationChanged.RELATION_PARTY2; // 0x2
+                        result |= RelationChanged.RELATION_PARTY2;
                         break;
                     }
                     case 8: {
-                        result |= RelationChanged.RELATION_PARTY1; // 0x1
+                        result |= RelationChanged.RELATION_PARTY1;
                         break;
                     }
                 }
@@ -1452,20 +2392,8 @@ public class Player extends Playable {
         return result;
     }
 
-    /**
-     * Retrieve a Player from the characters table of the database and add it in _allObjects of the L2world (call restore method).<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Retrieve the Player from the characters table of the database</li>
-     * <li>Add the Player object in _allObjects</li>
-     * <li>Set the x,y,z position of the Player and make it invisible</li>
-     * <li>Update the overloaded status of the Player</li>
-     * </ul>
-     * @param objectId Identifier of the object to initialized
-     * @return The Player loaded from the database
-     */
     public static Player load(int objectId) {
+        WorldPartition.checkOwner();
         return restore(objectId);
     }
 
@@ -1480,43 +2408,41 @@ public class Player extends Playable {
 
     @Override
     public PlayerStat getStat() {
-        return (PlayerStat) super.getStat();
+        WorldPartition.checkOwner();
+        return (PlayerStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
-        setStat(new PlayerStat(this));
+        WorldPartition.checkOwner();
+        setStat(new PlayerStat(this, statAccess()));
     }
 
     @Override
     public PlayerStatus getStatus() {
-        return (PlayerStatus) super.getStatus();
+        WorldPartition.checkOwner();
+        return (PlayerStatus) uncheckedStatus();
     }
 
     @Override
     public void initCharStatus() {
+        WorldPartition.checkOwner();
         setStatus(new PlayerStatus(this));
     }
 
-    /**
-     * @return the base PlayerTemplate link to the Player.
-     */
     public PlayerTemplate getBaseTemplate() {
+        WorldPartition.checkOwner();
         return PlayerTemplateData.getInstance().getTemplate(baseClass);
     }
 
-    /**
-     * @return the PlayerTemplate link to the Player.
-     */
     @Override
     public PlayerTemplate getTemplate() {
-        return (PlayerTemplate) super.getTemplate();
+        WorldPartition.checkOwner();
+        return (PlayerTemplate) uncheckedTemplate();
     }
 
-    /**
-     * @param newclass
-     */
     public void setTemplate(PlayerClass newclass) {
+        WorldPartition.checkOwner();
         super.setTemplate(PlayerTemplateData.getInstance().getTemplate(newclass));
     }
 
@@ -1525,14 +2451,15 @@ public class Player extends Playable {
         return new PlayerAI(this);
     }
 
-    /** Return the Level of the Player. */
     @Override
     public int getLevel() {
-        return getStat().getLevel();
+        WorldPartition.checkOwner();
+        return uncheckedStat().getLevel();
     }
 
     @Override
     public double getLevelMod() {
+        WorldPartition.checkOwner();
         if (isTransformed()) {
             final double levelMod = transformation.getLevelMod(this);
             if (levelMod > -1) {
@@ -1544,37 +2471,42 @@ public class Player extends Playable {
     }
 
     public void setBaseClass(int baseClass) {
+        WorldPartition.checkOwner();
         this.baseClass = baseClass;
     }
 
     public void setBaseClass(PlayerClass playerClass) {
+        WorldPartition.checkOwner();
         baseClass = playerClass.getId();
     }
 
     public boolean isInStoreMode() {
+        WorldPartition.checkOwner();
         return privateStoreType != PrivateStoreType.NONE;
     }
 
-    /**
-     * @return a table containing all Common RecipeList of the Player.
-     */
     public Collection<RecipeList> getCommonRecipeBook() {
-        return commonRecipeBook.values();
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(commonRecipeBook.values()));
     }
 
-    /**
-     * @return a table containing all Dwarf RecipeList of the Player.
-     */
     public Collection<RecipeList> getDwarvenRecipeBook() {
-        return dwarvenRecipeBook.values();
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(dwarvenRecipeBook.values()));
     }
 
-    /**
-     * Add a new RecipList to the table _commonrecipebook containing all RecipeList of the Player
-     * @param recipe The RecipeList to add to the _recipebook
-     * @param saveToDb
-     */
+    public int getCommonRecipeCount() {
+        WorldPartition.checkOwner();
+        return commonRecipeBook.size();
+    }
+
+    public int getDwarvenRecipeCount() {
+        WorldPartition.checkOwner();
+        return dwarvenRecipeBook.size();
+    }
+
     public void registerCommonRecipeList(RecipeList recipe, boolean saveToDb) {
+        WorldPartition.checkOwner();
         commonRecipeBook.put(recipe.getId(), recipe);
 
         if (saveToDb) {
@@ -1582,12 +2514,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Add a new RecipList to the table _recipebook containing all RecipeList of the Player
-     * @param recipe The RecipeList to add to the _recipebook
-     * @param saveToDb
-     */
     public void registerDwarvenRecipeList(RecipeList recipe, boolean saveToDb) {
+        WorldPartition.checkOwner();
         dwarvenRecipeBook.put(recipe.getId(), recipe);
 
         if (saveToDb) {
@@ -1595,19 +2523,13 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * @param recipeId The Identifier of the RecipeList to check in the player's recipe books
-     * @return {@code true}if player has the recipe on Common or Dwarven Recipe book else returns {@code false}
-     */
     public boolean hasRecipeList(int recipeId) {
+        WorldPartition.checkOwner();
         return dwarvenRecipeBook.containsKey(recipeId) || commonRecipeBook.containsKey(recipeId);
     }
 
-    /**
-     * Tries to remove a RecipList from the table _DwarvenRecipeBook or from table _CommonRecipeBook, those table contain all RecipeList of the Player
-     * @param recipeId The Identifier of the RecipeList to remove from the _recipebook
-     */
     public void unregisterRecipeList(int recipeId) {
+        WorldPartition.checkOwner();
         if (dwarvenRecipeBook.remove(recipeId) != null) {
             deleteRecipeData(recipeId, true);
         } else if (commonRecipeBook.remove(recipeId) != null) {
@@ -1646,51 +2568,34 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * @param quest The name of the quest
-     * @return the QuestState object corresponding to the quest name.
-     */
     public QuestState getQuestState(String quest) {
+        WorldPartition.checkOwner();
         return quests.get(quest);
     }
 
-    /**
-     * Add a QuestState to the table quest containing all quests began by the Player.
-     * @param qs The QuestState to add to quest
-     */
     public void setQuestState(QuestState qs) {
+        WorldPartition.checkOwner();
         quests.put(qs.getQuestName(), qs);
     }
 
-    /**
-     * Verify if the player has the quest state.
-     * @param quest the quest state to check
-     * @return {@code true} if the player has the quest state, {@code false} otherwise
-     */
     public boolean hasQuestState(String quest) {
+        WorldPartition.checkOwner();
         return quests.containsKey(quest);
     }
 
-    /**
-     * Remove a QuestState from the table quest containing all quests began by the Player.
-     * @param quest The name of the quest
-     */
     public void delQuestState(String quest) {
+        WorldPartition.checkOwner();
         quests.remove(quest);
     }
 
-    /**
-     * Gets all the active quests.
-     * @return a list of active quests
-     */
     public List<Quest> getAllActiveQuests() {
+        WorldPartition.checkOwner();
         final List<Quest> quests = new ArrayList<>();
         for (QuestState qs : this.quests.values()) {
             if ((qs == null) || (qs.getQuest() == null) || !qs.isStarted()) {
                 continue;
             }
 
-            // Ignore other scripts.
             final int questId = qs.getQuest().getId();
             if ((questId > 19999) || (questId < 1)) {
                 continue;
@@ -1703,6 +2608,7 @@ public class Player extends Playable {
     }
 
     public void processScriptEvent(String scriptName, String event) {
+        WorldPartition.checkOwner();
         final Quest quest = ScriptManager.getInstance().getScript(scriptName);
         if ((quest == null) || (event == null) || event.isEmpty()) {
             return;
@@ -1720,29 +2626,24 @@ public class Player extends Playable {
         }
     }
 
-    /** List of all QuestState instance that needs to be notified of this Player's or its pet's death */
-    @Getter
-    private final Collection<QuestState> notifyQuestOfDeath = ConcurrentHashMap.newKeySet();
+    private final ObjectLinkedOpenHashSet<QuestState> notifyQuestOfDeath = new ObjectLinkedOpenHashSet<>();
 
-    /**
-     * Add QuestState instance that is to be notified of Player's death.
-     * @param qs The QuestState that subscribe to this event
-     */
+    public Collection<QuestState> getNotifyQuestOfDeath() {
+        WorldPartition.checkOwner();
+        return ObjectSets.unmodifiable(new ObjectLinkedOpenHashSet<>(notifyQuestOfDeath));
+    }
+
     public void addNotifyQuestOfDeath(QuestState qs) {
+        WorldPartition.checkOwner();
         if (qs == null) {
             return;
         }
 
-        if (!notifyQuestOfDeath.contains(qs)) {
-            notifyQuestOfDeath.add(qs);
-        }
+        notifyQuestOfDeath.add(qs);
     }
 
-    /**
-     * Remove QuestState instance that is to be notified of Player's death.
-     * @param qs The QuestState that subscribe to this event
-     */
     public void removeNotifyQuestOfDeath(QuestState qs) {
+        WorldPartition.checkOwner();
         if (qs == null) {
             return;
         }
@@ -1751,78 +2652,56 @@ public class Player extends Playable {
     }
 
     public boolean isNotifyQuestOfDeathEmpty() {
+        WorldPartition.checkOwner();
         return notifyQuestOfDeath.isEmpty();
     }
 
-    /**
-     * Restores all player shortcuts.
-     */
     private void restoreShortcuts() {
         shortcuts.restoreMe();
     }
 
-    /**
-     * @return a collection containing all Shortcut of the Player.
-     */
     public Collection<Shortcut> getAllShortcuts() {
+        WorldPartition.checkOwner();
         return shortcuts.getAllShortcuts();
     }
 
-    /**
-     * @param slot The slot in which the shortcuts is equipped
-     * @param page The page of shortcuts containing the slot
-     * @return the Shortcut of the Player corresponding to the position (page-slot).
-     */
     public Shortcut getShortcut(int slot, int page) {
+        WorldPartition.checkOwner();
         return shortcuts.getShortcut(slot, page);
     }
 
-    /**
-     * Add a Shortcut to the Player shortcuts.
-     * @param shortcut
-     */
     public void registerShortcut(Shortcut shortcut) {
+        WorldPartition.checkOwner();
         shortcuts.registerShortcut(shortcut);
     }
 
-    /**
-     * Updates the shortcut bars with the new skill.
-     * @param skillId the skill Id to search and update.
-     * @param skillLevel the skill level to update.
-     */
     public void updateShortcuts(int skillId, int skillLevel) {
+        WorldPartition.checkOwner();
         shortcuts.updateShortcuts(skillId, skillLevel);
     }
 
-    /**
-     * Delete the Shortcut corresponding to the position (page-slot) from the Player shortcuts.
-     * @param slot
-     * @param page
-     */
     public void deleteShortcut(int slot, int page) {
+        WorldPartition.checkOwner();
         shortcuts.deleteShortcut(slot, page);
     }
 
-    /**
-     * @param macro the macro to add to this Player.
-     */
     public void registerMacro(Macro macro) {
+        WorldPartition.checkOwner();
         macros.registerMacro(macro);
     }
 
-    /**
-     * @param id the macro Id to delete.
-     */
     public void deleteMacro(int id) {
+        WorldPartition.checkOwner();
         macros.deleteMacro(id);
     }
 
     public boolean isRegisteredOnThisSiegeField(int value) {
+        WorldPartition.checkOwner();
         return (siegeSide == value) || ((siegeSide >= 81) && (siegeSide <= 89));
     }
 
     public boolean isSiegeFriend(WorldObject target) {
-        // If i'm natural or not in siege zone, not friends.
+        WorldPartition.checkOwner();
         if ((siegeState == 0) || !isInsideZone(ZoneId.SIEGE)) {
             return false;
         }
@@ -1832,41 +2711,34 @@ public class Player extends Playable {
             return false;
         }
 
-        // If target isn't a player, is self.
         final Player targetPlayer = target.asPlayer();
         if ((targetPlayer == null) || (targetPlayer == this)) {
             return false;
         }
 
-        // If target isn't on same siege or not on same state, not friends.
         if ((targetPlayer.getSiegeSide() != siegeSide) || (siegeState != targetPlayer.getSiegeState())) {
             return false;
         }
 
         if (siegeState == 1) {
-            // Check first castle mid victory.
             if (!castle.isFirstMidVictory() && (siegeState == targetPlayer.getSiegeState())) {
                 return true;
             }
 
-            // Attackers are considered friends only if castle has no owner.
             return castle.getOwner() == null;
         }
 
-        // Both are defenders, friends.
         return true;
     }
 
-    /**
-     * Set the PvP Flag of the Player.
-     * @param pvpFlag
-     */
     public void setPvpFlag(int pvpFlag) {
+        WorldPartition.checkOwner();
         this.pvpFlag = (byte) pvpFlag;
     }
 
     @Override
     public void updatePvPFlag(int value) {
+        WorldPartition.checkOwner();
         if (pvpFlag == value) {
             return;
         }
@@ -1875,7 +2747,6 @@ public class Player extends Playable {
 
         updateUserInfo();
 
-        // If this player has a pet update the pets pvp flag as well.
         if (hasSummon()) {
             sendPacket(new RelationChanged(summon, getRelation(this), false));
         }
@@ -1890,6 +2761,7 @@ public class Player extends Playable {
 
     @Override
     public void revalidateZone(boolean force) {
+        WorldPartition.checkOwner();
         // Cannot validate if not in a world region (happens during teleport).
         if (getWorldRegion() == null) {
             return;
@@ -1964,33 +2836,28 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * @return True if the Player can Craft Dwarven Recipes.
-     */
     public boolean hasDwarvenCraft() {
+        WorldPartition.checkOwner();
         return getSkillLevel(CommonSkill.CREATE_DWARVEN.getId()) >= 1;
     }
 
     public int getDwarvenCraft() {
+        WorldPartition.checkOwner();
         return getSkillLevel(CommonSkill.CREATE_DWARVEN.getId());
     }
 
-    /**
-     * @return True if the Player can Craft Dwarven Recipes.
-     */
     public boolean hasCommonCraft() {
+        WorldPartition.checkOwner();
         return getSkillLevel(CommonSkill.CREATE_COMMON.getId()) >= 1;
     }
 
     public int getCommonCraft() {
+        WorldPartition.checkOwner();
         return getSkillLevel(CommonSkill.CREATE_COMMON.getId());
     }
 
-    /**
-     * Set the PK counter of the Player.
-     * @param pkKills
-     */
     public void setPkKills(int pkKills) {
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_PK_CHANGED, this)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -2005,34 +2872,22 @@ public class Player extends Playable {
         this.pkKills = pkKills;
     }
 
-    /**
-     * Increment the number of recommendation obtained by the Player (Max : 255).
-     */
     protected void incRecomHave() {
         if (recomHave < 255) {
             recomHave++;
         }
     }
 
-    /**
-     * Set the number of recommendation obtained by the Player (Max : 255).
-     * @param value
-     */
     public void setRecomHave(int value) {
+        WorldPartition.checkOwner();
         recomHave = Math.clamp(value, 0, 255);
     }
 
-    /**
-     * Set the number of recommendation obtained by the Player (Max : 255).
-     * @param value
-     */
     public void setRecomLeft(int value) {
+        WorldPartition.checkOwner();
         recomLeft = Math.clamp(value, 0, 255);
     }
 
-    /**
-     * Increment the number of recommendation that the Player can give.
-     */
     protected void decRecomLeft() {
         if (recomLeft > 0) {
             recomLeft--;
@@ -2040,17 +2895,14 @@ public class Player extends Playable {
     }
 
     public void giveRecom(Player target) {
+        WorldPartition.checkOwner();
         target.incRecomHave();
         decRecomLeft();
     }
 
-    /**
-     * Set the Karma of the Player and send a Server->Client packet StatusUpdate (broadcast).
-     * @param value
-     */
     @Override
     public void setKarma(int value) {
-        // Notify to scripts.
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_KARMA_CHANGED, this)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -2074,8 +2926,6 @@ public class Player extends Playable {
                 }
             });
         } else if ((getKarma() > 0) && (karma == 0)) {
-            // Send a Server->Client StatusUpdate packet with Karma and PvP Flag to the Player and all Player to inform
-            // (broadcast).
             setKarmaFlag();
         }
 
@@ -2084,13 +2934,12 @@ public class Player extends Playable {
     }
 
     public int getWeightPenalty() {
+        WorldPartition.checkOwner();
         return dietMode ? 0 : curWeightPenalty;
     }
 
-    /**
-     * Update the overloaded status of the Player.
-     */
     public void refreshOverloaded() {
+        WorldPartition.checkOwner();
         final int maxLoad = getMaxLoad();
         if (maxLoad > 0) {
             final long weightproc = ((getCurrentLoad() - getBonusWeightPenalty()) * 1000) / getMaxLoad();
@@ -2124,6 +2973,7 @@ public class Player extends Playable {
     }
 
     public void refreshExpertisePenalty() {
+        WorldPartition.checkOwner();
         if (!PlayerConfig.EXPERTISE_PENALTY) {
             return;
         }
@@ -2150,7 +3000,6 @@ public class Player extends Playable {
 
         boolean changed = false;
 
-        // calc weapon penalty
         weaponPenalty = weaponPenalty - expertiseLevel - expertisePenaltyBonus;
         weaponPenalty = Math.clamp(weaponPenalty, 0, 4);
         if ((expertiseWeaponPenalty != weaponPenalty)
@@ -2166,7 +3015,6 @@ public class Player extends Playable {
             changed = true;
         }
 
-        // calc armor penalty
         armorPenalty = armorPenalty - expertiseLevel - expertisePenaltyBonus;
         armorPenalty = Math.clamp(armorPenalty, 0, 4);
         if ((expertiseArmorPenalty != armorPenalty)
@@ -2188,23 +3036,20 @@ public class Player extends Playable {
     }
 
     public void useEquippableItem(Item item, boolean abortAttack) {
-        // Check if the item is null.
+        WorldPartition.checkOwner();
         if (item == null) {
             return;
         }
 
-        // Check if the item is owned by this player.
         if (item.getOwnerId() != getObjectId()) {
             return;
         }
 
-        // Check if the item is in the inventory.
         final ItemLocation itemLocation = item.getItemLocation();
         if ((itemLocation != ItemLocation.INVENTORY) && (itemLocation != ItemLocation.PAPERDOLL)) {
             return;
         }
 
-        // Equip or unEquip.
         Collection<Item> items = null;
         final boolean isEquiped = item.isEquipped();
         final int oldInvLimit = getInventoryLimit();
@@ -2241,14 +3086,12 @@ public class Player extends Playable {
                 sm.addItemName(item);
                 sendPacket(sm);
 
-                // Consume mana - will start a task if required; returns if item is not a shadow item.
                 item.decreaseMana(false);
 
                 if ((bodyPart == BodyPart.R_HAND) || (bodyPart == BodyPart.LR_HAND)) {
                     rechargeShots(true, true);
                 }
 
-                // Notify to scripts.
                 if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_ITEM_EQUIP, item.getTemplate())) {
                     EventDispatcher.getInstance()
                             .notifyEventAsync(new OnPlayerItemEquip(this, item), item.getTemplate());
@@ -2274,11 +3117,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Set the the PvP Kills of the Player (Number of player killed during a PvP).
-     * @param pvpKills
-     */
     public void setPvpKills(int pvpKills) {
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_PVP_CHANGED, this)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -2293,11 +3133,8 @@ public class Player extends Playable {
         this.pvpKills = pvpKills;
     }
 
-    /**
-     * Set the Fame of this PlayerInstane
-     * @param fame
-     */
     public void setFame(int fame) {
+        WorldPartition.checkOwner();
         int newFame = fame;
         if (fame > PlayerConfig.MAX_PERSONAL_FAME_POINTS) {
             newFame = PlayerConfig.MAX_PERSONAL_FAME_POINTS;
@@ -2319,18 +3156,13 @@ public class Player extends Playable {
         this.fame = newFame;
     }
 
-    /**
-     * @return the PlayerClass of the Player contained in PlayerTemplate.
-     */
     public PlayerClass getPlayerClass() {
+        WorldPartition.checkOwner();
         return getTemplate().getPlayerClass();
     }
 
-    /**
-     * Set the template of the Player.
-     * @param id The Identifier of the PlayerTemplate to set to the Player
-     */
     public void setPlayerClass(int id) {
+        WorldPartition.checkOwner();
         if (changingClass) {
             return;
         }
@@ -2351,7 +3183,6 @@ public class Player extends Playable {
 
                 setLvlJoinedAcademy(0);
 
-                // Oust pledge member from the academy, cuz he has finished his 2nd class transfer.
                 final SystemMessage msg = new SystemMessage(SystemMessageId.CLAN_MEMBER_S1_HAS_BEEN_EXPELLED);
                 msg.addPcName(this);
                 clan.broadcastToOnlineMembers(msg);
@@ -2361,12 +3192,11 @@ public class Player extends Playable {
                         SystemMessageId
                                 .CONGRATULATIONS_YOU_WILL_NOW_GRADUATE_FROM_THE_CLAN_ACADEMY_AND_LEAVE_YOUR_CURRENT_CLAN_AS_A_GRADUATE_OF_THE_ACADEMY_YOU_CAN_IMMEDIATELY_JOIN_A_CLAN_AS_A_REGULAR_MEMBER_WITHOUT_BEING_SUBJECT_TO_ANY_PENALTIES);
 
-                // receive graduation gift
                 inventory.addItem(ItemProcessType.REWARD, 8181, 1, this, null); // give academy circlet
             }
 
             if (isSubClassActive()) {
-                getSubClasses().get(classIndex).setPlayerClass(id);
+                subClasses.get(classIndex).setPlayerClass(id);
             }
 
             setTarget(this);
@@ -2378,7 +3208,6 @@ public class Player extends Playable {
                 sendPacket(SystemMessageId.CONGRATULATIONS_YOU_VE_COMPLETED_A_CLASS_TRANSFER);
             }
 
-            // Remove class permitted hennas.
             for (int slot = 1; slot < 4; slot++) {
                 final Henna henna = getHenna(slot);
                 if ((henna != null) && !henna.isAllowedClass(getPlayerClass())) {
@@ -2386,7 +3215,6 @@ public class Player extends Playable {
                 }
             }
 
-            // Update class icon in party and clan.
             if (isInParty()) {
                 party.broadcastPacket(new PartySmallWindowUpdate(this));
             }
@@ -2395,7 +3223,6 @@ public class Player extends Playable {
                 clan.broadcastToOnlineMembers(new PledgeShowMemberListUpdate(this));
             }
 
-            // Add AutoGet skills and normal skills and/or learnByFS depending on configurations.
             rewardSkills();
 
             if (!isGM() && PlayerConfig.DECREASE_SKILL_LEVEL) {
@@ -2415,22 +3242,25 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Used for AltGameSkillLearn to set a custom skill learning class Id.
-     */
-    @Getter
-    @Setter
     private PlayerClass learningClass = getPlayerClass();
 
-    /**
-     * @return the Experience of the Player.
-     */
+    public PlayerClass getLearningClass() {
+        WorldPartition.checkOwner();
+        return learningClass;
+    }
+
+    public void setLearningClass(PlayerClass learningClass) {
+        WorldPartition.checkOwner();
+        this.learningClass = learningClass;
+    }
+
     public long getExp() {
-        return getStat().getExp();
+        WorldPartition.checkOwner();
+        return uncheckedStat().getExp();
     }
 
     public void setActiveEnchantItemId(int objectId) {
-        // If we don't have a Enchant Item, we are not enchanting.
+        WorldPartition.checkOwner();
         if (objectId == ID_NONE) {
             setActiveEnchantSupportItemId(ID_NONE);
             setActiveEnchantTimestamp(0);
@@ -2440,13 +3270,8 @@ public class Player extends Playable {
         activeEnchantItemId = objectId;
     }
 
-    /**
-     * Returns the appropriate fist weapon template for a given class ID.<br>
-     * Fist weapons are used as default weapons when a player has no weapon equipped.
-     * @param classId the class identifier for this Player
-     * @return the Weapon template for the fist weapon corresponding to the class ID.
-     */
     public Weapon findFistsWeaponItem(int classId) {
+        WorldPartition.checkOwner();
         final Weapon weaponItem;
 
         if ((classId >= 0x00) && (classId <= 0x09)) {
@@ -2467,19 +3292,15 @@ public class Player extends Playable {
             weaponItem = (Weapon) ItemData.getInstance().getTemplate(252 /* Orc Shaman Fist */);
         } else if ((classId >= 0x35) && (classId <= 0x39)) {
             weaponItem = (Weapon) ItemData.getInstance().getTemplate(247 /* Dwarven Fighter Fist */);
-        } else // Default fist item to avoid NPEs.
-        {
+        } else {
             weaponItem = (Weapon) ItemData.getInstance().getTemplate(246 /* Human Fighter Fist */);
         }
 
         return weaponItem;
     }
 
-    /**
-     * This method reward all AutoGet skills and Normal skills if Auto-Learn configuration is true.
-     */
     public void rewardSkills() {
-        // Give all normal skills if activated Auto-Learn is activated, included AutoGet skills.
+        WorldPartition.checkOwner();
         if (PlayerConfig.AUTO_LEARN_SKILLS) {
             giveAvailableSkills(PlayerConfig.AUTO_LEARN_FS_SKILLS, true, PlayerConfig.AUTO_LEARN_SKILLS_WITHOUT_ITEMS);
         } else {
@@ -2512,23 +3333,18 @@ public class Player extends Playable {
         sendSkillList();
     }
 
-    /**
-     * Re-give all skills which aren't saved to database, like Noble, Hero, Clan Skills.
-     */
     public void regiveTemporarySkills() {
+        WorldPartition.checkOwner();
         // Do not call this on enterworld or char load.
 
-        // Add noble skills if noble.
         if (noble) {
             setNoble(true);
         }
 
-        // Add Hero skills if hero.
         if (hero) {
             setHero(true);
         }
 
-        // Add clan skills.
         if (clan != null) {
             clan.addSkillEffects(this);
 
@@ -2555,24 +3371,16 @@ public class Player extends Playable {
             RebirthManager.getInstance().grantRebirthSkills(this);
         }
 
-        // Reload passive skills from armors / jewels / weapons.
         getInventory().reloadEquippedItems();
 
-        // Add Death Penalty Buff Level.
         restoreDeathPenaltyBuffLevel();
     }
 
-    /**
-     * Give all available skills to the player.
-     * @param includeByFs if {@code true} forgotten scroll skills present in the skill tree will be added
-     * @param includeAutoGet if {@code true} auto-get skills present in the skill tree will be added
-     * @param includeRequiredItems if {@code true} skills that have required items will be added
-     * @return the amount of new skills earned
-     */
+    /** @return the number of skills newly learned */
     public int giveAvailableSkills(boolean includeByFs, boolean includeAutoGet, boolean includeRequiredItems) {
+        WorldPartition.checkOwner();
         int skillCounter = 0;
 
-        // Get available skills.
         final Collection<Skill> skills = SkillTreeData.getInstance()
                 .getAllAvailableSkills(this, getPlayerClass(), includeByFs, includeAutoGet, includeRequiredItems);
         final List<Skill> skillsForStore = new ArrayList<>();
@@ -2585,7 +3393,6 @@ public class Player extends Playable {
                 skillCounter++;
             }
 
-            // Fix when learning toggle skills.
             if (skill.isToggle() && isAffectedBySkill(skill.getId())) {
                 stopSkillEffects(SkillFinishType.REMOVED, skill.getId());
             }
@@ -2608,11 +3415,8 @@ public class Player extends Playable {
         return skillCounter;
     }
 
-    /**
-     * Give all available auto-get skills to the player.
-     */
     public void giveAvailableAutoGetSkills() {
-        // Get available skills.
+        WorldPartition.checkOwner();
         final List<SkillLearn> autoGetSkills = SkillTreeData.getInstance().getAvailableAutoGetSkills(this);
         final SkillData st = SkillData.getInstance();
         Skill skill;
@@ -2626,19 +3430,14 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Set the Experience value of the Player.
-     * @param exp
-     */
     public void setExp(long exp) {
+        WorldPartition.checkOwner();
         getStat().setExp(Math.max(0, exp));
     }
 
-    /**
-     * @return the Race object of the Player.
-     */
     @Override
     public Race getRace() {
+        WorldPartition.checkOwner();
         if (!isSubClassActive()) {
             return getTemplate().getRace();
         }
@@ -2646,29 +3445,19 @@ public class Player extends Playable {
         return PlayerTemplateData.getInstance().getTemplate(baseClass).getRace();
     }
 
-    /**
-     * @return the SP amount of the Player.
-     */
     public long getSp() {
-        return getStat().getSp();
+        WorldPartition.checkOwner();
+        return uncheckedStat().getSp();
     }
 
-    /**
-     * Set the SP amount of the Player.
-     * @param sp
-     */
     public void setSp(long sp) {
-        super.getStat().setSp(Math.max(0, sp));
+        WorldPartition.checkOwner();
+        uncheckedStat().setSp(Math.max(0, sp));
     }
 
-    /**
-     * @param castleId
-     * @return true if this Player is a clan leader in ownership of the passed castle
-     */
     public boolean isCastleLord(int castleId) {
-        // Player has clan and is the clan leader, check the castle info.
+        WorldPartition.checkOwner();
         if ((clan != null) && (clan.getLeader().getPlayer() == this)) {
-            // If the clan has a castle and it is actually the queried castle, return true.
             final Castle castle = CastleManager.getInstance().getCastleByOwner(clan);
             if ((castle != null) && (castle == CastleManager.getInstance().getCastleById(castleId))) {
                 return true;
@@ -2678,17 +3467,13 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * @return the Clan Crest Identifier of the Player or 0.
-     */
     public int getClanCrestId() {
+        WorldPartition.checkOwner();
         return clan != null ? clan.getCrestId() : 0;
     }
 
-    /**
-     * @return The Clan CrestLarge Identifier or 0
-     */
     public int getClanCrestLargeId() {
+        WorldPartition.checkOwner();
         if ((clan != null) && ((clan.getCastleId() != 0) || (clan.getHideoutId() != 0))) {
             return clan.getCrestLargeId();
         }
@@ -2697,29 +3482,24 @@ public class Player extends Playable {
     }
 
     public void setOnlineTime(long time) {
+        WorldPartition.checkOwner();
         onlineTime = time;
         onlineBeginTime = ClockBridge.gameMillis();
     }
 
     public int getOnlineTimeMillis() {
+        WorldPartition.checkOwner();
         return (int) (ClockBridge.gameMillis() - onlineBeginTime);
     }
 
-    /**
-     * Delete a Shortcut of the Player shortcuts.
-     * @param objectId
-     */
     public void removeItemFromShortcut(int objectId) {
+        WorldPartition.checkOwner();
         shortcuts.deleteShortcutByObjectId(objectId);
     }
 
-    /**
-     * Set _waitTypeSitting to given value.
-     * @param value
-     */
     public void setSitting(boolean value) {
+        WorldPartition.checkOwner();
         if (value) {
-            // Notify to scripts.
             if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_SIT, this)) {
                 EventDispatcher.getInstance().notifyEventAsync(new OnPlayerSit(this), this);
             }
@@ -2728,22 +3508,18 @@ public class Player extends Playable {
         sitting = value;
     }
 
-    /**
-     * Set sittingInProgress to given value.
-     * @param value
-     */
     public void setSittingProgress(boolean value) {
+        WorldPartition.checkOwner();
         sittingInProgress = value;
     }
 
-    /**
-     * Sit down the Player, set the AI Intention to REST and send a Server->Client ChangeWaitType packet (broadcast)
-     */
     public void sitDown() {
+        WorldPartition.checkOwner();
         sitDown(true);
     }
 
     public void sitDown(boolean checkCast) {
+        WorldPartition.checkOwner();
         if (sittingInProgress) {
             return;
         }
@@ -2763,14 +3539,12 @@ public class Player extends Playable {
         getAI().setIntentionRest();
         broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_SITTING));
 
-        // Schedule a sit down task to wait for the animation to finish.
+        // 2500 ms: the sit animation must finish first.
         WorldPartition.loop().schedule(new SitDownTask(this), 2500, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Stand up the Player, set the AI Intention to IDLE and send a Server->Client ChangeWaitType packet (broadcast)
-     */
     public void standUp() {
+        WorldPartition.checkOwner();
         if (sittingInProgress) {
             return;
         }
@@ -2783,22 +3557,18 @@ public class Player extends Playable {
 
             broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_STANDING));
 
-            // Schedule a stand up task to wait for the animation to finish.
+            // 2500 ms: the stand animation must finish first.
             WorldPartition.loop().schedule(new StandUpTask(this), 2500, TimeUnit.MILLISECONDS);
         }
     }
 
-    /**
-     * @return true if refund list is not empty
-     */
     public boolean hasRefund() {
+        WorldPartition.checkOwner();
         return (refund != null) && (refund.getSize() > 0) && GeneralConfig.ALLOW_REFUND;
     }
 
-    /**
-     * @return refund object or create new if not exist
-     */
     public PlayerRefund getRefund() {
+        WorldPartition.checkOwner();
         if (refund == null) {
             refund = new PlayerRefund(this);
         }
@@ -2806,10 +3576,8 @@ public class Player extends Playable {
         return refund;
     }
 
-    /**
-     * Clear refund
-     */
     public void clearRefund() {
+        WorldPartition.checkOwner();
         if (refund != null) {
             refund.deleteMe();
         }
@@ -2817,28 +3585,18 @@ public class Player extends Playable {
         refund = null;
     }
 
-    /**
-     * @return the Adena amount of the Player.
-     */
     public long getAdena() {
+        WorldPartition.checkOwner();
         return inventory.getAdena();
     }
 
-    /**
-     * @return the Ancient Adena amount of the Player.
-     */
     public long getAncientAdena() {
+        WorldPartition.checkOwner();
         return inventory.getAncientAdena();
     }
 
-    /**
-     * Add adena to Inventory of the Player and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param count : int Quantity of adena to be added
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     */
     public void addAdena(ItemProcessType process, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         final long currentAdena = inventory.getAdena();
         final long limitRemaining = PlayerConfig.MAX_ADENA - currentAdena;
         final long amountToAdd = count;
@@ -2849,12 +3607,10 @@ public class Player extends Playable {
 
         if (sendMessage) {
             if ((count == 0) && (amountToAdd > 0)) {
-                // Failed adding adena.
                 final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_EARN_S1_ADENA);
                 sm.addLong(amountToAdd);
                 sendPacket(sm);
             } else {
-                // Inform player how much adena they received.
                 final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_EARNED_S1_ADENA);
                 sm.addLong(count);
                 sendPacket(sm);
@@ -2864,7 +3620,6 @@ public class Player extends Playable {
         if (count > 0) {
             inventory.addAdena(process, count, this, reference);
 
-            // Send update packet.
             if (count == getAdena()) {
                 sendItemList(false);
             } else {
@@ -2874,21 +3629,13 @@ public class Player extends Playable {
             }
         }
 
-        // If the player has reached the adena limit, inform them.
         if ((inventory.getAdena() == PlayerConfig.MAX_ADENA) && sendMessage) {
             sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_YOUR_OUT_OF_POCKET_ADENA_LIMIT);
         }
     }
 
-    /**
-     * Reduce adena in Inventory of the Player and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param count : long Quantity of adena to be reduced
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successful
-     */
     public boolean reduceAdena(ItemProcessType process, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (count > inventory.getAdena()) {
             if (sendMessage) {
                 sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
@@ -2904,7 +3651,6 @@ public class Player extends Playable {
                 return false;
             }
 
-            // Send update packet.
             final InventoryUpdate iu = new InventoryUpdate();
             if (adenaItem.getCount() > 0) {
                 iu.addModifiedItem(adenaItem);
@@ -2924,14 +3670,8 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Add ancient adena to Inventory of the Player and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param count : int Quantity of ancient adena to be added
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     */
     public void addAncientAdena(ItemProcessType process, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (sendMessage) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_EARNED_S2_S1_S);
             sm.addItemName(Inventory.ANCIENT_ADENA_ID);
@@ -2950,15 +3690,8 @@ public class Player extends Playable {
         sendInventoryUpdate(iu);
     }
 
-    /**
-     * Reduce ancient adena in Inventory of the Player and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param count : long Quantity of ancient adena to be reduced
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successful
-     */
     public boolean reduceAncientAdena(ItemProcessType process, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (count > inventory.getAncientAdena()) {
             if (sendMessage) {
                 sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
@@ -2995,16 +3728,9 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Adds item to inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be added
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     */
     public void addItem(ItemProcessType process, Item item, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (item.getCount() > 0) {
-            // Sends message to client if requested.
             if (sendMessage) {
                 final SystemMessage sm;
                 if (item.getCount() > 1) {
@@ -3023,20 +3749,16 @@ public class Player extends Playable {
                 sendPacket(sm);
             }
 
-            // Add the item to inventory.
             final Item newitem = inventory.addItem(process, item, this, reference);
 
-            // Send inventory update packet.
             final InventoryUpdate playerIU = new InventoryUpdate();
             playerIU.addItem(newitem);
             sendInventoryUpdate(playerIU);
 
-            // Update current load as well.
             final StatusUpdate su = new StatusUpdate(this);
             su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
             sendPacket(su);
 
-            // If over capacity, drop the item.
             if (!isGM()
                     && !inventory.validateCapacity(0, item.isQuestItem())
                     && newitem.isDropable()
@@ -3044,10 +3766,7 @@ public class Player extends Playable {
                 dropItem(ItemProcessType.DROP, newitem, null, true, true);
             } else if (CursedWeaponsManager.getInstance().isCursed(newitem.getId())) {
                 CursedWeaponsManager.getInstance().activate(this, newitem);
-            }
-
-            // Combat Flag
-            else if (FortSiegeManager.getInstance().isCombat(item.getId())) {
+            } else if (FortSiegeManager.getInstance().isCombat(item.getId())) {
                 if (FortSiegeManager.getInstance().activateCombatFlag(this, item)) {
                     final Fort fort = FortManager.getInstance().getFort(this);
                     fort.getSiege()
@@ -3064,29 +3783,11 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Adds item to Inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param itemId : int Item Identifier of the item to be added
-     * @param count : long Quantity of items to be added
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return
-     */
     public Item addItem(ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         return addItem(process, itemId, count, -1, reference, sendMessage);
     }
 
-    /**
-     * Adds item to Inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param itemId : int Item Identifier of the item to be added
-     * @param count : long Quantity of items to be added
-     * @param enchantLevel : int EnchantLevel of the item to be added
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return
-     */
     public Item addItem(
             ItemProcessType process,
             int itemId,
@@ -3094,6 +3795,7 @@ public class Player extends Playable {
             int enchantLevel,
             WorldObject reference,
             boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (count > 0) {
             final ItemTemplate item = ItemData.getInstance().getTemplate(itemId);
             if (item == null) {
@@ -3101,7 +3803,6 @@ public class Player extends Playable {
                 return null;
             }
 
-            // Sends message to client if requested.
             if (sendMessage && ((!isCastingNow() && item.hasExImmediateEffect()) || !item.hasExImmediateEffect())) {
                 if (count > 1) {
                     if ((process == ItemProcessType.SWEEP) || (process == ItemProcessType.QUEST)) {
@@ -3126,7 +3827,6 @@ public class Player extends Playable {
                 }
             }
 
-            // Auto-use herbs.
             if (item.hasExImmediateEffect() && item.isEtcItem()) {
                 for (SkillHolder skillHolder : item.getSkills()) {
                     doSimultaneousCast(skillHolder.getSkill());
@@ -3134,12 +3834,10 @@ public class Player extends Playable {
 
                 broadcastInfo();
             } else {
-                // Add the item to inventory.
                 final Item createdItem = inventory.addItem(process, itemId, count, this, reference);
                 if (enchantLevel > -1) {
                     createdItem.setEnchantLevel(enchantLevel);
 
-                    // Update with an InventoryUpdate that has the new enchant value.
                     final InventoryUpdate playerIU = new InventoryUpdate();
                     if (createdItem.isStackable() && (createdItem.getCount() > count)) {
                         playerIU.addModifiedItem(createdItem);
@@ -3149,7 +3847,6 @@ public class Player extends Playable {
                     sendInventoryUpdate(playerIU);
                 }
 
-                // If over capacity, drop the item.
                 if (!isGM()
                         && !inventory.validateCapacity(0, item.isQuestItem())
                         && createdItem.isDropable()
@@ -3174,39 +3871,19 @@ public class Player extends Playable {
         return null;
     }
 
-    /**
-     * @param process the ItemProcessType identifier of process triggering this action
-     * @param item the item holder
-     * @param reference the reference object
-     * @param sendMessage if {@code true} a system message will be sent
-     */
     public void addItem(ItemProcessType process, ItemHolder item, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         addItem(process, item.getId(), item.getCount(), reference, sendMessage);
     }
 
-    /**
-     * Destroy item from inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be destroyed
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successful
-     */
     public boolean destroyItem(ItemProcessType process, Item item, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         return destroyItem(process, item, item.getCount(), reference, sendMessage);
     }
 
-    /**
-     * Destroy item from inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be destroyed
-     * @param count
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successful
-     */
     public boolean destroyItem(
             ItemProcessType process, Item item, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         final boolean wasEquipped = item.isEquipped();
         final Item destoyedItem = inventory.destroyItem(process, item, count, this, reference);
         if (destoyedItem == null) {
@@ -3217,7 +3894,6 @@ public class Player extends Playable {
             return false;
         }
 
-        // Send inventory update packet.
         final InventoryUpdate playerIU = new InventoryUpdate();
         playerIU.addItem(destoyedItem);
         sendInventoryUpdate(playerIU);
@@ -3228,12 +3904,10 @@ public class Player extends Playable {
             sendItemList(false);
         }
 
-        // Update current load as well.
         final StatusUpdate su = new StatusUpdate(this);
         su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
         sendPacket(su);
 
-        // Sends message to client if requested.
         if (sendMessage) {
             final SystemMessage sm;
             if (count > 1) {
@@ -3251,18 +3925,11 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Destroys item from inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action (if null item will not be logged)
-     * @param objectId : int Item Instance identifier of the item to be destroyed
-     * @param count : long Quantity of items to be destroyed
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successful
-     */
+    /** A {@code null} process skips item logging. */
     @Override
     public boolean destroyItem(
             ItemProcessType process, int objectId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         final Item item = inventory.getItemByObjectId(objectId);
         if ((item == null) || (item.getCount() < count)) {
             if (sendMessage) {
@@ -3275,18 +3942,10 @@ public class Player extends Playable {
         return destroyItem(process, item, count, reference, sendMessage);
     }
 
-    /**
-     * Destroy item from inventory by using its <b>itemId</b> and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param itemId : int Item identifier of the item to be destroyed
-     * @param count : long Quantity of items to be destroyed
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @return boolean informing if the action was successful
-     */
     @Override
     public boolean destroyItemByItemId(
             ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (itemId == Inventory.ADENA_ID) {
             return reduceAdena(process, count, reference, sendMessage);
         }
@@ -3312,17 +3971,14 @@ public class Player extends Playable {
             return false;
         }
 
-        // Send inventory update packet.
         final InventoryUpdate playerIU = new InventoryUpdate();
         playerIU.addItem(item);
         sendInventoryUpdate(playerIU);
 
-        // Update current load as well.
         final StatusUpdate su = new StatusUpdate(this);
         su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
         sendPacket(su);
 
-        // Sends message to client if requested.
         if (sendMessage) {
             final SystemMessage sm;
             if (removeCount > 1) {
@@ -3340,17 +3996,9 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Transfers item to another ItemContainer and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param objectId : int Item Identifier of the item to be transfered
-     * @param count : long Quantity of items to be transfered
-     * @param target
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the new item or the updated item in inventory
-     */
     public Item transferItem(
             ItemProcessType process, int objectId, long count, Inventory target, WorldObject reference) {
+        WorldPartition.checkOwner();
         final Item oldItem = checkItemManipulation(objectId, count, "transfer");
         if (oldItem == null) {
             return null;
@@ -3361,7 +4009,6 @@ public class Player extends Playable {
             return null;
         }
 
-        // Send inventory update packet.
         final InventoryUpdate playerIU = new InventoryUpdate();
         if ((oldItem.getCount() > 0) && (oldItem != newItem)) {
             playerIU.addModifiedItem(oldItem);
@@ -3371,12 +4018,10 @@ public class Player extends Playable {
 
         sendInventoryUpdate(playerIU);
 
-        // Update current load as well.
         StatusUpdate playerSU = new StatusUpdate(this);
         playerSU.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
         sendPacket(playerSU);
 
-        // Send target update packet.
         if (target instanceof PlayerInventory) {
             final Player targetPlayer = ((PlayerInventory) target).getOwner();
             final InventoryUpdate targetIU = new InventoryUpdate();
@@ -3388,7 +4033,6 @@ public class Player extends Playable {
 
             targetPlayer.sendInventoryUpdate(targetIU);
 
-            // Update current load as well.
             playerSU = new StatusUpdate(targetPlayer);
             playerSU.addAttribute(StatusUpdate.CUR_LOAD, targetPlayer.getCurrentLoad());
             targetPlayer.sendPacket(playerSU);
@@ -3406,18 +4050,7 @@ public class Player extends Playable {
         return newItem;
     }
 
-    /**
-     * Use instead of calling {@link #addItem(ItemProcessType, Item, WorldObject, boolean)} and {@link #destroyItemByItemId(ItemProcessType, int, long, WorldObject, boolean)}<br>
-     * This method validates slots and weight limit, for stackable and non-stackable items.
-     * @param process a ItemProcessType representing the process that is exchanging this items
-     * @param reference the (probably NPC) reference, could be null
-     * @param coinId the item Id of the item given on the exchange
-     * @param cost the amount of items given on the exchange
-     * @param rewardId the item received on the exchange
-     * @param count the amount of items received on the exchange
-     * @param sendMessage if {@code true} it will send messages to the acting player
-     * @return {@code true} if the player successfully exchanged the items, {@code false} otherwise
-     */
+    /** Validates slots and weight limit before exchanging, which separate add and destroy calls do not. */
     public boolean exchangeItemsById(
             ItemProcessType process,
             WorldObject reference,
@@ -3426,6 +4059,7 @@ public class Player extends Playable {
             int rewardId,
             long count,
             boolean sendMessage) {
+        WorldPartition.checkOwner();
         if (!inventory.validateCapacityByItemId(rewardId, count)) {
             if (sendMessage) {
                 sendPacket(SystemMessageId.YOUR_INVENTORY_IS_FULL);
@@ -3450,17 +4084,9 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Drop item from inventory and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process ItemProcessType identifier of process triggering this action
-     * @param item Item to be dropped
-     * @param reference WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage boolean Specifies whether to send message to Client about this action
-     * @param protectItem whether or not dropped item must be protected temporary against other players
-     * @return boolean informing if the action was successful
-     */
     public boolean dropItem(
             ItemProcessType process, Item item, WorldObject reference, boolean sendMessage, boolean protectItem) {
+        WorldPartition.checkOwner();
         final Item droppedItem = inventory.dropItem(process, item, this, reference);
         if (droppedItem == null) {
             if (sendMessage) {
@@ -3483,7 +4109,6 @@ public class Player extends Playable {
             ItemsAutoDestroyTaskManager.getInstance().addItem(droppedItem);
         }
 
-        // Protection against auto destroy dropped item.
         if (GeneralConfig.DESTROY_DROPPED_PLAYER_ITEM) {
             droppedItem.setProtected(droppedItem.isEquipable()
                     && (!droppedItem.isEquipable() || !GeneralConfig.DESTROY_EQUIPABLE_PLAYER_ITEM));
@@ -3491,22 +4116,18 @@ public class Player extends Playable {
             droppedItem.setProtected(true);
         }
 
-        // Retail drop protection.
         if (protectItem) {
             droppedItem.getDropProtection().protect(this);
         }
 
-        // Send inventory update packet.
         final InventoryUpdate playerIU = new InventoryUpdate();
         playerIU.addItem(droppedItem);
         sendInventoryUpdate(playerIU);
 
-        // Update current load as well.
         final StatusUpdate su = new StatusUpdate(this);
         su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
         sendPacket(su);
 
-        // Sends message to client if requested.
         if (sendMessage) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_DROPPED_S1);
             sm.addItemName(droppedItem);
@@ -3517,22 +4138,10 @@ public class Player extends Playable {
     }
 
     public boolean dropItem(ItemProcessType process, Item item, WorldObject reference, boolean sendMessage) {
+        WorldPartition.checkOwner();
         return dropItem(process, item, reference, sendMessage, false);
     }
 
-    /**
-     * Drop item from inventory by using its <b>objectID</b> and send a Server->Client InventoryUpdate packet to the Player.
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param objectId : int Item Instance identifier of the item to be dropped
-     * @param count : long Quantity of items to be dropped
-     * @param x : int coordinate for drop X
-     * @param y : int coordinate for drop Y
-     * @param z : int coordinate for drop Z
-     * @param reference : WorldObject Object referencing current action like NPC selling item or previous item in transformation
-     * @param sendMessage : boolean Specifies whether to send message to Client about this action
-     * @param protectItem
-     * @return Item corresponding to the new item or the updated item in inventory
-     */
     public Item dropItem(
             ItemProcessType process,
             int objectId,
@@ -3543,6 +4152,7 @@ public class Player extends Playable {
             WorldObject reference,
             boolean sendMessage,
             boolean protectItem) {
+        WorldPartition.checkOwner();
         final Item invitem = inventory.getItemByObjectId(objectId);
         final Item item = inventory.dropItem(process, objectId, count, this, reference);
         if (item == null) {
@@ -3568,22 +4178,18 @@ public class Player extends Playable {
             item.setProtected(true);
         }
 
-        // Retail drop protection.
         if (protectItem) {
             item.getDropProtection().protect(this);
         }
 
-        // Send inventory update packet.
         final InventoryUpdate playerIU = new InventoryUpdate();
         playerIU.addItem(invitem);
         sendInventoryUpdate(playerIU);
 
-        // Update current load as well.
         final StatusUpdate su = new StatusUpdate(this);
         su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
         sendPacket(su);
 
-        // Sends message to client if requested.
         if (sendMessage) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_DROPPED_S1);
             sm.addItemName(item);
@@ -3594,6 +4200,7 @@ public class Player extends Playable {
     }
 
     public Item checkItemManipulation(int objectId, long count, String action) {
+        WorldPartition.checkOwner();
         // TODO: if we remove objects that are not visible from the World, we'll have to remove this check
         if (World.findObject(objectId) == null) {
             log.trace("{}: player tried to {} item not available in World", getObjectId(), action);
@@ -3616,7 +4223,6 @@ public class Player extends Playable {
             return null;
         }
 
-        // Pet is summoned and not the item that summoned the pet AND not the buggle from strider you're mounting.
         if ((hasSummon() && (summon.getControlObjectId() == objectId)) || (mountObjectID == objectId)) {
             return null;
         }
@@ -3625,7 +4231,7 @@ public class Player extends Playable {
             return null;
         }
 
-        // We cannot put a Weapon with Augmention in WH while casting (Possible Exploit).
+        // Exploit guard: no augmented weapon into the warehouse while casting.
         if (item.isAugmented() && (isCastingNow() || isCastingSimultaneouslyNow())) {
             return null;
         }
@@ -3634,27 +4240,28 @@ public class Player extends Playable {
     }
 
     public boolean isSpawnProtected() {
+        WorldPartition.checkOwner();
         return (spawnProtectEndTime != 0) && (spawnProtectEndTime > ClockBridge.gameMillis());
     }
 
     public boolean isTeleportProtected() {
+        WorldPartition.checkOwner();
         return (teleportProtectEndTime != 0) && (teleportProtectEndTime > ClockBridge.gameMillis());
     }
 
     public void setSpawnProtection(boolean protect) {
+        WorldPartition.checkOwner();
         spawnProtectEndTime = protect ? ClockBridge.gameMillis() + (PlayerConfig.PLAYER_SPAWN_PROTECTION * 1000) : 0;
     }
 
     public void setTeleportProtection(boolean protect) {
+        WorldPartition.checkOwner();
         teleportProtectEndTime =
                 protect ? ClockBridge.gameMillis() + (PlayerConfig.PLAYER_TELEPORT_PROTECTION * 1000) : 0;
     }
 
-    /**
-     * Set protection from aggro mobs when getting up from fake death, according settings.
-     * @param protect
-     */
     public void setRecentFakeDeath(boolean protect) {
+        WorldPartition.checkOwner();
         recentFakeDeathEndTime = protect
                 ? GameTimeTaskManager.getInstance().getGameTicks()
                         + (PlayerConfig.PLAYER_FAKEDEATH_UP_PROTECTION * GameTimeTaskManager.TICKS_PER_SECOND)
@@ -3662,15 +4269,18 @@ public class Player extends Playable {
     }
 
     public boolean isRecentFakeDeath() {
+        WorldPartition.checkOwner();
         return recentFakeDeathEndTime > GameTimeTaskManager.getInstance().getGameTicks();
     }
 
     @Override
     public boolean isAlikeDead() {
+        WorldPartition.checkOwner();
         return super.isAlikeDead() || fakeDeath;
     }
 
     public void setClient(GameClient client) {
+        WorldPartition.checkOwner();
         this.client = client;
         if ((this.client != null) && (this.client.getIp() != null)) {
             ipAddress = this.client.getIp();
@@ -3678,17 +4288,20 @@ public class Player extends Playable {
     }
 
     public String getIPAddress() {
+        WorldPartition.checkOwner();
         return ipAddress;
     }
 
     @Override
     public void enableSkill(Skill skill) {
+        WorldPartition.checkOwner();
         super.enableSkill(skill);
         removeTimeStamp(skill);
     }
 
     @Override
     public boolean checkDoCastConditions(Skill skill) {
+        WorldPartition.checkOwner();
         if (!super.checkDoCastConditions(skill) || observerMode) {
             return false;
         }
@@ -3698,8 +4311,7 @@ public class Player extends Playable {
             return false;
         }
 
-        // Check if the spell using charges or not in AirShip.
-        if ((charges.get() < skill.getChargeConsumeCount())
+        if ((charges < skill.getChargeConsumeCount())
                 || (isInAirShip() && !skill.hasEffectType(EffectType.REFUEL_AIRSHIP))) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.S1_CANNOT_BE_USED_DUE_TO_UNSUITABLE_TERMS);
             sm.addSkillName(skill);
@@ -3710,10 +4322,6 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Returns true if cp update should be done, false if not.
-     * @return boolean
-     */
     private boolean needCpUpdate() {
         final double currentCp = getCurrentCp();
         if ((currentCp <= 1.0) || (getMaxCp() < MAX_HP_BAR_PX)) {
@@ -3737,10 +4345,6 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Returns true if mp update should be done, false if not.
-     * @return boolean
-     */
     private boolean needMpUpdate() {
         final double currentMp = getCurrentMp();
         if ((currentMp <= 1.0) || (getMaxMp() < MAX_HP_BAR_PX)) {
@@ -3764,13 +4368,10 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Send packet StatusUpdate with current HP,MP and CP to the Player and only current HP, MP and Level to all other Player of the Party. <b><u>Actions</u>:</b>
-     * <li>Send the Server->Client packet StatusUpdate with current HP, MP and CP to this Player</li>
-     * <li>Send the Server->Client packet PartySmallWindowUpdate with current HP, MP and Level to all other Player of the Party</li> <font color=#FF0000><b><u>Caution</u>: This method DOESN'T SEND current HP and MP to all Player of the _statusListener</b></font>
-     */
+    // The party gets HP, MP and level only; the status listeners get no HP or MP from here.
     @Override
     public void broadcastStatusUpdate() {
+        WorldPartition.checkOwner();
         if (broadcastStatusUpdateTask == null) {
             broadcastStatusUpdateTask = WorldPartition.loop()
                     .schedule(
@@ -3788,7 +4389,6 @@ public class Player extends Playable {
                                 final boolean needHpUpdate = needHpUpdate();
                                 final Party party = getParty();
 
-                                // Check if a party is in progress and party window update is useful.
                                 if ((party != null) && (needCpUpdate || needHpUpdate || needMpUpdate())) {
                                     party.broadcastToPartyMembers(this, new PartySmallWindowUpdate(this));
                                 }
@@ -3814,26 +4414,22 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Send a Server->Client packet UserInfo to this Player and CharInfo to all known players.<br>
-     * <font color=#FF0000><b><u>Caution</u>: DON'T SEND UserInfo packet to other players instead of CharInfo packet.<br>
-     * UserInfo packet contains PRIVATE DATA as MaxHP, STR, DEX...</b></font>
-     */
+    // UserInfo carries private data (max HP, STR, DEX), so other players only get CharInfo.
     public void broadcastUserInfo() {
-        // Send user info to the current player.
+        WorldPartition.checkOwner();
         updateUserInfo();
 
-        // Broadcast char info to known players.
         broadcastCharInfo();
     }
 
     public void updateUserInfo() {
+        WorldPartition.checkOwner();
         sendPacket(new UserInfo(this));
         sendPacket(new ExBrExtraUserInfo(this));
     }
 
     public void broadcastCharInfo() {
-        // Client is disconnected.
+        WorldPartition.checkOwner();
         if (isOnlineInt() == 0) {
             return;
         }
@@ -3855,7 +4451,6 @@ public class Player extends Playable {
 
                                             player.sendPacket(new ExBrExtraUserInfo(this));
 
-                                            // Update relation.
                                             final int relation = getRelation(player);
                                             final boolean isAutoAttackable = isAutoAttackable(player);
                                             final RelationCache oldrelation = getKnownRelation(player.getObjectId());
@@ -3886,15 +4481,15 @@ public class Player extends Playable {
     }
 
     public void broadcastTitleInfo() {
-        // Send a Server->Client packet UserInfo to this Player.
+        WorldPartition.checkOwner();
         updateUserInfo();
 
-        // Send a Server->Client packet TitleUpdate to all known players.
         broadcastPacket(new NicknameChanged(this));
     }
 
     @Override
     public void broadcastPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
         packet.sendInBroadcast();
         try {
             final boolean isCharInfo = packet instanceof CharInfo;
@@ -3931,6 +4526,7 @@ public class Player extends Playable {
     }
 
     public List<ClientPort> observerPorts(boolean includeSelf) {
+        WorldPartition.checkOwner();
         final List<ClientPort> ports = new ArrayList<>();
         if (includeSelf) {
             ports.add(getPort());
@@ -3943,20 +4539,20 @@ public class Player extends Playable {
         return ports;
     }
 
-    /**
-     * @return the Alliance Identifier of the Player.
-     */
     @Override
     public int getAllyId() {
+        WorldPartition.checkOwner();
         return clan == null ? 0 : clan.getAllyId();
     }
 
     public int getAllyCrestId() {
+        WorldPartition.checkOwner();
         return getAllyId() == 0 ? 0 : clan.getAllyCrestId();
     }
 
     @Override
     public void sendPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
         if (client != null) {
             client.sendPacket(packet);
         }
@@ -3964,27 +4560,18 @@ public class Player extends Playable {
 
     /** {@link ClientPort#DETACHED} without a connected client: offline trade and offline play write nothing. */
     public ClientPort getPort() {
-        final GameClient current = client;
-        return ((current == null) || current.isDetached()) ? ClientPort.DETACHED : current.port();
+        WorldPartition.checkOwner();
+        return ((client == null) || client.isDetached()) ? ClientPort.DETACHED : client.port();
     }
 
-    /**
-     * Send SystemMessage packet.
-     * @param id SystemMessageId
-     */
     @Override
     public void sendPacket(SystemMessageId id) {
+        WorldPartition.checkOwner();
         sendPacket(new SystemMessage(id));
     }
 
-    /**
-     * Manage Interact Task with another Player. <b><u>Actions</u>:</b>
-     * <li>If the private store is a STORE_PRIVATE_SELL, send a Server->Client PrivateBuyListSell packet to the Player</li>
-     * <li>If the private store is a STORE_PRIVATE_BUY, send a Server->Client PrivateBuyListBuy packet to the Player</li>
-     * <li>If the private store is a STORE_PRIVATE_MANUFACTURE, send a Server->Client RecipeShopSellList packet to the Player</li><br>
-     * @param target The Creature targeted
-     */
     public void doInteract(Creature target) {
+        WorldPartition.checkOwner();
         if (target == null) {
             return;
         }
@@ -4001,26 +4588,13 @@ public class Player extends Playable {
             } else if (temp.getPrivateStoreType() == PrivateStoreType.MANUFACTURE) {
                 sendPacket(new RecipeShopSellList(this, temp));
             }
-        } else // _interactTarget=null should never happen but one never knows ^^;
-        {
+        } else {
             target.onAction(this);
         }
     }
 
-    /**
-     * Manages AutoLoot Task.<br>
-     * <ul>
-     * <li>Send a system message to the player.</li>
-     * <li>Add the item to the player's inventory.</li>
-     * <li>Send a Server->Client packet InventoryUpdate to this player with NewItem (use a new slot) or ModifiedItem (increase amount).</li>
-     * <li>Send a Server->Client packet StatusUpdate to this player with current weight.</li>
-     * </ul>
-     * <font color=#FF0000><b><u>Caution</u>: If a party is in progress, distribute the items between the party members!</b></font>
-     * @param target the NPC dropping the item
-     * @param itemId the item ID
-     * @param itemCount the item count
-     */
     public void doAutoLoot(Attackable target, int itemId, long itemCount) {
+        WorldPartition.checkOwner();
         if (isInParty() && !ItemData.getInstance().getTemplate(itemId).hasExImmediateEffect()) {
             party.distributeItem(this, itemId, itemCount, false, target);
         } else if (itemId == Inventory.ADENA_ID) {
@@ -4030,27 +4604,14 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Method overload for {@link Player#doAutoLoot(Attackable, int, long)}
-     * @param target the NPC dropping the item
-     * @param item the item holder
-     */
     public void doAutoLoot(Attackable target, ItemHolder item) {
+        WorldPartition.checkOwner();
         doAutoLoot(target, item.getId(), item.getCount());
     }
 
-    /**
-     * Manage Pickup Task. <b><u>Actions</u>:</b>
-     * <li>Send a Server->Client packet StopMove to this Player</li>
-     * <li>Remove the Item from the world and send server->client GetItem packets</li>
-     * <li>Send a System Message to the Player : YOU_PICKED_UP_S1_ADENA or YOU_PICKED_UP_S1_S2</li>
-     * <li>Add the Item to the Player inventory</li>
-     * <li>Send a Server->Client packet InventoryUpdate to this Player with NewItem (use a new slot) or ModifiedItem (increase amount)</li>
-     * <li>Send a Server->Client packet StatusUpdate to this Player with current weight</li> <font color=#FF0000><b><u>Caution</u>: If a Party is in progress, distribute Items between party members</b></font>
-     * @param object The Item to pick up
-     */
     @Override
     public void doPickupItem(WorldObject object) {
+        WorldPartition.checkOwner();
         if (isAlikeDead() || fakeDeath) {
             return;
         }
@@ -4061,12 +4622,9 @@ public class Player extends Playable {
             return;
         }
 
-        // Set the AI Intention to IDLE.
         getAI().setIntentionIdle();
 
-        // Check if the WorldObject to pick up is a Item.
         if (!object.isItem()) {
-            // Do not try to pickup anything that is not an item :)
             log.warn("{} trying to pickup wrong target.{}", this, getTarget());
             return;
         }
@@ -4074,73 +4632,66 @@ public class Player extends Playable {
         final Item target = (Item) object;
         sendPacket(new StopMove(this));
         SystemMessage smsg = null;
-        synchronized (target) {
-            // Check if the target to pick up is visible.
-            if (!target.isSpawned()) {
-                // Send a Server->Client packet ActionFailed to this Player.
-                sendPacket(ActionFailed.STATIC_PACKET);
-                return;
-            }
-
-            if (!target.getDropProtection().tryPickUp(this)) {
-                sendPacket(ActionFailed.STATIC_PACKET);
-                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
-                smsg.addItemName(target);
-                sendPacket(smsg);
-                return;
-            }
-
-            if (((isInParty() && (party.getDistributionType() == PartyDistributionType.FINDERS_KEEPERS))
-                            || !isInParty())
-                    && !inventory.validateCapacity(target)) {
-                sendPacket(ActionFailed.STATIC_PACKET);
-                sendPacket(SystemMessageId.YOUR_INVENTORY_IS_FULL);
-                return;
-            }
-
-            if (isInvisible() && !isGM()) {
-                return;
-            }
-
-            if ((target.getOwnerId() != 0)
-                    && (target.getOwnerId() != getObjectId())
-                    && !isInLooterParty(target.getOwnerId())) {
-                if (target.getId() == Inventory.ADENA_ID) {
-                    smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1_ADENA);
-                    smsg.addLong(target.getCount());
-                } else if (target.getCount() > 1) {
-                    smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S2_S1_S);
-                    smsg.addItemName(target);
-                    smsg.addLong(target.getCount());
-                } else {
-                    smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
-                    smsg.addItemName(target);
-                }
-
-                sendPacket(ActionFailed.STATIC_PACKET);
-                sendPacket(smsg);
-                return;
-            }
-
-            // You can pickup only 1 combat flag.
-            if (FortSiegeManager.getInstance().isCombat(target.getId())
-                    && !FortSiegeManager.getInstance().checkIfCanPickup(this)) {
-                return;
-            }
-
-            if ((target.getItemLootShedule() != null)
-                    && ((target.getOwnerId() == getObjectId()) || isInLooterParty(target.getOwnerId()))) {
-                target.resetOwnerTimer();
-            }
-
-            // Remove the Item from the world and send server->client GetItem packets.
-            target.pickupMe(this);
-            if (GeneralConfig.SAVE_DROPPED_ITEM) {
-                ItemsOnGroundManager.getInstance().removeObject(target);
-            }
+        if (!target.isSpawned()) {
+            sendPacket(ActionFailed.STATIC_PACKET);
+            return;
         }
 
-        // Auto use herbs - pick up.
+        if (!target.getDropProtection().tryPickUp(this)) {
+            sendPacket(ActionFailed.STATIC_PACKET);
+            smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
+            smsg.addItemName(target);
+            sendPacket(smsg);
+            return;
+        }
+
+        if (((isInParty() && (party.getDistributionType() == PartyDistributionType.FINDERS_KEEPERS)) || !isInParty())
+                && !inventory.validateCapacity(target)) {
+            sendPacket(ActionFailed.STATIC_PACKET);
+            sendPacket(SystemMessageId.YOUR_INVENTORY_IS_FULL);
+            return;
+        }
+
+        if (isInvisible() && !isGM()) {
+            return;
+        }
+
+        if ((target.getOwnerId() != 0)
+                && (target.getOwnerId() != getObjectId())
+                && !isInLooterParty(target.getOwnerId())) {
+            if (target.getId() == Inventory.ADENA_ID) {
+                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1_ADENA);
+                smsg.addLong(target.getCount());
+            } else if (target.getCount() > 1) {
+                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S2_S1_S);
+                smsg.addItemName(target);
+                smsg.addLong(target.getCount());
+            } else {
+                smsg = new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_PICK_UP_S1);
+                smsg.addItemName(target);
+            }
+
+            sendPacket(ActionFailed.STATIC_PACKET);
+            sendPacket(smsg);
+            return;
+        }
+
+        // You can pickup only 1 combat flag.
+        if (FortSiegeManager.getInstance().isCombat(target.getId())
+                && !FortSiegeManager.getInstance().checkIfCanPickup(this)) {
+            return;
+        }
+
+        if ((target.getItemLootShedule() != null)
+                && ((target.getOwnerId() == getObjectId()) || isInLooterParty(target.getOwnerId()))) {
+            target.resetOwnerTimer();
+        }
+
+        target.pickupMe(this);
+        if (GeneralConfig.SAVE_DROPPED_ITEM) {
+            ItemsOnGroundManager.getInstance().removeObject(target);
+        }
+
         if (target.getTemplate().hasExImmediateEffect()) {
             final IItemHandler handler = ItemHandler.getInstance().getHandler(target.getEtcItem());
             if (handler != null) {
@@ -4157,7 +4708,6 @@ public class Player extends Playable {
         } else if (FortSiegeManager.getInstance().isCombat(target.getId())) {
             addItem(ItemProcessType.PICKUP, target, null, true);
         } else {
-            // If item is instance of ArmorType or WeaponType broadcast an "Attention" system message.
             if ((target.getItemType() instanceof ArmorType) || (target.getItemType() instanceof WeaponType)) {
                 if (target.isEnchanted()) {
                     smsg = new SystemMessage(SystemMessageId.ATTENTION_C1_HAS_PICKED_UP_S2_S3);
@@ -4172,7 +4722,6 @@ public class Player extends Playable {
                 broadcastPacket(smsg);
             }
 
-            // Check if a Party is in progress.
             if (isInParty()) {
                 party.distributeItem(this, target);
             } else if ((target.getId() == Inventory.ADENA_ID) && (inventory.getAdenaInstance() != null)) {
@@ -4181,7 +4730,6 @@ public class Player extends Playable {
             } else {
                 addItem(ItemProcessType.PICKUP, target, null, true);
 
-                // Auto-Equip arrows/bolts if player has a bow/crossbow and player picks up arrows/bolts.
                 final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
                 if (weapon != null) {
                     final EtcItem etcItem = target.getEtcItem();
@@ -4200,6 +4748,7 @@ public class Player extends Playable {
 
     @Override
     public void doAttack(Creature target) {
+        WorldPartition.checkOwner();
         super.doAttack(target);
         setRecentFakeDeath(false);
         if (target.isFakePlayer() && !FakePlayersConfig.FAKE_PLAYER_AUTO_ATTACKABLE) {
@@ -4209,6 +4758,7 @@ public class Player extends Playable {
 
     @Override
     public void doCast(Skill skill) {
+        WorldPartition.checkOwner();
         if ((currentSkill != null)
                 && !checkUseMagicConditions(skill, currentSkill.isCtrlPressed(), currentSkill.isShiftPressed())) {
             setCastingNow(false);
@@ -4221,6 +4771,7 @@ public class Player extends Playable {
     }
 
     public boolean canOpenPrivateStore() {
+        WorldPartition.checkOwner();
         if ((PrivateStoreRangeConfig.SHOP_MIN_RANGE_FROM_NPC > 0)
                 || (PrivateStoreRangeConfig.SHOP_MIN_RANGE_FROM_PLAYER > 0)) {
             if (World.getFirstVisibleObject(
@@ -4239,11 +4790,12 @@ public class Player extends Playable {
 
     @Override
     public int getMinShopDistance() {
+        WorldPartition.checkOwner();
         return sitting ? PrivateStoreRangeConfig.SHOP_MIN_RANGE_FROM_PLAYER : 0;
     }
 
     public void tryOpenPrivateBuyStore() {
-        // Player shouldn't be able to set stores if he/she is alike dead (dead or fake death).
+        WorldPartition.checkOwner();
         if (canOpenPrivateStore()) {
             if ((privateStoreType == PrivateStoreType.BUY) || (privateStoreType == PrivateStoreType.BUY_MANAGE)) {
                 setPrivateStoreType(PrivateStoreType.NONE);
@@ -4267,7 +4819,7 @@ public class Player extends Playable {
     }
 
     public void tryOpenPrivateSellStore(boolean isPackageSale) {
-        // Player shouldn't be able to set stores if he/she is alike dead (dead or fake death).
+        WorldPartition.checkOwner();
         if (canOpenPrivateStore()) {
             if ((privateStoreType == PrivateStoreType.SELL)
                     || (privateStoreType == PrivateStoreType.SELL_MANAGE)
@@ -4302,14 +4854,17 @@ public class Player extends Playable {
 
     @Override
     public boolean isTransformed() {
+        WorldPartition.checkOwner();
         return (transformation != null) && !transformation.isStance();
     }
 
     public boolean isInStance() {
+        WorldPartition.checkOwner();
         return (transformation != null) && transformation.isStance();
     }
 
     public void transform(Transform transformation) {
+        WorldPartition.checkOwner();
         if (transformation.isFlying() && (getX() > World.GRACIA_MAX_X)) {
             return;
         }
@@ -4319,14 +4874,12 @@ public class Player extends Playable {
         }
 
         if (this.transformation != null) {
-            // You already polymorphed and cannot polymorph again.
             sendPacket(new SystemMessage(SystemMessageId.YOU_ALREADY_POLYMORPHED_AND_CANNOT_POLYMORPH_AGAIN));
             return;
         }
 
         setQueuedSkill(null, false, false);
         if (isMounted()) {
-            // Get off the strider or something else if character is mounted.
             dismount();
         }
 
@@ -4337,7 +4890,6 @@ public class Player extends Playable {
         sendPacket(new SkillCoolTime(this));
         broadcastUserInfo();
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_TRANSFORM, this)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerTransform(this, transformation.getId()), this);
         }
@@ -4345,6 +4897,7 @@ public class Player extends Playable {
 
     @Override
     public void untransform() {
+        WorldPartition.checkOwner();
         if (transformation == null) {
             return;
         }
@@ -4357,35 +4910,25 @@ public class Player extends Playable {
         sendPacket(new SkillCoolTime(this));
         broadcastUserInfo();
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_TRANSFORM, this)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerTransform(this, 0), this);
         }
     }
 
-    /**
-     * This returns the transformation Id of the current transformation. For example, if a player is transformed as a Buffalo, and then picks up the Zariche, the transform Id returned will be that of the Zariche, and NOT the Buffalo.
-     * @return Transformation Id
-     */
+    /** A transformation from a picked-up cursed weapon wins over any earlier one (Zariche over Buffalo). */
     public int getTransformationId() {
+        WorldPartition.checkOwner();
         return isTransformed() ? transformation.getId() : 0;
     }
 
     public int getTransformationDisplayId() {
+        WorldPartition.checkOwner();
         return isTransformed() ? transformation.getDisplayId() : 0;
     }
 
-    /**
-     * Set a target. <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Remove the Player from the _statusListener of the old target if it was a Creature</li>
-     * <li>Add the Player to the _statusListener of the new target if it's a Creature</li>
-     * <li>Target the new WorldObject (add the target to the Player target, _knownObject and Player to _KnownObject of the WorldObject)</li>
-     * </ul>
-     * @param worldObject The WorldObject to target
-     */
     @Override
     public void setTarget(WorldObject worldObject) {
+        WorldPartition.checkOwner();
         WorldObject newTarget = worldObject;
         if (newTarget != null) {
             final boolean isInParty = newTarget.isPlayer() && isInParty() && party.containsPlayer(newTarget.asPlayer());
@@ -4395,104 +4938,91 @@ public class Player extends Playable {
                 newTarget = null;
             }
 
-            // Check if the new target is visible.
             if ((newTarget != null) && !isInParty && !newTarget.isSpawned()) {
                 newTarget = null;
             }
 
-            // Vehicles cannot be targeted.
             if (!isGM() && (newTarget instanceof Vehicle)) {
                 newTarget = null;
             }
         }
 
-        // Get the current target.
         final WorldObject oldTarget = getTarget();
         if (oldTarget != null) {
-            if (oldTarget.equals(newTarget)) // no target change?
-            {
-                // Validate location of the target.
+            if (oldTarget.equals(newTarget)) {
                 if ((newTarget != null) && (newTarget.getObjectId() != getObjectId())) {
                     sendPacket(new ValidateLocation(newTarget));
                 }
                 return;
             }
 
-            // Remove the target from the status listener.
             oldTarget.removeStatusListener(this);
         }
 
         if ((newTarget != null) && newTarget.isCreature()) {
             final Creature target = newTarget.asCreature();
 
-            // Validate location of the new target.
             if (newTarget.getObjectId() != getObjectId()) {
                 sendPacket(new ValidateLocation(target));
             }
 
-            // Show the client his new target.
             sendPacket(new MyTargetSelected(this, target));
 
-            // Register target to listen for hp changes.
             target.addStatusListener(this);
 
-            // Send max/current hp.
             final StatusUpdate su = new StatusUpdate(target);
             su.addAttribute(StatusUpdate.MAX_HP, target.getMaxHp());
             su.addAttribute(StatusUpdate.CUR_HP, (int) target.getCurrentHp());
             sendPacket(su);
 
-            // To others the new target, and not yourself!
             World.broadcastToVisiblePlayers(
                     this, new TargetSelected(getObjectId(), newTarget.getObjectId(), getX(), getY(), getZ()));
         }
 
-        // Target was removed?
         if ((newTarget == null) && (getTarget() != null)) {
             broadcastPacket(new TargetUnselected(this));
         }
 
-        // Target the new WorldObject (add the target to the Player target, _knownObject and Player to _KnownObject of
-        // the WorldObject).
         super.setTarget(newTarget);
     }
 
-    /**
-     * Return the active weapon instance (always equipped in the right hand).
-     */
     @Override
     public Item getActiveWeaponInstance() {
+        WorldPartition.checkOwner();
         return inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
     }
 
-    /**
-     * Return the active weapon item (always equipped in the right hand).
-     */
     @Override
     public Weapon getActiveWeaponItem() {
+        WorldPartition.checkOwner();
         final Item weapon = getActiveWeaponInstance();
         return weapon == null ? fistsWeaponItem : (Weapon) weapon.getTemplate();
     }
 
     public Item getChestArmorInstance() {
+        WorldPartition.checkOwner();
         return inventory.getPaperdollItem(Inventory.PAPERDOLL_CHEST);
     }
 
     public Item getLegsArmorInstance() {
+        WorldPartition.checkOwner();
         return inventory.getPaperdollItem(Inventory.PAPERDOLL_LEGS);
     }
 
     public Armor getActiveChestArmorItem() {
+        WorldPartition.checkOwner();
         final Item armor = getChestArmorInstance();
         return armor == null ? null : (Armor) armor.getTemplate();
     }
 
     public Armor getActiveLegsArmorItem() {
+        WorldPartition.checkOwner();
         final Item legs = getLegsArmorInstance();
         return legs == null ? null : (Armor) legs.getTemplate();
     }
 
     public boolean isWearingHeavyArmor() {
+        WorldPartition.checkOwner();
         final Item legs = getLegsArmorInstance();
         final Item armor = getChestArmorInstance();
         if ((armor != null)
@@ -4516,6 +5046,7 @@ public class Player extends Playable {
     }
 
     public boolean isWearingLightArmor() {
+        WorldPartition.checkOwner();
         final Item legs = getLegsArmorInstance();
         final Item armor = getChestArmorInstance();
         if ((armor != null)
@@ -4539,6 +5070,7 @@ public class Player extends Playable {
     }
 
     public boolean isWearingMagicArmor() {
+        WorldPartition.checkOwner();
         final Item legs = getLegsArmorInstance();
         final Item armor = getChestArmorInstance();
         if ((armor != null)
@@ -4562,11 +5094,13 @@ public class Player extends Playable {
     }
 
     public void setEngageRequest(boolean state, int playerid) {
+        WorldPartition.checkOwner();
         engageRequest = state;
         engageId = playerid;
     }
 
     public void engageAnswer(int answer) {
+        WorldPartition.checkOwner();
         if (!engageRequest || (engageId == 0)) {
             return;
         }
@@ -4583,36 +5117,22 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Return the secondary weapon instance (always equipped in the left hand).
-     */
     @Override
     public Item getSecondaryWeaponInstance() {
+        WorldPartition.checkOwner();
         return inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
     }
 
-    /**
-     * Return the secondary Item item (always equipped in the left hand).<br>
-     * Arrows, Shield..
-     */
     @Override
     public ItemTemplate getSecondaryWeaponItem() {
+        WorldPartition.checkOwner();
         final Item item = inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
         return item != null ? item.getTemplate() : null;
     }
 
-    /**
-     * Kill the Creature, Apply Death Penalty, Manage gain/loss Karma and Item Drop. <b><u>Actions</u>:</b>
-     * <li>Reduce the Experience of the Player in function of the calculated Death Penalty</li>
-     * <li>If necessary, unsummon the Pet of the killed Player</li>
-     * <li>Manage Karma gain for attacker and Karam loss for the killed Player</li>
-     * <li>If the killed Player has Karma, manage Drop Item</li>
-     * <li>Kill the Player</li><br>
-     * @param killer
-     */
     @Override
     public boolean doDie(Creature killer) {
-        // Kill the Player.
+        WorldPartition.checkOwner();
         if (!super.doDie(killer)) {
             return false;
         }
@@ -4621,12 +5141,9 @@ public class Player extends Playable {
             stopFeed();
         }
 
-        // synchronized (this)
-        // {
         if (fakeDeath) {
             stopFakeDeath(true);
         }
-        // }
 
         final KrateiArena arena = getKrateiArena();
         if (arena != null) {
@@ -4661,11 +5178,9 @@ public class Player extends Playable {
                                         this);
                     }
 
-                    // pvp/pk item rewards
                     if (!(PvpRewardItemConfig.DISABLE_REWARDS_IN_INSTANCES && (getInstanceId() != 0))
                             && //
                             !(PvpRewardItemConfig.DISABLE_REWARDS_IN_PVP_ZONES && isInsideZone(ZoneId.PVP))) {
-                        // pvp
                         if (PvpRewardItemConfig.REWARD_PVP_ITEM && (pvpFlag != 0)) {
                             pk.addItem(
                                     ItemProcessType.REWARD,
@@ -4675,7 +5190,6 @@ public class Player extends Playable {
                                     PvpRewardItemConfig.REWARD_PVP_ITEM_MESSAGE);
                         }
 
-                        // pk
                         if (PvpRewardItemConfig.REWARD_PK_ITEM && (pvpFlag == 0)) {
                             pk.addItem(
                                     ItemProcessType.REWARD,
@@ -4687,7 +5201,6 @@ public class Player extends Playable {
                     }
                 }
 
-                // announce pvp/pk
                 if (PvpAnnounceConfig.ANNOUNCE_PK_PVP && (((pk != null) && !pk.isGM()) || fpcKill)) {
                     String msg = "";
                     if (pvpFlag == 0) {
@@ -4723,14 +5236,11 @@ public class Player extends Playable {
 
             broadcastStatusUpdate();
 
-            // Clear resurrect xp calculation.
             setExpBeforeDeath(0);
 
-            // Issues drop of Cursed Weapon.
             if (isCursedWeaponEquipped()) {
                 CursedWeaponsManager.getInstance().drop(cursedWeaponEquippedId, killer);
             } else if (combatFlagEquipped) {
-                // TODO: Fort siege during TW??
                 if (TerritoryWarManager.getInstance().isTWInProgress()) {
                     TerritoryWarManager.getInstance().dropCombatFlag(this, true, false);
                 } else {
@@ -4747,7 +5257,7 @@ public class Player extends Playable {
                 final boolean insidePvpZone = isInsideZone(ZoneId.PVP);
                 final boolean insideSiegeZone = isInsideZone(ZoneId.SIEGE);
                 if ((pk == null) || !pk.isCursedWeaponEquipped()) {
-                    onDieDropItem(killer); // Check if any item should be dropped.
+                    onDieDropItem(killer);
                     if (!insidePvpZone && !insideSiegeZone) {
                         if ((pk != null)
                                 && (pk.getClan() != null)
@@ -4787,11 +5297,12 @@ public class Player extends Playable {
             }
         }
 
-        // Unsummon Cubics
         if (!cubics.isEmpty()) {
-            for (Cubic cubic : cubics.values()) {
-                cubic.stopAction();
-                cubic.cancelDisappear();
+            try (Snapshot<Cubic> snapshot = ScratchBuffers.snapshot(cubics.values())) {
+                for (Cubic cubic : snapshot) {
+                    cubic.stopAction();
+                    cubic.cancelDisappear();
+                }
             }
 
             cubics.clear();
@@ -4810,7 +5321,6 @@ public class Player extends Playable {
             setAgathionId(0);
         }
 
-        // calculate death penalty buff
         calculateDeathPenaltyBuffLevel(killer);
 
         if (hasSummon()) {
@@ -4827,8 +5337,7 @@ public class Player extends Playable {
         AntiFeedManager.getInstance().setLastDeathTime(getObjectId());
 
         // FIXME: Karma reduction tempfix.
-        if (getKarma() > 0) // && (killer instanceof GuardInstance))
-        {
+        if (getKarma() > 0) {
             setKarma(getKarma() < 200 ? 0 : (int) (getKarma() - (getKarma() / 4)));
         }
 
@@ -4849,10 +5358,7 @@ public class Player extends Playable {
                 && (pk != null)
                 && (pk.getClan() != null)
                 && (getClan() != null)
-                && (pk.getClan().isAtWarWith(clanId)
-
-                // || _clan.isAtWarWith(killer.asPlayer().getClanId())
-                )) {
+                && (pk.getClan().isAtWarWith(clanId))) {
             return;
         }
 
@@ -4938,6 +5444,7 @@ public class Player extends Playable {
     }
 
     public void onKillUpdatePvPKarma(Creature target) {
+        WorldPartition.checkOwner();
         if ((target == null) || !target.isPlayable()) {
             return;
         }
@@ -4947,23 +5454,19 @@ public class Player extends Playable {
             return;
         }
 
-        // Cursed weapons progress.
         if (isCursedWeaponEquipped() && target.isPlayer()) {
             CursedWeaponsManager.getInstance().increaseKills(cursedWeaponEquippedId);
             return;
         }
 
-        // Olympiad support
         if (isInOlympiadMode() || killedPlayer.isInOlympiadMode()) {
             return;
         }
 
-        // Duel support
         if (isInDuel() && killedPlayer.isInDuel()) {
             return;
         }
 
-        // If both players are in SIEGE zone just increase siege kills/deaths.
         if (target.isPlayer() && isInsideZone(ZoneId.SIEGE) && killedPlayer.isInsideZone(ZoneId.SIEGE)) {
             if (!isSiegeFriend(killedPlayer)) {
                 final Clan targetClan = killedPlayer.getClan();
@@ -4975,17 +5478,13 @@ public class Player extends Playable {
             return;
         }
 
-        // Do nothing when in PVP zone.
         if (isInsideZone(ZoneId.PVP) || target.isInsideZone(ZoneId.PVP)) {
             return;
         }
 
-        // Check if it's pvp.
         if (checkIfPvP(target) && (killedPlayer.getPvpFlag() != 0)) {
             increasePvpKills(target);
         } else {
-            // Target player doesn't have pvp flag set.
-            // check about wars
             if ((killedPlayer.getClan() != null)
                     && (getClan() != null)
                     && getClan().isAtWarWith(killedPlayer.getClanId())
@@ -4998,13 +5497,11 @@ public class Player extends Playable {
             }
 
             // 'No war' or 'One way war' -> 'Normal PK'.
-            if (killedPlayer.getKarma() > 0) // Target player has karma.
-            {
+            if (killedPlayer.getKarma() > 0) {
                 if (PvpConfig.KARMA_AWARD_PK_KILL) {
                     increasePvpKills(target);
                 }
-            } else if (killedPlayer.getPvpFlag() == 0) // Target player doesn't have karma.
-            {
+            } else if (killedPlayer.getPvpFlag() == 0) {
                 if (FactionSystemConfig.FACTION_SYSTEM_ENABLED) {
                     if ((good && killedPlayer.isGood()) || (evil && killedPlayer.isEvil())) {
                         increasePkKillsAndKarma(target);
@@ -5013,48 +5510,40 @@ public class Player extends Playable {
                     increasePkKillsAndKarma(target);
                 }
 
-                checkItemRestriction(); // Unequip adventurer items
+                checkItemRestriction();
             }
         }
     }
 
-    /**
-     * Increase the pvp kills count and send the info to the player
-     * @param target
-     */
     public void increasePvpKills(Creature target) {
+        WorldPartition.checkOwner();
         if (target.isPlayer() && AntiFeedManager.getInstance().check(this, target)) {
             setPvpKills(pvpKills + 1);
             updatePvpTitleAndColor(true);
 
-            // Send a Server->Client UserInfo packet to attacker with its Karma and PK Counter.
             updateUserInfo();
         }
     }
 
-    /**
-     * Increase pk count, karma and send the info to the player
-     * @param target
-     */
     public void increasePkKillsAndKarma(Creature target) {
+        WorldPartition.checkOwner();
         // Only playables can increase karma/pk.
         if ((target == null) || !target.isPlayable()) {
             return;
         }
 
-        // Calculate new karma. (calculate karma before incrase pk count!).
+        // The karma gain depends on pkKills, so it is computed before the count is raised.
         setKarma(getKarma() + Formulas.calculateKarmaGain(pkKills, target.isSummon()));
 
-        // PK Points are increased only if you kill a player.
         if (target.isPlayer()) {
             setPkKills(pkKills + 1);
         }
 
-        // Update player's UI.
         updateUserInfo();
     }
 
     public void updatePvpTitleAndColor(boolean broadcastInfo) {
+        WorldPartition.checkOwner();
         if (PvpTitleColorConfig.PVP_COLOR_SYSTEM_ENABLED
                 && !FactionSystemConfig.FACTION_SYSTEM_ENABLED) // Faction system uses title colors.
         {
@@ -5082,6 +5571,7 @@ public class Player extends Playable {
     }
 
     public void updatePvPStatus() {
+        WorldPartition.checkOwner();
         if (isInsideZone(ZoneId.PVP)) {
             return;
         }
@@ -5093,6 +5583,7 @@ public class Player extends Playable {
     }
 
     public void updatePvPStatus(Creature target) {
+        WorldPartition.checkOwner();
         final Player targetPlayer = target.asPlayer();
         if (targetPlayer == null) {
             return;
@@ -5125,41 +5616,24 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * @return {@code true} if player has Lucky effect and is level 9 or less
-     */
     public boolean isLucky() {
+        WorldPartition.checkOwner();
         return (getLevel() <= 9) && isAffectedBySkill(CommonSkill.LUCKY.getId());
     }
 
-    /**
-     * Restore the specified % of experience this Player has lost and sends a Server->Client StatusUpdate packet.
-     * @param restorePercent
-     */
     public void restoreExp(double restorePercent) {
+        WorldPartition.checkOwner();
         if (expBeforeDeath > 0) {
-            // Restore the specified % of lost experience.
             getStat().addExp(Math.round(((expBeforeDeath - getExp()) * restorePercent) / 100));
             setExpBeforeDeath(0);
         }
     }
 
-    /**
-     * Reduce the Experience (and level if necessary) of the Player in function of the calculated Death Penalty.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <li>Calculate the Experience loss</li>
-     * <li>Set the value of expBeforeDeath</li>
-     * <li>Set the new Experience value of the Player and Decrease its level if necessary</li>
-     * <li>Send a Server->Client StatusUpdate packet with its new Experience</li><br>
-     * @param killer
-     * @param atWar
-     */
     public void calculateDeathExpPenalty(Creature killer, boolean atWar) {
+        WorldPartition.checkOwner();
         final int level = getLevel();
         double percentLost = ExperienceLossData.getInstance().getPercentLost(getLevel());
 
-        // Calculate reduce exp lost stats.
         if (killer != null) {
             if (killer.isRaid()) {
                 percentLost *= calcStat(Stat.REDUCE_EXP_LOST_BY_RAID, 1);
@@ -5170,12 +5644,10 @@ public class Player extends Playable {
             }
         }
 
-        // Calculate karma loss configuration.
         if (getKarma() > 0) {
             percentLost *= RatesConfig.RATE_KARMA_EXP_LOST;
         }
 
-        // Get the total exp for the current player level.
         long currentLevelExp = 0;
         if (!isOnEvent()) {
             final int maxLevel = ExperienceData.getInstance().getMaxLevel();
@@ -5187,20 +5659,17 @@ public class Player extends Playable {
             }
         }
 
-        // Calculate the experience loss.
         long lostExp = 0;
         if (currentLevelExp > 0) {
             lostExp = Math.round((currentLevelExp * percentLost) / 100);
 
-            // Capping loss to 10% of current level experience.
+            // Loss is capped at 10% of the current level's experience.
             lostExp = Math.min(lostExp, currentLevelExp / 10);
 
-            // Reduce experience lost for festival and war kills.
             if (isFestivalParticipant() || atWar) {
                 lostExp /= 4;
             }
 
-            // No exp loss for Advent Blessing.
             if (nevitSystem.isAdventBlessingActive()) {
                 lostExp = 0;
             }
@@ -5211,19 +5680,17 @@ public class Player extends Playable {
     }
 
     public boolean isPartyWaiting() {
+        WorldPartition.checkOwner();
         return PartyMatchWaitingList.getInstance().getPlayers().contains(this);
     }
 
     public boolean isInPartyMatchRoom() {
+        WorldPartition.checkOwner();
         return partyRoom > 0;
     }
 
-    /**
-     * Stop the HP/MP/CP Regeneration task. <b><u>Actions</u>:</b>
-     * <li>Set the RegenActive flag to False</li>
-     * <li>Stop the HP/MP/CP Regeneration task</li>
-     */
     public void stopAllTimers() {
+        WorldPartition.checkOwner();
         stopHpMpRegeneration();
         stopWarnUserTakeBreak();
         stopWaterTask();
@@ -5239,109 +5706,81 @@ public class Player extends Playable {
         stopRecoGiveTask();
     }
 
-    /**
-     * @return {@code true} if the character has a summon, {@code false} otherwise
-     */
     public boolean hasSummon() {
+        WorldPartition.checkOwner();
         return summon != null;
     }
 
-    /**
-     * @return {@code true} if the character has a pet, {@code false} otherwise
-     */
     public boolean hasPet() {
+        WorldPartition.checkOwner();
         return (summon != null) && summon.isPet();
     }
 
-    /**
-     * @return {@code true} if the character has a servitor, {@code false} otherwise
-     */
     public boolean hasServitor() {
+        WorldPartition.checkOwner();
         return (summon != null) && summon.isServitor();
     }
 
-    /**
-     * @return the Summon of the Player or null.
-     */
     public Summon getSummon() {
+        WorldPartition.checkOwner();
         return summon;
     }
 
-    /**
-     * Set the Summon of the Player.
-     * @param summon
-     */
     public void setPet(Summon summon) {
+        WorldPartition.checkOwner();
         this.summon = summon;
     }
 
-    /**
-     * Set the Summon of the Player.
-     * @param tamedBeast
-     */
     public void addTrainedBeast(TamedBeast tamedBeast) {
+        WorldPartition.checkOwner();
         if (trainedBeasts == null) {
-            trainedBeasts = ConcurrentHashMap.newKeySet();
+            trainedBeasts = new ObjectLinkedOpenHashSet<>();
         }
 
         trainedBeasts.add(tamedBeast);
     }
 
-    /**
-     * @return the Player requester of a transaction (ex : FriendInvite, JoinAlly, JoinParty...).
-     */
     public Player getActiveRequester() {
-        final Player requester = activeRequester;
-        if ((requester != null) && requester.isRequestExpired() && (activeTradeList == null)) {
+        WorldPartition.checkOwner();
+        if ((activeRequester != null) && activeRequester.isRequestExpired() && (activeTradeList == null)) {
             activeRequester = null;
         }
 
         return activeRequester;
     }
 
-    /**
-     * @return True if a transaction is in progress.
-     */
     public boolean isProcessingRequest() {
+        WorldPartition.checkOwner();
         return (getActiveRequester() != null)
                 || (requestExpireTime > GameTimeTaskManager.getInstance().getGameTicks());
     }
 
-    /**
-     * @return True if a transaction is in progress.
-     */
     public boolean isProcessingTransaction() {
+        WorldPartition.checkOwner();
         return (getActiveRequester() != null)
                 || (activeTradeList != null)
                 || (requestExpireTime > GameTimeTaskManager.getInstance().getGameTicks());
     }
 
-    /**
-     * Select the Warehouse to be used in next activity.
-     * @param partner
-     */
     public void onTransactionRequest(Player partner) {
+        WorldPartition.checkOwner();
         requestExpireTime = GameTimeTaskManager.getInstance().getGameTicks()
                 + (REQUEST_TIMEOUT * GameTimeTaskManager.TICKS_PER_SECOND);
         partner.setActiveRequester(this);
     }
 
-    /**
-     * Return true if last request is expired.
-     * @return
-     */
     public boolean isRequestExpired() {
+        WorldPartition.checkOwner();
         return requestExpireTime <= GameTimeTaskManager.getInstance().getGameTicks();
     }
 
-    /**
-     * Select the Warehouse to be used in next activity.
-     */
     public void onTransactionResponse() {
+        WorldPartition.checkOwner();
         requestExpireTime = 0;
     }
 
     public void onTradeStart(Player partner) {
+        WorldPartition.checkOwner();
         activeTradeList = new TradeList(this);
         activeTradeList.setPartner(partner);
 
@@ -5352,6 +5791,7 @@ public class Player extends Playable {
     }
 
     public void onTradeConfirm(Player partner) {
+        WorldPartition.checkOwner();
         final SystemMessage msg = new SystemMessage(SystemMessageId.C1_HAS_CONFIRMED_THE_TRADE);
         msg.addPcName(partner);
         sendPacket(msg);
@@ -5359,6 +5799,7 @@ public class Player extends Playable {
     }
 
     public void onTradeCancel(Player partner) {
+        WorldPartition.checkOwner();
         if (activeTradeList == null) {
             return;
         }
@@ -5372,6 +5813,7 @@ public class Player extends Playable {
     }
 
     public void onTradeFinish(boolean successfull) {
+        WorldPartition.checkOwner();
         activeTradeList = null;
         sendPacket(new TradeDone(1));
         if (successfull) {
@@ -5380,11 +5822,13 @@ public class Player extends Playable {
     }
 
     public void startTrade(Player partner) {
+        WorldPartition.checkOwner();
         onTradeStart(partner);
         partner.onTradeStart(this);
     }
 
     public void cancelActiveTrade() {
+        WorldPartition.checkOwner();
         if (activeTradeList == null) {
             return;
         }
@@ -5398,35 +5842,50 @@ public class Player extends Playable {
     }
 
     public boolean hasManufactureShop() {
-        return (manufactureItems != null) && !manufactureItems.isEmpty();
+        WorldPartition.checkOwner();
+        return !manufactureItems.isEmpty();
     }
 
-    /**
-     * Get the manufacture items map of this player.
-     * @return the the manufacture items map
-     */
+    /** @return the manufacture items by recipe id, in the order they were set */
     public Map<Integer, ManufactureItem> getManufactureItems() {
-        if (manufactureItems == null) {
-            synchronized (this) {
-                manufactureItems = Collections.synchronizedMap(new LinkedHashMap<>());
+        WorldPartition.checkOwner();
+        return Int2ObjectMaps.unmodifiable(new Int2ObjectLinkedOpenHashMap<>(manufactureItems));
+    }
+
+    /** @return the manufacture item of the given recipe, {@code null} for none */
+    public ManufactureItem getManufactureItem(int recipeId) {
+        WorldPartition.checkOwner();
+        return manufactureItems.get(recipeId);
+    }
+
+    public void addManufactureItem(ManufactureItem item) {
+        WorldPartition.checkOwner();
+        manufactureItems.put(item.getRecipeId(), item);
+    }
+
+    public void clearManufactureItems() {
+        WorldPartition.checkOwner();
+        manufactureItems.clear();
+    }
+
+    public void removeManufactureItemsIf(Predicate<ManufactureItem> filter) {
+        WorldPartition.checkOwner();
+        try (Snapshot<ManufactureItem> items = ScratchBuffers.snapshot(manufactureItems.values())) {
+            for (ManufactureItem item : items) {
+                if (filter.test(item)) {
+                    manufactureItems.remove(item.getRecipeId());
+                }
             }
         }
-
-        return manufactureItems;
     }
 
-    /**
-     * Set the store name.
-     * @param name the store name to set
-     */
     public void setStoreName(String name) {
+        WorldPartition.checkOwner();
         storeName = name == null ? "" : name;
     }
 
-    /**
-     * @return the buyList object of the Player.
-     */
     public TradeList getSellList() {
+        WorldPartition.checkOwner();
         if (sellList == null) {
             sellList = new TradeList(this);
         }
@@ -5434,10 +5893,8 @@ public class Player extends Playable {
         return sellList;
     }
 
-    /**
-     * @return the buyList object of the Player.
-     */
     public TradeList getBuyList() {
+        WorldPartition.checkOwner();
         if (buyList == null) {
             buyList = new TradeList(this);
         }
@@ -5445,17 +5902,8 @@ public class Player extends Playable {
         return buyList;
     }
 
-    /**
-     * Set the Private Store type of the Player. <b><u>Values</u>:</b>
-     * <li>0 : STORE_PRIVATE_NONE</li>
-     * <li>1 : STORE_PRIVATE_SELL</li>
-     * <li>2 : sellmanage</li>
-     * <li>3 : STORE_PRIVATE_BUY</li>
-     * <li>4 : buymanage</li>
-     * <li>5 : STORE_PRIVATE_MANUFACTURE</li><br>
-     * @param privateStoreType
-     */
     public void setPrivateStoreType(PrivateStoreType privateStoreType) {
+        WorldPartition.checkOwner();
         this.privateStoreType = privateStoreType;
         if (OfflineTradeConfig.OFFLINE_DISCONNECT_FINISHED
                 && (privateStoreType == PrivateStoreType.NONE)
@@ -5465,11 +5913,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Set the clan object, clanId, _clanLeader Flag and title of the Player.
-     * @param clan
-     */
     public void setClan(Clan clan) {
+        WorldPartition.checkOwner();
         this.clan = clan;
         if (clan == null) {
             setTitle("");
@@ -5485,7 +5930,6 @@ public class Player extends Playable {
         }
 
         if (!clan.isMember(getObjectId())) {
-            // Char has been kicked from clan.
             setClan(null);
             return;
         }
@@ -5493,16 +5937,11 @@ public class Player extends Playable {
         clanId = clan.getId();
     }
 
-    /**
-     * @return True if the Player is the leader of its clan.
-     */
     public boolean isClanLeader() {
+        WorldPartition.checkOwner();
         return (clan != null) && (getObjectId() == clan.getLeaderId());
     }
 
-    /**
-     * Reduce the number of arrows/bolts owned by the Player and send it Server->Client Packet InventoryUpdate or ItemList (to unequip if the last arrow was consummed).
-     */
     @Override
     protected void reduceArrowCount(boolean bolts) {
         final Item arrows = inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
@@ -5518,15 +5957,11 @@ public class Player extends Playable {
             return;
         }
 
-        // Adjust item quantity
         if (arrows.getCount() > 1) {
-            synchronized (arrows) {
-                arrows.changeCount(null, -1, this, null);
-                arrows.setLastChange(Item.MODIFIED);
-                inventory.refreshWeight();
-            }
+            arrows.changeCount(null, -1, this, null);
+            arrows.setLastChange(Item.MODIFIED);
+            inventory.refreshWeight();
         } else {
-            // Destroy entire item and save to database.
             inventory.destroyItem(ItemProcessType.NONE, arrows, this, null);
             inventory.unEquipItemInSlot(Inventory.PAPERDOLL_LHAND);
             if (bolts) {
@@ -5544,76 +5979,53 @@ public class Player extends Playable {
         sendInventoryUpdate(iu);
     }
 
-    /**
-     * Equip arrows needed in left hand and send a Server->Client packet ItemList to the Player then return True.
-     */
     @Override
     protected boolean checkAndEquipArrows() {
-        // Check if nothing is equipped in left hand.
         if (inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND) == null) {
-            // Get the Item of the arrows needed for this bow.
             arrowItem = inventory.findArrowForBow(getActiveWeaponItem());
             if (arrowItem != null) {
-                // Equip arrows needed in left hand.
                 inventory.setPaperdollItem(Inventory.PAPERDOLL_LHAND, arrowItem);
 
-                // Send a Server->Client packet ItemList to this Player to update left hand equipement.
                 sendItemList(false);
             }
         } else {
-            // Get the Item of arrows equipped in left hand.
             arrowItem = inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
         }
 
         return arrowItem != null;
     }
 
-    /**
-     * Equip bolts needed in left hand and send a Server->Client packet ItemList to the Player then return True.
-     */
     @Override
     protected boolean checkAndEquipBolts() {
-        // Check if nothing is equipped in left hand.
         if (inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND) == null) {
-            // Get the Item of the arrows needed for this bow.
             boltItem = inventory.findBoltForCrossBow(getActiveWeaponItem());
             if (boltItem != null) {
-                // Equip arrows needed in left hand.
                 inventory.setPaperdollItem(Inventory.PAPERDOLL_LHAND, boltItem);
 
-                // Send a Server->Client packet ItemList to this Player to update left hand equipement.
                 sendItemList(false);
             }
         } else {
-            // Get the Item of arrows equipped in left hand.
             boltItem = inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
         }
 
         return boltItem != null;
     }
 
-    /**
-     * Disarm the player's weapon.
-     * @return {@code true} if the player was disarmed or doesn't have a weapon to disarm, {@code false} otherwise.
-     */
     public boolean disarmWeapons() {
-        // If there is no weapon to disarm then return true.
+        WorldPartition.checkOwner();
         final Item wpn = inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
         if (wpn == null) {
             return true;
         }
 
-        // Don't allow disarming a cursed weapon.
         if (isCursedWeaponEquipped()) {
             return false;
         }
 
-        // Don't allow disarming a Combat Flag or Territory Ward.
         if (combatFlagEquipped) {
             return false;
         }
 
-        // Don't allow disarming if the weapon is force equip.
         if (wpn.getWeaponItem().isForceEquip()) {
             return false;
         }
@@ -5648,11 +6060,8 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Disarm the player's shield.
-     * @return {@code true}.
-     */
     public boolean disarmShield() {
+        WorldPartition.checkOwner();
         final Item sld = inventory.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
         if (sld != null) {
             final Collection<Item> unequipped =
@@ -5687,12 +6096,10 @@ public class Player extends Playable {
     }
 
     public boolean mount(Summon pet) {
-        // If mounts (excluding wyvern) are disallowed during siege, check if player is in a siege zone.
+        WorldPartition.checkOwner();
         if (!FeatureConfig.ALLOW_MOUNTS_DURING_SIEGE && isInsideZone(ZoneId.SIEGE)) {
             final MountType type = MountType.findByNpcId(pet.getId());
 
-            // Only allow mounting if the pet is a Strider and the player is the castle lord of the current siege
-            // castle.
             final boolean isAllowed = (type == MountType.STRIDER)
                     && (CastleManager.getInstance().getCastle(this) != null)
                     && isClanLeader()
@@ -5715,7 +6122,6 @@ public class Player extends Playable {
         startFeed(pet.getId());
         broadcastPacket(new Ride(this));
 
-        // Notify self and others about speed change.
         broadcastUserInfo();
 
         pet.unSummon(this);
@@ -5723,6 +6129,7 @@ public class Player extends Playable {
     }
 
     public boolean mount(int npcId, int controlItemObjId, boolean useFood) {
+        WorldPartition.checkOwner();
         if (!disarmWeapons() || !disarmShield() || isTransformed()) {
             return false;
         }
@@ -5732,7 +6139,6 @@ public class Player extends Playable {
         setMountObjectID(controlItemObjId);
         broadcastPacket(new Ride(this));
 
-        // Notify self and others about speed change.
         broadcastUserInfo();
         if (useFood) {
             startFeed(npcId);
@@ -5742,34 +6148,29 @@ public class Player extends Playable {
     }
 
     public boolean mountPlayer(Summon pet) {
+        WorldPartition.checkOwner();
         if ((pet != null) && pet.isMountable() && !isMounted() && !isBetrayed()) {
             if (isDead()) {
-                // A strider cannot be ridden when dead.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.A_STRIDER_CANNOT_BE_RIDDEN_WHEN_DEAD);
                 return false;
             } else if (pet.isDead()) {
-                // A dead strider cannot be ridden.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.A_DEAD_STRIDER_CANNOT_BE_RIDDEN);
                 return false;
             } else if (pet.isInCombat() || pet.isRooted()) {
-                // A strider in battle cannot be ridden.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.A_STRIDER_IN_BATTLE_CANNOT_BE_RIDDEN);
                 return false;
             } else if (isInCombat()) {
-                // A strider cannot be ridden while in battle.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.A_STRIDER_CANNOT_BE_RIDDEN_WHILE_IN_BATTLE);
                 return false;
             } else if (sitting) {
-                // A strider can be ridden only when standing.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.A_STRIDER_CAN_BE_RIDDEN_ONLY_WHEN_STANDING);
                 return false;
             } else if (fishing) {
-                // You can't mount, dismount, break and drop items while fishing.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.YOU_CANNOT_DO_THAT_WHILE_FISHING_2);
                 return false;
@@ -5814,6 +6215,7 @@ public class Player extends Playable {
     }
 
     public boolean dismount() {
+        WorldPartition.checkOwner();
         if (ZoneManager.getInstance().getZone(getX(), getY(), getZ() - 300, WaterZone.class) == null) {
             if (!isGM() && !isInWater() && (getZ() > 10000)) {
                 sendPacket(SystemMessageId.YOU_ARE_NOT_ALLOWED_TO_DISMOUNT_IN_THIS_LOCATION);
@@ -5853,68 +6255,53 @@ public class Player extends Playable {
         setMountObjectID(0);
         storePetFood(petId);
 
-        // Notify self and others about speed change.
         broadcastUserInfo();
 
         return true;
     }
 
     public long getUptime() {
+        WorldPartition.checkOwner();
         return ClockBridge.gameMillis() - uptime;
     }
 
-    /**
-     * Return True if the Player is invulnerable.
-     */
     @Override
     public boolean isInvul() {
+        WorldPartition.checkOwner();
         return super.isInvul() || isTeleportProtected();
     }
 
-    /**
-     * Return True if the Player has a Party in progress.
-     */
     @Override
     public boolean isInParty() {
+        WorldPartition.checkOwner();
         return party != null;
     }
 
-    /**
-     * Set the party object of the Player AND join it.
-     * @param party
-     */
     public void joinParty(Party party) {
+        WorldPartition.checkOwner();
         if (party != null) {
-            // First set the party otherwise this wouldn't be considered.
-            // as in a party into the Creature.updateEffectIcons() call.
+            // Set first so Creature.updateEffectIcons() treats the player as in a party.
             this.party = party;
             party.addPartyMember(this);
         }
     }
 
-    /**
-     * Manage the Leave Party task of the Player.
-     */
     public void leaveParty() {
+        WorldPartition.checkOwner();
         if (isInParty()) {
             party.removePartyMember(this, PartyMessageType.DISCONNECTED);
             party = null;
         }
     }
 
-    /**
-     * Return True if the Player is a GM.
-     */
     @Override
     public boolean isGM() {
+        WorldPartition.checkOwner();
         return getAccessLevel().isGm();
     }
 
-    /**
-     * Set the accessLevel of the Player.
-     * @param level
-     */
     public void setAccessLevel(int level) {
+        WorldPartition.checkOwner();
         accessLevel = AdminData.getInstance().getAccessLevel(level);
         appearance.setNameColor(accessLevel.getNameColor());
         appearance.setTitleColor(accessLevel.getTitleColor());
@@ -5936,14 +6323,13 @@ public class Player extends Playable {
     }
 
     public void setAccountAccesslevel(int level) {
+        WorldPartition.checkOwner();
         LoginService.getInstance().changeAccessLevel(getAccountId(), level);
     }
 
-    /**
-     * @return the accessLevel of the Player.
-     */
     @Override
     public AccessLevel getAccessLevel() {
+        WorldPartition.checkOwner();
         if (GeneralConfig.EVERYBODY_HAS_ADMIN_RIGHTS) {
             return AdminData.getInstance().getMasterAccessLevel();
         }
@@ -5955,10 +6341,8 @@ public class Player extends Playable {
         return accessLevel;
     }
 
-    /**
-     * Update Stats of the Player client side by sending Server->Client packet UserInfo/StatusUpdate to this Player and CharInfo/StatusUpdate to all known players (broadcast).
-     */
     public void updateAndBroadcastStatus() {
+        WorldPartition.checkOwner();
         if (updateAndBroadcastStatusTask == null) {
             updateAndBroadcastStatusTask = WorldPartition.loop()
                     .schedule(
@@ -5966,9 +6350,6 @@ public class Player extends Playable {
                                 refreshOverloaded();
                                 refreshExpertisePenalty();
 
-                                // Send a Server->Client packet UserInfo to this Player and CharInfo to all known
-                                // players
-                                // (broadcast).
                                 broadcastUserInfo();
 
                                 updateAndBroadcastStatusTask = null;
@@ -5978,10 +6359,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Send a Server->Client StatusUpdate packet with Karma and PvP Flag to the Player and all Player to inform (broadcast).
-     */
     public void setKarmaFlag() {
+        WorldPartition.checkOwner();
         updateUserInfo();
         World.forEachVisibleObject(this, Player.class, player -> {
             player.sendPacket(new RelationChanged(this, getRelation(player), isAutoAttackable(player)));
@@ -5991,10 +6370,8 @@ public class Player extends Playable {
         });
     }
 
-    /**
-     * Send a Server->Client StatusUpdate packet with Karma to the Player and all Player to inform (broadcast).
-     */
     public void broadcastKarma() {
+        WorldPartition.checkOwner();
         final StatusUpdate su = new StatusUpdate(this);
         su.addAttribute(StatusUpdate.KARMA, getKarma());
         sendPacket(su);
@@ -6007,26 +6384,19 @@ public class Player extends Playable {
         });
     }
 
-    /**
-     * Set the online Flag to True or False and update the characters table of the database with online status and lastAccess (called when login and logout).
-     * @param isOnline
-     * @param updateInDb
-     */
     public void setOnlineStatus(boolean isOnline, boolean updateInDb) {
+        WorldPartition.checkOwner();
         if (online != isOnline) {
             online = isOnline;
         }
 
-        // Update the characters table of the database with online status and lastAccess (called when login and logout).
         if (updateInDb) {
             updateOnlineStatus();
         }
     }
 
-    /**
-     * Update the characters table of the database with online status and lastAccess of this Player (called when login and logout).
-     */
     public void updateOnlineStatus() {
+        WorldPartition.checkOwner();
         try {
             PlayerPersistenceManager.getInstance()
                     .updateOnlineStatus(getObjectId(), getOnlineStatus(), ClockBridge.wallMillis());
@@ -6043,10 +6413,6 @@ public class Player extends Playable {
         };
     }
 
-    /**
-     * Create a new player in the characters table of the database.
-     * @return
-     */
     private boolean createDb() {
         final long now = ClockBridge.wallMillis();
         try {
@@ -6064,10 +6430,7 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * @return the stored columns of the character with its base class level, exp and sp; the account, the creation
-     *     time and the last access are left to the insert
-     */
+    /** Excludes the account, creation time and last access: the insert sets those. */
     private CharacterRow toCharacterRow() {
         long totalOnlineTime = onlineTime;
         if (onlineBeginTime > 0) {
@@ -6139,15 +6502,6 @@ public class Player extends Playable {
                 .build();
     }
 
-    /**
-     * Retrieve a Player from the characters table of the database and add it in _allObjects of the L2world. <b><u>Actions</u>:</b>
-     * <li>Retrieve the Player from the characters table of the database</li>
-     * <li>Add the Player object in _allObjects</li>
-     * <li>Set the x,y,z position of the Player and make it invisible</li>
-     * <li>Update the overloaded status of the Player</li><br>
-     * @param objectId Identifier of the object to initialized
-     * @return The Player loaded from the database
-     */
     private static Player restore(int objectId) {
         Player player = null;
         double currentCp = 0;
@@ -6222,13 +6576,12 @@ public class Player extends Playable {
                 try {
                     player.setBaseClass(character.baseClassId());
                 } catch (Exception e) {
-                    // TODO: Should this be logged?
                     player.setBaseClass(activeClassId);
                 }
 
-                // Restore Subclass Data (cannot be done earlier in function).
+                // Sub-class data cannot be restored earlier in this function.
                 if (restoreSubClassData(player) && (activeClassId != player.getBaseClass())) {
-                    for (SubClassHolder subClass : player.getSubClasses().values()) {
+                    for (SubClassHolder subClass : player.subClasses.values()) {
                         if (subClass.getId() == activeClassId) {
                             player.classIndex = subClass.getClassIndex();
                         }
@@ -6236,9 +6589,7 @@ public class Player extends Playable {
                 }
 
                 if ((player.getClassIndex() == 0) && (activeClassId != player.getBaseClass())) {
-                    // Subclass in use but doesn't exist in DB -
-                    // A possible restart-while-modifysubclass cheat has been attempted.
-                    // Switching to use base class.
+                    // Active sub-class missing in the DB (possible restart-while-modifysubclass cheat).
                     player.setPlayerClass(player.getBaseClass());
                     log.warn(
                             "{} reverted to base class. Possibly has tried a relogin exploit while subclassing.",
@@ -6257,23 +6608,18 @@ public class Player extends Playable {
 
                 player.setVitalityPoints(character.vitalityPoints(), true);
 
-                // Set the x,y,z position of the Player and make it invisible.
                 final int x = character.x();
                 final int y = character.y();
                 final int z = GeoEngine.getInstance().getHeight(x, y, character.z());
                 player.setXYZInvisible(x, y, z);
                 player.setLastServerPosition(x, y, z);
 
-                // Set Teleport Bookmark Slot.
                 player.setBookmarkSlot(character.bookmarkSlots());
 
-                // Character creation Time.
                 player.getCreateDate().setTimeInMillis(epochMillisOrZero(character.createdAt()));
 
-                // Language
                 player.setLang(character.language());
 
-                // Set Hero status if it applies
                 player.setHero(Hero.getInstance().isHero(objectId));
 
                 final int clanId = character.clanId();
@@ -6309,7 +6655,6 @@ public class Player extends Playable {
                     player.getClanPrivileges().disableAll();
                 }
 
-                // Retrieve the name and ID of the other characters assigned to this account.
                 player.accountChars.putAll(PlayerPersistenceManager.getInstance()
                         .findOtherCharacterNames(character.accountId(), objectId));
             }
@@ -6321,46 +6666,34 @@ public class Player extends Playable {
             return null;
         }
 
-        // Retrieve from the database all items of this Player and add them to inventory.
         player.getInventory().restore();
         player.getWarehouse().restore();
         player.getFreight().restore();
 
-        // Retrieve from the database all skills of this Player and add them to skills.
         player.restoreSkills();
 
-        // Retrieve from the database all macros of this Player and add them to macros.
         player.getMacros().restoreMe();
 
-        // Retrieve from the database all shortcuts of this Player and add them to shortcuts.
         player.restoreShortcuts();
 
-        // Retrieve from the database all henna of this Player and add them to henna.
         player.restoreHenna();
 
-        // Retrieve from the database all teleport bookmark of this Player and add them to _tpbookmark.
         player.restoreTeleportBookmark();
 
-        // Retrieve from the database the recipe book of this Player.
         player.restoreRecipeBook(true);
 
-        // Restore Recipe Shop list.
         if (PlayerConfig.STORE_RECIPE_SHOPLIST) {
             player.restoreRecipeShopList();
         }
 
-        // Load Premium Item List.
         player.loadPremiumItemList();
 
-        // Restore items in pet inventory.
         player.restorePetInventoryItems();
 
-        // Reward auto-get skills and all available skills if auto-learn skills is true.
         player.rewardSkills();
 
         player.restoreItemReuse();
 
-        // Restore current Cp, HP and MP values.
         player.setCurrentCp(currentCp);
         player.setCurrentHp(currentHp);
         player.setCurrentMp(currentMp);
@@ -6371,16 +6704,13 @@ public class Player extends Playable {
             player.stopHpMpRegeneration();
         }
 
-        // Restore pet if exists in the world.
         player.setPet(World.getPet(player.getObjectId()));
         if (player.hasSummon()) {
             player.getSummon().setOwner(player);
         }
 
-        // Update the overloaded status of the Player.
         player.refreshOverloaded();
 
-        // Update the expertise status of the Player.
         player.refreshExpertisePenalty();
 
         player.restoreFriendList();
@@ -6393,6 +6723,7 @@ public class Player extends Playable {
     }
 
     public Forum getMail() {
+        WorldPartition.checkOwner();
         if (forumMail == null) {
             final Forum root = ForumsBBSManager.getInstance().getForumByName("MailRoot");
             setMail(root.getChildByOwner(getObjectId()));
@@ -6406,10 +6737,12 @@ public class Player extends Playable {
     }
 
     public void setMail(Forum forum) {
+        WorldPartition.checkOwner();
         forumMail = forum;
     }
 
     public Forum getMemo() {
+        WorldPartition.checkOwner();
         if (forumMemo == null) {
             final Forum root = ForumsBBSManager.getInstance().getForumByName("MemoRoot");
             setMemo(root.getChildByAccount(accountId));
@@ -6422,14 +6755,10 @@ public class Player extends Playable {
     }
 
     public void setMemo(Forum forum) {
+        WorldPartition.checkOwner();
         forumMemo = forum;
     }
 
-    /**
-     * Restores sub-class data for the Player, used to check the current class index for the character.
-     * @param player
-     * @return
-     */
     private static boolean restoreSubClassData(Player player) {
         try {
             for (CharacterSubclass stored :
@@ -6441,8 +6770,7 @@ public class Player extends Playable {
                 subClass.setSp(stored.sp());
                 subClass.setClassIndex(stored.classIndex());
 
-                // Enforce the correct indexing of subClasses against their class indexes.
-                player.getSubClasses().put(subClass.getClassIndex(), subClass);
+                player.subClasses.put(subClass.getClassIndex(), subClass);
             }
         } catch (DataAccessException e) {
             log.warn("Could not restore classes for {}: {}", player.getName(), e.getMessage(), e);
@@ -6451,10 +6779,6 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Restore recipe book data for this Player.
-     * @param loadCommon
-     */
     private void restoreRecipeBook(boolean loadCommon) {
         try {
             final RecipeData rd = RecipeData.getInstance();
@@ -6495,6 +6819,7 @@ public class Player extends Playable {
     }
 
     public void updatePremiumItem(int itemNum, long newcount) {
+        WorldPartition.checkOwner();
         try {
             PlayerPersistenceManager.getInstance().updatePremiumItemCount(getObjectId(), itemNum, newcount);
         } catch (DataAccessException e) {
@@ -6503,6 +6828,7 @@ public class Player extends Playable {
     }
 
     public void deletePremiumItem(int itemNum) {
+        WorldPartition.checkOwner();
         try {
             PlayerPersistenceManager.getInstance().deletePremiumItem(getObjectId(), itemNum);
         } catch (DataAccessException e) {
@@ -6510,11 +6836,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Update Player stats in the characters table of the database.
-     * @param storeActiveEffects
-     */
-    public synchronized void store(boolean storeActiveEffects) {
+    public void store(boolean storeActiveEffects) {
+        WorldPartition.checkOwner();
         storeCharacter();
         storeEffect(storeActiveEffects);
         storeItemReuseDelay();
@@ -6542,13 +6865,13 @@ public class Player extends Playable {
 
     @Override
     public void storeMe() {
+        WorldPartition.checkOwner();
         store(true);
     }
 
     private void storeCharacter() {
-        final List<CharacterSubclass> subclasses =
-                new ArrayList<>(getSubClasses().size());
-        for (SubClassHolder subClass : getSubClasses().values()) {
+        final List<CharacterSubclass> subclasses = new ArrayList<>(subClasses.size());
+        for (SubClassHolder subClass : subClasses.values()) {
             subclasses.add(CharacterSubclass.builder()
                     .classIndex(subClass.getClassIndex())
                     .classId(subClass.getId())
@@ -6567,6 +6890,7 @@ public class Player extends Playable {
 
     @Override
     public void storeEffect(boolean storeEffects) {
+        WorldPartition.checkOwner();
         if (!PlayerConfig.STORE_SKILL_COOLTIME) {
             return;
         }
@@ -6576,8 +6900,6 @@ public class Player extends Playable {
         final GameClock clock = ClockBridge.clock();
         final long now = clock.gameMillis();
 
-        // Store all effect data along with calulated remaining.
-        // reuse delays for matching skills.
         if (storeEffects) {
             for (BuffInfo info : getEffectList().getEffects()) {
                 if (info == null) {
@@ -6586,7 +6908,6 @@ public class Player extends Playable {
 
                 final Skill skill = info.getSkill();
 
-                // Do not save heals.
                 if (skill.getAbnormalType() == AbnormalType.LIFE_FORCE_OTHERS) {
                     continue;
                 }
@@ -6626,7 +6947,6 @@ public class Player extends Playable {
             }
         }
 
-        // Skills under reuse.
         for (Entry<Integer, TimeStamp> ts : getSkillReuseTimeStamps().entrySet()) {
             final int hash = ts.getKey();
             if (storedSkills.contains(hash)) {
@@ -6676,6 +6996,7 @@ public class Player extends Playable {
     }
 
     public int isOnlineInt() {
+        WorldPartition.checkOwner();
         if (online && (client != null)) {
             return client.isDetached() ? 2 : 1;
         }
@@ -6684,6 +7005,7 @@ public class Player extends Playable {
     }
 
     public void startOfflinePlay() {
+        WorldPartition.checkOwner();
         if (hasPremiumStatus()
                 && (DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP > 0)
                 && !AntiFeedManager.getInstance()
@@ -6733,44 +7055,32 @@ public class Player extends Playable {
     }
 
     public void setEnteredWorld() {
+        WorldPartition.checkOwner();
         enteredWorld = true;
     }
 
     public boolean hasEnteredWorld() {
+        WorldPartition.checkOwner();
         return enteredWorld;
     }
 
-    /**
-     * Verifies if the player is in offline mode.<br>
-     * The offline mode may happen for different reasons:<br>
-     * Abnormally: Player gets abruptly disconnected from server.<br>
-     * Normally: The player gets into offline shop mode, only available by enabling the offline shop mod.
-     * @return {@code true} if the player is in offline mode, {@code false} otherwise
-     */
     public boolean isInOfflineMode() {
+        WorldPartition.checkOwner();
         return (client == null) || client.isDetached();
     }
 
     @Override
     public Skill addSkill(Skill newSkill) {
+        WorldPartition.checkOwner();
         addCustomSkill(newSkill);
         return super.addSkill(newSkill);
     }
 
-    /**
-     * Add a skill to the Player skills and its Func objects to the calculator set of the Player and save update in the character_skills table of the database. <b><u>Concept</u>:</b> All skills own by a Player are identified in <b>skills</b> <b><u> Actions</u>:</b>
-     * <li>Replace oldSkill by newSkill or Add the newSkill</li>
-     * <li>If an old skill has been replaced, remove all its Func objects of Creature calculator set</li>
-     * <li>Add Func objects of newSkill to the calculator set of the Creature</li><br>
-     * @param newSkill The Skill to add to the Creature
-     * @param store
-     * @return The Skill replaced or null if just added a new Skill
-     */
+    /** @return the skill replaced, or {@code null} when the skill is new */
     public Skill addSkill(Skill newSkill, boolean store) {
-        // Add a skill to the Player skills and its Func objects to the calculator set of the Player.
+        WorldPartition.checkOwner();
         final Skill oldSkill = addSkill(newSkill);
 
-        // Add or update a Player skill in the character_skills table of the database.
         if (store) {
             storeSkill(newSkill, oldSkill, -1);
         }
@@ -6780,27 +7090,21 @@ public class Player extends Playable {
 
     @Override
     public Skill removeSkill(Skill skill, boolean store) {
+        WorldPartition.checkOwner();
         removeCustomSkill(skill);
         return store ? removeSkill(skill) : super.removeSkill(skill, true);
     }
 
     public Skill removeSkill(Skill skill, boolean store, boolean cancelEffect) {
+        WorldPartition.checkOwner();
         removeCustomSkill(skill);
         return store ? removeSkill(skill) : super.removeSkill(skill, cancelEffect);
     }
 
-    /**
-     * Remove a skill from the Creature and its Func objects from calculator set of the Creature and save update in the character_skills table of the database. <b><u>Concept</u>:</b> All skills own by a Creature are identified in <b>skills</b> <b><u> Actions</u>:</b>
-     * <li>Remove the skill from the Creature skills</li>
-     * <li>Remove all its Func objects from the Creature calculator set</li> <b><u> Overridden in</u>:</b>
-     * <li>Player : Save update in the character_skills table of the database</li><br>
-     * @param skill The Skill to remove from the Creature
-     * @return The Skill removed
-     */
     public Skill removeSkill(Skill skill) {
+        WorldPartition.checkOwner();
         removeCustomSkill(skill);
 
-        // Remove a skill from the Creature and its Func objects from calculator set of the Creature.
         final Skill oldSkill = super.removeSkill(skill, true);
         if (oldSkill != null) {
             try {
@@ -6828,13 +7132,7 @@ public class Player extends Playable {
         return oldSkill;
     }
 
-    /**
-     * Add or update a Player skill in the character_skills table of the database.<br>
-     * If newClassIndex > -1, the skill will be stored with that class index, not the current one.
-     * @param newSkill
-     * @param oldSkill
-     * @param newClassIndex
-     */
+    /** A {@code newClassIndex} above -1 stores the skill under that class index instead of the current one. */
     private void storeSkill(Skill newSkill, Skill oldSkill, int newClassIndex) {
         final int classIndex = (newClassIndex > -1) ? newClassIndex : this.classIndex;
         try {
@@ -6856,11 +7154,6 @@ public class Player extends Playable {
                 .build();
     }
 
-    /**
-     * Adds or updates player's skills in the database.
-     * @param newSkills the list of skills to store
-     * @param newClassIndex if newClassIndex > -1, the skills will be stored for that class index, not the current one
-     */
     private void storeSkills(List<Skill> newSkills, int newClassIndex) {
         if (newSkills.isEmpty()) {
             return;
@@ -6878,17 +7171,12 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Retrieve from the database all skills of this Player and add them to skills.
-     */
     private void restoreSkills() {
         try {
-            // Retrieve all skills of this Player from the database.
             for (CharacterSkill stored : PlayerPersistenceManager.getInstance().findSkills(getObjectId(), classIndex)) {
                 final int id = stored.skillId();
                 final int level = stored.skillLevel();
 
-                // Create a Skill object for each record.
                 final Skill skill = SkillData.getInstance().getSkill(id, level);
                 if (skill == null) {
                     log.warn(
@@ -6899,8 +7187,6 @@ public class Player extends Playable {
                     continue;
                 }
 
-                // Add the Skill object to the Creature skills and its Func objects to the calculator set of the
-                // Creature.
                 addSkill(skill);
 
                 if (GeneralConfig.SKILL_CHECK_ENABLE
@@ -6924,11 +7210,9 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Retrieve from the database all skill effects of this Player and add them to the player.
-     */
     @Override
     public void restoreEffects() {
+        WorldPartition.checkOwner();
         try {
             final GameClock clock = ClockBridge.clock();
             for (CharacterSkillSave save :
@@ -6953,8 +7237,7 @@ public class Player extends Playable {
                     continue;
                 }
 
-                // These skill were still in effect on the character upon logout.
-                // Some of which were self casted and might still have had a long reuse delay which also is restored.
+                // Effects still active at logout; self-cast ones may carry a long reuse delay that is restored too.
                 StoredEffectRows.read(
                                 save.remainingMs(),
                                 save.tickPhaseMs() == null ? 0 : save.tickPhaseMs(),
@@ -6963,16 +7246,12 @@ public class Player extends Playable {
                         .ifPresent(stored -> skill.applyStoredEffects(this, stored));
             }
 
-            // Remove previously restored skills.
             PlayerPersistenceManager.getInstance().deleteSkillSaves(getObjectId(), classIndex);
         } catch (DataAccessException e) {
             log.warn("Could not restore {} active effect data: {}", this, e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieve from the database all Item Reuse Time of this Player and add them to the player.
-     */
     private void restoreItemReuse() {
         try {
             final GameClock clock = ClockBridge.clock();
@@ -6983,7 +7262,6 @@ public class Player extends Playable {
                 final long endsAt = clock.gameMillisAtWall(reuse.reuseEndsAt().toEpochMilli());
                 boolean isInInventory = true;
 
-                // Using item Id
                 Item item = inventory.getItemByItemId(itemId);
                 if (item == null) {
                     item = getWarehouse().getItemByItemId(itemId);
@@ -7005,16 +7283,12 @@ public class Player extends Playable {
                 }
             }
 
-            // Delete item reuse.
             PlayerPersistenceManager.getInstance().deleteItemReuses(getObjectId());
         } catch (DataAccessException e) {
             log.warn("Could not restore {} Item Reuse data: {}", this, e.getMessage(), e);
         }
     }
 
-    /**
-     * Retrieve from the database all Henna of this Player, add them to henna and calculate stats of the Player.
-     */
     private void restoreHenna() {
         for (int i = 0; i < 3; i++) {
             hennaList[i] = null;
@@ -7033,14 +7307,11 @@ public class Player extends Playable {
             log.error("Failed restoing character {} hennas.", this, e);
         }
 
-        // Calculate henna modifiers of this player.
         recalcHennaStats();
     }
 
-    /**
-     * @return the number of Henna empty slot of the Player.
-     */
     public int getHennaEmptySlots() {
+        WorldPartition.checkOwner();
         int totalSlots = 0;
         if (getPlayerClass().level() == 1) {
             totalSlots = 2;
@@ -7061,12 +7332,8 @@ public class Player extends Playable {
         return totalSlots;
     }
 
-    /**
-     * Remove a Henna of the Player, save update in the character_hennas table of the database and send Server->Client HennaInfo/UserInfo packet to this Player.
-     * @param slot
-     * @return
-     */
     public boolean removeHenna(int slot) {
+        WorldPartition.checkOwner();
         if ((slot < 1) || (slot > 3)) {
             return false;
         }
@@ -7084,16 +7351,12 @@ public class Player extends Playable {
             log.error("Failed removing character henna.", e);
         }
 
-        // Calculate Henna modifiers of this Player.
         recalcHennaStats();
 
-        // Send Server->Client HennaInfo packet to this Player.
         sendPacket(new HennaInfo(this));
 
-        // Send Server->Client UserInfo packet to this Player.
         updateUserInfo();
 
-        // Add the recovered dyes to the player's inventory and notify them.
         inventory.addItem(ItemProcessType.RESTORE, henna.getDyeItemId(), henna.getCancelCount(), this, null);
         reduceAdena(ItemProcessType.FEE, henna.getCancelFee(), this, false);
 
@@ -7103,7 +7366,6 @@ public class Player extends Playable {
         sendPacket(sm);
         sendPacket(SystemMessageId.THE_SYMBOL_HAS_BEEN_DELETED);
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_HENNA_REMOVE, this)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerHennaRemove(this, henna), this);
         }
@@ -7111,17 +7373,12 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Add a Henna to the Player, save update in the character_hennas table of the database and send Server->Client HennaInfo/UserInfo packet to this Player.
-     * @param henna the henna to add to the player.
-     * @return {@code true} if the henna is added to the player, {@code false} otherwise.
-     */
     public boolean addHenna(Henna henna) {
+        WorldPartition.checkOwner();
         for (int i = 0; i < 3; i++) {
             if (hennaList[i] == null) {
                 hennaList[i] = henna;
 
-                // Calculate Henna modifiers of this Player.
                 recalcHennaStats();
 
                 try {
@@ -7137,13 +7394,10 @@ public class Player extends Playable {
                     log.error("Failed saving character henna.", e);
                 }
 
-                // Send Server->Client HennaInfo packet to this Player.
                 sendPacket(new HennaInfo(this));
 
-                // Send Server->Client UserInfo packet to this Player.
                 updateUserInfo();
 
-                // Notify to scripts.
                 if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_HENNA_REMOVE, this)) {
                     EventDispatcher.getInstance().notifyEventAsync(new OnPlayerHennaRemove(this, henna), this);
                 }
@@ -7155,9 +7409,6 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Calculate Henna modifiers of this Player.
-     */
     private void recalcHennaStats() {
         hennaStatINT = 0;
         hennaStatSTR = 0;
@@ -7179,18 +7430,13 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * @param slot the character inventory henna slot.
-     * @return the Henna of this Player corresponding to the selected slot.
-     */
     public Henna getHenna(int slot) {
+        WorldPartition.checkOwner();
         return (slot < 1) || (slot > 3) ? null : hennaList[slot - 1];
     }
 
-    /**
-     * @return {@code true} if player has at least 1 henna symbol, {@code false} otherwise.
-     */
     public boolean hasHennas() {
+        WorldPartition.checkOwner();
         for (Henna henna : hennaList) {
             if (henna != null) {
                 return true;
@@ -7201,6 +7447,7 @@ public class Player extends Playable {
     }
 
     public void autoSave() {
+        WorldPartition.checkOwner();
         storeMe();
         storeRecommendations(false);
 
@@ -7212,6 +7459,7 @@ public class Player extends Playable {
     }
 
     public boolean canLogout() {
+        WorldPartition.checkOwner();
         if (changingClass) {
             log.warn("Player {} tried to restart/logout during class change.", getName());
             return false;
@@ -7232,9 +7480,7 @@ public class Player extends Playable {
             return false;
         }
 
-        // Prevent player from logging out if they are a festival participant
-        // and it is in progress, otherwise notify party members that the player
-        // is not longer a participant.
+        // A festival participant cannot log out while the festival runs; otherwise the party is told they left it.
         if (isFestivalParticipant()) {
             if (SevenSignsFestival.getInstance().isFestivalInitialized()) {
                 sendMessage("You cannot log out while you are a participant in a Festival.");
@@ -7249,45 +7495,29 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Return True if the Player is autoAttackable.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Check if the attacker isn't the Player Pet</li>
-     * <li>Check if the attacker is Monster</li>
-     * <li>If the attacker is a Player, check if it is not in the same party</li>
-     * <li>Check if the Player has Karma</li>
-     * <li>If the attacker is a Player, check if it is not in the same siege clan (Attacker, Defender)</li>
-     * </ul>
-     */
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         if (attacker == null) {
             return false;
         }
 
-        // Invisible GM players should not be attackable.
         if (isInvisible() && isGM()) {
             return false;
         }
 
-        // Check if the attacker isn't the Player Pet.
         if ((attacker == this) || (attacker == summon)) {
             return false;
         }
 
-        // Friendly mobs do not attack players.
         if (attacker instanceof FriendlyMob) {
             return false;
         }
 
-        // Check if the attacker is a Monster.
         if (attacker.isMonster()) {
             return true;
         }
 
-        // is AutoAttackable if both players are in the same duel and the duel is still going on
         final Player attackerPlayer = attacker.asPlayer();
         if (attacker.isPlayable()
                 && (duelState == Duel.DUELSTATE_DUELLING)
@@ -7295,41 +7525,34 @@ public class Player extends Playable {
             return true;
         }
 
-        // Check if the attacker is not in the same party. NOTE: Party checks goes before oly checks in order to prevent
-        // patry member autoattack at oly.
+        // The party check precedes the olympiad check so party members cannot autoattack each other in olympiad.
         if (isInParty() && party.getMembers().contains(attacker)) {
             return false;
         }
 
-        // Check if the attacker is in olympia and olympia start.
         if (attacker.isPlayer() && attackerPlayer.isInOlympiadMode()) {
             return inOlympiadMode && olympiadStart && (attacker.asPlayer().getOlympiadGameId() == getOlympiadGameId());
         }
 
-        // Check if the attacker is in an event.
         if (isOnEvent()) {
             return isOnSoloEvent() || (getTeam() != attacker.getTeam());
         }
 
-        // Check if the attacker is a Playable.
         if (attacker.isPlayable()) {
             if (isInsideZone(ZoneId.PEACE) || isInsideZone(ZoneId.NO_PVP)) {
                 return false;
             }
 
-            // Get Player
             final Clan clan = getClan();
             final Clan attackerClan = attackerPlayer.getClan();
             if ((clan != null) && (attackerClan != null)) {
                 if (clan != attackerClan) {
                     final Siege siege = SiegeManager.getInstance().getSiege(getX(), getY(), getZ());
                     if (siege != null) {
-                        // Check if a siege is in progress and if attacker and the Player aren't in the Defender clan.
                         if (siege.checkIsDefender(attackerClan) && siege.checkIsDefender(clan)) {
                             return false;
                         }
 
-                        // Check if a siege is in progress and if attacker and the Player aren't in the Attacker clan.
                         if (siege.checkIsAttacker(attackerClan) && siege.checkIsAttacker(clan)) {
                             // If first mid victory is achieved, attackers can attack attackers.
                             final Castle castle = CastleManager.getInstance().getCastleById(siegeSide);
@@ -7338,7 +7561,6 @@ public class Player extends Playable {
                     }
                 }
 
-                // Check if clan is at war.
                 if ((getWantsPeace() == 0)
                         && (attackerPlayer.getWantsPeace() == 0)
                         && !isAcademyMember()
@@ -7348,25 +7570,21 @@ public class Player extends Playable {
                 }
             }
 
-            // Check if the Player is in an arena, but NOT siege zone. NOTE: This check comes before clan/ally checks,
-            // but after party checks.
-            // This is done because in arenas, clan/ally members can autoattack if they are not in party.
+            // Arenas (not siege zones) are checked after party but before clan/ally: there, clan/ally members can
+            // autoattack unless partied.
             if ((isInsideZone(ZoneId.PVP) && attackerPlayer.isInsideZone(ZoneId.PVP))
                     && !(isInsideZone(ZoneId.SIEGE) && attackerPlayer.isInsideZone(ZoneId.SIEGE))) {
                 return true;
             }
 
-            // Check if the attacker is not in the same clan.
             if ((clan != null) && clan.isMember(attacker.getObjectId())) {
                 return false;
             }
 
-            // Check if the attacker is not in the same ally.
             if (attacker.isPlayer() && (getAllyId() != 0) && (getAllyId() == attackerPlayer.getAllyId())) {
                 return false;
             }
 
-            // Now check again if the Player is in pvp zone, but this time at siege PvP zone, applying clan/ally checks.
             if (isInsideZone(ZoneId.PVP)
                     && attackerPlayer.isInsideZone(ZoneId.PVP)
                     && isInsideZone(ZoneId.SIEGE)
@@ -7399,7 +7617,6 @@ public class Player extends Playable {
             return (getKarma() > 0); // Guards attack only PK players.
         }
 
-        // Check if the Player has Karma.
         if ((getKarma() > 0) || (pvpFlag > 0)) {
             return true;
         }
@@ -7407,41 +7624,15 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Check if the active Skill can be casted.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Check if the skill isn't toggle and is offensive</li>
-     * <li>Check if the target is in the skill cast range</li>
-     * <li>Check if the skill is Spoil type and if the target isn't already spoiled</li>
-     * <li>Check if the caster owns enought consummed Item, enough HP and MP to cast the skill</li>
-     * <li>Check if the caster isn't sitting</li>
-     * <li>Check if all skills are enabled and this skill is enabled</li>
-     * <li>Check if the caster own the weapon needed</li>
-     * <li>Check if the skill is active</li>
-     * <li>Check if all casting conditions are completed</li>
-     * <li>Notify the AI with CAST and target</li>
-     * </ul>
-     * @param skill The Skill to use
-     * @param forceUse used to force ATTACK on players
-     * @param dontMove used to prevent movement, if not in range
-     */
     @Override
     public boolean useMagic(Skill skill, boolean forceUse, boolean dontMove) {
-        // Check if the skill is active.
+        WorldPartition.checkOwner();
         if (skill.isPassive()) {
-            // just ignore the passive skill request. why does the client send it anyway ??
-            // Send a Server->Client packet ActionFailed to the Player.
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // ************************************* Check Casting in Progress *******************************************
-
-        // If a skill is currently being used, queue this one if this is not the same.
         if (isCastingNow()) {
-            // Check if new skill different from current skill in progress.
             if ((currentSkill != null) && (skill.getId() == currentSkill.getSkillId())) {
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
@@ -7450,7 +7641,6 @@ public class Player extends Playable {
                 return false;
             }
 
-            // Create a new SkillUseHolder object and queue it in the player queuedSkill.
             setQueuedSkill(skill, forceUse, dontMove);
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
@@ -7458,9 +7648,6 @@ public class Player extends Playable {
 
         setCastingNow(true);
 
-        // Create a new SkillUseHolder object and set the player currentSkill.
-        // This is used mainly to save & queue the button presses, since Creature has.
-        // _lastSkillCast which could otherwise replace it
         setCurrentSkill(skill, forceUse, dontMove);
         if (queuedSkill != null) {
             setQueuedSkill(null, false, false);
@@ -7471,7 +7658,6 @@ public class Player extends Playable {
             return false;
         }
 
-        // Check if the target is correct and Notify the AI with CAST and target.
         WorldObject target = null;
         switch (skill.getTargetType()) {
             case AURA: // AURA, SELF should be cast even if no target has been found
@@ -7486,35 +7672,28 @@ public class Player extends Playable {
                 break;
             }
             default: {
-                // Get the first target of the list.
                 target = skill.getFirstOfTargetList(this);
                 break;
             }
         }
 
-        // Notify the AI with CAST and target.
         getAI().setIntentionCast(skill, target);
         return true;
     }
 
     private boolean checkUseMagicConditions(Skill skill, boolean forceUse, boolean dontMove) {
-        // ************************************* Check Player State *******************************************
-
         // Abnormal effects(ex : Stun, Sleep...) are checked in Creature useMagic().
         if (isOutOfControl() || isParalyzed() || isStunned() || isSleeping()) {
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // Check if the player is dead.
         if (isDead()) {
-            // Send a Server->Client packet ActionFailed to the Player.
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
         if (fishing && !skill.hasEffectType(EffectType.FISHING, EffectType.FISHING_START)) {
-            // Only fishing skills are available
             sendPacket(SystemMessageId.ONLY_FISHING_SKILLS_MAY_BE_USED_AT_THIS_TIME);
             return false;
         }
@@ -7538,33 +7717,25 @@ public class Player extends Playable {
             return false;
         }
 
-        // Check if the caster is sitting.
         if (sitting) {
-            // Send a System Message to the caster.
             sendPacket(SystemMessageId.YOU_CANNOT_MOVE_WHILE_SITTING);
 
-            // Send a Server->Client packet ActionFailed to the Player.
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // Check if the skill type is toggle.
         if (skill.isToggle() && isAffectedBySkill(skill.getId())) {
             stopSkillEffects(SkillFinishType.REMOVED, skill.getId());
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // Check if the player uses "Fake Death" skill.
-        // Note: do not check this before TOGGLE reset
+        // Must follow the toggle reset above.
         if (fakeDeath) {
-            // Send a Server->Client packet ActionFailed to the Player.
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // ************************************* Check Target *******************************************
-        // Create and set a WorldObject containing the target of the skill.
         WorldObject target = null;
         final TargetType sklTargetType = skill.getTargetType();
         if ((sklTargetType == TargetType.GROUND) && (currentSkillWorldPosition == null)) {
@@ -7573,7 +7744,6 @@ public class Player extends Playable {
         }
 
         switch (sklTargetType) {
-            // Target the player if skill type is AURA, PARTY, CLAN or SELF.
             case AURA:
             case FRONT_AURA:
             case BEHIND_AURA:
@@ -7601,7 +7771,6 @@ public class Player extends Playable {
             }
         }
 
-        // Check the validity of the target.
         if (target == null) {
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
@@ -7611,7 +7780,6 @@ public class Player extends Playable {
         if (target.isDoor()) {
             final Door door = target.asDoor();
             if (door.isInsideZone(ZoneId.SIEGE)) {
-                // Check if the door belongs to a castle and if the siege is in progress.
                 final Castle castle = door.getCastle();
                 if ((castle != null)
                         && (castle.getResidenceId() > 0)
@@ -7620,7 +7788,6 @@ public class Player extends Playable {
                     return false;
                 }
 
-                // Check if the door belongs to a fort and if the siege is in progress.
                 final Fort fort = door.getFort();
                 if ((fort != null)
                         && (fort.getResidenceId() > 0)
@@ -7634,9 +7801,7 @@ public class Player extends Playable {
             }
         }
 
-        // Are the target and the player in the same duel?
         if (inDuel && target.isPlayable()) {
-            // Get Player
             final Player cha = target.asPlayer();
             if (cha.getDuelId() != getDuelId()) {
                 sendMessage("You cannot do this while duelling.");
@@ -7645,9 +7810,6 @@ public class Player extends Playable {
             }
         }
 
-        // ************************************* Check skill availability *******************************************
-
-        // Check if this skill is enabled (ex : reuse time).
         if (isSkillDisabled(skill)) {
             final SystemMessage sm;
             if (hasSkillReuse(skill.getReuseHashCode())) {
@@ -7682,29 +7844,19 @@ public class Player extends Playable {
             return false;
         }
 
-        // ************************************* Check casting conditions *******************************************
-
-        // Check if all casting conditions are completed.
         if (!skill.checkCondition(this, target, false)) {
-            // Send a Server->Client packet ActionFailed to the Player.
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // ************************************* Check Skill Type *******************************************
-
-        // Check if this is bad magic skill.
         if (skill.hasNegativeEffect()) {
             if (isInsidePeaceZone(this, target) && !getAccessLevel().allowPeaceAttack()) {
-                // If Creature or target is in a peace zone, send a system message TARGET_IN_PEACEZONE a Server->Client
-                // packet ActionFailed.
                 sendPacket(SystemMessageId.YOU_MAY_NOT_ATTACK_THIS_TARGET_IN_A_PEACEFUL_ZONE);
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
             }
 
             if (inOlympiadMode && !olympiadStart) {
-                // If Player is in Olympia and the match isn't already start, send a Server->Client packet ActionFailed.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
             }
@@ -7723,18 +7875,15 @@ public class Player extends Playable {
             }
 
             if (!target.canBeAttacked() && !getAccessLevel().allowPeaceAttack() && !target.isDoor()) {
-                // If target is not attackable, send a Server->Client packet ActionFailed.
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
             }
 
-            // Check for Event Mob's
             if ((target instanceof EventMonster) && ((EventMonster) target).eventSkillAttackBlocked()) {
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
             }
 
-            // Check if a Forced ATTACK is in progress on non-attackable target.
             if (!target.isAutoAttackable(this) && !forceUse) {
                 switch (sklTargetType) {
                     case AURA:
@@ -7750,55 +7899,45 @@ public class Player extends Playable {
                     case AURA_FRIENDLY: {
                         break;
                     }
-                    default: // Send a Server->Client packet ActionFailed to the Player.
-                    {
+                    default: {
                         sendPacket(ActionFailed.STATIC_PACKET);
                         return false;
                     }
                 }
             }
 
-            // Check if the target is in the skill cast range.
             if (dontMove) {
-                // Calculate the distance between the Player and the target.
                 if (sklTargetType == TargetType.GROUND) {
                     if (!isInsideRadius2D(
                             currentSkillWorldPosition.getX(),
                             currentSkillWorldPosition.getY(),
                             currentSkillWorldPosition.getZ(),
                             skill.getCastRange() + getTemplate().getCollisionRadius())) {
-                        // Send a System Message to the caster.
                         sendPacket(SystemMessageId.YOUR_TARGET_IS_OUT_OF_RANGE);
 
-                        // Send a Server->Client packet ActionFailed to the Player.
                         sendPacket(ActionFailed.STATIC_PACKET);
                         return false;
                     }
                 } else if ((skill.getCastRange() > 0)
                         && !isInsideRadius2D(
                                 target, skill.getCastRange() + getTemplate().getCollisionRadius())) {
-                    // Send a System Message to the caster.
                     sendPacket(SystemMessageId.YOUR_TARGET_IS_OUT_OF_RANGE);
 
-                    // Send a Server->Client packet ActionFailed to the Player.
                     sendPacket(ActionFailed.STATIC_PACKET);
                     return false;
                 }
             }
         }
 
-        // Check if the skill is a good magic, target is a monster and if force attack is set, if not then we don't want
-        // to cast.
         if ((skill.getEffectPoint() > 0) && target.isMonster() && !forceUse) {
             sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
 
-        // Check if this is a Pvp skill and target isn't a non-flagged/non-karma player.
         switch (sklTargetType) {
             case PARTY:
             case CLAN: // For such skills, checkPvpSkill() is called from Skill.getTargetList().
-            case PARTY_CLAN: // For such skills, checkPvpSkill() is called from Skill.getTargetList().
+            case PARTY_CLAN:
             case AURA:
             case FRONT_AURA:
             case BEHIND_AURA:
@@ -7808,19 +7947,15 @@ public class Player extends Playable {
                 break;
             }
             default: {
-                // Verify that player can attack a player or summon.
                 if (target.isPlayable() && !getAccessLevel().allowPeaceAttack() && !checkPvpSkill(target, skill)) {
-                    // Send a System Message to the player.
                     sendPacket(SystemMessageId.THAT_IS_AN_INCORRECT_TARGET);
 
-                    // Send a Server->Client packet ActionFailed to the player.
                     sendPacket(ActionFailed.STATIC_PACKET);
                     return false;
                 }
             }
         }
 
-        // GeoData Los Check here
         if (skill.getCastRange() > 0) {
             if (sklTargetType == TargetType.GROUND) {
                 if (!GeoEngine.getInstance().canSeeTarget(this, currentSkillWorldPosition)) {
@@ -7843,14 +7978,13 @@ public class Player extends Playable {
             return false;
         }
 
-        // finally, after passing all conditions
         return true;
     }
 
     public boolean isInLooterParty(int looterId) {
+        WorldPartition.checkOwner();
         final Player looter = World.getPlayer(looterId);
 
-        // If Player is in a CommandChannel.
         if (isInParty() && party.isInCommandChannel() && (looter != null)) {
             return party.getCommandChannel().getMembers().contains(looter);
         }
@@ -7858,13 +7992,8 @@ public class Player extends Playable {
         return isInParty() && (looter != null) && party.getMembers().contains(looter);
     }
 
-    /**
-     * Check if the requested casting is a Pc->Pc skill cast and if it's a valid pvp condition
-     * @param target WorldObject instance containing the target
-     * @param skill Skill instance with the skill being casted
-     * @return {@code false} if the skill is a pvpSkill and target is not a valid pvp target, {@code true} otherwise.
-     */
     public boolean checkPvpSkill(WorldObject target, Skill skill) {
+        WorldPartition.checkOwner();
         if ((skill == null) || (target == null)) {
             return false;
         }
@@ -7879,24 +8008,20 @@ public class Player extends Playable {
                 return false;
             }
 
-            // Duel
             if (isInDuel() && targetPlayer.isInDuel() && (getDuelId() == targetPlayer.getDuelId())) {
                 return true;
             }
 
-            // Olympiad
             if (isInOlympiadMode()
                     && targetPlayer.isInOlympiadMode()
                     && (getOlympiadGameId() == targetPlayer.getOlympiadGameId())) {
                 return true;
             }
 
-            // Peace Zone
             if (target.isInsideZone(ZoneId.PEACE)) {
                 return false;
             }
 
-            // PvP Skills
             if (skill.isPvPOnly()
                     && ((targetPlayer.getPvpFlag() == 0) && (targetPlayer.getKarma() == 0))
                     && !isInsideZone(ZoneId.PVP)
@@ -7904,14 +8029,12 @@ public class Player extends Playable {
                 return false;
             }
 
-            // Siege
             if (isSiegeFriend(targetPlayer)) {
                 sendPacket(SystemMessageId.FORCE_ATTACK_IS_IMPOSSIBLE_AGAINST_A_TEMPORARY_ALLIED_MEMBER_DURING_A_SIEGE);
                 return false;
             }
 
             final boolean isCtrlPressed = (currentSkill != null) && currentSkill.isCtrlPressed();
-            // Party
             if ((isInParty() && targetPlayer.isInParty()) //
                     && ((getParty().getLeader() == targetPlayer.getParty().getLeader())
                             || ((party.getCommandChannel() != null)
@@ -7927,18 +8050,15 @@ public class Player extends Playable {
             final Clan tClan = targetPlayer.getClan();
             if ((clan != null) && (tClan != null)) {
                 if (clan.isAtWarWith(tClan.getId()) && tClan.isAtWarWith(clan.getId())) {
-                    // Always return true at war.
                     return true;
                 } else if ((getClanId() == targetPlayer.getClanId())
                         || ((getAllyId() > 0) && (getAllyId() == targetPlayer.getAllyId()))) {
-                    // Check if skill can do dmg.
                     return (skill.getEffectRange() > 0) && isCtrlPressed && (getTarget() == target) && skill.isDamage();
                 }
             }
 
             // On retail, it is impossible to debuff a "peaceful" player.
             if ((targetPlayer.getPvpFlag() == 0) && (targetPlayer.getKarma() == 0)) {
-                // Check if skill can do dmg.
                 return (skill.getEffectRange() > 0) && isCtrlPressed && (getTarget() == target) && skill.isDamage();
             }
 
@@ -7948,25 +8068,22 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * @return True if the Player is a Mage.
-     */
     public boolean isMageClass() {
+        WorldPartition.checkOwner();
         return getPlayerClass().isMage();
     }
 
     public boolean isMounted() {
+        WorldPartition.checkOwner();
         return mountType != MountType.NONE;
     }
 
     public boolean checkLandingState() {
-        // Check if char is in a no landing zone.
+        WorldPartition.checkOwner();
         if (isInsideZone(ZoneId.NO_LANDING)) {
             return true;
         } else
-        // If this is a castle that is currently being sieged, and the rider is NOT a castle owner.
-        // he cannot land.
-        // Castle owner is the leader of the clan that owns the castle where the pc is.
+        // In a sieged castle only the leader of the owning clan may land.
         if (isInsideZone(ZoneId.SIEGE)
                 && ((getClan() == null)
                         || (CastleManager.getInstance().getCastle(this)
@@ -7978,12 +8095,11 @@ public class Player extends Playable {
         return false;
     }
 
-    // Returns false if the change of mount type fails.
     public void setMount(int npcId, int npcLevel) {
+        WorldPartition.checkOwner();
         final MountType type = MountType.findByNpcId(npcId);
         switch (type) {
-            case NONE: // None
-            {
+            case NONE: {
                 if (isFlying()) {
                     removeSkill(CommonSkill.WYVERN_BREATH.getSkill().getId(), false);
                     setFlying(false);
@@ -7991,8 +8107,7 @@ public class Player extends Playable {
                 }
                 break;
             }
-            case WYVERN: // Wyvern
-            {
+            case WYVERN: {
                 setFlying(true);
                 addSkill(CommonSkill.WYVERN_BREATH.getSkill(), false);
                 sendSkillList();
@@ -8007,29 +8122,35 @@ public class Player extends Playable {
 
     @Override
     public void stopAllEffects() {
+        WorldPartition.checkOwner();
         super.stopAllEffects();
         updateAndBroadcastStatus();
     }
 
     @Override
     public void stopAllEffectsExceptThoseThatLastThroughDeath() {
+        WorldPartition.checkOwner();
         super.stopAllEffectsExceptThoseThatLastThroughDeath();
         updateAndBroadcastStatus();
     }
 
     public void stopAllEffectsNotStayOnSubclassChange() {
+        WorldPartition.checkOwner();
         getEffectList().stopAllEffectsNotStayOnSubclassChange();
         updateAndBroadcastStatus();
     }
 
     public void stopCubics() {
+        WorldPartition.checkOwner();
         if (cubics.isEmpty()) {
             return;
         }
 
-        for (Cubic cubic : cubics.values()) {
-            cubic.stopAction();
-            cubic.cancelDisappear();
+        try (Snapshot<Cubic> snapshot = ScratchBuffers.snapshot(cubics.values())) {
+            for (Cubic cubic : snapshot) {
+                cubic.stopAction();
+                cubic.cancelDisappear();
+            }
         }
 
         cubics.clear();
@@ -8038,15 +8159,18 @@ public class Player extends Playable {
     }
 
     public void stopCubicsByOthers() {
+        WorldPartition.checkOwner();
         if (cubics.isEmpty()) {
             return;
         }
 
         boolean broadcast = false;
-        for (Cubic cubic : cubics.values()) {
-            if (cubic.givenByOther()) {
-                removeCubic(cubic.getId());
-                broadcast = true;
+        try (Snapshot<Cubic> snapshot = ScratchBuffers.snapshot(cubics.values())) {
+            for (Cubic cubic : snapshot) {
+                if (cubic.givenByOther()) {
+                    removeCubic(cubic.getId());
+                    broadcast = true;
+                }
             }
         }
 
@@ -8055,37 +8179,21 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Send a Server->Client packet UserInfo to this Player and CharInfo to all known players.
-     */
     @Override
     public void updateAbnormalEffect() {
+        WorldPartition.checkOwner();
         broadcastUserInfo();
     }
 
-    /**
-     * Disable the Inventory and create a new task to enable it after 1.5s.
-     * @param value
-     */
     public void setInventoryBlockingStatus(boolean value) {
+        WorldPartition.checkOwner();
         inventoryDisabled = value;
         if (value) {
             WorldPartition.loop().schedule(new InventoryEnableTask(this), 1500, TimeUnit.MILLISECONDS);
         }
     }
 
-    /**
-     * Add a cubic to this player.
-     * @param cubicId the cubic ID
-     * @param level
-     * @param cubicPower
-     * @param cubicDelay
-     * @param cubicSkillChance
-     * @param cubicMaxCount
-     * @param cubicDuration
-     * @param givenByOther
-     * @return the old cubic for this cubic ID if any, otherwise {@code null}
-     */
+    /** @return the cubic with the same id that was replaced, or {@code null} */
     public Cubic addCubic(
             int cubicId,
             int level,
@@ -8095,6 +8203,7 @@ public class Player extends Playable {
             int cubicMaxCount,
             int cubicDuration,
             boolean givenByOther) {
+        WorldPartition.checkOwner();
         final Cubic cubic = new Cubic(
                 this,
                 cubicId,
@@ -8111,12 +8220,8 @@ public class Player extends Playable {
         return oldCubic;
     }
 
-    /**
-     * Remove a cubic and cancel its scheduled tasks.
-     * @param cubicId the cubic ID
-     * @return the removed cubic, {@code null} otherwise
-     */
     public Cubic removeCubic(int cubicId) {
+        WorldPartition.checkOwner();
         final Cubic cubic = cubics.remove(cubicId);
         cubicOrder.remove(cubicId);
         if (cubic != null) {
@@ -8126,18 +8231,10 @@ public class Player extends Playable {
         return cubic;
     }
 
-    /**
-     * Remove the oldest cubic by summon order.
-     * @return the removed cubic, {@code null} otherwise
-     */
     public Cubic removeFirstCubic() {
+        WorldPartition.checkOwner();
         while (!cubicOrder.isEmpty()) {
-            final Integer cubicId = cubicOrder.poll();
-            if (cubicId == null) {
-                return null;
-            }
-
-            final Cubic cubic = cubics.remove(cubicId);
+            final Cubic cubic = cubics.remove(cubicOrder.removeFirstInt());
             if (cubic != null) {
                 cubic.stopAction();
                 cubic.cancelDisappear();
@@ -8147,94 +8244,102 @@ public class Player extends Playable {
         return null;
     }
 
-    /**
-     * Get the player's cubics.
-     * @return the cubics
-     */
     public Map<Integer, Cubic> getCubics() {
-        return Collections.unmodifiableMap(cubics);
+        WorldPartition.checkOwner();
+        return Int2ObjectSortedMaps.unmodifiable(new Int2ObjectRBTreeMap<>(cubics));
     }
 
-    /**
-     * Get the player cubic by cubic ID, if any.
-     * @param cubicId the cubic ID
-     * @return the cubic with the given cubic ID, {@code null} otherwise
-     */
+    public int getCubicCount() {
+        WorldPartition.checkOwner();
+        return cubics.size();
+    }
+
+    /** @return a copy of the cubic ids in ascending order, as the user and char info packets list them */
+    public int[] getCubicIds() {
+        WorldPartition.checkOwner();
+        return cubics.isEmpty() ? IntArrays.EMPTY_ARRAY : cubics.keySet().toIntArray();
+    }
+
     public Cubic getCubicById(int cubicId) {
+        WorldPartition.checkOwner();
         return cubics.get(cubicId);
     }
 
-    /**
-     * @return the modifier corresponding to the Enchant Effect of the Active Weapon (Min : 127).
-     */
     public int getEnchantEffect() {
+        WorldPartition.checkOwner();
         final Item wpn = getActiveWeaponInstance();
         return wpn == null ? 0 : Math.min(127, wpn.getEnchantLevel());
     }
 
-    /**
-     * @return True if Player is a participant in the Festival of Darkness.
-     */
     public boolean isFestivalParticipant() {
+        WorldPartition.checkOwner();
         return SevenSignsFestival.getInstance().isParticipant(this);
     }
 
     public void addAutoSoulShot(int itemId) {
+        WorldPartition.checkOwner();
         autoSoulShot.add(itemId);
     }
 
     public boolean removeAutoSoulShot(int itemId) {
+        WorldPartition.checkOwner();
         return autoSoulShot.remove(itemId);
     }
 
     @Override
     public void rechargeShots(boolean physical, boolean magic) {
-        Item item;
-        IItemHandler handler;
-        if ((autoSoulShot == null) || autoSoulShot.isEmpty()) {
+        WorldPartition.checkOwner();
+        chargeAutoShots(physical ? ActionType.SOULSHOT : null, magic ? ActionType.SPIRITSHOT : null);
+    }
+
+    /** Unchecked: the player's and its summon's recharge call it after their own check. */
+    void chargeAutoShots(ActionType soulshot, ActionType spiritshot) {
+        if (autoSoulShot.isEmpty()) {
             return;
         }
 
-        for (int itemId : autoSoulShot) {
-            item = inventory.getItemByItemId(itemId);
-            if (item != null) {
-                if (magic && (item.getTemplate().getDefaultAction() == ActionType.SPIRITSHOT)) {
-                    handler = ItemHandler.getInstance().getHandler(item.getEtcItem());
-                    if (handler != null) {
-                        handler.onItemUse(this, item, false);
-                    }
+        // A shot handler may drop its shot from the set, so the walk runs over a copy.
+        try (IntSnapshot shots = ScratchBuffers.intSnapshot(autoSoulShot)) {
+            for (int i = 0; i < shots.size(); i++) {
+                final int itemId = shots.getInt(i);
+                final Item item = inventory.getItemByItemId(itemId);
+                if (item == null) {
+                    autoSoulShot.remove(itemId);
+                    continue;
                 }
 
-                if (physical && (item.getTemplate().getDefaultAction() == ActionType.SOULSHOT)) {
-                    handler = ItemHandler.getInstance().getHandler(item.getEtcItem());
+                final ActionType action = item.getTemplate().getDefaultAction();
+                if (((soulshot != null) && (action == soulshot)) || ((spiritshot != null) && (action == spiritshot))) {
+                    final IItemHandler handler = ItemHandler.getInstance().getHandler(item.getEtcItem());
                     if (handler != null) {
                         handler.onItemUse(this, item, false);
                     }
                 }
-            } else {
-                removeAutoSoulShot(itemId);
             }
         }
     }
 
-    /**
-     * Cancel autoshot for all shots matching crystaltype {@link ItemTemplate#getCrystalType()}.
-     * @param crystalType int type to disable
-     */
     public void disableAutoShotByCrystalType(int crystalType) {
-        for (int itemId : autoSoulShot) {
-            if (ItemData.getInstance().getTemplate(itemId).getCrystalType().getLevel() == crystalType) {
-                disableAutoShot(itemId);
+        WorldPartition.checkOwner();
+        disableAutoShots(itemId ->
+                ItemData.getInstance().getTemplate(itemId).getCrystalType().getLevel() == crystalType);
+    }
+
+    /** Unchecked: its callers have checked the owner. */
+    void disableAutoShots(IntPredicate filter) {
+        // Disabling a shot drops it from the set, so the walk runs over a copy.
+        try (IntSnapshot shots = ScratchBuffers.intSnapshot(autoSoulShot)) {
+            for (int i = 0; i < shots.size(); i++) {
+                final int itemId = shots.getInt(i);
+                if (filter.test(itemId)) {
+                    disableAutoShot(itemId);
+                }
             }
         }
     }
 
-    /**
-     * Cancel autoshot use for shot itemId
-     * @param itemId int id to disable
-     * @return true if canceled.
-     */
     public boolean disableAutoShot(int itemId) {
+        WorldPartition.checkOwner();
         if (autoSoulShot.contains(itemId)) {
             removeAutoSoulShot(itemId);
             sendPacket(new ExAutoSoulShot(itemId, 0));
@@ -8248,47 +8353,47 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Cancel all autoshots for player
-     */
     public void disableAutoShotsAll() {
-        for (int itemId : autoSoulShot) {
-            sendPacket(new ExAutoSoulShot(itemId, 0));
-            final SystemMessage sm = new SystemMessage(SystemMessageId.THE_AUTOMATIC_USE_OF_S1_HAS_BEEN_DEACTIVATED);
-            sm.addItemName(itemId);
-            sendPacket(sm);
+        WorldPartition.checkOwner();
+        try (IntSnapshot shots = ScratchBuffers.intSnapshot(autoSoulShot)) {
+            for (int i = 0; i < shots.size(); i++) {
+                final int itemId = shots.getInt(i);
+                sendPacket(new ExAutoSoulShot(itemId, 0));
+                final SystemMessage sm =
+                        new SystemMessage(SystemMessageId.THE_AUTOMATIC_USE_OF_S1_HAS_BEEN_DEACTIVATED);
+                sm.addItemName(itemId);
+                sendPacket(sm);
+            }
         }
 
         autoSoulShot.clear();
     }
 
     public void setClanPrivileges(ClanPrivileges clanPrivileges) {
+        WorldPartition.checkOwner();
         this.clanPrivileges = clanPrivileges.clone();
     }
 
     public boolean hasAccess(ClanAccess access) {
+        WorldPartition.checkOwner();
         return clanPrivileges.hasMinimumPrivileges(access);
     }
 
-    // baron etc
     public void setPledgeClass(int id) {
+        WorldPartition.checkOwner();
         pledgeClass = id;
         checkItemRestriction();
     }
 
     @Override
     public void sendMessage(String message) {
+        WorldPartition.checkOwner();
         sendPacket(new SystemMessage(SendMessageLocalisationData.getLocalisation(this, message)));
     }
 
-    /**
-     * Sends a system message to the player.
-     * <p>
-     * If the GM startup builder hide configuration is enabled, the message will be sent using a localized say packet. Otherwise, the message will be sent using the standard sendMessage method.
-     * </p>
-     * @param message the message to send to the player.
-     */
+    /** With the GM startup builder-hide config enabled the message goes out as a localized say packet. */
     public void sendSysMessage(String message) {
+        WorldPartition.checkOwner();
         if (GeneralConfig.GM_STARTUP_BUILDER_HIDE) {
             sendPacket(new CreatureSay(
                     null, ChatType.GENERAL, "SYS", SendMessageLocalisationData.getLocalisation(this, message)));
@@ -8297,27 +8402,19 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Toggles the hiding state for GM characters.
-     * <p>
-     * Only applicable for GM characters. This method sets the player's invisibility, invulnerability and silence mode based on the provided hiding state. It also updates the player's abnormal visual effects and broadcasts user info.
-     * </p>
-     * @param hide {@code true} to enable hiding (invisibility, silence, invulnerability), {@code false} to disable hiding.
-     * @return {@code true} if the hiding state was changed, {@code false} if the state was already set or the player is not a GM.
-     */
+    /** Hiding means invisible, invulnerable and silenced; applies to GMs only. */
     public boolean setHiding(boolean hide) {
+        WorldPartition.checkOwner();
         if (!isGM()) {
             return false;
         }
 
         if (hasEnteredWorld()) {
             if (isInvisible() && hide) {
-                // Already hiding.
                 return false;
             }
 
             if (!isInvisible() && !hide) {
-                // Already visible.
                 return false;
             }
         }
@@ -8339,9 +8436,9 @@ public class Player extends Playable {
     }
 
     public void enterObserverMode(Location loc) {
+        WorldPartition.checkOwner();
         setLastLocation();
 
-        // Remove Hide.
         getEffectList().stopSkillEffects(SkillFinishType.REMOVED, AbnormalType.HIDE);
         observerMode = true;
         setTarget(null);
@@ -8355,24 +8452,28 @@ public class Player extends Playable {
     }
 
     public void setLastLocation() {
+        WorldPartition.checkOwner();
         lastLocation.setXYZ(getX(), getY(), getZ());
     }
 
     public void unsetLastLocation() {
+        WorldPartition.checkOwner();
         lastLocation.setXYZ(0, 0, 0);
     }
 
     public void enterOlympiadObserverMode(Location loc, int id, int instanceId) {
+        WorldPartition.checkOwner();
         if (hasSummon()) {
             summon.unSummon(this);
         }
 
-        // Remove Hide.
         getEffectList().stopSkillEffects(SkillFinishType.REMOVED, AbnormalType.HIDE);
         if (!cubics.isEmpty()) {
-            for (Cubic cubic : cubics.values()) {
-                cubic.stopAction();
-                cubic.cancelDisappear();
+            try (Snapshot<Cubic> snapshot = ScratchBuffers.snapshot(cubics.values())) {
+                for (Cubic cubic : snapshot) {
+                    cubic.stopAction();
+                    cubic.cancelDisappear();
+                }
             }
 
             cubics.clear();
@@ -8402,6 +8503,7 @@ public class Player extends Playable {
     }
 
     public void leaveObserverMode() {
+        WorldPartition.checkOwner();
         setTarget(null);
 
         teleToLocation(lastLocation, false);
@@ -8417,12 +8519,13 @@ public class Player extends Playable {
             getAI().setIntentionIdle();
         }
 
-        setFalling(); // Prevent receive falling damage.
+        setFalling(); // Suppresses falling damage.
         observerMode = false;
         broadcastUserInfo();
     }
 
     public void leaveOlympiadObserverMode() {
+        WorldPartition.checkOwner();
         if (olympiadGameId == -1) {
             return;
         }
@@ -8447,54 +8550,65 @@ public class Player extends Playable {
     }
 
     public boolean inObserverMode() {
+        WorldPartition.checkOwner();
         return observerMode;
     }
 
     public void setLoto(int i, int value) {
+        WorldPartition.checkOwner();
         loto[i] = value;
     }
 
     public int getLoto(int i) {
+        WorldPartition.checkOwner();
         return loto[i];
     }
 
     public void setRaceTicket(int i, int value) {
+        WorldPartition.checkOwner();
         raceTickets[i] = value;
     }
 
     public int getRaceTicket(int i) {
+        WorldPartition.checkOwner();
         return raceTickets[i];
     }
 
     public boolean getMessageRefusal() {
+        WorldPartition.checkOwner();
         return messageRefusal;
     }
 
     public void setMessageRefusal(boolean mode) {
+        WorldPartition.checkOwner();
         messageRefusal = mode;
         sendPacket(new EtcStatusUpdate(this));
     }
 
     public boolean getDietMode() {
+        WorldPartition.checkOwner();
         return dietMode;
     }
 
     public boolean getTradeRefusal() {
+        WorldPartition.checkOwner();
         return tradeRefusal;
     }
 
     public boolean getExchangeRefusal() {
+        WorldPartition.checkOwner();
         return exchangeRefusal;
     }
 
     public void setHero(boolean hero) {
+        WorldPartition.checkOwner();
         if (hero && (baseClass == activeClass)) {
             for (Skill skill : SkillTreeData.getInstance().getHeroSkillTree().values()) {
                 addSkill(skill, false); // Don't persist hero skills into database.
             }
         } else {
             for (Skill skill : SkillTreeData.getInstance().getHeroSkillTree().values()) {
-                removeSkill(skill, false, true); // Just remove skills from non-hero players.
+                removeSkill(skill, false, true);
             }
         }
 
@@ -8503,14 +8617,13 @@ public class Player extends Playable {
     }
 
     public void setStartingDuel() {
+        WorldPartition.checkOwner();
         startingDuel = true;
     }
 
-    /**
-     * Sets up the duel state using a non 0 duelId.
-     * @param duelId 0=not in a duel
-     */
+    /** @param duelId 0 for not in a duel */
     public void setInDuel(int duelId) {
+        WorldPartition.checkOwner();
         if (duelId > 0) {
             inDuel = true;
             duelState = Duel.DUELSTATE_DUELLING;
@@ -8529,23 +8642,17 @@ public class Player extends Playable {
         startingDuel = false;
     }
 
-    /**
-     * This returns a SystemMessage stating why the player is not available for duelling.
-     * @return S1_CANNOT_DUEL... message
-     */
     public SystemMessage getNoDuelReason() {
+        WorldPartition.checkOwner();
         final SystemMessage sm = new SystemMessage(noDuelReason);
         sm.addPcName(this);
         noDuelReason = SystemMessageId.THERE_IS_NO_OPPONENT_TO_RECEIVE_YOUR_CHALLENGE_FOR_A_DUEL;
         return sm;
     }
 
-    /**
-     * Checks if this player might join / start a duel.<br>
-     * To get the reason use getNoDuelReason() after calling this function.
-     * @return true if the player might join/start a duel.
-     */
+    /** On {@code false}, {@link #getNoDuelReason()} gives the reason. */
     public boolean canDuel() {
+        WorldPartition.checkOwner();
         if (isInCombat() || isJailed()) {
             noDuelReason = SystemMessageId.C1_CANNOT_DUEL_BECAUSE_C1_IS_CURRENTLY_ENGAGED_IN_BATTLE;
             return false;
@@ -8600,6 +8707,7 @@ public class Player extends Playable {
     }
 
     public void setNoble(boolean value) {
+        WorldPartition.checkOwner();
         final Collection<Skill> nobleSkillTree =
                 SkillTreeData.getInstance().getNobleSkillTree().values();
         if (value) {
@@ -8618,11 +8726,13 @@ public class Player extends Playable {
 
     @Override
     public boolean isAcademyMember() {
+        WorldPartition.checkOwner();
         return lvlJoinedAcademy > 0;
     }
 
     @Override
     public void setTeam(Team team) {
+        WorldPartition.checkOwner();
         super.setTeam(team);
         broadcastUserInfo();
         if (hasSummon()) {
@@ -8630,7 +8740,8 @@ public class Player extends Playable {
         }
     }
 
-    public synchronized void sendSkillList() {
+    public void sendSkillList() {
+        WorldPartition.checkOwner();
         if (skillListTask == null) {
             skillListTask = WorldPartition.loop()
                     .schedule(
@@ -8686,7 +8797,6 @@ public class Player extends Playable {
                                         }
                                     }
 
-                                    // Add collection skills.
                                     if (transformation.isFlying()) {
                                         for (SkillLearn skill : SkillTreeData.getInstance()
                                                 .getCollectSkillTree()
@@ -8720,14 +8830,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * 1. Add the specified class ID as a subclass (up to the maximum number of <b>three</b>) for this character.<br>
-     * 2. This method no longer changes the active classIndex of the player. This is only done by the calling of setActiveClass() method as that should be the only way to do so.
-     * @param classId
-     * @param classIndex
-     * @return boolean subclassAdded
-     */
     public boolean addSubClass(int classId, int classIndex) {
+        WorldPartition.checkOwner();
         if (changingClass) {
             return false;
         }
@@ -8739,11 +8843,11 @@ public class Player extends Playable {
                 return false;
             }
 
-            if (getSubClasses().containsKey(classIndex)) {
+            if (subClasses.containsKey(classIndex)) {
                 return false;
             }
 
-            // Note: Never change classIndex in any method other than setActiveClass().
+            // classIndex may be changed only by setActiveClass().
 
             final SubClassHolder newClass = new SubClassHolder();
             newClass.setPlayerClass(classId);
@@ -8767,7 +8871,6 @@ public class Player extends Playable {
             }
 
             try {
-                // Store the basic info about this new sub-class.
                 PlayerPersistenceManager.getInstance()
                         .insertSubclass(
                                 getObjectId(),
@@ -8786,8 +8889,8 @@ public class Player extends Playable {
                 return false;
             }
 
-            // Commit after database INSERT incase exception is thrown.
-            getSubClasses().put(newClass.getClassIndex(), newClass);
+            // Only after the INSERT succeeded, so a thrown exception leaves no phantom sub-class.
+            subClasses.put(newClass.getClassIndex(), newClass);
 
             return true;
         } finally {
@@ -8795,26 +8898,19 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * 1. Completely erase all existance of the subClass linked to the classIndex.<br>
-     * 2. Send over the newClassId to addSubClass() to create a new instance on this classIndex.<br>
-     * 3. Upon Exception, revert the player to their BaseClass to avoid further problems.
-     * @param classIndex the class index to delete
-     * @param newClassId the new class Id
-     * @return {@code true} if the sub-class was modified, {@code false} otherwise
-     */
+    /** On an exception the player is reverted to the base class. */
     public boolean modifySubClass(int classIndex, int newClassId) {
-        final SubClassHolder subClass = getSubClasses().get(classIndex);
+        WorldPartition.checkOwner();
+        final SubClassHolder subClass = subClasses.get(classIndex);
         if (subClass == null) {
             return false;
         }
 
-        // Notify to scripts before class is removed.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_PROFESSION_CANCEL, this)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerProfessionCancel(this, subClass.getId()), this);
         }
 
-        getSubClasses().remove(classIndex);
+        subClasses.remove(classIndex);
 
         try {
             PlayerPersistenceManager.getInstance().deleteSubclass(getObjectId(), classIndex);
@@ -8832,11 +8928,13 @@ public class Player extends Playable {
     }
 
     public boolean isSubClassActive() {
+        WorldPartition.checkOwner();
         return classIndex > 0;
     }
 
     public int getTotalSubClasses() {
-        return getSubClasses().size();
+        WorldPartition.checkOwner();
+        return subClasses.size();
     }
 
     private void setClassTemplate(int classId) {
@@ -8848,10 +8946,8 @@ public class Player extends Playable {
             throw new Error();
         }
 
-        // Set the template of the Player.
         setTemplate(pcTemplate);
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_PROFESSION_CHANGE, this)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -8864,13 +8960,9 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Changes the character's class based on the given class index.<br>
-     * An index of zero specifies the character's original (base) class, while indexes 1-3 specifies the character's sub-classes respectively.<br>
-     * <font color="00FF00"/>WARNING: Use only on subclase change</font>
-     * @param classIndex
-     */
+    /** Index 0 is the base class, 1-3 the sub-classes. */
     public void setActiveClass(int classIndex) {
+        WorldPartition.checkOwner();
         if (changingClass) {
             return;
         }
@@ -8878,35 +8970,29 @@ public class Player extends Playable {
         changingClass = true;
 
         try {
-            // Cannot switch or change subclasses while transformed.
             if (transformation != null) {
                 return;
             }
 
-            // Remove active item skills before saving char to database.
-            // because next time when choosing this class, weared items can
-            // be different
+            // Item skills go before saving: the worn items can differ next time this class is chosen.
             for (Item item : inventory.getAugmentedItems()) {
                 if ((item != null) && item.isEquipped()) {
                     item.getAugmentation().removeBonus(this);
                 }
             }
 
-            // Abort any kind of cast.
             abortCast();
 
             if (isChannelized()) {
                 getSkillChannelized().abortChannelization();
             }
 
-            // 1. Call store() before modifying classIndex to avoid skill effects rollover.
-            // 2. Register the correct classId against applied 'classIndex'.
+            // store() runs before classIndex changes, to avoid skill effects rolling over.
             store(PlayerConfig.SUBCLASS_STORE_SKILL_COOLTIME);
 
             resetTimeStamps();
 
-            // Clear charges.
-            charges.set(0);
+            charges = 0;
             stopChargeTask();
 
             if (hasServitor()) {
@@ -8917,7 +9003,7 @@ public class Player extends Playable {
                 setClassTemplate(baseClass);
             } else {
                 try {
-                    setClassTemplate(getSubClasses().get(classIndex).getId());
+                    setClassTemplate(subClasses.get(classIndex).getId());
                 } catch (Exception e) {
                     log.warn(
                             "Could not switch {}'s sub class to class index {}: {}",
@@ -8936,18 +9022,8 @@ public class Player extends Playable {
                 party.recalculatePartyLevel();
             }
 
-            // Update the character's change in class status.
-            // 1. Remove any active cubics from the player.
-            // 2. Renovate the characters table in the database with the new class info, storing also buff/effect data.
-            // 3. Remove all existing skills.
-            // 4. Restore all the learned skills for the current class from the database.
-            // 5. Restore effect/buff data for the new class.
-            // 6. Restore henna data for the class, applying the new stat modifiers while removing existing ones.
-            // 7. Reset HP/MP/CP stats and send Server->Client character status packet to reflect changes.
-            // 8. Restore shortcut data related to this class.
-            // 9. Resend a class change animation effect to broadcast to all nearby players.
-            autoUseSettings.getAutoSkills().clear();
-            autoUseSettings.getAutoBuffs().clear();
+            autoUseSettings.clearAutoSkills();
+            autoUseSettings.clearAutoBuffs();
             for (Skill oldSkill : getAllSkills()) {
                 removeSkill(oldSkill, false, true);
             }
@@ -8958,7 +9034,6 @@ public class Player extends Playable {
             stopCubics();
             restoreRecipeBook(false);
 
-            // Restore any Death Penalty Buff.
             restoreDeathPenaltyBuffLevel();
 
             restoreSkills();
@@ -8966,14 +9041,13 @@ public class Player extends Playable {
             regiveTemporarySkills();
             getInventory().applyItemSkills();
 
-            // Prevents some issues when changing between subclases that shares skills.
+            // Avoids issues when switching between sub-classes that share skills.
             resetDisabledSkills();
 
             restoreEffects();
 
             sendPacket(new EtcStatusUpdate(this));
 
-            // if player has quest 422: Repent Your Sins, remove it
             final QuestState st = getQuestState("Q00422_RepentYourSins");
             if (st != null) {
                 st.exitQuest(true);
@@ -9001,7 +9075,6 @@ public class Player extends Playable {
             refreshExpertisePenalty();
             broadcastUserInfo();
 
-            // Clear resurrect xp calculation.
             setExpBeforeDeath(0);
 
             shortcuts.restoreMe();
@@ -9015,6 +9088,7 @@ public class Player extends Playable {
     }
 
     public void stopWarnUserTakeBreak() {
+        WorldPartition.checkOwner();
         if (taskWarnUserTakeBreak == null) {
             return;
         }
@@ -9024,6 +9098,7 @@ public class Player extends Playable {
     }
 
     public void startWarnUserTakeBreak() {
+        WorldPartition.checkOwner();
         if (taskWarnUserTakeBreak == null) {
             taskWarnUserTakeBreak = WorldPartition.loop()
                     .scheduleAtFixedRate(new WarnUserTakeBreakTask(this), 7200000, 7200000, TimeUnit.MILLISECONDS);
@@ -9031,14 +9106,14 @@ public class Player extends Playable {
     }
 
     public void stopRentPet() {
+        WorldPartition.checkOwner();
         if (taskRentPet != null) {
             // If the rent of a wyvern expires while over a flying zone, tp to down before unmounting.
             if (checkLandingState() && (mountType == MountType.WYVERN)) {
                 teleToLocation(TeleportWhereType.TOWN);
             }
 
-            if (dismount()) // This should always be true now, since we teleported already.
-            {
+            if (dismount()) {
                 taskRentPet.cancel(true);
                 taskRentPet = null;
             }
@@ -9046,6 +9121,7 @@ public class Player extends Playable {
     }
 
     public void startRentPet(int seconds) {
+        WorldPartition.checkOwner();
         if (taskRentPet == null) {
             taskRentPet = WorldPartition.loop()
                     .scheduleAtFixedRate(new RentPetTask(this), seconds * 1000, seconds * 1000, TimeUnit.MILLISECONDS);
@@ -9053,10 +9129,12 @@ public class Player extends Playable {
     }
 
     public boolean isRentedPet() {
+        WorldPartition.checkOwner();
         return taskRentPet != null;
     }
 
     public void stopWaterTask() {
+        WorldPartition.checkOwner();
         if (taskWater == null) {
             return;
         }
@@ -9067,32 +9145,30 @@ public class Player extends Playable {
     }
 
     public void startWaterTask() {
+        WorldPartition.checkOwner();
         if (isDead() || (taskWater != null)) {
             return;
         }
 
-        // Base time in water is 60 seconds (60000 milliseconds).
         final int baseTimeInWater = 60000;
 
-        // Calculate the total stat as a percentage of the base time.
         final double breathPercentage = calcStat(Stat.BREATH, getBaseTemplate().getBaseBreath()) / 100d;
 
-        // Apply the percentage to the base time.
         final int timeInWater = (int) (baseTimeInWater * breathPercentage);
 
-        // Send the setup gauge packet with the calculated time.
         sendPacket(new SetupGauge(getObjectId(), 2, timeInWater));
 
-        // Schedule the water task.
         taskWater = WorldPartition.loop()
                 .scheduleAtFixedRate(new WaterTask(this), timeInWater, 1000, TimeUnit.MILLISECONDS);
     }
 
     public boolean isInWater() {
+        WorldPartition.checkOwner();
         return taskWater != null;
     }
 
     public void checkWaterState() {
+        WorldPartition.checkOwner();
         if (isInsideZone(ZoneId.WATER)) {
             startWaterTask();
         } else {
@@ -9101,6 +9177,7 @@ public class Player extends Playable {
     }
 
     public void onPlayerEnter() {
+        WorldPartition.checkOwner();
         startWarnUserTakeBreak();
 
         if (SevenSigns.getInstance().isSealValidationPeriod()
@@ -9125,7 +9202,6 @@ public class Player extends Playable {
         }
 
         if (isGM() && !GeneralConfig.GM_STARTUP_BUILDER_HIDE) {
-            // Bleah, see L2J custom below.
             if (isInvul()) {
                 sendMessage("Entering world in Invulnerable mode.");
             }
@@ -9139,7 +9215,6 @@ public class Player extends Playable {
             }
         }
 
-        // Buff and status icons
         if (PlayerConfig.STORE_SKILL_COOLTIME) {
             restoreEffects();
         }
@@ -9163,9 +9238,7 @@ public class Player extends Playable {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerLogin(this), this);
         }
 
-        // TODO : Need to fix that hack!
         if (!isDead()) {
-            // Run on a separate thread to give time to above events to be notified.
             WorldPartition.loop()
                     .schedule(
                             () -> {
@@ -9178,11 +9251,9 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Fully restores the player's HP, MP, and CP to their maximum values.
-     */
     @Override
     public void fullRestore() {
+        WorldPartition.checkOwner();
         setCurrentHp(getMaxHp());
         setCurrentMp(getMaxMp());
         setCurrentCp(getMaxCp());
@@ -9190,9 +9261,9 @@ public class Player extends Playable {
 
     @Override
     public void doRevive() {
+        WorldPartition.checkOwner();
         super.doRevive();
 
-        // Stop decay task.
         DecayTaskManager.getInstance().cancel(this);
 
         updateEffectIcons();
@@ -9201,7 +9272,6 @@ public class Player extends Playable {
         reviveRequested = 0;
         revivePower = 0;
 
-        // Teleport summon to player.
         if (isInsideZone(ZoneId.PEACE) && (summon != null) && !summon.isInsideZone(ZoneId.SIEGE)) {
             summon.teleToLocation(getLocation(), true);
         }
@@ -9226,38 +9296,33 @@ public class Player extends Playable {
 
     @Override
     public void setName(String value) {
+        WorldPartition.checkOwner();
         super.setName(value);
         CharInfoTable.getInstance().addName(this);
     }
 
     @Override
     public void doRevive(double revivePower) {
+        WorldPartition.checkOwner();
         doRevive();
         restoreExp(revivePower);
     }
 
     public void reviveRequest(Player reviver, boolean pet, int power) {
+        WorldPartition.checkOwner();
         if (isResurrectionBlocked()) {
             return;
         }
 
         if (reviveRequested == 1) {
             if (revivingPet == pet) {
-                reviver.sendPacket(
-                        SystemMessageId
-                                .RESURRECTION_HAS_ALREADY_BEEN_PROPOSED); // Resurrection is already been proposed.
+                reviver.sendPacket(SystemMessageId.RESURRECTION_HAS_ALREADY_BEEN_PROPOSED);
             } else if (pet) {
                 reviver.sendPacket(
-                        SystemMessageId
-                                .A_PET_CANNOT_BE_RESURRECTED_WHILE_IT_S_OWNER_IS_IN_THE_PROCESS_OF_RESURRECTING); // A
-                // pet
-                // cannot be resurrected while it's owner is in the process of resurrecting.
+                        SystemMessageId.A_PET_CANNOT_BE_RESURRECTED_WHILE_IT_S_OWNER_IS_IN_THE_PROCESS_OF_RESURRECTING);
             } else {
                 reviver.sendPacket(
-                        SystemMessageId
-                                .WHILE_A_PET_IS_BEING_RESURRECTED_IT_CANNOT_HELP_IN_RESURRECTING_ITS_MASTER); // While a
-                // pet is
-                // attempting to resurrect, it cannot help in resurrecting its master.
+                        SystemMessageId.WHILE_A_PET_IS_BEING_RESURRECTED_IT_CANNOT_HELP_IN_RESURRECTING_ITS_MASTER);
             }
             return;
         }
@@ -9287,6 +9352,7 @@ public class Player extends Playable {
     }
 
     public void reviveAnswer(int answer) {
+        WorldPartition.checkOwner();
         if ((reviveRequested != 1) || (!isDead() && !revivingPet) || (revivingPet && hasPet() && !summon.isDead())) {
             return;
         }
@@ -9313,15 +9379,18 @@ public class Player extends Playable {
     }
 
     public boolean isReviveRequested() {
+        WorldPartition.checkOwner();
         return reviveRequested == 1;
     }
 
     public void removeReviving() {
+        WorldPartition.checkOwner();
         reviveRequested = 0;
         revivePower = 0;
     }
 
     public void onActionRequest() {
+        WorldPartition.checkOwner();
         if (isSpawnProtected()) {
             setSpawnProtection(false);
             if (!isInsideZone(ZoneId.PEACE)) {
@@ -9349,16 +9418,15 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Expertise of the Player (None=0, D=1, C=2, B=3, A=4, S=5, S80=6, S84=7)
-     * @return int Expertise skill level.
-     */
+    /** 0=none, 1=D, 2=C, 3=B, 4=A, 5=S, 6=S80, 7=S84. */
     public int getExpertiseLevel() {
+        WorldPartition.checkOwner();
         return getSkillLevel(239);
     }
 
     @Override
     public void teleToLocation(ILocational loc, boolean allowRandomOffset) {
+        WorldPartition.checkOwner();
         if ((vehicle != null) && !vehicle.isTeleporting()) {
             setVehicle(null);
         }
@@ -9371,17 +9439,16 @@ public class Player extends Playable {
     }
 
     @Override
-    public synchronized void onTeleported() {
+    public void onTeleported() {
+        WorldPartition.checkOwner();
         super.onTeleported();
 
         if (isInAirShip()) {
             getAirShip().sendInfo(this);
-        } else // Update last player position upon teleport.
-        {
+        } else {
             setLastServerPosition(getX(), getY(), getZ());
         }
 
-        // Force a revalidation
         revalidateZone(true);
 
         checkItemRestriction();
@@ -9390,16 +9457,17 @@ public class Player extends Playable {
             setTeleportProtection(true);
         }
 
-        // Trained beast is lost after teleport.
+        // Trained beast is lost after teleport; a deleted beast leaves the set itself, so the walk runs over a copy.
         if (trainedBeasts != null) {
-            for (TamedBeast tamedBeast : trainedBeasts) {
-                tamedBeast.deleteMe();
+            try (Snapshot<TamedBeast> beasts = ScratchBuffers.snapshot(trainedBeasts)) {
+                for (TamedBeast tamedBeast : beasts) {
+                    tamedBeast.deleteMe();
+                }
             }
 
             trainedBeasts.clear();
         }
 
-        // Modify the position of the pet if necessary.
         if (summon != null) {
             summon.setFollowStatus(false);
             summon.teleToLocation(getLocation(), false);
@@ -9408,27 +9476,26 @@ public class Player extends Playable {
             summon.updateAndBroadcastStatus(0);
         }
 
-        // show movie if available
         if (movieHolder != null) {
             sendPacket(new ExStartScenePlayer(movieHolder.getMovie()));
         }
 
-        // Stop auto play.
         if (AutoPlayConfig.ENABLE_AUTO_PLAY) {
             AutoPlayTaskManager.getInstance().stopAutoPlay(this);
             AutoUseTaskManager.getInstance().stopAutoUseTask(this);
         }
 
-        // Send info to nearby players.
         broadcastInfo();
     }
 
     @Override
     public void setTeleporting(boolean teleport) {
+        WorldPartition.checkOwner();
         setTeleporting(teleport, true);
     }
 
     public void setTeleporting(boolean teleport, boolean useWatchDog) {
+        WorldPartition.checkOwner();
         super.setTeleporting(teleport);
         if (!useWatchDog) {
             return;
@@ -9436,13 +9503,11 @@ public class Player extends Playable {
 
         if (teleport) {
             if ((teleportWatchdog == null) && (PlayerConfig.TELEPORT_WATCHDOG_TIMEOUT > 0)) {
-                synchronized (this) {
-                    teleportWatchdog = WorldPartition.loop()
-                            .schedule(
-                                    new TeleportWatchdogTask(this),
-                                    PlayerConfig.TELEPORT_WATCHDOG_TIMEOUT * 1000,
-                                    TimeUnit.MILLISECONDS);
-                }
+                teleportWatchdog = WorldPartition.loop()
+                        .schedule(
+                                new TeleportWatchdogTask(this),
+                                PlayerConfig.TELEPORT_WATCHDOG_TIMEOUT * 1000,
+                                TimeUnit.MILLISECONDS);
             }
         } else if (teleportWatchdog != null) {
             teleportWatchdog.cancel(false);
@@ -9451,57 +9516,68 @@ public class Player extends Playable {
     }
 
     public void setLastServerPosition(int x, int y, int z) {
+        WorldPartition.checkOwner();
         lastServerPosition.setXYZ(x, y, z);
     }
 
     public void setBlinkActive(boolean value) {
-        blinkActive.set(value);
+        WorldPartition.checkOwner();
+        blinkActive = value;
     }
 
     public boolean isBlinkActive() {
-        return blinkActive.get();
+        WorldPartition.checkOwner();
+        return blinkActive;
     }
 
     @Override
-    public synchronized void addExpAndSp(double addToExp, double addToSp) {
+    public void addExpAndSp(double addToExp, double addToSp) {
+        WorldPartition.checkOwner();
         getStat().addExpAndSp(addToExp, addToSp, false);
     }
 
-    public synchronized void addExpAndSp(double addToExp, double addToSp, boolean useVitality) {
+    public void addExpAndSp(double addToExp, double addToSp, boolean useVitality) {
+        WorldPartition.checkOwner();
         getStat().addExpAndSp(addToExp, addToSp, useVitality);
     }
 
     public void removeExpAndSp(long removeExp, long removeSp) {
+        WorldPartition.checkOwner();
         getStat().removeExpAndSp(removeExp, removeSp, true);
     }
 
     public void removeExpAndSp(long removeExp, long removeSp, boolean sendMessage) {
+        WorldPartition.checkOwner();
         getStat().removeExpAndSp(removeExp, removeSp, sendMessage);
     }
 
     @Override
     public void reduceCurrentHp(double value, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
+        WorldPartition.checkOwner();
         if (skill != null) {
             getStatus().reduceHp(value, attacker, awake, isDOT, skill.isToggle(), skill.getDmgDirectlyToHP());
         } else {
             getStatus().reduceHp(value, attacker, awake, isDOT, false, false);
         }
 
-        // Notify the tamed beast of attacks.
-        if (trainedBeasts != null) {
-            for (TamedBeast tamedBeast : trainedBeasts) {
-                tamedBeast.onOwnerGotAttacked(attacker);
+        if ((trainedBeasts != null) && !trainedBeasts.isEmpty()) {
+            try (Snapshot<TamedBeast> beasts = ScratchBuffers.snapshot(trainedBeasts)) {
+                for (TamedBeast tamedBeast : beasts) {
+                    tamedBeast.onOwnerGotAttacked(attacker);
+                }
             }
         }
     }
 
     public void broadcastSnoop(ChatType type, String name, String text, CreatureSay cs) {
+        WorldPartition.checkOwner();
         if (!snoopListener.isEmpty()) {
             snoop(new Snoop(getObjectId(), getName(), type, name, text), port -> port.legacy(cs));
         }
     }
 
     public void broadcastSnoop(ChatMessage message) {
+        WorldPartition.checkOwner();
         if (!snoopListener.isEmpty()) {
             snoop(new Snoop(getObjectId(), getName(), message), port -> port.emit(message));
         }
@@ -9509,38 +9585,47 @@ public class Player extends Playable {
 
     // The snooper's port runs no send-time side effect, so two GMs snooping each other cannot loop.
     private void snoop(Snoop line, Consumer<ClientPort> forward) {
-        for (Player snooper : snoopListener) {
-            final ClientPort port = snooper.getPort();
-            forward.accept(port);
-            port.legacy(line);
+        try (Snapshot<Player> snoopers = ScratchBuffers.snapshot(snoopListener)) {
+            for (Player snooper : snoopers) {
+                final ClientPort port = snooper.getPort();
+                forward.accept(port);
+                port.legacy(line);
+            }
         }
     }
 
     public void addSnooper(Player pci) {
+        WorldPartition.checkOwner();
         snoopListener.add(pci);
     }
 
     public void removeSnooper(Player pci) {
+        WorldPartition.checkOwner();
         snoopListener.remove(pci);
     }
 
     public void addSnooped(Player pci) {
+        WorldPartition.checkOwner();
         snoopedPlayer.add(pci);
     }
 
     public void removeSnooped(Player pci) {
+        WorldPartition.checkOwner();
         snoopedPlayer.remove(pci);
     }
 
     public void addHtmlAction(HtmlActionScope scope, String action) {
+        WorldPartition.checkOwner();
         htmlActionCaches[scope.ordinal()].add(action);
     }
 
     public void clearHtmlActions(HtmlActionScope scope) {
+        WorldPartition.checkOwner();
         htmlActionCaches[scope.ordinal()].clear();
     }
 
     public void setHtmlActionOriginObjectId(HtmlActionScope scope, int npcObjId) {
+        WorldPartition.checkOwner();
         if (npcObjId < 0) {
             throw new IllegalArgumentException();
         }
@@ -9563,16 +9648,9 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Check if the HTML action was sent in a HTML packet.<br>
-     * If the HTML action was not sent for whatever reason, -1 is returned.<br>
-     * Otherwise, the NPC object ID or 0 is returned.<br>
-     * 0 means the HTML action was not bound to an NPC<br>
-     * and no range checks need to be made.
-     * @param action the HTML action to check
-     * @return NPC object ID, 0 or -1
-     */
+    /** @return -1 if the action was not sent in an html packet, 0 if not bound to an NPC (no range check), else the NPC object id */
     public int validateHtmlAction(String action) {
+        WorldPartition.checkOwner();
         for (int i = 0; i < htmlActionCaches.length; ++i) {
             if (validateHtmlAction(htmlActionCaches[i], action)) {
                 lastHtmlActionOriginId = htmlActionOriginObjectIds[i];
@@ -9583,28 +9661,14 @@ public class Player extends Playable {
         return -1;
     }
 
-    /**
-     * Performs following tests:
-     * <ul>
-     * <li>Inventory contains item</li>
-     * <li>Item owner id == owner id</li>
-     * <li>It isn't pet control item while mounting pet or pet summoned</li>
-     * <li>It isn't active enchant item</li>
-     * <li>It isn't cursed weapon/item</li>
-     * <li>It isn't wear item</li>
-     * </ul>
-     * @param objectId item object id
-     * @param itemProcessType the item process type
-     * @return
-     */
     public boolean validateItemManipulation(int objectId, ItemProcessType itemProcessType) {
+        WorldPartition.checkOwner();
         final Item item = inventory.getItemByObjectId(objectId);
         if ((item == null) || (item.getOwnerId() != getObjectId())) {
             log.trace("{}: player tried to {} item he is not owner of.", getObjectId(), itemProcessType);
             return false;
         }
 
-        // Pet is summoned and not the item that summoned the pet AND not the buggle from strider you're mounting.
         if ((hasSummon() && (summon.getControlObjectId() == objectId)) || (mountObjectID == objectId)) {
             return false;
         }
@@ -9614,42 +9678,34 @@ public class Player extends Playable {
         }
 
         if (CursedWeaponsManager.getInstance().isCursed(item.getId())) {
-            // Can not trade a cursed weapon.
             return false;
         }
 
         return true;
     }
 
-    /**
-     * @return Returns the inBoat.
-     */
     public boolean isInBoat() {
+        WorldPartition.checkOwner();
         return (vehicle != null) && vehicle.isBoat();
     }
 
-    /**
-     * @return
-     */
     public Boat getBoat() {
+        WorldPartition.checkOwner();
         return (Boat) vehicle;
     }
 
-    /**
-     * @return Returns the inAirShip.
-     */
     public boolean isInAirShip() {
+        WorldPartition.checkOwner();
         return (vehicle != null) && vehicle.isAirShip();
     }
 
-    /**
-     * @return
-     */
     public AirShip getAirShip() {
+        WorldPartition.checkOwner();
         return (AirShip) vehicle;
     }
 
     public void setVehicle(Vehicle v) {
+        WorldPartition.checkOwner();
         if ((v == null) && (vehicle != null)) {
             vehicle.removePassenger(this);
         }
@@ -9658,30 +9714,14 @@ public class Player extends Playable {
     }
 
     public boolean isInVehicle() {
+        WorldPartition.checkOwner();
         return vehicle != null;
     }
 
-    /**
-     * Manage the delete task of a Player (Leave Party, Unsummon pet, Save its inventory in the database, Remove it from the world...).<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>If the Player is in observer mode, set its position to its position before entering in observer mode</li>
-     * <li>Set the online Flag to True or False and update the characters table of the database with online status and lastAccess</li>
-     * <li>Stop the HP/MP/CP Regeneration task</li>
-     * <li>Cancel Crafting, Attack or Cast</li>
-     * <li>Remove the Player from the world</li>
-     * <li>Stop Party and Unsummon Pet</li>
-     * <li>Update database with items in its inventory and remove them from the world</li>
-     * <li>Remove all WorldObject from _knownObjects and _knownPlayer of the Creature then cancel Attak or Cast and notify AI</li>
-     * <li>Close the connection with the client</li>
-     * </ul>
-     * <br>
-     * Remember this method is not to be used to half-ass disconnect players! This method is dedicated only to erase the player from the world.<br>
-     * If you intend to disconnect a player please use {@link Disconnection}
-     */
+    /** Only erases the player from the world; to disconnect a player use {@link Disconnection}. */
     @Override
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_LOGOUT, this)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerLogout(this), this);
         }
@@ -9694,8 +9734,6 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Set the online Flag to True or False and update the characters table of the database with online status and
-        // lastAccess (called when login and logout).
         try {
             if (!online) {
                 log.error("deleteMe() called on offline character {}", this, new RuntimeException());
@@ -9732,7 +9770,6 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Remove combat flag.
         try {
             if (inventory.getItemByItemId(9819) != null) {
                 final Fort fort = FortManager.getInstance().getFort(this);
@@ -9770,10 +9807,8 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Make sure player variables are stored.
         getVariables().saveNow();
 
-        // Make sure account variables are stored.
         getAccountVariables().saveNow();
 
         // Recommendations must be saved before task (timer) is canceled.
@@ -9783,7 +9818,6 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Stop the HP/MP/CP Regeneration task (scheduled tasks).
         try {
             stopAllTimers();
         } catch (Exception e) {
@@ -9796,14 +9830,12 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Stop crafting, if in progress.
         try {
             RecipeManager.getInstance().requestMakeItemAbort(this);
         } catch (Exception e) {
             log.error("deleteMe()", e);
         }
 
-        // Cancel Attak or Cast.
         try {
             setTarget(null);
         } catch (Exception e) {
@@ -9814,16 +9846,13 @@ public class Player extends Playable {
             getSkillChannelized().abortChannelization();
         }
 
-        // Stop all toggles.
         getEffectList().stopAllToggles();
 
-        // Remove from world regions zones.
         final ZoneRegion region = ZoneManager.getInstance().getRegion(this);
         if (region != null) {
             region.removeFromZones(this);
         }
 
-        // If a Party is in progress, leave it (and festival party).
         if (isInParty()) {
             try {
                 leaveParty();
@@ -9834,7 +9863,6 @@ public class Player extends Playable {
 
         stopCubics();
 
-        // Remove the Player from the world.
         try {
             decayMe();
         } catch (Exception e) {
@@ -9845,25 +9873,22 @@ public class Player extends Playable {
             OlympiadManager.getInstance().removeDisconnectedCompetitor(this);
         }
 
-        // If the Player has Pet, unsummon it.
         if (hasSummon()) {
             try {
                 summon.setRestoreSummon(true);
 
                 summon.unSummon(this);
 
-                // Dead pet wasn't unsummoned, broadcast npcinfo changes (pet will be without owner name - means owner
-                // offline).
+                // A dead pet is not unsummoned: broadcast its npcinfo so it shows without the (offline) owner name.
                 if (hasSummon()) {
                     summon.broadcastNpcInfo(0);
                 }
             } catch (Exception e) {
                 log.error("deleteMe()", e);
-            } // Returns pet to control item.
+            }
         }
 
         if (clan != null) {
-            // Set the status for pledge member list to OFFLINE.
             try {
                 final ClanMember clanMember = clan.getClanMember(getObjectId());
                 if (clanMember != null) {
@@ -9880,7 +9905,6 @@ public class Player extends Playable {
             cancelActiveTrade();
         }
 
-        // If the Player is a GM, remove it from the GM List.
         if (isGM()) {
             try {
                 AdminData.getInstance().deleteGm(this);
@@ -9890,8 +9914,6 @@ public class Player extends Playable {
         }
 
         try {
-            // Check if the Player is in observer mode to set its position to its position.
-            // before entering in observer mode.
             if (observerMode) {
                 setLocationInvisible(lastLocation);
             }
@@ -9903,7 +9925,6 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Remove player from instance and set spawn location if any.
         try {
             final int instanceId = getInstanceId();
             if ((instanceId != 0) && !GeneralConfig.RESTORE_PLAYER_INSTANCE) {
@@ -9915,8 +9936,7 @@ public class Player extends Playable {
                         final int x = loc.getX() + ClockBridge.random().nextInt(-30, 31);
                         final int y = loc.getY() + ClockBridge.random().nextInt(-30, 31);
                         setXYZInvisible(x, y, loc.getZ());
-                        if (hasSummon()) // dead pet
-                        {
+                        if (hasSummon()) {
                             summon.teleToLocation(loc, true);
                             summon.setInstanceId(0);
                         }
@@ -9927,14 +9947,12 @@ public class Player extends Playable {
             log.error("deleteMe()", e);
         }
 
-        // Update database with items in its inventory and remove them from the world.
         try {
             inventory.deleteMe();
         } catch (Exception e) {
             log.error("deleteMe()", e);
         }
 
-        // Update database with items in its warehouse and remove them from the world.
         try {
             getWarehouse().deleteMe();
         } catch (Exception e) {
@@ -9965,15 +9983,18 @@ public class Player extends Playable {
 
         if (clanId > 0) {
             clan.broadcastToOtherOnlineMembers(new PledgeShowMemberListUpdate(this), this);
-            // ClanTable.getInstance().getClan(getClanId()).broadcastToOnlineMembers(new PledgeShowMemberListAdd(this));
         }
 
-        for (Player player : snoopedPlayer) {
-            player.removeSnooper(this);
+        try (Snapshot<Player> snooped = ScratchBuffers.snapshot(snoopedPlayer)) {
+            for (Player player : snooped) {
+                player.removeSnooper(this);
+            }
         }
 
-        for (Player player : snoopListener) {
-            player.removeSnooped(this);
+        try (Snapshot<Player> snoopers = ScratchBuffers.snapshot(snoopListener)) {
+            for (Player player : snoopers) {
+                player.removeSnooped(this);
+            }
         }
 
         try {
@@ -9988,14 +10009,8 @@ public class Player extends Playable {
         return super.deleteMe();
     }
 
-    // startFishing() was stripped of any pre-fishing related checks, namely the fishing zone check.
-    // Also worthy of note is the fact the code to find the hook landing position was also striped.
-    // The stripped code was moved into fishing.java.
-    // In my opinion it makes more sense for it to be there since all other skill related checks were also there.
-    // Last but not least, moving the zone check there, fixed a bug where baits would always be consumed no matter if
-    // fishing actualy took place.
-    // startFishing() now takes up 3 arguments, wich are acurately described as being the hook landing coordinates.
     public void startFishing(int x, int y, int z) {
+        WorldPartition.checkOwner();
         stopMove(null);
         setImmobilized(true);
         fishing = true;
@@ -10003,8 +10018,6 @@ public class Player extends Playable {
         fishY = y;
         fishZ = z;
 
-        // broadcastUserInfo();
-        // Starts fishing
         final int lvl = getRandomFishLvl();
         final int grade = getRandomFishGrade();
         final int group = getRandomFishGroup(grade);
@@ -10024,14 +10037,13 @@ public class Player extends Playable {
             this.fish.setFishGroup(-1);
         }
 
-        // sendMessage("Hook x,y: " + _x + "," + _y + " - Water Z, Player Z:" + _z + ", " + getZ()); //debug line,
-        // uncoment to show coordinates used in fishing.
         broadcastPacket(new ExFishingStart(this, this.fish.getFishGroup(), x, y, z, lure.isNightLure()));
         sendPacket(new PlaySound(1, "SF_P_01", 0, 0, 0, 0, 0));
         startLookingForFishTask();
     }
 
     public void stopLookingForFishTask() {
+        WorldPartition.checkOwner();
         if (taskForFish == null) {
             return;
         }
@@ -10041,6 +10053,7 @@ public class Player extends Playable {
     }
 
     public void startLookingForFishTask() {
+        WorldPartition.checkOwner();
         if (!isDead() && (taskForFish == null)) {
             int checkDelay = 0;
             boolean isNoob = false;
@@ -10328,17 +10341,18 @@ public class Player extends Playable {
     }
 
     public void startFishCombat(boolean isNoob, boolean isUpperGrade) {
+        WorldPartition.checkOwner();
         // Every night lure fights like a night catch, the fish turns deceptive and reverses reeling and pumping.
         fishCombat = new Fishing(this, fish, isNoob, isUpperGrade || lure.isNightLure(), lure.getId());
     }
 
     public void endFishing(boolean win) {
+        WorldPartition.checkOwner();
         fishing = false;
         fishX = 0;
         fishY = 0;
         fishZ = 0;
 
-        // broadcastUserInfo();
         if (fishCombat == null) {
             sendPacket(SystemMessageId.THE_BAIT_HAS_BEEN_LOST_BECAUSE_THE_FISH_GOT_AWAY);
         }
@@ -10346,7 +10360,6 @@ public class Player extends Playable {
         fishCombat = null;
         lure = null;
 
-        // Ends fishing
         broadcastPacket(new ExFishingEnd(win, this));
         sendPacket(SystemMessageId.YOU_REEL_YOUR_LINE_IN_AND_STOP_FISHING);
         setImmobilized(false);
@@ -10354,6 +10367,7 @@ public class Player extends Playable {
     }
 
     public int getInventoryLimit() {
+        WorldPartition.checkOwner();
         int ivlim;
         if (isGM()) {
             ivlim = PlayerConfig.INVENTORY_MAXIMUM_GM;
@@ -10363,43 +10377,43 @@ public class Player extends Playable {
                     : PlayerConfig.INVENTORY_MAXIMUM_NO_DWARF;
         }
 
-        return ivlim += (int) getStat().calcStat(Stat.INV_LIM, 0, null, null);
+        return ivlim += (int) calcStat(Stat.INV_LIM, 0, null, null);
     }
 
     public int getWareHouseLimit() {
+        WorldPartition.checkOwner();
         return (getRace() == Race.DWARF ? PlayerConfig.WAREHOUSE_SLOTS_DWARF : PlayerConfig.WAREHOUSE_SLOTS_NO_DWARF)
-                + (int) getStat().calcStat(Stat.WH_LIM, 0, null, null);
+                + (int) calcStat(Stat.WH_LIM, 0, null, null);
     }
 
     public int getPrivateSellStoreLimit() {
+        WorldPartition.checkOwner();
         return (getRace() == Race.DWARF
                         ? PlayerConfig.MAX_PVTSTORESELL_SLOTS_DWARF
                         : PlayerConfig.MAX_PVTSTORESELL_SLOTS_OTHER)
-                + (int) getStat().calcStat(Stat.P_SELL_LIM, 0, null, null);
+                + (int) calcStat(Stat.P_SELL_LIM, 0, null, null);
     }
 
     public int getPrivateBuyStoreLimit() {
+        WorldPartition.checkOwner();
         return (getRace() == Race.DWARF
                         ? PlayerConfig.MAX_PVTSTOREBUY_SLOTS_DWARF
                         : PlayerConfig.MAX_PVTSTOREBUY_SLOTS_OTHER)
-                + (int) getStat().calcStat(Stat.P_BUY_LIM, 0, null, null);
+                + (int) calcStat(Stat.P_BUY_LIM, 0, null, null);
     }
 
     public int getDwarfRecipeLimit() {
-        return PlayerConfig.DWARF_RECIPE_LIMIT + (int) getStat().calcStat(Stat.REC_D_LIM, 0, null, null);
+        WorldPartition.checkOwner();
+        return PlayerConfig.DWARF_RECIPE_LIMIT + (int) calcStat(Stat.REC_D_LIM, 0, null, null);
     }
 
     public int getCommonRecipeLimit() {
-        return PlayerConfig.COMMON_RECIPE_LIMIT + (int) getStat().calcStat(Stat.REC_C_LIM, 0, null, null);
+        WorldPartition.checkOwner();
+        return PlayerConfig.COMMON_RECIPE_LIMIT + (int) calcStat(Stat.REC_C_LIM, 0, null, null);
     }
 
-    /**
-     * Create a new SkillUseHolder object and set the player currentSkill.
-     * @param currentSkill
-     * @param ctrlPressed
-     * @param shiftPressed
-     */
     public void setCurrentSkill(Skill currentSkill, boolean ctrlPressed, boolean shiftPressed) {
+        WorldPartition.checkOwner();
         if (currentSkill == null) {
             this.currentSkill = null;
             return;
@@ -10408,13 +10422,8 @@ public class Player extends Playable {
         this.currentSkill = new SkillUseHolder(currentSkill, ctrlPressed, shiftPressed);
     }
 
-    /**
-     * Create a new SkillUseHolder object and set the player currentPetSkill.
-     * @param currentSkill
-     * @param ctrlPressed
-     * @param shiftPressed
-     */
     public void setCurrentPetSkill(Skill currentSkill, boolean ctrlPressed, boolean shiftPressed) {
+        WorldPartition.checkOwner();
         if (currentSkill == null) {
             currentPetSkill = null;
             return;
@@ -10423,13 +10432,8 @@ public class Player extends Playable {
         currentPetSkill = new SkillUseHolder(currentSkill, ctrlPressed, shiftPressed);
     }
 
-    /**
-     * Create a new SkillUseHolder object and queue it in the player queuedSkill.
-     * @param queuedSkill
-     * @param ctrlPressed
-     * @param shiftPressed
-     */
     public void setQueuedSkill(Skill queuedSkill, boolean ctrlPressed, boolean shiftPressed) {
+        WorldPartition.checkOwner();
         if (queuedSkill == null) {
             this.queuedSkill = null;
             return;
@@ -10438,10 +10442,8 @@ public class Player extends Playable {
         this.queuedSkill = new SkillUseHolder(queuedSkill, ctrlPressed, shiftPressed);
     }
 
-    /**
-     * @return {@code true} if player is jailed, {@code false} otherwise.
-     */
     public boolean isJailed() {
+        WorldPartition.checkOwner();
         return PunishmentManager.getInstance()
                         .hasPunishment(getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.JAIL) //
                 || PunishmentManager.getInstance()
@@ -10457,10 +10459,8 @@ public class Player extends Playable {
                                         PunishmentType.JAIL));
     }
 
-    /**
-     * @return {@code true} if player is chat banned, {@code false} otherwise.
-     */
     public boolean isChatBanned() {
+        WorldPartition.checkOwner();
         return PunishmentManager.getInstance()
                         .hasPunishment(getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.CHAT_BAN) //
                 || PunishmentManager.getInstance()
@@ -10477,6 +10477,7 @@ public class Player extends Playable {
     }
 
     public void startFameTask(long delay, int fameFixRate) {
+        WorldPartition.checkOwner();
         if (!PlayerConfig.FAME_SYSTEM_ENABLED) {
             return;
         }
@@ -10492,6 +10493,7 @@ public class Player extends Playable {
     }
 
     public void stopFameTask() {
+        WorldPartition.checkOwner();
         if (fameTask == null) {
             return;
         }
@@ -10501,6 +10503,7 @@ public class Player extends Playable {
     }
 
     public void startVitalityTask() {
+        WorldPartition.checkOwner();
         if (PlayerConfig.ENABLE_VITALITY && (vitalityTask == null)) {
             vitalityTask = WorldPartition.loop()
                     .scheduleAtFixedRate(new VitalityTask(this), 1000, 60000, TimeUnit.MILLISECONDS);
@@ -10508,6 +10511,7 @@ public class Player extends Playable {
     }
 
     public void stopVitalityTask() {
+        WorldPartition.checkOwner();
         if (vitalityTask != null) {
             vitalityTask.cancel(false);
             vitalityTask = null;
@@ -10515,14 +10519,12 @@ public class Player extends Playable {
     }
 
     public boolean isCursedWeaponEquipped() {
+        WorldPartition.checkOwner();
         return cursedWeaponEquippedId != 0;
     }
 
-    /**
-     * Increase Souls
-     * @param count
-     */
     public void increaseSouls(int count) {
+        WorldPartition.checkOwner();
         chargedSouls += count;
         final SystemMessage sm = new SystemMessage(SystemMessageId.YOUR_SOUL_COUNT_HAS_INCREASED_BY_S1_IT_IS_NOW_AT_S2);
         sm.addInt(count);
@@ -10532,12 +10534,8 @@ public class Player extends Playable {
         sendPacket(new EtcStatusUpdate(this));
     }
 
-    /**
-     * Decreases existing Souls.
-     * @param count
-     * @return
-     */
     public boolean decreaseSouls(int count) {
+        WorldPartition.checkOwner();
         chargedSouls -= count;
         if (chargedSouls < 0) {
             chargedSouls = 0;
@@ -10553,18 +10551,13 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Clear out all Souls from this Player
-     */
     public void clearSouls() {
+        WorldPartition.checkOwner();
         chargedSouls = 0;
         stopSoulTask();
         sendPacket(new EtcStatusUpdate(this));
     }
 
-    /**
-     * Starts/Restarts the SoulTask to Clear Souls after 10 Mins.
-     */
     private void restartSoulTask() {
         if (soulTask != null) {
             soulTask.cancel(false);
@@ -10574,10 +10567,8 @@ public class Player extends Playable {
         soulTask = WorldPartition.loop().schedule(new ResetSoulsTask(this), 600000, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Stops the Clearing Task.
-     */
     public void stopSoulTask() {
+        WorldPartition.checkOwner();
         if (soulTask == null) {
             return;
         }
@@ -10587,6 +10578,7 @@ public class Player extends Playable {
     }
 
     public void calculateDeathPenaltyBuffLevel(Creature killer) {
+        WorldPartition.checkOwner();
         if (killer == null) {
             log.warn("{} called calculateDeathPenaltyBuffLevel with killer null!", this);
             return;
@@ -10617,6 +10609,7 @@ public class Player extends Playable {
     }
 
     public void increaseDeathPenaltyBuffLevel() {
+        WorldPartition.checkOwner();
         if (deathPenaltyBuffLevel >= 15) {
             return;
         }
@@ -10637,6 +10630,7 @@ public class Player extends Playable {
     }
 
     public void reduceDeathPenaltyBuffLevel() {
+        WorldPartition.checkOwner();
         if (deathPenaltyBuffLevel <= 0) {
             return;
         }
@@ -10661,6 +10655,7 @@ public class Player extends Playable {
     }
 
     public void restoreDeathPenaltyBuffLevel() {
+        WorldPartition.checkOwner();
         if (deathPenaltyBuffLevel > 0) {
             addSkill(SkillData.getInstance().getSkill(5076, getDeathPenaltyBuffLevel()), false);
         }
@@ -10668,7 +10663,7 @@ public class Player extends Playable {
 
     @Override
     public void sendDamageMessage(Creature target, int damage, boolean mcrit, boolean pcrit, boolean miss) {
-        // Check if hit is missed.
+        WorldPartition.checkOwner();
         if (miss) {
             if (target.isPlayer()) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_EVADED_C2_S_ATTACK);
@@ -10683,7 +10678,6 @@ public class Player extends Playable {
             return;
         }
 
-        // Check if hit is critical.
         if (pcrit) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_LANDED_A_CRITICAL_HIT);
             sm.addPcName(this);
@@ -10711,7 +10705,6 @@ public class Player extends Playable {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_DONE_S3_POINTS_OF_DAMAGE_TO_C2);
             sm.addPcName(this);
 
-            // Localisation related.
             String targetName = target.getName();
             if (MultilingualSupportConfig.MULTILANG_ENABLE && target.isNpc()) {
                 final String[] localisation =
@@ -10728,25 +10721,27 @@ public class Player extends Playable {
     }
 
     public int getVitalityPoints() {
-        return getStat().getVitalityPoints();
+        WorldPartition.checkOwner();
+        return ((PlayerStat) uncheckedStat()).getVitalityPoints();
     }
 
-    /**
-     * @return Vitality Level
-     */
     public int getVitalityLevel() {
-        return getStat().getVitalityLevel();
+        WorldPartition.checkOwner();
+        return ((PlayerStat) uncheckedStat()).getVitalityLevel();
     }
 
     public void setVitalityPoints(int points, boolean quiet) {
+        WorldPartition.checkOwner();
         getStat().setVitalityPoints(points, quiet);
     }
 
     public void updateVitalityPoints(float points, boolean useRates, boolean quiet) {
+        WorldPartition.checkOwner();
         getStat().updateVitalityPoints(points, useRates, quiet);
     }
 
     public void checkItemRestriction() {
+        WorldPartition.checkOwner();
         for (int i = 0; i < Inventory.PAPERDOLL_TOTALSLOTS; i++) {
             final Item equippedItem = inventory.getPaperdollItem(i);
             if ((equippedItem != null) && !equippedItem.getTemplate().checkCondition(this, this, false)) {
@@ -10778,6 +10773,7 @@ public class Player extends Playable {
     }
 
     public void addTransformSkill(Skill sk) {
+        WorldPartition.checkOwner();
         transformSkills.put(sk.getId(), sk);
         if (sk.isPassive()) {
             addSkill(sk, false);
@@ -10785,14 +10781,17 @@ public class Player extends Playable {
     }
 
     public Skill getTransformSkill(int id) {
+        WorldPartition.checkOwner();
         return transformSkills.get(id);
     }
 
     public boolean hasTransformSkill(int id) {
+        WorldPartition.checkOwner();
         return transformSkills.containsKey(id);
     }
 
     public void removeAllTransformSkills() {
+        WorldPartition.checkOwner();
         transformSkills.clear();
     }
 
@@ -10829,6 +10828,7 @@ public class Player extends Playable {
     }
 
     public void stopFeed() {
+        WorldPartition.checkOwner();
         if (mountFeedTask == null) {
             return;
         }
@@ -10846,7 +10846,7 @@ public class Player extends Playable {
     }
 
     public int getFeedConsume() {
-        // If pet is attacking.
+        WorldPartition.checkOwner();
         if (isAttackingNow()) {
             return getPetLevelData(mountNpcId).getPetFeedBattle();
         }
@@ -10855,12 +10855,12 @@ public class Player extends Playable {
     }
 
     public void setCurrentFeed(int num) {
+        WorldPartition.checkOwner();
         final boolean lastHungryState = isHungry();
         currentFeed = num > getMaxFeed() ? getMaxFeed() : num;
         sendPacket(new SetupGauge(
                 getObjectId(), 3, (currentFeed * 10000) / getFeedConsume(), (getMaxFeed() * 10000) / getFeedConsume()));
 
-        // Broadcast move speed change when strider becomes hungry / full.
         if (lastHungryState != isHungry()) {
             broadcastUserInfo();
         }
@@ -10871,6 +10871,7 @@ public class Player extends Playable {
     }
 
     public boolean isHungry() {
+        WorldPartition.checkOwner();
         return canFeed
                 && (getCurrentFeed()
                         < ((PetDataTable.getInstance()
@@ -10881,10 +10882,12 @@ public class Player extends Playable {
     }
 
     public void enteredNoLanding(int delay) {
+        WorldPartition.checkOwner();
         dismountTask = WorldPartition.loop().schedule(new DismountTask(this), delay * 1000, TimeUnit.MILLISECONDS);
     }
 
     public void exitedNoLanding() {
+        WorldPartition.checkOwner();
         if (dismountTask == null) {
             return;
         }
@@ -10894,6 +10897,7 @@ public class Player extends Playable {
     }
 
     public void storePetFood(int petId) {
+        WorldPartition.checkOwner();
         if ((controlItemId == 0) || (petId == 0)) {
             return;
         }
@@ -10907,32 +10911,31 @@ public class Player extends Playable {
     }
 
     public boolean isFlyingMounted() {
+        WorldPartition.checkOwner();
         return isTransformed() && transformation.isFlying();
     }
 
-    /**
-     * Returns the Number of Charges this Player got.
-     * @return
-     */
     public int getCharges() {
-        return charges.get();
+        WorldPartition.checkOwner();
+        return charges;
     }
 
     public void increaseCharges(int count, int max) {
-        if (charges.get() >= max) {
+        WorldPartition.checkOwner();
+        if (charges >= max) {
             sendPacket(SystemMessageId.YOUR_FORCE_HAS_REACHED_MAXIMUM_CAPACITY);
             return;
         }
 
-        // Charge clear task should be reset every time a charge is increased.
         restartChargeTask();
 
-        if (charges.addAndGet(count) >= max) {
-            charges.set(max);
+        charges += count;
+        if (charges >= max) {
+            charges = max;
             sendPacket(SystemMessageId.YOUR_FORCE_HAS_REACHED_MAXIMUM_CAPACITY);
         } else {
             final SystemMessage sm = new SystemMessage(SystemMessageId.YOUR_FORCE_HAS_INCREASED_TO_LEVEL_S1);
-            sm.addInt(charges.get());
+            sm.addInt(charges);
             sendPacket(sm);
         }
 
@@ -10940,12 +10943,13 @@ public class Player extends Playable {
     }
 
     public boolean decreaseCharges(int count) {
-        if (charges.get() < count) {
+        WorldPartition.checkOwner();
+        if (charges < count) {
             return false;
         }
 
-        // Charge clear task should be reset every time a charge is decreased and stopped when charges become 0.
-        if (charges.addAndGet(-count) == 0) {
+        charges -= count;
+        if (charges == 0) {
             stopChargeTask();
         } else {
             restartChargeTask();
@@ -10956,27 +10960,21 @@ public class Player extends Playable {
     }
 
     public void clearCharges() {
-        charges.set(0);
+        WorldPartition.checkOwner();
+        charges = 0;
         sendPacket(new EtcStatusUpdate(this));
     }
 
-    /**
-     * Starts/Restarts the ChargeTask to Clear Charges after 10 Mins.
-     */
     private void restartChargeTask() {
         if (chargeTask != null) {
-            synchronized (this) {
-                chargeTask.cancel(false);
-            }
+            chargeTask.cancel(false);
         }
 
         chargeTask = WorldPartition.loop().schedule(new ResetChargesTask(this), 600000, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Stops the Charges Clearing Task.
-     */
     public void stopChargeTask() {
+        WorldPartition.checkOwner();
         if (chargeTask == null) {
             return;
         }
@@ -10986,6 +10984,7 @@ public class Player extends Playable {
     }
 
     public void teleportBookmarkModify(int id, int icon, String tag, String name) {
+        WorldPartition.checkOwner();
         if (StringUtils.isBlank(name)) {
             return;
         }
@@ -11007,6 +11006,7 @@ public class Player extends Playable {
     }
 
     public void teleportBookmarkDelete(int id) {
+        WorldPartition.checkOwner();
         if (tpbookmarks.remove(id) == null) {
             return;
         }
@@ -11021,6 +11021,7 @@ public class Player extends Playable {
     }
 
     public void teleportBookmarkGo(int id) {
+        WorldPartition.checkOwner();
         if (!teleportBookmarkCondition(0)) {
             return;
         }
@@ -11044,6 +11045,7 @@ public class Player extends Playable {
     }
 
     public boolean teleportBookmarkCondition(int type) {
+        WorldPartition.checkOwner();
         if (isInCombat()) {
             sendPacket(SystemMessageId.YOU_CANNOT_USE_MY_TELEPORTS_DURING_A_BATTLE);
             return false;
@@ -11098,6 +11100,7 @@ public class Player extends Playable {
     }
 
     public void teleportBookmarkAdd(int x, int y, int z, int icon, String tag, String name) {
+        WorldPartition.checkOwner();
         if (StringUtils.isBlank(name) || !teleportBookmarkCondition(1)) {
             return;
         }
@@ -11159,6 +11162,7 @@ public class Player extends Playable {
     }
 
     public void restoreTeleportBookmark() {
+        WorldPartition.checkOwner();
         try {
             for (CharacterTeleportBookmark bookmark :
                     PlayerPersistenceManager.getInstance().findBookmarks(getObjectId())) {
@@ -11180,6 +11184,7 @@ public class Player extends Playable {
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (isInBoat()) {
             setXYZ(getBoat().getLocation());
             player.sendPacket(new CharInfo(this, isInvisible() && player.isGM()));
@@ -11233,6 +11238,7 @@ public class Player extends Playable {
     }
 
     public void playMovie(MovieHolder holder) {
+        WorldPartition.checkOwner();
         if (movieHolder != null) {
             return;
         }
@@ -11248,10 +11254,12 @@ public class Player extends Playable {
     }
 
     public void stopMovie() {
+        WorldPartition.checkOwner();
         setMovieHolder(null);
     }
 
     public boolean isAllowedToEnchantSkills() {
+        WorldPartition.checkOwner();
         if (changingClass) {
             return false;
         }
@@ -11275,10 +11283,8 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * @return number of days to char birthday.
-     */
     public int checkBirthDay() {
+        WorldPartition.checkOwner();
         final Calendar now = ClockBridge.calendar();
 
         // "Characters with a February 29 creation date will receive a gift on February 28."
@@ -11305,11 +11311,36 @@ public class Player extends Playable {
         return -1;
     }
 
-    /** Friend list. */
-    @Getter
-    private final Collection<Integer> friendList = ConcurrentHashMap.newKeySet();
+    /** Friend object ids, in the order they were added. */
+    private final IntLinkedOpenHashSet friendList = new IntLinkedOpenHashSet();
+
+    public Set<Integer> getFriendList() {
+        WorldPartition.checkOwner();
+        return IntSets.unmodifiable(new IntLinkedOpenHashSet(friendList));
+    }
+
+    public boolean isFriend(int objectId) {
+        WorldPartition.checkOwner();
+        return friendList.contains(objectId);
+    }
+
+    public int getFriendCount() {
+        WorldPartition.checkOwner();
+        return friendList.size();
+    }
+
+    public void addFriend(int objectId) {
+        WorldPartition.checkOwner();
+        friendList.add(objectId);
+    }
+
+    public void removeFriend(int objectId) {
+        WorldPartition.checkOwner();
+        friendList.remove(objectId);
+    }
 
     public void restoreFriendList() {
+        WorldPartition.checkOwner();
         friendList.clear();
 
         try {
@@ -11325,20 +11356,18 @@ public class Player extends Playable {
 
     private void notifyFriends() {
         final FriendStatusPacket pkt = new FriendStatusPacket(getObjectId());
-        for (int id : friendList) {
-            final Player friend = World.getPlayer(id);
-            if (friend != null) {
-                friend.sendPacket(pkt);
+        try (IntSnapshot friends = ScratchBuffers.intSnapshot(friendList)) {
+            for (int i = 0; i < friends.size(); i++) {
+                final Player friend = World.getPlayer(friends.getInt(i));
+                if (friend != null) {
+                    friend.sendPacket(pkt);
+                }
             }
         }
     }
 
-    /**
-     * While at silenceMode, checks if this player blocks PMs for this user
-     * @param playerObjId the player object Id
-     * @return {@code true} if the given Id is not excluded and this player is in silence mode, {@code false} otherwise
-     */
     public boolean isSilenceMode(int playerObjId) {
+        WorldPartition.checkOwner();
         if (PlayerConfig.SILENCE_MODE_EXCLUDE && silenceMode && (silenceModeExcluded != null)) {
             return !silenceModeExcluded.contains(playerObjId);
         }
@@ -11346,24 +11375,18 @@ public class Player extends Playable {
         return silenceMode;
     }
 
-    /**
-     * Set the silence mode.
-     * @param mode the value
-     */
     public void setSilenceMode(boolean mode) {
+        WorldPartition.checkOwner();
         silenceMode = mode;
         if (silenceModeExcluded != null) {
-            silenceModeExcluded.clear(); // Clear the excluded list on each setSilenceMode.
+            silenceModeExcluded.clear();
         }
 
         sendPacket(new EtcStatusUpdate(this));
     }
 
-    /**
-     * Add a player to the "excluded silence mode" list.
-     * @param playerObjId the player's object Id
-     */
     public void addSilenceModeExcluded(int playerObjId) {
+        WorldPartition.checkOwner();
         if (silenceModeExcluded == null) {
             silenceModeExcluded = new ArrayList<>(1);
         }
@@ -11390,14 +11413,12 @@ public class Player extends Playable {
     }
 
     private void restoreRecipeShopList() {
-        if (manufactureItems != null) {
-            manufactureItems.clear();
-        }
+        manufactureItems.clear();
 
         try {
             for (CharacterRecipeShopItem item :
                     PlayerPersistenceManager.getInstance().findRecipeShopItems(getObjectId())) {
-                getManufactureItems().put(item.recipeId(), new ManufactureItem(item.recipeId(), item.price()));
+                manufactureItems.put(item.recipeId(), new ManufactureItem(item.recipeId(), item.price()));
             }
         } catch (DataAccessException e) {
             log.error("Could not restore recipe shop list data for playerId: {}", getObjectId(), e);
@@ -11405,6 +11426,7 @@ public class Player extends Playable {
     }
 
     public float getCollisionRadius() {
+        WorldPartition.checkOwner();
         if (isMounted() && (mountNpcId > 0)) {
             return NpcData.getInstance().getTemplate(getMountNpcId()).getFCollisionRadius();
         }
@@ -11419,6 +11441,7 @@ public class Player extends Playable {
     }
 
     public float getCollisionHeight() {
+        WorldPartition.checkOwner();
         if (isMounted() && (mountNpcId > 0)) {
             return NpcData.getInstance().getTemplate(getMountNpcId()).getFCollisionHeight();
         }
@@ -11432,11 +11455,9 @@ public class Player extends Playable {
                 : getBaseTemplate().getFCollisionHeight();
     }
 
-    /**
-     * @param z
-     * @return true if character falling now on the start of fall return false for correct coord sync!
-     */
+    /** @return {@code true} while falling, but {@code false} on the first tick of a fall, for correct coordinate sync */
     public boolean isFalling(int z) {
+        WorldPartition.checkOwner();
         if (isDead() || isFlying() || isFlyingMounted() || isInsideZone(ZoneId.WATER)) {
             return false;
         }
@@ -11489,38 +11510,35 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * Set falling timestamp
-     */
     public void setFalling() {
+        WorldPartition.checkOwner();
         fallingTimestamp = ClockBridge.gameMillis() + FALLING_VALIDATION_DELAY;
     }
 
-    /**
-     * Update last item auction request timestamp to current
-     */
     public void updateLastItemAuctionRequest() {
+        WorldPartition.checkOwner();
         lastItemAuctionInfoRequest = ClockBridge.gameMillis();
     }
 
-    /**
-     * @return true if receiving item auction requests<br>
-     *         (last request was in 2 seconds before)
-     */
+    /** @return {@code true} when the last item auction request was less than 2 seconds ago */
     public boolean isItemAuctionPolling() {
+        WorldPartition.checkOwner();
         return (ClockBridge.gameMillis() - lastItemAuctionInfoRequest) < 2000;
     }
 
     @Override
     public boolean isMovementDisabled() {
+        WorldPartition.checkOwner();
         return super.isMovementDisabled() || (movieHolder != null);
     }
 
     public String getHtmlPrefix() {
+        WorldPartition.checkOwner();
         return MultilingualSupportConfig.MULTILANG_ENABLE ? htmlPrefix : "";
     }
 
     public boolean setLang(String lang) {
+        WorldPartition.checkOwner();
         boolean result = false;
         if (MultilingualSupportConfig.MULTILANG_ENABLE) {
             if (MultilingualSupportConfig.MULTILANG_ALLOWED.contains(lang)) {
@@ -11540,13 +11558,12 @@ public class Player extends Playable {
     }
 
     public void setPcCafePoints(int count) {
+        WorldPartition.checkOwner();
         pcCafePoints = count < PremiumSystemConfig.PC_CAFE_MAX_POINTS ? count : PremiumSystemConfig.PC_CAFE_MAX_POINTS;
     }
 
-    /**
-     * Remove player from BossZones (used on char logout/exit)
-     */
     public void removeFromBossZone() {
+        WorldPartition.checkOwner();
         try {
             for (BossZone zone : GrandBossManager.getInstance().getZones().values()) {
                 zone.removePlayer(this);
@@ -11556,10 +11573,9 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Check all player skills for skill level. If player level is lower than skill learn level - 9, skill level is decreased to next possible level.
-     */
+    /** Lowers a skill to the next possible level once player level falls below its learn level - 9. */
     public void checkPlayerSkills() {
+        WorldPartition.checkOwner();
         for (Entry<Integer, Skill> e : getSkills().entrySet()) {
             final SkillLearn learn = SkillTreeData.getInstance()
                     .getClassSkill(e.getKey(), e.getValue().getLevel() % 100, getPlayerClass());
@@ -11580,20 +11596,21 @@ public class Player extends Playable {
             if ((sl.getSkillId() == skill.getId())
                     && (nextLevel < sl.getSkillLevel())
                     && (getLevel() >= (sl.getGetLevel() - levelDiff))) {
-                nextLevel = sl.getSkillLevel(); // next possible skill level
+                nextLevel = sl.getSkillLevel();
             }
         }
 
         if (nextLevel == -1) {
             log.info("Removing skill {} from {}", skill, this);
-            removeSkill(skill, true); // there is no lower skill
+            removeSkill(skill, true);
         } else {
             log.info("Decreasing skill {} to {} for {}", skill, nextLevel, this);
-            addSkill(SkillData.getInstance().getSkill(skill.getId(), nextLevel), true); // replace with lower one
+            addSkill(SkillData.getInstance().getSkill(skill.getId(), nextLevel), true);
         }
     }
 
     public boolean canMakeSocialAction() {
+        WorldPartition.checkOwner();
         return (privateStoreType == PrivateStoreType.NONE)
                 && (getActiveRequester() == null)
                 && !isAlikeDead()
@@ -11604,24 +11621,29 @@ public class Player extends Playable {
     }
 
     public void setMultiSocialAction(int id, int targetId) {
+        WorldPartition.checkOwner();
         multiSociaAction = id;
         multiSocialTarget = targetId;
     }
 
     public Collection<TeleportBookmark> getTeleportBookmarks() {
-        return tpbookmarks.values();
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(tpbookmarks.values()));
     }
 
     public void setBookmarkSlot(int slot) {
+        WorldPartition.checkOwner();
         bookmarkSlot = slot;
         sendPacket(new ExGetBookMarkInfoPacket(this));
     }
 
     public int getQuestInventoryLimit() {
+        WorldPartition.checkOwner();
         return PlayerConfig.INVENTORY_MAXIMUM_QUEST_ITEMS;
     }
 
     public boolean canAttackCreature(Creature creature) {
+        WorldPartition.checkOwner();
         if (creature == null) {
             return false;
         }
@@ -11677,35 +11699,26 @@ public class Player extends Playable {
         return true;
     }
 
-    /**
-     * Test if player inventory is under 90% capacity
-     * @param includeQuestInv check also quest inventory
-     * @return
-     */
     public boolean isInventoryUnder90(boolean includeQuestInv) {
+        WorldPartition.checkOwner();
         return (includeQuestInv ? inventory.getSize() : inventory.getNonQuestSize()) <= (getInventoryLimit() * 0.9);
     }
 
-    /**
-     * Test if player inventory is under 80% capacity
-     * @param includeQuestInv check also quest inventory
-     * @return
-     */
     public boolean isInventoryUnder80(boolean includeQuestInv) {
+        WorldPartition.checkOwner();
         return (includeQuestInv ? inventory.getSize() : inventory.getNonQuestSize()) <= (getInventoryLimit() * 0.8);
     }
 
     public boolean havePetInvItems() {
+        WorldPartition.checkOwner();
         return petItems;
     }
 
     public void setPetInvItems(boolean haveit) {
+        WorldPartition.checkOwner();
         petItems = haveit;
     }
 
-    /**
-     * Restore Pet's inventory items from database.
-     */
     private void restorePetInventoryItems() {
         try {
             setPetInvItems(ItemManager.getInstance().hasPetItems(getObjectId()));
@@ -11714,10 +11727,6 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Load Player Recommendations data.
-     * @return
-     */
     private long loadRecommendations() {
         try {
             final Optional<CharacterRecommendation> stored =
@@ -11735,11 +11744,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Update Player Recommendations data.
-     * @param cancelRecoTask
-     */
     public void storeRecommendations(boolean cancelRecoTask) {
+        WorldPartition.checkOwner();
         long recoTaskEnd = 0;
         if ((nevitHourglassTask != null) && !nevitHourglassTask.isDone()) {
             recoTaskEnd = nevitHourglassTask.getDelay(TimeUnit.MILLISECONDS);
@@ -11768,10 +11774,8 @@ public class Player extends Playable {
         }
     }
 
-    /**
-     * Store recommendation values without tapping into Nevit Hourglass task.
-     */
     public void storeRecommendationValues() {
+        WorldPartition.checkOwner();
         try {
             PlayerPersistenceManager.getInstance().saveRecommendationCounts(getObjectId(), recomHave, recomLeft);
         } catch (DataAccessException e) {
@@ -11780,23 +11784,20 @@ public class Player extends Playable {
     }
 
     public void checkRecoBonusTask() {
-        // Create bonus task
+        WorldPartition.checkOwner();
         startNevitHourglassTask();
 
-        // Create task to give new recommendations.
         recoGiveTask = WorldPartition.loop()
                 .scheduleAtFixedRate(new RecoGiveTask(this), 7200000, 3600000, TimeUnit.MILLISECONDS);
 
-        // Store new data.
         storeRecommendations(false);
     }
 
     public void startNevitHourglassTask() {
+        WorldPartition.checkOwner();
         if (nevitHourglassTask == null) {
-            // Load data
             final long taskTime = loadRecommendations();
             if (taskTime > 0) {
-                // If player have some timeleft, start bonus task
                 nevitHourglassTask =
                         WorldPartition.loop().schedule(new RecoBonusTaskEnd(this), taskTime, TimeUnit.MILLISECONDS);
             }
@@ -11806,6 +11807,7 @@ public class Player extends Playable {
     }
 
     public void stopNevitHourglassTask() {
+        WorldPartition.checkOwner();
         if (nevitHourglassTask != null) {
             nevitHourglassTask.cancel(false);
             nevitHourglassTask = null;
@@ -11813,6 +11815,7 @@ public class Player extends Playable {
     }
 
     public void stopRecoGiveTask() {
+        WorldPartition.checkOwner();
         if (recoGiveTask != null) {
             recoGiveTask.cancel(false);
             recoGiveTask = null;
@@ -11820,6 +11823,7 @@ public class Player extends Playable {
     }
 
     public int getNevitHourglassTime() {
+        WorldPartition.checkOwner();
         if (nevitHourglassTask != null) {
             return (int) Math.max(0, nevitHourglassTask.getDelay(TimeUnit.SECONDS));
         }
@@ -11828,10 +11832,12 @@ public class Player extends Playable {
     }
 
     public boolean isNevitHourglassActive() {
+        WorldPartition.checkOwner();
         return (getNevitHourglassTime() > 0) || getStat().hasPausedNevitHourglass();
     }
 
     public int getNevitHourglassStatus() {
+        WorldPartition.checkOwner();
         if (getStat().hasPausedNevitHourglass()) {
             return NEVIT_HOURGLASS_PAUSED;
         } else if (getNevitHourglassTime() > 0) {
@@ -11842,6 +11848,7 @@ public class Player extends Playable {
     }
 
     public int getNevitHourglassBonus() {
+        WorldPartition.checkOwner();
         if (online && (recomHave != 0) && isNevitHourglassActive()) {
             final int lvl = getLevel() / 10;
             final int exp = (Math.min(100, recomHave) - 1) / 10;
@@ -11852,6 +11859,7 @@ public class Player extends Playable {
     }
 
     public double getNevitHourglassMultiplier() {
+        WorldPartition.checkOwner();
         double multiplier = 1.0;
         if (online && (recomHave != 0) && isNevitHourglassActive()) {
             final double bonus = getNevitHourglassBonus();
@@ -11864,168 +11872,163 @@ public class Player extends Playable {
     }
 
     public boolean hasPremiumStatus() {
+        WorldPartition.checkOwner();
         return PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED && premiumStatus;
     }
 
     public void updateNotMoveUntil() {
+        WorldPartition.checkOwner();
         notMoveUntil = ClockBridge.gameMillis() + PlayerConfig.PLAYER_MOVEMENT_BLOCK_TIME;
     }
 
     @Override
     public boolean isPlayer() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         return this;
     }
 
     @Override
     public boolean isChargedShot(ShotType type) {
+        WorldPartition.checkOwner();
         final Item weapon = getActiveWeaponInstance();
         return (weapon != null) && weapon.isChargedShot(type);
     }
 
     @Override
     public void setChargedShot(ShotType type, boolean charged) {
+        WorldPartition.checkOwner();
         final Item weapon = getActiveWeaponInstance();
         if (weapon != null) {
             weapon.setChargedShot(type, charged);
         }
     }
 
-    /**
-     * @param skillId the display skill Id
-     * @return the custom skill
-     */
     public Skill getCustomSkill(int skillId) {
+        WorldPartition.checkOwner();
         return (customSkills != null) ? customSkills.get(skillId) : null;
     }
 
-    /**
-     * Add a skill level to the custom skills map.
-     * @param skill the skill to add
-     */
     private void addCustomSkill(Skill skill) {
         if ((skill == null) || (skill.getDisplayId() == skill.getId())) {
             return;
         }
 
         if (customSkills == null) {
-            customSkills = new ConcurrentHashMap<>();
+            customSkills = new Int2ObjectLinkedOpenHashMap<>();
         }
 
         customSkills.put(skill.getDisplayId(), skill);
     }
 
-    /**
-     * Remove a skill level from the custom skill map.
-     * @param skill the skill to remove
-     */
     private void removeCustomSkill(Skill skill) {
         if ((skill != null) && (customSkills != null) && (skill.getDisplayId() != skill.getId())) {
             customSkills.remove(skill.getDisplayId());
         }
     }
 
-    /**
-     * @return {@code true} if current player can revive and shows 'To Village' button upon death, {@code false} otherwise.
-     */
+    /** Whether the death dialog offers the 'To Village' button. */
     @Override
     public boolean canRevive() {
+        WorldPartition.checkOwner();
         return canRevive;
     }
 
     public boolean isRegisteredOnEvent() {
+        WorldPartition.checkOwner();
         return registeredOnEvent || onEvent;
     }
 
     public int getBlockCheckerArena() {
+        WorldPartition.checkOwner();
         return blockCheckerArena;
     }
 
     public int getUCKills() {
+        WorldPartition.checkOwner();
         return ucKills;
     }
 
     public void addKillCountUC() {
+        WorldPartition.checkOwner();
         ucKills++;
     }
 
     public int getUCDeaths() {
+        WorldPartition.checkOwner();
         return ucDeaths;
     }
 
     public void addDeathCountUC() {
+        WorldPartition.checkOwner();
         ucDeaths++;
     }
 
     public void cleanUCStats() {
+        WorldPartition.checkOwner();
         ucDeaths = 0;
         ucKills = 0;
     }
 
     public void setUCState(int state) {
+        WorldPartition.checkOwner();
         setRegisteredOnEvent(state != UC_STATE_NONE);
         ucState = state;
     }
 
     public int getUCState() {
+        WorldPartition.checkOwner();
         return ucState;
     }
 
     public void setOriginalCpHpMp(double cp, double hp, double mp) {
+        WorldPartition.checkOwner();
         originalCp = cp;
         originalHp = hp;
         originalMp = mp;
     }
 
-    /**
-     * @return {@code true} if {@link PlayerVariables} instance is attached to current player's scripts, {@code false} otherwise.
-     */
     public boolean hasVariables() {
+        WorldPartition.checkOwner();
         return getScript(PlayerVariables.class) != null;
     }
 
-    /**
-     * @return {@link PlayerVariables} instance containing parameters regarding player.
-     */
     public PlayerVariables getVariables() {
+        WorldPartition.checkOwner();
         final PlayerVariables vars = getScript(PlayerVariables.class);
         return vars != null ? vars : addScript(new PlayerVariables(getObjectId()));
     }
 
-    /**
-     * @return {@code true} if {@link AccountVariables} instance is attached to current player's scripts, {@code false} otherwise.
-     */
     public boolean hasAccountVariables() {
+        WorldPartition.checkOwner();
         return getScript(AccountVariables.class) != null;
     }
 
-    /**
-     * @return {@link AccountVariables} instance containing parameters regarding player.
-     */
     public AccountVariables getAccountVariables() {
+        WorldPartition.checkOwner();
         final AccountVariables vars = getScript(AccountVariables.class);
         return vars != null ? vars : addScript(new AccountVariables(accountId));
     }
 
     @Override
     public int getId() {
+        WorldPartition.checkOwner();
         return getPlayerClass().getId();
     }
 
     public boolean isPartyBanned() {
+        WorldPartition.checkOwner();
         return PunishmentManager.getInstance()
                 .hasPunishment(getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.PARTY_BAN);
     }
 
-    /**
-     * @param act
-     * @return {@code true} if action was added successfully, {@code false} otherwise.
-     */
     public boolean addAction(PlayerAction act) {
+        WorldPartition.checkOwner();
         if (!hasAction(act)) {
             actionMask |= act.getMask();
             return true;
@@ -12034,11 +12037,8 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * @param act
-     * @return {@code true} if action was removed successfully, {@code false} otherwise.
-     */
     public boolean removeAction(PlayerAction act) {
+        WorldPartition.checkOwner();
         if (hasAction(act)) {
             actionMask &= ~act.getMask();
             return true;
@@ -12047,48 +12047,42 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * @param act
-     * @return {@code true} if action is present, {@code false} otherwise.
-     */
     public boolean hasAction(PlayerAction act) {
+        WorldPartition.checkOwner();
         return (actionMask & act.getMask()) == act.getMask();
     }
 
-    // High Five: Nevit's Bonus System
-    @Getter
     private final Nevit nevitSystem = new Nevit(this);
 
-    /**
-     * Set true/false if character got Charm of Courage
-     * @param value true/false
-     */
+    public Nevit getNevitSystem() {
+        WorldPartition.checkOwner();
+        return nevitSystem;
+    }
+
     public void setCharmOfCourage(boolean value) {
+        WorldPartition.checkOwner();
         hasCharmOfCourage = value;
     }
 
-    /**
-     * @return {@code true} if effect is present, {@code false} otherwise.
-     */
     public boolean hasCharmOfCourage() {
+        WorldPartition.checkOwner();
         return hasCharmOfCourage;
     }
 
     public void setGood() {
+        WorldPartition.checkOwner();
         good = true;
         evil = false;
     }
 
     public void setEvil() {
+        WorldPartition.checkOwner();
         good = false;
         evil = true;
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player got war with the target, {@code false} otherwise.
-     */
     public boolean isAtWarWith(Creature target) {
+        WorldPartition.checkOwner();
         if (target == null) {
             return false;
         }
@@ -12100,21 +12094,15 @@ public class Player extends Playable {
         return false;
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player in same party with the target, {@code false} otherwise.
-     */
     public boolean isInPartyWith(Creature target) {
+        WorldPartition.checkOwner();
         return isInParty()
                 && target.isInParty()
                 && (getParty().getLeaderObjectId() == target.getParty().getLeaderObjectId());
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player in same command channel with the target, {@code false} otherwise.
-     */
     public boolean isInCommandChannelWith(Creature target) {
+        WorldPartition.checkOwner();
         return isInParty()
                 && target.isInParty()
                 && getParty().isInCommandChannel()
@@ -12123,54 +12111,36 @@ public class Player extends Playable {
                         == target.getParty().getCommandChannel().getLeaderObjectId());
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player in same clan with the target, {@code false} otherwise.
-     */
     public boolean isInClanWith(Creature target) {
+        WorldPartition.checkOwner();
         return (getClanId() != 0) && (target.getClanId() != 0) && (getClanId() == target.getClanId());
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player in same ally with the target, {@code false} otherwise.
-     */
     public boolean isInAllyWith(Creature target) {
+        WorldPartition.checkOwner();
         return (getAllyId() != 0) && (target.getAllyId() != 0) && (getAllyId() == target.getAllyId());
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player at duel with the target, {@code false} otherwise.
-     */
     public boolean isInDuelWith(Creature target) {
+        WorldPartition.checkOwner();
         return isInDuel() && target.isInDuel() && (getDuelId() == target.getDuelId());
     }
 
-    /**
-     * @param target the target
-     * @return {@code true} if this player is on same siege side with the target, {@code false} otherwise.
-     */
     public boolean isOnSameSiegeSideWith(Creature target) {
+        WorldPartition.checkOwner();
         return (getSiegeState() > 0)
                 && isInsideZone(ZoneId.SIEGE)
                 && (getSiegeState() == target.getSiegeState())
                 && (getSiegeSide() == target.getSiegeSide());
     }
 
-    /**
-     * @return the game shop points of the player.
-     */
     public long getGamePoints() {
+        WorldPartition.checkOwner();
         return getAccountVariables().getInt(GAME_POINTS_VAR, 0);
     }
 
-    /**
-     * Sets game shop points for current player.
-     * @param points
-     */
     public void setGamePoints(long points) {
-        // Immediate store upon change.
+        WorldPartition.checkOwner();
         final AccountVariables vars = getAccountVariables();
         vars.set(GAME_POINTS_VAR, Math.max(points, 0));
         vars.storeMe();
@@ -12185,15 +12155,18 @@ public class Player extends Playable {
     }
 
     public void disableExpGain() {
+        WorldPartition.checkOwner();
         addListener(new FunctionEventListener(
                 this, EventType.ON_PLAYABLE_EXP_CHANGED, (OnPlayableExpChanged _) -> onExperienceReceived(), this));
     }
 
     public void enableExpGain() {
+        WorldPartition.checkOwner();
         removeListenerIf(EventType.ON_PLAYABLE_EXP_CHANGED, listener -> listener.getOwner() == this);
     }
 
     public void sendInventoryUpdate(InventoryUpdate iu) {
+        WorldPartition.checkOwner();
         if (inventoryUpdateTask != null) {
             inventoryUpdateTask.cancel(false);
         }
@@ -12209,10 +12182,9 @@ public class Player extends Playable {
                         TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Sends the pending inventory update now instead of waiting for the scheduled task.
-     */
+    /** Sends the pending inventory update now instead of waiting for the scheduled task. */
     public void flushInventoryUpdate() {
+        WorldPartition.checkOwner();
         if (inventoryUpdateTask != null) {
             inventoryUpdateTask.cancel(false);
             inventoryUpdateTask = null;
@@ -12222,6 +12194,7 @@ public class Player extends Playable {
     }
 
     public void sendItemList(boolean open) {
+        WorldPartition.checkOwner();
         if (itemListTask != null) {
             itemListTask.cancel(false);
         }
@@ -12235,11 +12208,8 @@ public class Player extends Playable {
                         TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Precautionary method to end all tasks upon disconnection.
-     * @TODO: Rework stopAllTimers() method.
-     */
     public void stopAllTasks() {
+        WorldPartition.checkOwner();
         if ((mountFeedTask != null) && !mountFeedTask.isDone() && !mountFeedTask.isCancelled()) {
             mountFeedTask.cancel(false);
             mountFeedTask = null;
@@ -12302,54 +12272,51 @@ public class Player extends Playable {
             taskWarnUserTakeBreak = null;
         }
 
-        synchronized (questTimers) {
-            for (QuestTimer timer : questTimers) {
+        // A cancelled timer may unregister itself, so the walks run over copies.
+        try (Snapshot<QuestTimer> timers = ScratchBuffers.snapshot(questTimers)) {
+            for (QuestTimer timer : timers) {
                 timer.cancelTask();
             }
-
-            questTimers.clear();
         }
 
-        synchronized (timerHolders) {
-            for (TimerHolder<?> timer : timerHolders) {
+        questTimers.clear();
+
+        try (Snapshot<TimerHolder<?>> timers = ScratchBuffers.snapshot(timerHolders)) {
+            for (TimerHolder<?> timer : timers) {
                 timer.cancelTask();
             }
-
-            timerHolders.clear();
         }
+
+        timerHolders.clear();
     }
 
     public void addQuestTimer(QuestTimer questTimer) {
-        synchronized (questTimers) {
-            questTimers.add(questTimer);
-        }
+        WorldPartition.checkOwner();
+        questTimers.add(questTimer);
     }
 
     public void removeQuestTimer(QuestTimer questTimer) {
-        synchronized (questTimers) {
-            questTimers.remove(questTimer);
-        }
+        WorldPartition.checkOwner();
+        questTimers.remove(questTimer);
     }
 
     public void addTimerHolder(TimerHolder<?> timer) {
-        synchronized (timerHolders) {
-            timerHolders.add(timer);
-        }
+        WorldPartition.checkOwner();
+        timerHolders.add(timer);
     }
 
     public void removeTimerHolder(TimerHolder<?> timer) {
-        synchronized (timerHolders) {
-            timerHolders.remove(timer);
-        }
+        WorldPartition.checkOwner();
+        timerHolders.remove(timer);
     }
 
     public double getServitorShareBonus(Stat stat) {
-        final Map<Stat, Double> stats = servitorShare;
-        if (stats == null) {
+        WorldPartition.checkOwner();
+        if (servitorShare == null) {
             return 1.0d;
         }
 
-        final Double val = stats.get(stat);
+        final Double val = servitorShare.get(stat);
         if (val == null) {
             return 1.0d;
         }
@@ -12358,7 +12325,8 @@ public class Player extends Playable {
     }
 
     public void setAutoPlaying(boolean value) {
-        autoPlaying.set(value);
+        WorldPartition.checkOwner();
+        autoPlaying = value;
 
         if (!value && offlinePlay && OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS) {
             OfflinePlayTable.getInstance().removeOfflinePlay(this);
@@ -12366,6 +12334,7 @@ public class Player extends Playable {
     }
 
     public boolean isAutoPlaying() {
-        return autoPlaying.get();
+        WorldPartition.checkOwner();
+        return autoPlaying;
     }
 }

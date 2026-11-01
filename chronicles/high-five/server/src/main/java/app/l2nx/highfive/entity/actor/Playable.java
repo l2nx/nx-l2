@@ -56,11 +56,6 @@ public abstract class Playable extends Creature {
 
     private Player transferDmgTo = null;
 
-    /**
-     * Creates an abstract playable creature.
-     * @param objectId the playable object ID
-     * @param template the creature template
-     */
     public Playable(int objectId, CreatureTemplate template) {
         super(objectId, template);
         setInstanceType(InstanceType.Playable);
@@ -81,19 +76,19 @@ public abstract class Playable extends Creature {
     @Override
     public PlayableStat getStat() {
         WorldPartition.checkOwner();
-        return (PlayableStat) super.getStat();
+        return (PlayableStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new PlayableStat(this));
+        setStat(new PlayableStat(this, statAccess()));
     }
 
     @Override
     public PlayableStatus getStatus() {
         WorldPartition.checkOwner();
-        return (PlayableStatus) super.getStatus();
+        return (PlayableStatus) uncheckedStatus();
     }
 
     @Override
@@ -119,7 +114,6 @@ public abstract class Playable extends Creature {
             }
         }
 
-        // Killing is only possible one time.
         if (isDead()) {
             return false;
         }
@@ -127,13 +121,10 @@ public abstract class Playable extends Creature {
         setCurrentHp(0);
         setDead(true);
 
-        // Set target to null and cancel Attack or Cast.
         setTarget(null);
 
-        // Stop movement.
         stopMove(null);
 
-        // Stop HP/MP/CP Regeneration task.
         getStatus().stopHpMpRegeneration();
 
         boolean deleteBuffs = true;
@@ -161,19 +152,16 @@ public abstract class Playable extends Creature {
             stopAllEffectsExceptThoseThatLastThroughDeath();
         }
 
-        // Send the Server->Client packet StatusUpdate with current HP and MP to all other Player to inform.
         broadcastStatusUpdate();
 
         ZoneManager.getInstance().getRegion(this).onDeath(this);
 
-        // Notify Quest of Playable's death.
         if (!player.isNotifyQuestOfDeathEmpty()) {
             for (QuestState qs : player.getNotifyQuestOfDeath()) {
                 qs.getQuest().onDeath(killer == null ? this : killer, this, qs);
             }
         }
 
-        // Notify instance.
         if (isPlayer() && isInInstance()) {
             final Instance instance = InstanceManager.getInstance().getInstance(getInstanceId());
             if (instance != null) {
@@ -188,7 +176,6 @@ public abstract class Playable extends Creature {
             }
         }
 
-        // Notify Creature AI.
         getAI().notifyActionDeath();
         updateEffectIcons();
         return true;
@@ -197,81 +184,68 @@ public abstract class Playable extends Creature {
     public boolean checkIfPvP(Creature target) {
         WorldPartition.checkOwner();
         if (target == null) {
-            return false; // Target is null
+            return false;
         }
 
         if (target == this) {
-            return false; // Target is self
+            return false;
         }
 
         if (!target.isPlayable()) {
-            return false; // Target is not a Playable.
+            return false;
         }
 
         final Player player = asPlayer();
         if (player == null) {
-            return false; // Active player is null.
+            return false;
         }
 
         if (player.getKarma() != 0) {
-            return false; // Active player has karma.
+            return false;
         }
 
         final Player targetPlayer = target.asPlayer();
         if (targetPlayer == null) {
-            return false; // Target player is null.
+            return false;
         }
 
         if (targetPlayer == this) {
-            return false; // Target player is self.
+            return false;
         }
 
         if (targetPlayer.getKarma() != 0) {
-            return false; // Target player has karma.
+            return false;
         }
 
         if (targetPlayer.getPvpFlag() == 0) {
-            return false; // Target player is not flagged.
+            return false;
         }
 
         return true;
     }
 
-    /**
-     * Return True.
-     */
     @Override
     public boolean canBeAttacked() {
         WorldPartition.checkOwner();
         return true;
     }
 
-    // Support for Noblesse Blessing skill, where buffs are retained after resurrect.
     public boolean isNoblesseBlessedAffected() {
         WorldPartition.checkOwner();
         return isAffected(EffectFlag.NOBLESS_BLESSING);
     }
 
-    /**
-     * @return {@code true} if char can resurrect by himself, {@code false} otherwise
-     */
     public boolean isResurrectSpecialAffected() {
         WorldPartition.checkOwner();
         return isAffected(EffectFlag.RESURRECTION_SPECIAL);
     }
 
-    /**
-     * @return {@code true} if the Silent Moving mode is active, {@code false} otherwise
-     */
     public boolean isSilentMovingAffected() {
         WorldPartition.checkOwner();
         return isAffected(EffectFlag.SILENT_MOVE);
     }
 
-    /**
-     * For Newbie Protection Blessing skill, keeps you safe from an attack by a chaotic character >= 10 levels apart from you.
-     * @return
-     */
+    /** Newbie Protection Blessing: safe from chaotic characters 10 or more levels above. */
     public boolean isProtectionBlessingAffected() {
         WorldPartition.checkOwner();
         return isAffected(EffectFlag.PROTECTION_BLESSING);

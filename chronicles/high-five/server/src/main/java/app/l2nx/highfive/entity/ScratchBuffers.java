@@ -6,17 +6,21 @@ package app.l2nx.highfive.entity;
 
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 /**
  * Snapshot lists for call-out loops, one per nesting depth since a callback may re-enter. Lease in a
- * try-with-resources so leases close innermost first.
+ * try-with-resources so leases close innermost first. Object and int snapshots have depths of their own, each closed
+ * innermost first.
  */
 @SingleWriter
 public final class ScratchBuffers {
-    private static final ObjectArrayList<Snapshot<Object>> BY_DEPTH = new ObjectArrayList<>();
-    private static int depth;
+    private static final Depths<Snapshot<?>> SNAPSHOTS = new Depths<>(Snapshot::new);
+    private static final Depths<IntSnapshot> INT_SNAPSHOTS = new Depths<>(IntSnapshot::new);
 
     private ScratchBuffers() {}
 
@@ -27,7 +31,8 @@ public final class ScratchBuffers {
             buffer.fill(source);
         } catch (RuntimeException | Error e) {
             // The caller never receives the lease, so it cannot close it.
-            release(buffer);
+            SNAPSHOTS.release(buffer);
+            buffer.clear();
             throw e;
         }
 
@@ -39,22 +44,28 @@ public final class ScratchBuffers {
         return lease();
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> Snapshot<T> lease() {
-        if (depth == BY_DEPTH.size()) {
-            BY_DEPTH.add(new Snapshot<>());
-        }
-
-        return (Snapshot<T>) (Snapshot<?>) BY_DEPTH.get(depth++);
+    public static IntSnapshot intEmpty() {
+        WorldPartition.checkOwner();
+        return INT_SNAPSHOTS.lease();
     }
 
-    private static void release(Snapshot<?> buffer) {
-        if ((depth == 0) || (buffer != BY_DEPTH.get(depth - 1))) {
-            throw new IllegalStateException("Scratch buffers released out of order");
+    public static IntSnapshot intSnapshot(IntCollection source) {
+        WorldPartition.checkOwner();
+        final IntSnapshot buffer = INT_SNAPSHOTS.lease();
+        try {
+            buffer.fill(source);
+        } catch (RuntimeException | Error e) {
+            INT_SNAPSHOTS.release(buffer);
+            buffer.clear();
+            throw e;
         }
 
-        buffer.clear();
-        depth--;
+        return buffer;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Snapshot<T> lease() {
+        return (Snapshot<T>) SNAPSHOTS.lease();
     }
 
     @SingleWriter
@@ -76,7 +87,52 @@ public final class ScratchBuffers {
         @Override
         public void close() {
             WorldPartition.checkOwner();
-            release(this);
+            SNAPSHOTS.release(this);
+            clear();
+        }
+    }
+
+    @SingleWriter
+    public static final class IntSnapshot extends IntArrayList implements AutoCloseable {
+        private IntSnapshot() {}
+
+        private void fill(IntCollection source) {
+            size(source.size());
+            // Big enough after size(), so the collection copies into the backing array instead of allocating one.
+            source.toArray(elements());
+        }
+
+        @Override
+        public void close() {
+            WorldPartition.checkOwner();
+            INT_SNAPSHOTS.release(this);
+            clear();
+        }
+    }
+
+    private static final class Depths<B> {
+        private final ObjectArrayList<B> byDepth = new ObjectArrayList<>();
+        private final Supplier<B> factory;
+        private int depth;
+
+        private Depths(Supplier<B> factory) {
+            this.factory = factory;
+        }
+
+        private B lease() {
+            if (depth == byDepth.size()) {
+                byDepth.add(factory.get());
+            }
+
+            return byDepth.get(depth++);
+        }
+
+        private void release(B buffer) {
+            if ((depth == 0) || (buffer != byDepth.get(depth - 1))) {
+                throw new IllegalStateException("Scratch buffers released out of order");
+            }
+
+            depth--;
         }
     }
 }

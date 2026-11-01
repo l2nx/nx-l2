@@ -97,7 +97,6 @@ public class Wedding implements IVoicedCommandHandler {
                 partner.sendMessage("Your fiance has decided to break the engagement with you.");
             }
 
-            // give adena
             if (adenaAmount > 0) {
                 partner.addAdena(ItemProcessType.REFUND, adenaAmount, null, false);
             }
@@ -117,9 +116,8 @@ public class Wedding implements IVoicedCommandHandler {
         } else if (activeChar.getPartnerId() != 0) {
             activeChar.sendMessage("You are already engaged.");
             if (WeddingConfig.WEDDING_PUNISH_INFIDELITY) {
-                activeChar.startAbnormalVisualEffect(true, AbnormalVisualEffect.BIG_HEAD); // give player a Big Head
+                activeChar.startAbnormalVisualEffect(true, AbnormalVisualEffect.BIG_HEAD);
 
-                // Lets recycle the sevensigns debuffs.
                 int skillId;
                 int skillLevel = 1;
                 if (activeChar.getLevel() > 40) {
@@ -143,7 +141,6 @@ public class Wedding implements IVoicedCommandHandler {
 
         final Player ptarget = activeChar.getTarget().asPlayer();
 
-        // check if player target himself
         if (ptarget.getObjectId() == activeChar.getObjectId()) {
             activeChar.sendMessage("Is there something wrong with you, are you trying to go out with youself?");
             return false;
@@ -170,7 +167,7 @@ public class Wedding implements IVoicedCommandHandler {
             return false;
         }
 
-        if (!ptarget.getFriendList().contains(activeChar.getObjectId())) {
+        if (!ptarget.isFriend(activeChar.getObjectId())) {
             activeChar.sendMessage(
                     "The player you want to ask is not on your friends list, you must first be on each others friends"
                             + " list before you choose to engage.");
@@ -368,17 +365,14 @@ public class Wedding implements IVoicedCommandHandler {
 
         activeChar.getAI().setIntentionIdle();
 
-        // SoE Animation section.
         activeChar.setTarget(activeChar);
         activeChar.disableAllSkills();
 
         activeChar.broadcastSkillPacket(new MagicSkillUse(activeChar, 1050, 1, teleportTimer, 0), activeChar);
         activeChar.sendPacket(new SetupGauge(activeChar.getObjectId(), 0, teleportTimer));
-        // End SoE Animation section.
 
         final EscapeFinalizer ef = new EscapeFinalizer(activeChar, partner.getLocation(), partner.isIn7sDungeon());
 
-        // continue execution later
         activeChar.setSkillCast(WorldPartition.loop().schedule(ef, teleportTimer, TimeUnit.MILLISECONDS));
         activeChar.forceIsCasting(GameTimeTaskManager.getInstance().getGameTicks()
                 + (teleportTimer / GameTimeTaskManager.MILLIS_IN_TICK));

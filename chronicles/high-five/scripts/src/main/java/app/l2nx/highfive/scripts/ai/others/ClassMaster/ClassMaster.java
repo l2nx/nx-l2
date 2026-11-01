@@ -68,7 +68,6 @@ import org.w3c.dom.Node;
 @Slf4j
 public class ClassMaster extends Script implements IXmlReader {
 
-    // NPCs
     private static final List<Integer> CLASS_MASTERS = new ArrayList<>();
 
     static {
@@ -76,7 +75,6 @@ public class ClassMaster extends Script implements IXmlReader {
         CLASS_MASTERS.add(31757); // Miss Queen
     }
 
-    // Misc
     private boolean enabled;
     private boolean spawnClassMasters;
     private boolean showPopupWindow;
@@ -359,12 +357,11 @@ public class ClassMaster extends Script implements IXmlReader {
 
                     final ClassChangeData data = getClassChangeData(classDataIndex);
                     if (data != null) {
-                        // Required items.
                         if (!data.getItemsRequired().isEmpty()) {
                             for (ItemHolder ri : data.getItemsRequired()) {
                                 if (player.getInventory().getInventoryItemCount(ri.getId(), -1) < ri.getCount()) {
                                     player.sendMessage("You do not have enough items.");
-                                    return null; // No class change if payment failed.
+                                    return null;
                                 }
                             }
 
@@ -373,19 +370,16 @@ public class ClassMaster extends Script implements IXmlReader {
                             }
                         }
 
-                        // Give possible rewards.
                         if (!data.getItemsRewarded().isEmpty()) {
                             for (ItemHolder ri : data.getItemsRewarded()) {
                                 giveItems(player, ri);
                             }
                         }
 
-                        // Give possible nobless status reward.
                         if (data.isRewardNoblesse()) {
                             player.setNoble(true);
                         }
 
-                        // Give possible hero status reward.
                         if (data.isRewardHero()) {
                             player.setHero(true);
                         }
@@ -393,7 +387,7 @@ public class ClassMaster extends Script implements IXmlReader {
 
                     player.setPlayerClass(classId);
                     if (player.isSubClassActive()) {
-                        player.getSubClasses().get(player.getClassIndex()).setPlayerClass(player.getActiveClass());
+                        player.getSubClass(player.getClassIndex()).setPlayerClass(player.getActiveClass());
                     } else {
                         player.setBaseClass(player.getActiveClass());
                     }
@@ -404,8 +398,7 @@ public class ClassMaster extends Script implements IXmlReader {
                     }
 
                     player.store(
-                            false); // Save player cause if server crashes before this char is saved, he will lose class
-                    // and the money payed for class change.
+                            false); // persist now: a crash before the next save would lose the class and the payment
                     player.broadcastUserInfo();
                     player.sendSkillList();
                     player.sendPacket(new PlaySound("ItemSound.quest_fanfare_2"));
@@ -663,7 +656,7 @@ public class ClassMaster extends Script implements IXmlReader {
             String html = getHtm(player, "cc_options.html");
             html = html.replace(
                     "%name%",
-                    ClassListData.getInstance().getClass(newClass.getId()).className()); // getEscapedClientCode());
+                    ClassListData.getInstance().getClass(newClass.getId()).className());
             html = html.replace("%options%", getClassChangeOptions(player, newClass.getId()));
             showResult(player, html);
             return false;
@@ -677,12 +670,11 @@ public class ClassMaster extends Script implements IXmlReader {
             }
 
             if (data != null) {
-                // Required items.
                 if (!data.getItemsRequired().isEmpty()) {
                     for (ItemHolder ri : data.getItemsRequired()) {
                         if (player.getInventory().getInventoryItemCount(ri.getId(), -1) < ri.getCount()) {
                             player.sendMessage("You do not have enough items.");
-                            return false; // No class change if payment failed.
+                            return false;
                         }
                     }
 
@@ -691,19 +683,16 @@ public class ClassMaster extends Script implements IXmlReader {
                     }
                 }
 
-                // Give possible rewards.
                 if (!data.getItemsRewarded().isEmpty()) {
                     for (ItemHolder ri : data.getItemsRewarded()) {
                         giveItems(player, ri);
                     }
                 }
 
-                // Give possible nobless status reward.
                 if (data.isRewardNoblesse()) {
                     player.setNoble(true);
                 }
 
-                // Give possible hero status reward.
                 if (data.isRewardHero()) {
                     player.setHero(true);
                 }
@@ -711,7 +700,7 @@ public class ClassMaster extends Script implements IXmlReader {
 
             player.setPlayerClass(newClass.getId());
             if (player.isSubClassActive()) {
-                player.getSubClasses().get(player.getClassIndex()).setPlayerClass(player.getActiveClass());
+                player.getSubClass(player.getClassIndex()).setPlayerClass(player.getActiveClass());
             } else {
                 player.setBaseClass(player.getActiveClass());
             }
@@ -721,9 +710,7 @@ public class ClassMaster extends Script implements IXmlReader {
                         PlayerConfig.AUTO_LEARN_FS_SKILLS, true, PlayerConfig.AUTO_LEARN_SKILLS_WITHOUT_ITEMS);
             }
 
-            player.store(
-                    false); // Save player cause if server crashes before this char is saved, he will lose class and the
-            // money payed for class change.
+            player.store(false); // persist now: a crash before the next save would lose the class and the payment
             player.broadcastUserInfo();
             player.sendSkillList();
             return true;
@@ -927,7 +914,6 @@ public class ClassMaster extends Script implements IXmlReader {
     private boolean checkIfClassChangeHasOptions(Player player) {
         boolean showOptions = false;
 
-        // Check if there are requirements.
         for (ClassChangeData ccd : classChangeData) {
             if (!ccd.getItemsRequired().isEmpty() && ccd.isInCategory(player)) {
                 showOptions = true;
@@ -936,7 +922,6 @@ public class ClassMaster extends Script implements IXmlReader {
         }
 
         if (!showOptions) {
-            // Check if there is more than 1 reward to chose.
             int count = 0;
             for (ClassChangeData ccd : classChangeData) {
                 if (!ccd.getItemsRewarded().isEmpty() && ccd.isInCategory(player)) {

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
@@ -41,40 +42,47 @@ import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
-import lombok.Getter;
 
+@SingleWriter
 public class PlayerStatus extends PlayableStatus {
-    @Getter
-    private double currentCp = 0; // Current CP of the Player
+    private double currentCp = 0;
 
     public PlayerStatus(Player player) {
         super(player);
     }
 
     @Override
+    public double getCurrentCp() {
+        WorldPartition.checkOwner();
+        return currentCp;
+    }
+
+    @Override
     public void reduceCp(int value) {
+        WorldPartition.checkOwner();
         setCurrentCp(currentCp > value ? currentCp - value : 0);
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false, false);
-    }
-
-    @Override
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
-        reduceHp(value, attacker, awake, isDOT, isHPConsumption, false);
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
+        doReduceHp(value, attacker, awake, isDOT, isHPConsumption, false);
     }
 
     public void reduceHp(
             double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption, boolean ignoreCP) {
-        final Player player = getActiveChar();
+        WorldPartition.checkOwner();
+        doReduceHp(value, attacker, awake, isDOT, isHPConsumption, ignoreCP);
+    }
+
+    private void doReduceHp(
+            double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption, boolean ignoreCP) {
+        final Player player = player();
         if (player.isDead()) {
             return;
         }
 
-        // If OFFLINE_MODE_NO_DAMAGE is enabled and player is offline and he is in store/craft mode, no damage is taken.
         if (OfflineTradeConfig.OFFLINE_MODE_NO_DAMAGE
                 && (player.getClient() != null)
                 && player.getClient().isDetached()
@@ -94,7 +102,6 @@ public class PlayerStatus extends PlayableStatus {
         if (!isHPConsumption) {
             player.stopEffectsOnDamage(awake);
 
-            // Attacked players in craft/shops stand up.
             if (player.isCrafting() || player.isInStoreMode()) {
                 player.setPrivateStoreType(PrivateStoreType.NONE);
                 player.standUp();
@@ -126,18 +133,15 @@ public class PlayerStatus extends PlayableStatus {
                         return;
                     }
 
-                    // Cancel duel if player got hit by another player, that is not part of the duel.
                     if (attackerPlayer.getDuelId() != player.getDuelId()) {
                         player.setDuelState(Duel.DUELSTATE_INTERRUPTED);
                     }
                 }
             }
 
-            // Check and calculate transfered damage.
-            final PlayerStat stat = player.getStat();
             final Summon summon = player.getSummon();
             if (player.hasServitor() && LocationUtil.checkIfInRange(1000, player, summon, true)) {
-                tDmg = ((int) amount * (int) stat.calcStat(Stat.TRANSFER_DAMAGE_PERCENT, 0, null, null)) / 100;
+                tDmg = ((int) amount * (int) player.calcStat(Stat.TRANSFER_DAMAGE_PERCENT, 0, null, null)) / 100;
 
                 // Only transfer dmg up to current HP, it should not be killed.
                 tDmg = Math.min((int) summon.getCurrentHp() - 1, tDmg);
@@ -149,7 +153,7 @@ public class PlayerStatus extends PlayableStatus {
                 }
             }
 
-            mpDam = ((int) amount * (int) stat.calcStat(Stat.MANA_SHIELD_PERCENT, 0, null, null)) / 100;
+            mpDam = ((int) amount * (int) player.calcStat(Stat.MANA_SHIELD_PERCENT, 0, null, null)) / 100;
             if (mpDam > 0) {
                 mpDam = (int) (amount - mpDam);
                 if (mpDam > player.getCurrentMp()) {
@@ -176,7 +180,7 @@ public class PlayerStatus extends PlayableStatus {
                     && player.getParty().getMembers().contains(caster)) {
                 int transferDmg = Math.min(
                         (int) caster.getCurrentHp() - 1,
-                        ((int) amount * (int) stat.calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null)) / 100);
+                        ((int) amount * (int) player.calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null)) / 100);
                 if (transferDmg > 0) {
                     int membersInRange = 0;
                     for (Player member : caster.getParty().getMembers()) {
@@ -204,20 +208,18 @@ public class PlayerStatus extends PlayableStatus {
 
             if (!ignoreCP && (attacker.isPlayable() || attacker.isFakePlayer())) {
                 if (currentCp >= amount) {
-                    setCurrentCp(currentCp - amount); // Set Cp to diff of Cp vs value.
-                    amount = 0; // No need to subtract anything from Hp.
+                    setCurrentCp(currentCp - amount);
+                    amount = 0;
                 } else {
-                    amount -= currentCp; // Get diff from value vs Cp; will apply diff to Hp.
-                    setCurrentCp(0, false); // Set Cp to 0
+                    amount -= currentCp;
+                    setCurrentCp(0, false);
                 }
             }
 
             if ((fullValue > 0) && !isDOT) {
-                // Send a System Message to the Player.
                 SystemMessage smsg = new SystemMessage(SystemMessageId.C1_HAS_RECEIVED_S3_DAMAGE_FROM_C2);
                 smsg.addString(player.getName());
 
-                // Localisation related.
                 String targetName = attacker.getName();
                 if (MultilingualSupportConfig.MULTILANG_ENABLE && attacker.isNpc()) {
                     final String[] localisation =
@@ -246,7 +248,7 @@ public class PlayerStatus extends PlayableStatus {
             if (amount <= 0) {
                 if (player.isInDuel()) {
                     player.disableAllSkills();
-                    stopHpMpRegeneration();
+                    stopRegeneration();
                     if (attacker != null) {
                         attacker.getAI().setIntentionActive();
                         attacker.sendPacket(ActionFailed.STATIC_PACKET);
@@ -254,7 +256,6 @@ public class PlayerStatus extends PlayableStatus {
                         attacker.abortAttack();
                     }
 
-                    // let the DuelManager know of his defeat
                     DuelManager.getInstance().onPlayerDefeat(player);
                     amount = 1;
                 } else {
@@ -262,7 +263,7 @@ public class PlayerStatus extends PlayableStatus {
                 }
             }
 
-            setCurrentHp(amount);
+            doSetCurrentHp(amount, true);
         }
 
         if ((player.getCurrentHp() < 0.5) && !isHPConsumption) {
@@ -270,7 +271,7 @@ public class PlayerStatus extends PlayableStatus {
             player.abortCast();
 
             if (player.isInOlympiadMode()) {
-                stopHpMpRegeneration();
+                stopRegeneration();
                 player.setDead(true);
                 player.setIsPendingRevive(true);
                 if (player.hasSummon()) {
@@ -290,9 +291,9 @@ public class PlayerStatus extends PlayableStatus {
     }
 
     @Override
-    public boolean setCurrentHp(double newHp, boolean broadcastPacket) {
-        final boolean result = super.setCurrentHp(newHp, broadcastPacket);
-        final Player player = getActiveChar();
+    protected boolean doSetCurrentHp(double newHp, boolean broadcastPacket) {
+        final boolean result = super.doSetCurrentHp(newHp, broadcastPacket);
+        final Player player = player();
         if (!PlayerConfig.DISABLE_TUTORIAL
                 && (getCurrentHp() <= (player.getStat().getMaxHp() * .3))) {
             final QuestState qs = player.getQuestState("Q00255_Tutorial");
@@ -306,41 +307,35 @@ public class PlayerStatus extends PlayableStatus {
 
     @Override
     public void setCurrentCp(double newCp) {
+        WorldPartition.checkOwner();
         setCurrentCp(newCp, true);
     }
 
     public void setCurrentCp(double value, boolean broadcastPacket) {
-        // Get the Max CP of the Creature.
+        WorldPartition.checkOwner();
         final int currentCp = (int) this.currentCp;
-        final Player player = getActiveChar();
+        final Player player = player();
         final int maxCp = player.getStat().getMaxCp();
 
-        synchronized (this) {
-            if (player.isDead()) {
-                return;
-            }
-
-            final double newCp = Math.max(0, value);
-            if (newCp >= maxCp) {
-                // Set the RegenActive flag to false.
-                this.currentCp = maxCp;
-                flagsRegenActive &= ~REGEN_FLAG_CP;
-
-                // Stop the HP/MP/CP Regeneration task.
-                if (flagsRegenActive == 0) {
-                    stopHpMpRegeneration();
-                }
-            } else {
-                // Set the RegenActive flag to true.
-                this.currentCp = newCp;
-                flagsRegenActive |= REGEN_FLAG_CP;
-
-                // Start the HP/MP/CP Regeneration task with Medium priority.
-                startHpMpRegeneration();
-            }
+        if (player.isDead()) {
+            return;
         }
 
-        // Send the Server->Client packet StatusUpdate with current HP and MP to all other Player to inform.
+        final double newCp = Math.max(0, value);
+        if (newCp >= maxCp) {
+            this.currentCp = maxCp;
+            flagsRegenActive &= ~REGEN_FLAG_CP;
+
+            if (flagsRegenActive == 0) {
+                stopRegeneration();
+            }
+        } else {
+            this.currentCp = newCp;
+            flagsRegenActive |= REGEN_FLAG_CP;
+
+            startRegeneration();
+        }
+
         if ((currentCp != this.currentCp) && broadcastPacket) {
             player.broadcastStatusUpdate();
         }
@@ -348,29 +343,31 @@ public class PlayerStatus extends PlayableStatus {
 
     @Override
     protected void doRegeneration() {
-        final Player player = getActiveChar();
+        final Player player = player();
         final PlayerStat stat = player.getStat();
 
-        // Modify the current CP of the Creature and broadcast Server->Client packet StatusUpdate.
         if (currentCp < stat.getMaxRecoverableCp()) {
             setCurrentCp(currentCp + Formulas.calcCpRegen(player), false);
         }
 
-        // Modify the current HP of the Creature and broadcast Server->Client packet StatusUpdate.
         if (getCurrentHp() < stat.getMaxRecoverableHp()) {
             setCurrentHp(getCurrentHp() + Formulas.calcHpRegen(player), false);
         }
 
-        // Modify the current MP of the Creature and broadcast Server->Client packet StatusUpdate.
         if (getCurrentMp() < stat.getMaxRecoverableMp()) {
             setCurrentMp(getCurrentMp() + Formulas.calcMpRegen(player), false);
         }
 
-        player.broadcastStatusUpdate(); // Send the StatusUpdate packet.
+        player.broadcastStatusUpdate();
     }
 
     @Override
     public Player getActiveChar() {
-        return super.getActiveChar().asPlayer();
+        WorldPartition.checkOwner();
+        return player();
+    }
+
+    private Player player() {
+        return (Player) creature();
     }
 }

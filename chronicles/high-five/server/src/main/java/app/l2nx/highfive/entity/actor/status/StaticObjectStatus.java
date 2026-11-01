@@ -22,8 +22,11 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.instance.StaticObject;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class StaticObjectStatus extends CreatureStatus {
     public StaticObjectStatus(StaticObject activeChar) {
         super(activeChar);
@@ -31,6 +34,7 @@ public class StaticObjectStatus extends CreatureStatus {
 
     @Override
     public StaticObject getActiveChar() {
-        return (StaticObject) super.getActiveChar();
+        WorldPartition.checkOwner();
+        return (StaticObject) creature();
     }
 }

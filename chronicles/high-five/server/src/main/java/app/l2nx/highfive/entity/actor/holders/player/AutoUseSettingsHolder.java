@@ -22,74 +22,182 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 
 /**
  * @author Mobius
  */
+@SingleWriter
 public class AutoUseSettingsHolder {
-    @Getter
-    private final Collection<Integer> autoSupplyItems = ConcurrentHashMap.newKeySet();
+    // Insertion order is the order the auto-use task uses them in.
+    private final IntLinkedOpenHashSet autoSupplyItems = new IntLinkedOpenHashSet();
+    private final IntLinkedOpenHashSet autoActions = new IntLinkedOpenHashSet();
+    private final IntLinkedOpenHashSet autoBuffs = new IntLinkedOpenHashSet();
+    private final IntArrayList autoSkills = new IntArrayList();
 
-    @Getter
-    private final Collection<Integer> autoActions = ConcurrentHashMap.newKeySet();
-
-    @Getter
-    private final Collection<Integer> autoBuffs = ConcurrentHashMap.newKeySet();
-
-    @Getter
-    private final List<Integer> autoSkills = new CopyOnWriteArrayList<>();
-
-    private final AtomicInteger autoPotionItem = new AtomicInteger();
-    private int skillIndex = 0;
+    private int autoPotionItem;
+    private int skillIndex;
 
     public AutoUseSettingsHolder() {}
 
-    public int getAutoPotionItem() {
-        return autoPotionItem.get();
+    public IntList getAutoSupplyItems() {
+        WorldPartition.checkOwner();
+        return snapshotOf(autoSupplyItems);
     }
 
-    public void setAutoPotionItem(int itemId) {
-        autoPotionItem.set(itemId);
+    public void collectAutoSupplyItems(IntCollection into) {
+        WorldPartition.checkOwner();
+        into.addAll(autoSupplyItems);
+    }
+
+    public boolean isAutoSupplyItem(int itemId) {
+        WorldPartition.checkOwner();
+        return autoSupplyItems.contains(itemId);
+    }
+
+    public void addAutoSupplyItem(int itemId) {
+        WorldPartition.checkOwner();
+        autoSupplyItems.add(itemId);
+    }
+
+    public void removeAutoSupplyItem(int itemId) {
+        WorldPartition.checkOwner();
+        autoSupplyItems.remove(itemId);
+    }
+
+    public IntList getAutoActions() {
+        WorldPartition.checkOwner();
+        return snapshotOf(autoActions);
+    }
+
+    public boolean isAutoAction(int actionId) {
+        WorldPartition.checkOwner();
+        return autoActions.contains(actionId);
+    }
+
+    public void addAutoAction(int actionId) {
+        WorldPartition.checkOwner();
+        autoActions.add(actionId);
+    }
+
+    public void removeAutoAction(int actionId) {
+        WorldPartition.checkOwner();
+        autoActions.remove(actionId);
+    }
+
+    public IntList getAutoBuffs() {
+        WorldPartition.checkOwner();
+        return snapshotOf(autoBuffs);
+    }
+
+    public void collectAutoBuffs(IntCollection into) {
+        WorldPartition.checkOwner();
+        into.addAll(autoBuffs);
+    }
+
+    public boolean isAutoBuff(int skillId) {
+        WorldPartition.checkOwner();
+        return autoBuffs.contains(skillId);
+    }
+
+    public void addAutoBuff(int skillId) {
+        WorldPartition.checkOwner();
+        autoBuffs.add(skillId);
+    }
+
+    public void removeAutoBuff(int skillId) {
+        WorldPartition.checkOwner();
+        autoBuffs.remove(skillId);
+    }
+
+    public void clearAutoBuffs() {
+        WorldPartition.checkOwner();
+        autoBuffs.clear();
+    }
+
+    public IntList getAutoSkills() {
+        WorldPartition.checkOwner();
+        return snapshotOf(autoSkills);
+    }
+
+    public int getAutoSkillCount() {
+        WorldPartition.checkOwner();
+        return autoSkills.size();
     }
 
     public boolean isAutoSkill(int skillId) {
-        return autoSkills.contains(skillId) || autoBuffs.contains(skillId);
+        WorldPartition.checkOwner();
+        return autoSkills.contains(skillId);
     }
 
-    public Integer getNextSkillId() {
+    public void addAutoSkill(int skillId) {
+        WorldPartition.checkOwner();
+        autoSkills.add(skillId);
+    }
+
+    public void removeAutoSkill(int skillId) {
+        WorldPartition.checkOwner();
+        autoSkills.rem(skillId);
+    }
+
+    public void clearAutoSkills() {
+        WorldPartition.checkOwner();
+        autoSkills.clear();
+    }
+
+    public int getAutoPotionItem() {
+        WorldPartition.checkOwner();
+        return autoPotionItem;
+    }
+
+    public void setAutoPotionItem(int itemId) {
+        WorldPartition.checkOwner();
+        autoPotionItem = itemId;
+    }
+
+    /**
+     * @return the skill at the rotation cursor, or {@link Integer#MIN_VALUE} when no auto skill is set
+     */
+    public int getNextSkillId() {
+        WorldPartition.checkOwner();
+        if (autoSkills.isEmpty()) {
+            skillIndex = 0;
+            return Integer.MIN_VALUE;
+        }
+
         if (skillIndex >= autoSkills.size()) {
             skillIndex = 0;
         }
 
-        Integer skillId = Integer.MIN_VALUE;
-        try {
-            skillId = autoSkills.get(skillIndex);
-        } catch (Exception e) {
-            resetSkillOrder();
-        }
-
-        return skillId;
+        return autoSkills.getInt(skillIndex);
     }
 
     public void incrementSkillOrder() {
+        WorldPartition.checkOwner();
         skillIndex++;
     }
 
     public void resetSkillOrder() {
+        WorldPartition.checkOwner();
         skillIndex = 0;
     }
 
     public boolean isEmpty() {
+        WorldPartition.checkOwner();
         return autoSupplyItems.isEmpty()
-                && (autoPotionItem.get() == 0)
+                && (autoPotionItem == 0)
                 && autoSkills.isEmpty()
                 && autoBuffs.isEmpty()
                 && autoActions.isEmpty();
+    }
+
+    private static IntList snapshotOf(IntCollection ids) {
+        return ids.isEmpty() ? IntLists.emptyList() : IntLists.unmodifiable(new IntArrayList(ids));
     }
 }

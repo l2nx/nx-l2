@@ -94,7 +94,7 @@ public class AutoPlayTaskManager {
                         // Logic for Spoil (254) skill.
                         if (creature.isMonster()
                                 && creature.isDead()
-                                && player.getAutoUseSettings().getAutoSkills().contains(254)) {
+                                && player.getAutoUseSettings().isAutoSkill(254)) {
                             final Skill sweeper = player.getKnownSkill(42);
                             if (sweeper != null) {
                                 final Monster monster = target.asMonster();
@@ -139,8 +139,7 @@ public class AutoPlayTaskManager {
 
                         // We take granted that mage classes do not auto hit.
                         if (isMageCaster(player)) {
-                            // A caster out of range would otherwise stand still casting at a target it never
-                            // approaches.
+                            // Out-of-range casters would otherwise cast forever without approaching.
                             if ((player.calculateDistance2D(creature) > 900)
                                     && !player.isMoving()
                                     && player.hasAI()
@@ -344,7 +343,7 @@ public class AutoPlayTaskManager {
         }
 
         private boolean isMageCaster(Player player) {
-            return !player.getAutoUseSettings().getAutoActions().contains(AUTO_ATTACK_ACTION);
+            return !player.getAutoUseSettings().isAutoAction(AUTO_ATTACK_ACTION);
         }
 
         private boolean isTargetModeValid(int mode, Player player, Creature creature) {

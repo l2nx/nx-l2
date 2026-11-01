@@ -52,8 +52,6 @@ import app.l2nx.highfive.entity.itemcontainer.PetInventory;
 import app.l2nx.highfive.entity.zone.ZoneRegion;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.geoengine.pathfinding.PathFinding;
-import app.l2nx.highfive.handler.IItemHandler;
-import app.l2nx.highfive.handler.ItemHandler;
 import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.effects.EffectType;
@@ -186,19 +184,19 @@ public abstract class Summon extends Playable {
     @Override
     public SummonStat getStat() {
         WorldPartition.checkOwner();
-        return (SummonStat) super.getStat();
+        return (SummonStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new SummonStat(this));
+        setStat(new SummonStat(this, statAccess()));
     }
 
     @Override
     public SummonStatus getStatus() {
         WorldPartition.checkOwner();
-        return (SummonStatus) super.getStatus();
+        return (SummonStatus) uncheckedStatus();
     }
 
     @Override
@@ -215,7 +213,7 @@ public abstract class Summon extends Playable {
     @Override
     public NpcTemplate getTemplate() {
         WorldPartition.checkOwner();
-        return (NpcTemplate) super.getTemplate();
+        return (NpcTemplate) uncheckedTemplate();
     }
 
     // This defines the action buttons, 1 for Summon, 2 for Pets.
@@ -415,7 +413,6 @@ public abstract class Summon extends Playable {
 
     /**
      * Retail monster AIs add 500 hate against the owner to the monster that finishes a summon or pet.
-     * @param killer the creature that killed this summon
      */
     private void addKillerHate(Creature killer) {
         if ((owner != null) && (killer != null) && killer.isAttackable() && !killer.isDead()) {
@@ -505,12 +502,10 @@ public abstract class Summon extends Playable {
 
             setTarget(null);
             if (owner != null) {
-                for (int itemId : owner.getAutoSoulShot()) {
+                owner.disableAutoShots(itemId -> {
                     final String handler = ((EtcItem) ItemData.getInstance().getTemplate(itemId)).getHandlerName();
-                    if ((handler != null) && handler.contains("Beast")) {
-                        owner.disableAutoShot(itemId);
-                    }
-                }
+                    return (handler != null) && handler.contains("Beast");
+                });
             }
         }
     }
@@ -626,12 +621,10 @@ public abstract class Summon extends Playable {
 
         WorldObject target = null;
         switch (skill.getTargetType()) {
-            // OWNER_PET should be cast even if no target has been found
             case OWNER_PET: {
                 target = owner;
                 break;
             }
-            // PARTY, AURA, SELF should be cast even if no target has been found
             case PARTY:
             case AURA:
             case FRONT_AURA:
@@ -1064,32 +1057,8 @@ public abstract class Summon extends Playable {
     @Override
     public void rechargeShots(boolean physical, boolean magic) {
         WorldPartition.checkOwner();
-        Item item;
-        IItemHandler handler;
-        if ((owner.getAutoSoulShot() == null) || owner.getAutoSoulShot().isEmpty()) {
-            return;
-        }
-
-        for (int itemId : owner.getAutoSoulShot()) {
-            item = owner.getInventory().getItemByItemId(itemId);
-            if (item != null) {
-                if (magic && (item.getTemplate().getDefaultAction() == ActionType.SUMMON_SPIRITSHOT)) {
-                    handler = ItemHandler.getInstance().getHandler(item.getEtcItem());
-                    if (handler != null) {
-                        handler.onItemUse(owner, item, false);
-                    }
-                }
-
-                if (physical && (item.getTemplate().getDefaultAction() == ActionType.SUMMON_SOULSHOT)) {
-                    handler = ItemHandler.getInstance().getHandler(item.getEtcItem());
-                    if (handler != null) {
-                        handler.onItemUse(owner, item, false);
-                    }
-                }
-            } else {
-                owner.removeAutoSoulShot(itemId);
-            }
-        }
+        owner.chargeAutoShots(
+                physical ? ActionType.SUMMON_SOULSHOT : null, magic ? ActionType.SUMMON_SPIRITSHOT : null);
     }
 
     @Override

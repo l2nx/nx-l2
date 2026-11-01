@@ -26,7 +26,6 @@ import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
-import app.l2nx.highfive.entity.actor.instance.Cubic;
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.managers.CursedWeaponsManager;
@@ -34,7 +33,6 @@ import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
-import java.util.Map;
 
 public class UserInfo extends ServerPacket {
     private final Player player;
@@ -97,7 +95,7 @@ public class UserInfo extends ServerPacket {
         buffer.writeDouble(
                 (float) (player.getExp() - ExperienceData.getInstance().getExpForLevel(player.getLevel()))
                         / (ExperienceData.getInstance().getExpForLevel(player.getLevel() + 1)
-                                - ExperienceData.getInstance().getExpForLevel(player.getLevel()))); // High Five exp %
+                                - ExperienceData.getInstance().getExpForLevel(player.getLevel())));
         buffer.writeInt(player.getSTR());
         buffer.writeInt(player.getDEX());
         buffer.writeInt(player.getCON());
@@ -166,21 +164,21 @@ public class UserInfo extends ServerPacket {
         buffer.writeInt(player.getClanId());
         buffer.writeInt(player.getClanCrestId());
         buffer.writeInt(player.getAllyId());
-        buffer.writeInt(player.getAllyCrestId()); // ally crest id
+        buffer.writeInt(player.getAllyCrestId());
 
         // 0x40 leader rights
         // siege flags: attacker - 0x180 sword over name, defender - 0x80 shield, 0xC0 crown (|leader), 0x1C0 flag
         // (|leader)
         buffer.writeInt(relation);
-        buffer.writeByte(player.getMountType().ordinal()); // mount type
+        buffer.writeByte(player.getMountType().ordinal());
         buffer.writeByte(player.getPrivateStoreType().getId());
         buffer.writeByte(player.hasDwarvenCraft());
         buffer.writeInt(player.getPkKills());
         buffer.writeInt(player.getPvpKills());
 
-        final Map<Integer, Cubic> cubics = player.getCubics();
-        buffer.writeShort(cubics.size());
-        for (int cubicId : cubics.keySet()) {
+        final int[] cubicIds = player.getCubicIds();
+        buffer.writeShort(cubicIds.length);
+        for (int cubicId : cubicIds) {
             buffer.writeShort(cubicId);
         }
 
@@ -191,8 +189,8 @@ public class UserInfo extends ServerPacket {
                         : player.getAbnormalVisualEffects());
         buffer.writeByte(player.isInsideZone(ZoneId.WATER) ? 1 : player.isFlyingMounted() ? 2 : 0);
         buffer.writeInt(player.getClanPrivileges().getMask());
-        buffer.writeShort(player.getRecomLeft()); // c2 recommendations remaining
-        buffer.writeShort(player.getRecomHave()); // c2 recommendations received
+        buffer.writeShort(player.getRecomLeft());
+        buffer.writeShort(player.getRecomHave());
         buffer.writeInt(player.getMountNpcId() > 0 ? player.getMountNpcId() + 1000000 : 0);
         buffer.writeShort(player.getInventoryLimit());
         buffer.writeInt(player.getPlayerClass().getId());
@@ -203,12 +201,12 @@ public class UserInfo extends ServerPacket {
         buffer.writeByte(player.getTeam().getId());
         buffer.writeInt(player.getClanCrestLargeId());
         buffer.writeByte(player.isNoble()); // 1: symbol on char menu ctrl+I
-        buffer.writeByte(player.isHero() || (player.isGM() && GeneralConfig.GM_HERO_AURA)); // 1: Hero Aura
+        buffer.writeByte(player.isHero() || (player.isGM() && GeneralConfig.GM_HERO_AURA));
 
-        buffer.writeByte(player.isFishing()); // Fishing Mode
-        buffer.writeInt(player.getFishX()); // fishing x
-        buffer.writeInt(player.getFishY()); // fishing y
-        buffer.writeInt(player.getFishZ()); // fishing z
+        buffer.writeByte(player.isFishing());
+        buffer.writeInt(player.getFishX());
+        buffer.writeInt(player.getFishY());
+        buffer.writeInt(player.getFishZ());
 
         buffer.writeInt(appearance.getNameColor());
 
@@ -236,11 +234,10 @@ public class UserInfo extends ServerPacket {
         buffer.writeInt(player.getAgathionId());
 
         // T2 Starts
-        buffer.writeInt(player.getFame()); // Fame
+        buffer.writeInt(player.getFame());
         buffer.writeInt(player.isMinimapAllowed()); // Minimap on Hellbound
-        buffer.writeInt(player.getVitalityPoints()); // Vitality Points
+        buffer.writeInt(player.getVitalityPoints());
         buffer.writeInt(player.getAbnormalVisualEffectSpecial());
-        // buffer.writeInt(territoryId); // CT2.3
         // buffer.writeInt((_isDisguised ? 1: 0)); // CT2.3
         // buffer.writeInt(territoryId); // CT2.3
     }

@@ -372,20 +372,23 @@ event listener base `ListenersContainer`, which templates, zones, residences, th
 containers share, so their listener API is loop-only too; `EffectList` with its entries `BuffInfo`, `TimeStamp` and
 `InvulSkillHolder`, state of the creature they sit on; `Item` with its `DropProtection` and the item containers
 (`ItemContainer`, `Inventory`, `PlayerInventory`, `PetInventory`, `Warehouse`, `PlayerWarehouse`, `ClanWarehouse`,
-`PlayerFreight`, `PlayerRefund`; `Mail` stays out until the mail rework removes it,
-[#150](https://github.com/l2nx/nx-l2/issues/150), and runs the checked container methods it inherits); `Player` with
-the variables family (`PlayerVariables`, `AccountVariables`, `ItemVariables`, `GlobalVariablesManager`), which extends
-`StatSet` and so needs composition before its methods can carry the check; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
+`PlayerFreight`, `PlayerRefund`); `Player` with `PlayerWorldEntry`, the holders of a player's own state (shortcuts,
+macros, contacts, block list, radar, duel, Nevit, auto-use and auto-play settings, subclasses, teleport bookmarks),
+the `CreatureStat` and `CreatureStatus` hierarchies and the variables family (`AbstractVariables`, `PlayerVariables`,
+`AccountVariables`, `ItemVariables`, `NpcVariables`, `GlobalVariablesManager`), which extended `StatSet` and now holds
+one, since the public methods of a shared base cannot carry the check; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
 world entity is then a single writer. A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
 place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable`, `Summon`, `WorldObject` with
 `ListenersContainer`, `Vehicle`, `Tower`, the `instance` package, `EffectList` with `BuffInfo`, `TimeStamp` and
-`InvulSkillHolder`, and `Item` with `DropProtection` and the item containers except `Mail`. Their runs were the tests, client runs on the live
+`InvulSkillHolder`, `Item` with `DropProtection` and the item containers, and `Player` with `PlayerWorldEntry`, its
+holders, the stat and status hierarchies and the variables family. Their runs were the tests, client runs on the live
 world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions,
 skills and reuse, `AttackableBenchmark` for the aggro list, `WorldObjectBenchmark` for positions and distances, `EffectListBenchmark` for adding,
 stacking and stopping effects and their lookups, `ItemContainerBenchmark` for adding and removing items, lookups by
-item and object id, the item snapshot and item counts); the
+item and object id, the item snapshot and item counts, `VariablesBenchmark` for reading, writing and probing
+variables); the
 load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
 A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
@@ -393,11 +396,17 @@ A caller that used to change a collection a getter handed out now calls a mutato
 `EffectList`: `hasDispellableDebuff`, `isBlockedAbnormalType`, `collectStealable` and `collectDebuffs` instead of a
 copied getter; for the item containers: `collectItems` with a filter for the item and warehouse list packets, the
 paperdoll lookups for the expertise penalty, the pet weapon and the talisman mana, `getInventoryItemCount` for quest
-item counts, `Item.hasElementals` and `elementalCount` instead of a copied attribute array), so the
+item counts, `Item.hasElementals` and `elementalCount` instead of a copied attribute array; for `Player`: subclass,
+friend, premium item, sell buff, manufacture and recipe lookups and counts, the auto-shot walks
+`chargeAutoShots`/`disableAutoShots`, `forEachStatusListener` and the trait mutators of `CreatureStat`), so the
 snapshot rule below costs no copy on those paths. The `StampedLock` around `Creature.doAttack` was also a re-entry
 guard (`tryWriteLock` fails on the thread that holds it), so an attack ordered from inside an attack is still
-dropped, by a plain flag. The checks cost the stat calculation of `Creature` about 4 ns of its 11 (several checks per
-calculation), accepted for now and tracked in [#146](https://github.com/l2nx/nx-l2/issues/146). With `WorldObject`
+dropped, by a plain flag. The stat getters check once each: a `public final` getter checks and calls protected unchecked internals that
+the subclasses override, and the calculation is reached through an unchecked route the creature hands its stat
+(`CreatureStat.CreatureAccess`), so the stat calculation measures faster than before the checks (19 ns to 15 ns);
+the getters of `Creature` that delegate to its stat and a player's level lookup still pay a second check
+([#156](https://github.com/l2nx/nx-l2/issues/156)). Every variables method checks too, about 2 ns per read
+(tracked in [#146](https://github.com/l2nx/nx-l2/issues/146)). With `WorldObject`
 checked, its accessors carry the check too, so a region switch over 500 objects per region, about 6 000 checks, runs
 about twice as long (23 µs to 54 µs; a build with the check emptied measures as before); the same issue tracks it.
 
@@ -407,7 +416,8 @@ weakly consistent iterators of `ConcurrentHashMap` tolerated and a plain collect
 only read-only snapshots of its collections, and walks a live collection itself only when the loop body is a pure
 filter that calls nothing able to move an object; any walk that calls out (packets, AI, a consumer or a caller's
 predicate) runs over a copy. These copies go into reusable per-depth scratch buffers (`ScratchBuffers`: one list per
-nesting level, since a callback may query the world again), so they allocate nothing in a steady state; no standard
+nesting level, since a callback may query the world again, and an `int` list for primitive id sets, which a boxed
+copy would allocate on every walk), so they allocate nothing in a steady state; no standard
 library offers single-threaded scratch buffers, and Netty's `Recycler` pools objects per thread. Region sets are
 fastutil `ObjectArraySet`, a dense array whose copy is one `arraycopy`; adding and removing scan it, which happens
 only when an object enters or leaves a region. The visibility paths measured 7–48% faster than with

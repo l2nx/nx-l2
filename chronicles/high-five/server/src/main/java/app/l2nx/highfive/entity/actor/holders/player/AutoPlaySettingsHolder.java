@@ -22,67 +22,80 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author Mobius
  */
+@SingleWriter
 public class AutoPlaySettingsHolder {
-    private final AtomicInteger options = new AtomicInteger();
-    private final AtomicBoolean pickup = new AtomicBoolean(true);
-    private final AtomicInteger nextTargetMode = new AtomicInteger(1);
-    private final AtomicBoolean shortRange = new AtomicBoolean();
-    private final AtomicBoolean respectfulHunting = new AtomicBoolean(true);
-    private final AtomicInteger autoPotionPercent = new AtomicInteger(50);
+    private int options;
+    private boolean pickup = true;
+    private int nextTargetMode = 1;
+    private boolean shortRange;
+    private boolean respectfulHunting = true;
+    private int autoPotionPercent = 50;
 
     public AutoPlaySettingsHolder() {}
 
     public int getOptions() {
-        return options.get();
+        WorldPartition.checkOwner();
+        return options;
     }
 
     public void setOptions(int options) {
-        this.options.set(options);
+        WorldPartition.checkOwner();
+        this.options = options;
     }
 
     public boolean doPickup() {
-        return pickup.get();
+        WorldPartition.checkOwner();
+        return pickup;
     }
 
     public void setPickup(boolean value) {
-        pickup.set(value);
+        WorldPartition.checkOwner();
+        pickup = value;
     }
 
     public int getNextTargetMode() {
-        return nextTargetMode.get();
+        WorldPartition.checkOwner();
+        return nextTargetMode;
     }
 
     public void setNextTargetMode(int nextTargetMode) {
-        this.nextTargetMode.set(nextTargetMode);
+        WorldPartition.checkOwner();
+        this.nextTargetMode = nextTargetMode;
     }
 
     public boolean isShortRange() {
-        return shortRange.get();
+        WorldPartition.checkOwner();
+        return shortRange;
     }
 
     public void setShortRange(boolean value) {
-        shortRange.set(value);
+        WorldPartition.checkOwner();
+        shortRange = value;
     }
 
     public boolean isRespectfulHunting() {
-        return respectfulHunting.get();
+        WorldPartition.checkOwner();
+        return respectfulHunting;
     }
 
     public void setRespectfulHunting(boolean value) {
-        respectfulHunting.set(value);
+        WorldPartition.checkOwner();
+        respectfulHunting = value;
     }
 
     public int getAutoPotionPercent() {
-        return autoPotionPercent.get();
+        WorldPartition.checkOwner();
+        return autoPotionPercent;
     }
 
     public void setAutoPotionPercent(int value) {
-        autoPotionPercent.set(value);
+        WorldPartition.checkOwner();
+        autoPotionPercent = value;
     }
 }

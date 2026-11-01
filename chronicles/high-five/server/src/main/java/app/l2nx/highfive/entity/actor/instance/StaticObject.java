@@ -46,8 +46,7 @@ public class StaticObject extends Creature {
 
     private int meshIndex = 0;
 
-    private int type = -1; // 0 - map signs, 1 - throne , 2 - arena signs
-
+    private int type = -1; // 0 map signs, 1 throne, 2 arena signs
     private ShowTownMap map;
 
     public StaticObject(CreatureTemplate template, int staticId) {
@@ -90,19 +89,19 @@ public class StaticObject extends Creature {
     @Override
     public StaticObjectStat getStat() {
         WorldPartition.checkOwner();
-        return (StaticObjectStat) super.getStat();
+        return (StaticObjectStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new StaticObjectStat(this));
+        setStat(new StaticObjectStat(this, statAccess()));
     }
 
     @Override
     public StaticObjectStatus getStatus() {
         WorldPartition.checkOwner();
-        return (StaticObjectStatus) super.getStatus();
+        return (StaticObjectStatus) uncheckedStatus();
     }
 
     @Override

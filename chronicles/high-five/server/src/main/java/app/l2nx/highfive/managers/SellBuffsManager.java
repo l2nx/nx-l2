@@ -77,51 +77,26 @@ public class SellBuffsManager implements IXmlReader {
         }
     }
 
-    /**
-     * Sends the sell menu HTML to the specified player.
-     * <p>
-     * This displays either a menu for starting to sell buffs or a message indicating that the player is already selling buffs.
-     * </p>
-     * @param player the {@link Player} to display the menu to
-     */
     public void sendSellMenu(Player player) {
         final String html = HtmCache.getInstance()
                 .getHtm(player, HTML_FOLDER + (player.isSellingBuffs() ? "BuffMenu_already.html" : "BuffMenu.html"));
         CommunityBoardHandler.separateAndSend(html, player);
     }
 
-    /**
-     * Sends the buff choice menu to the specified player.
-     * <p>
-     * The menu displays a list of available buffs that the player can choose to sell.
-     * </p>
-     * @param player the {@link Player} to display the menu to
-     * @param index the starting index for paginated buff options
-     */
     public void sendBuffChoiceMenu(Player player, int index) {
         String html = HtmCache.getInstance().getHtm(player, HTML_FOLDER + "BuffChoice.html");
         html = html.replace("%list%", buildSkillMenu(player, index));
         CommunityBoardHandler.separateAndSend(html, player);
     }
 
-    /**
-     * Sends the buff edit menu to the specified player, allowing them to modify prices or remove buffs from their sell list.
-     * @param player the {@link Player} to display the edit menu to
-     */
     public void sendBuffEditMenu(Player player) {
         String html = HtmCache.getInstance().getHtm(player, HTML_FOLDER + "BuffChoice.html");
         html = html.replace("%list%", buildEditMenu(player));
         CommunityBoardHandler.separateAndSend(html, player);
     }
 
-    /**
-     * Sends the buff purchase menu to a player, showing the buffs available for purchase from a seller.
-     * @param player the {@link Player} to display the menu to
-     * @param seller the {@link Player} selling the buffs
-     * @param index the starting index for paginated buff options
-     */
     public void sendBuffMenu(Player player, Player seller, int index) {
-        if (!seller.isSellingBuffs() || seller.getSellingBuffs().isEmpty()) {
+        if (!seller.isSellingBuffs() || !seller.hasSellingBuffs()) {
             return;
         }
 
@@ -130,14 +105,6 @@ public class SellBuffsManager implements IXmlReader {
         CommunityBoardHandler.separateAndSend(html, player);
     }
 
-    /**
-     * Initiates the buff selling process for the specified player.
-     * <p>
-     * The player is set up to sell buffs, with a private store type and title, and a sell menu is displayed.
-     * </p>
-     * @param player the {@link Player} who wants to start selling buffs
-     * @param title the title of the buff store
-     */
     public void startSellBuffs(Player player, String title) {
         player.sitDown();
         player.setSellingBuffs(true);
@@ -149,10 +116,6 @@ public class SellBuffsManager implements IXmlReader {
         sendSellMenu(player);
     }
 
-    /**
-     * Stops the buff selling process for the specified player and resets the store type.
-     * @param player the {@link Player} who wants to stop selling buffs
-     */
     public void stopSellBuffs(Player player) {
         player.setSellingBuffs(false);
         player.setPrivateStoreType(PrivateStoreType.NONE);
@@ -161,12 +124,6 @@ public class SellBuffsManager implements IXmlReader {
         sendSellMenu(player);
     }
 
-    /**
-     * Builds an HTML-formatted menu listing available buffs from the specified seller.
-     * @param seller the {@link Player} selling the buffs
-     * @param index the starting index for paginated buff options
-     * @return a string of HTML representing the buff menu
-     */
     private String buildBuffMenu(Player seller, int index) {
         final int ceiling = 10;
         int nextIndex = -1;
@@ -201,20 +158,27 @@ public class SellBuffsManager implements IXmlReader {
         sb.append("<tr><td><br><br><br></td></tr>");
         sb.append("<tr>");
         sb.append("<td fixwidth=\"20\"></td>");
+        sb.append("<td> <button action=\"\" value=\"Icon\" width=75 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Name\" width=155 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Level\" width=85 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"MP Cost\" width=100 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Price\" width=140 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Player\" width=90 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
         sb.append(
-                "<td> <button action=\"\" value=\"Icon\" width=75 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Icon
-        sb.append(
-                "<td> <button action=\"\" value=\"Name\" width=155 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Name
-        sb.append(
-                "<td> <button action=\"\" value=\"Level\" width=85 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Leve
-        sb.append(
-                "<td> <button action=\"\" value=\"MP Cost\" width=100 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Price
-        sb.append(
-                "<td> <button action=\"\" value=\"Price\" width=140 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Price
-        sb.append(
-                "<td> <button action=\"\" value=\"Player\" width=90 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Player
-        sb.append(
-                "<td> <button action=\"\" value=\"Pet\" width=90 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Pet
+                "<td> <button action=\"\" value=\"Pet\" width=90 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                        + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
         sb.append("<td fixwidth=\"20\"></td>");
         sb.append("<tr><td><br></td></tr>");
         sb.append("</tr>");
@@ -245,10 +209,11 @@ public class SellBuffsManager implements IXmlReader {
             sb.append("<td align=center fixwidth=\"50\"><button value=\"Buy Buff\" action=\"bypass -h sellbuffbuyskill "
                     + seller.getObjectId() + " " + skill.getId() + " " + index
                     + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
-            sb.append(
-                    "<td align=center fixwidth=\"50\"><button value=\"Buy Buff\" action=\"bypass -h sellbuffbuyskillPet "
-                            + seller.getObjectId() + " " + skill.getId() + " " + index
-                            + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
+            sb.append("<td align=center fixwidth=\"50\"><button value=\"Buy Buff\" action=\"bypass -h"
+                    + " sellbuffbuyskillPet "
+                    + seller.getObjectId() + " " + skill.getId() + " " + index
+                    + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\""
+                    + " fore=\"L2UI_ct1.button_df\"></td>");
             sb.append("</tr>");
             sb.append("<tr><td><br><br></td></tr>");
         }
@@ -287,11 +252,6 @@ public class SellBuffsManager implements IXmlReader {
         return sb.toString();
     }
 
-    /**
-     * Builds an HTML-formatted menu for editing buffs the player has listed for sale.
-     * @param player the {@link Player} editing their buff list
-     * @return a string of HTML representing the edit menu
-     */
     private String buildEditMenu(Player player) {
         final StringBuilder sb = new StringBuilder();
 
@@ -299,24 +259,31 @@ public class SellBuffsManager implements IXmlReader {
         sb.append("<tr><td><br><br><br></td></tr>");
         sb.append("<tr>");
         sb.append("<td fixwidth=\"10\"></td>");
-        sb.append(
-                "<td> <button action=\"\" value=\"Icon\" width=75 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Icon
-        sb.append(
-                "<td> <button action=\"\" value=\"Name\" width=150 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Name
-        sb.append(
-                "<td> <button action=\"\" value=\"Level\" width=75 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Level
-        sb.append(
-                "<td> <button action=\"\" value=\"Old Price\" width=100 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Old price
-        sb.append(
-                "<td> <button action=\"\" value=\"New Price\" width=125 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // New price
-        sb.append(
-                "<td> <button action=\"\" value=\"Action\" width=125 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Change Price
-        sb.append(
-                "<td> <button action=\"\" value=\"Remove\" width=85 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Remove Buff
+        sb.append("<td> <button action=\"\" value=\"Icon\" width=75 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Name\" width=150 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Level\" width=75 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Old Price\" width=100 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
+        sb.append("<td> <button action=\"\" value=\"New Price\" width=125 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
+        sb.append("<td> <button action=\"\" value=\"Action\" width=125 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
+        sb.append("<td> <button action=\"\" value=\"Remove\" width=85 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
         sb.append("<td fixwidth=\"20\"></td>");
         sb.append("</tr>");
 
-        if (player.getSellingBuffs().isEmpty()) {
+        if (!player.hasSellingBuffs()) {
             sb.append("</table>");
             sb.append("<br><br><br>");
             sb.append("You don't have added any buffs yet!");
@@ -329,27 +296,25 @@ public class SellBuffsManager implements IXmlReader {
 
                 sb.append("<tr>");
                 sb.append("<td fixwidth=\"20\"></td>");
-                sb.append("<td align=center><img src=\"" + skill.getIcon()
-                        + "\" width=\"32\" height=\"32\"></td>"); // Icon
+                sb.append("<td align=center><img src=\"" + skill.getIcon() + "\" width=\"32\" height=\"32\"></td>");
                 sb.append("<td align=left>" + skill.getName()
                         + (skill.getLevel() > 100
                                 ? "<font color=\"LEVEL\"> + " + (skill.getLevel() % 100) + "</font></td>"
-                                : "</td>")); // Name + enchant
+                                : "</td>"));
                 sb.append("<td align=center>"
                         + ((skill.getLevel() > 100)
                                 ? SkillData.getInstance().getMaxLevel(skill.getId())
                                 : skill.getLevel())
-                        + "</td>"); // Level
-                sb.append("<td align=center> " + FormatUtil.formatAdena(holder.getPrice()) + " </td>"); // Price show
-                sb.append("<td align=center><edit var=\"price_" + skill.getId()
-                        + "\" width=120 type=\"number\"></td>"); // Price edit
-                sb.append(
-                        "<td align=center><button value=\"Edit\" action=\"bypass -h sellbuffchangeprice "
-                                + skill.getId() + " $price_" + skill.getId()
-                                + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
-                sb.append(
-                        "<td align=center><button value=\" X \" action=\"bypass -h sellbuffremove " + skill.getId()
-                                + "\" width=\"26\" height=\"26\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
+                        + "</td>");
+                sb.append("<td align=center> " + FormatUtil.formatAdena(holder.getPrice()) + " </td>");
+                sb.append("<td align=center><edit var=\"price_" + skill.getId() + "\" width=120 type=\"number\"></td>");
+                sb.append("<td align=center><button value=\"Edit\" action=\"bypass -h sellbuffchangeprice "
+                        + skill.getId() + " $price_" + skill.getId()
+                        + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\""
+                        + " fore=\"L2UI_ct1.button_df\"></td>");
+                sb.append("<td align=center><button value=\" X \" action=\"bypass -h sellbuffremove " + skill.getId()
+                        + "\" width=\"26\" height=\"26\" back=\"L2UI_ct1.button_df\""
+                        + " fore=\"L2UI_ct1.button_df\"></td>");
                 sb.append("</tr>");
                 sb.append("<tr><td><br><br></td></tr>");
             }
@@ -359,12 +324,6 @@ public class SellBuffsManager implements IXmlReader {
         return sb.toString();
     }
 
-    /**
-     * Builds an HTML-formatted menu listing available skills the player can add to their buff sell list.
-     * @param player the {@link Player} adding skills to their sell list
-     * @param index the starting index for paginated skill options
-     * @return a string of HTML representing the skill menu
-     */
     private String buildSkillMenu(Player player, int index) {
         final int ceiling = index + 10;
         int nextIndex = -1;
@@ -395,16 +354,21 @@ public class SellBuffsManager implements IXmlReader {
         sb.append("<tr><td><br><br><br></td></tr>");
         sb.append("<tr>");
         sb.append("<td fixwidth=\"10\"></td>");
-        sb.append(
-                "<td> <button action=\"\" value=\"Icon\" width=100 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Icon
-        sb.append(
-                "<td> <button action=\"\" value=\"Name\" width=175 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Name
-        sb.append(
-                "<td> <button action=\"\" value=\"Level\" width=150 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Leve
-        sb.append(
-                "<td> <button action=\"\" value=\"Price\" width=150 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Price
-        sb.append(
-                "<td> <button action=\"\" value=\"Action\" width=125 height=23 back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>"); // Action
+        sb.append("<td> <button action=\"\" value=\"Icon\" width=100 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Name\" width=175 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Level\" width=150 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Price\" width=150 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\" fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\">"
+                + " </td>");
+        sb.append("<td> <button action=\"\" value=\"Action\" width=125 height=23"
+                + " back=\"L2UI_CT1.OlympiadWnd_DF_Watch_Down\""
+                + " fore=\"L2UI_CT1.OlympiadWnd_DF_Watch\"> </td>");
         sb.append("<td fixwidth=\"20\"></td>");
         sb.append("</tr>");
 
@@ -427,10 +391,11 @@ public class SellBuffsManager implements IXmlReader {
                                 : skill.getLevel())
                         + "</td>");
                 sb.append("<td align=center><edit var=\"price_" + skill.getId() + "\" width=120 type=\"number\"></td>");
-                sb.append(
-                        "<td align=center fixwidth=\"50\"><button value=\"Add Buff\" action=\"bypass -h sellbuffaddskill "
-                                + skill.getId() + " $price_" + skill.getId()
-                                + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
+                sb.append("<td align=center fixwidth=\"50\"><button value=\"Add Buff\" action=\"bypass -h"
+                        + " sellbuffaddskill "
+                        + skill.getId() + " $price_" + skill.getId()
+                        + "\" width=\"85\" height=\"26\" back=\"L2UI_ct1.button_df\""
+                        + " fore=\"L2UI_ct1.button_df\"></td>");
                 sb.append("</tr>");
                 sb.append("<tr><td><br><br></td></tr>");
             }
@@ -454,12 +419,6 @@ public class SellBuffsManager implements IXmlReader {
         return sb.toString();
     }
 
-    /**
-     * Checks if a specific skill is already in the player's buff sell list.
-     * @param player the {@link Player} to check
-     * @param skill the {@link Skill} to verify
-     * @return {@code true} if the skill is in the player's sell list, {@code false} otherwise
-     */
     public boolean isInSellList(Player player, Skill skill) {
         for (SellBuffHolder holder : player.getSellingBuffs()) {
             if (holder.getSkillId() == skill.getId()) {
@@ -470,14 +429,6 @@ public class SellBuffsManager implements IXmlReader {
         return false;
     }
 
-    /**
-     * Determines if the player can start selling buffs based on various conditions.
-     * <p>
-     * Checks for restrictions such as being in an event, in a chaotic state, mounted, or in a restricted zone.
-     * </p>
-     * @param player the {@link Player} attempting to sell buffs
-     * @return {@code true} if the player meets all conditions to start selling buffs, {@code false} otherwise
-     */
     public boolean canStartSellBuffs(Player player) {
         if (player.isAlikeDead()) {
             player.sendMessage("You can't sell buffs in fake death!");

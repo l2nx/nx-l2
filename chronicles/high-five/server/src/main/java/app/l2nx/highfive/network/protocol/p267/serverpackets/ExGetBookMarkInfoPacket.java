@@ -23,10 +23,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.TeleportBookmark;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import java.util.Collection;
 
-/**
- * @author ShanSoft
- */
 public class ExGetBookMarkInfoPacket extends ServerPacket {
     private final Player player;
 
@@ -37,10 +35,11 @@ public class ExGetBookMarkInfoPacket extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.EX_GET_BOOKMARK_INFO.writeId(this, buffer);
-        buffer.writeInt(0); // Dummy
+        buffer.writeInt(0);
         buffer.writeInt(player.getBookmarkSlot());
-        buffer.writeInt(player.getTeleportBookmarks().size());
-        for (TeleportBookmark tpbm : player.getTeleportBookmarks()) {
+        final Collection<TeleportBookmark> bookmarks = player.getTeleportBookmarks();
+        buffer.writeInt(bookmarks.size());
+        for (TeleportBookmark tpbm : bookmarks) {
             buffer.writeInt(tpbm.getId());
             buffer.writeInt(tpbm.getX());
             buffer.writeInt(tpbm.getY());

@@ -94,34 +94,19 @@ import java.util.List;
  * Global calculations.
  */
 public class Formulas {
-    /** Regeneration Task period. */
     private static final int HP_REGENERATE_PERIOD = 3000; // 3 secs
 
-    public static final byte SHIELD_DEFENSE_FAILED = 0; // no shield defense
-    public static final byte SHIELD_DEFENSE_SUCCEED = 1; // normal shield defense
-    public static final byte SHIELD_DEFENSE_PERFECT_BLOCK = 2; // perfect block
+    public static final byte SHIELD_DEFENSE_FAILED = 0;
+    public static final byte SHIELD_DEFENSE_SUCCEED = 1;
+    public static final byte SHIELD_DEFENSE_PERFECT_BLOCK = 2;
 
     private static final byte MELEE_ATTACK_RANGE = 40;
 
-    /**
-     * Return the period between 2 regeneration task (3s for Creature, 5 min for Door).
-     * @param creature
-     * @return
-     */
+    /** 3 s for creatures, 5 min for doors. */
     public static int getRegeneratePeriod(Creature creature) {
         return creature.isDoor() ? HP_REGENERATE_PERIOD * 100 : HP_REGENERATE_PERIOD;
     }
 
-    /**
-     * Return the standard NPC Calculator set containing ACCURACY_COMBAT and EVASION_RATE.<br>
-     * <br>
-     * <b><u>Concept</u>:</b><br>
-     * <br>
-     * A calculator is created to manage and dynamically calculate the effect of a character property (ex : MAX_HP, REGENERATE_HP_RATE...). In fact, each calculator is a table of Func object in which each Func represents a mathematic function :<br>
-     * FuncAtkAccuracy -> Math.sqrt(_player.getDEX())*6+_player.getLevel()<br>
-     * To reduce cache memory use, Npcs who don't have skills share the same Calculator set called <b>NPC_STD_CALCULATOR</b>.<br>
-     * @return
-     */
     public static Calculator[] getStdNPCCalculators() {
         final Calculator[] std = new Calculator[Stat.NUM_STATS];
 
@@ -173,34 +158,21 @@ public class Formulas {
     public static Calculator[] getStdDoorCalculators() {
         final Calculator[] std = new Calculator[Stat.NUM_STATS];
 
-        // Add the FuncAtkAccuracy to the Standard Calculator of ACCURACY_COMBAT.
         std[Stat.ACCURACY_COMBAT.ordinal()] = new Calculator();
         std[Stat.ACCURACY_COMBAT.ordinal()].addFunc(FuncAtkAccuracy.getInstance());
 
-        // Add the FuncAtkEvasion to the Standard Calculator of EVASION_RATE.
         std[Stat.EVASION_RATE.ordinal()] = new Calculator();
         std[Stat.EVASION_RATE.ordinal()].addFunc(FuncAtkEvasion.getInstance());
 
-        // SevenSigns PDEF Modifier
         std[Stat.POWER_DEFENCE.ordinal()] = new Calculator();
         std[Stat.POWER_DEFENCE.ordinal()].addFunc(FuncGatesPDefMod.getInstance());
 
-        // SevenSigns MDEF Modifier
         std[Stat.MAGIC_DEFENCE.ordinal()] = new Calculator();
         std[Stat.MAGIC_DEFENCE.ordinal()].addFunc(FuncGatesMDefMod.getInstance());
 
         return std;
     }
 
-    /**
-     * Add basics Func objects to Player and Summon.<br>
-     * <br>
-     * <b><u>Concept</u>:</b><br>
-     * <br>
-     * A calculator is created to manage and dynamically calculate the effect of a character property (ex : MAX_HP, REGENERATE_HP_RATE...). In fact, each calculator is a table of Func object in which each Func represents a mathematic function :<br>
-     * FuncAtkAccuracy -> Math.sqrt(_player.getDEX())*6+_player.getLevel()
-     * @param creature Player or Summon that must obtain basic Func objects
-     */
     public static void addFuncsToNewCharacter(Creature creature) {
         if (creature.isPlayer()) {
             creature.addStatFunc(FuncMaxHpMul.getInstance());
@@ -248,11 +220,6 @@ public class Formulas {
         }
     }
 
-    /**
-     * Calculate the HP regen rate (base + modifiers).
-     * @param creature
-     * @return
-     */
     public static double calcHpRegen(Creature creature) {
         double init = creature.isPlayer()
                 ? creature.asPlayer().getTemplate().getBaseHpRegen(creature.getLevel())
@@ -268,7 +235,6 @@ public class Formulas {
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
 
-            // SevenSigns Festival modifier
             if (SevenSignsFestival.getInstance().isFestivalInProgress() && player.isFestivalParticipant()) {
                 hpRegenMultiplier *= calcFestivalRegenModifier(player);
             } else {
@@ -325,23 +291,20 @@ public class Formulas {
                 }
             }
 
-            // Mother Tree effect is calculated at last.
             if (player.isInsideZone(ZoneId.MOTHER_TREE)) {
                 final MotherTreeZone zone = ZoneManager.getInstance().getZone(player, MotherTreeZone.class);
                 final int hpBonus = zone == null ? 0 : zone.getHpRegenBonus();
                 hpRegenBonus += hpBonus;
             }
 
-            // Calculate Movement bonus
             if (player.isSitting()) {
-                hpRegenMultiplier *= 1.5; // Sitting
+                hpRegenMultiplier *= 1.5;
             } else if (!player.isMoving()) {
-                hpRegenMultiplier *= 1.1; // Staying
+                hpRegenMultiplier *= 1.1;
             } else if (player.isRunning()) {
-                hpRegenMultiplier *= 0.7; // Running
+                hpRegenMultiplier *= 0.7;
             }
 
-            // Add CON bonus
             init *= creature.getLevelMod() * BaseStat.CON.calcBonus(creature);
         } else if (creature.isPet()) {
             init = creature.asPet().getPetLevelData().getPetRegenHP() * NpcConfig.PET_HP_REGEN_MULTIPLIER;
@@ -351,11 +314,6 @@ public class Formulas {
                 + hpRegenBonus;
     }
 
-    /**
-     * Calculate the MP regen rate (base + modifiers).
-     * @param creature
-     * @return
-     */
     public static double calcMpRegen(Creature creature) {
         double init = creature.isPlayer()
                 ? creature.asPlayer().getTemplate().getBaseMpRegen(creature.getLevel())
@@ -367,12 +325,10 @@ public class Formulas {
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
 
-            // SevenSigns Festival modifier
             if (SevenSignsFestival.getInstance().isFestivalInProgress() && player.isFestivalParticipant()) {
                 mpRegenMultiplier *= calcFestivalRegenModifier(player);
             }
 
-            // Mother Tree effect is calculated at last'
             if (player.isInsideZone(ZoneId.MOTHER_TREE)) {
                 final MotherTreeZone zone = ZoneManager.getInstance().getZone(player, MotherTreeZone.class);
                 final int mpBonus = zone == null ? 0 : zone.getMpRegenBonus();
@@ -426,16 +382,14 @@ public class Formulas {
                 }
             }
 
-            // Calculate Movement bonus
             if (player.isSitting()) {
-                mpRegenMultiplier *= 1.5; // Sitting
+                mpRegenMultiplier *= 1.5;
             } else if (!player.isMoving()) {
-                mpRegenMultiplier *= 1.1; // Staying
+                mpRegenMultiplier *= 1.1;
             } else if (player.isRunning()) {
-                mpRegenMultiplier *= 0.7; // Running
+                mpRegenMultiplier *= 0.7;
             }
 
-            // Add MEN bonus
             init *= creature.getLevelMod() * BaseStat.MEN.calcBonus(creature);
         } else if (creature.isPet()) {
             init = creature.asPet().getPetLevelData().getPetRegenMP() * NpcConfig.PET_MP_REGEN_MULTIPLIER;
@@ -445,23 +399,17 @@ public class Formulas {
                 + mpRegenBonus;
     }
 
-    /**
-     * Calculates the CP regeneration rate (base + modifiers).
-     * @param player the player
-     * @return the CP regeneration rate
-     */
     public static double calcCpRegen(Player player) {
-        // With CON bonus
         final double init = player.asPlayer().getTemplate().getBaseCpRegen(player.getLevel())
                 * player.getLevelMod()
                 * BaseStat.CON.calcBonus(player);
         double cpRegenMultiplier = PlayerConfig.CP_REGEN_MULTIPLIER;
         if (player.isSitting()) {
-            cpRegenMultiplier *= 1.5; // Sitting
+            cpRegenMultiplier *= 1.5;
         } else if (!player.isMoving()) {
-            cpRegenMultiplier *= 1.1; // Staying
+            cpRegenMultiplier *= 1.1;
         } else if (player.isRunning()) {
-            cpRegenMultiplier *= 0.7; // Running
+            cpRegenMultiplier *= 0.7;
         }
 
         return player.calcStat(Stat.REGENERATE_CP_RATE, Math.max(1, init), null, null) * cpRegenMultiplier;
@@ -471,7 +419,6 @@ public class Formulas {
         final int[] festivalInfo = SevenSignsFestival.getInstance().getFestivalForPlayer(player);
         final int festivalId = festivalInfo[1];
 
-        // If the player isn't found in the festival, leave the regen rate as it is.
         if (festivalId < 0) {
             return 0;
         }
@@ -479,14 +426,12 @@ public class Formulas {
         final int oracle = festivalInfo[0];
         int[] festivalCenter;
 
-        // Retrieve the X and Y coords for the center of the festival arena the player is in.
         if (oracle == SevenSigns.CABAL_DAWN) {
             festivalCenter = SevenSignsFestival.FESTIVAL_DAWN_PLAYER_SPAWNS[festivalId];
         } else {
             festivalCenter = SevenSignsFestival.FESTIVAL_DUSK_PLAYER_SPAWNS[festivalId];
         }
 
-        // Check the distance between the player and the player spawn point, in the center of the arena.
         final double distToCenter = player.calculateDistance2D(festivalCenter[0], festivalCenter[1], 0);
 
         return 1.0 - (distToCenter * 0.0005); // Maximum Decreased Regen of ~ -65%;
@@ -515,7 +460,7 @@ public class Formulas {
             return 0;
         }
 
-        return 1.5; // If all is true, then modifier will be 50% more.
+        return 1.5;
     }
 
     public static double calcBlowDamage(Creature attacker, Creature target, Skill skill, byte shld, boolean ss) {
@@ -526,8 +471,7 @@ public class Formulas {
                 defence += target.getShldDef();
                 break;
             }
-            case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-            {
+            case SHIELD_DEFENSE_PERFECT_BLOCK: {
                 return 1;
             }
         }
@@ -540,18 +484,15 @@ public class Formulas {
                 ? 1.2
                 : attacker.isInFrontOf(target)
                         ? 1
-                        : 1.1; // Behind: +20% - Side: +10% (TODO: values are unconfirmed, possibly custom, remove or
-        // update when confirmed);
+                        : 1.1; // TODO: bonus values are unconfirmed and possibly custom; verify against retail.
         final double ssboost = ss ? 1.458 : 1;
         double pvpBonus = 1;
 
         if (isPvP) {
-            // Damage bonuses in PvP fight
             pvpBonus = attacker.calcStat(Stat.PVP_PHYS_SKILL_DMG, 1, null, null);
             pvpBonus *= ClassBalanceConfig.PVP_BLOW_SKILL_DAMAGE_MULTIPLIERS[
                     attacker.asPlayer().getPlayerClass().getId()];
 
-            // Defense bonuses in PvP fight
             defence *= target.calcStat(Stat.PVP_PHYS_SKILL_DEF, 1, null, null);
             defence *= ClassBalanceConfig.PVP_BLOW_SKILL_DEFENCE_MULTIPLIERS[
                     target.asPlayer().getPlayerClass().getId()];
@@ -567,22 +508,18 @@ public class Formulas {
                     target.asPlayer().getPlayerClass().getId()];
         }
 
-        // Initial damage
         final double baseMod = ((77 * (power + (attacker.getPAtk(target) * ssboost))) / defence);
 
-        // Critical
         final double criticalMod = (attacker.calcStat(Stat.CRITICAL_DAMAGE, 1, target, skill));
         final double criticalModPos = (((attacker.calcStat(Stat.CRITICAL_DAMAGE_POS, 1, target, skill) - 1) / 2) + 1);
         final double criticalVulnMod = (target.calcStat(Stat.DEFENCE_CRITICAL_DAMAGE, 1, target, skill));
-        final double criticalAddMod = ((attacker.getStat().calcStat(Stat.CRITICAL_DAMAGE_ADD, 0) * 6.1 * 77) / defence);
+        final double criticalAddMod = ((attacker.calcStat(Stat.CRITICAL_DAMAGE_ADD, 0) * 6.1 * 77) / defence);
         final double criticalAddVuln = target.calcStat(Stat.DEFENCE_CRITICAL_DAMAGE_ADD, 0, target, skill);
 
-        // Trait, elements
         final double weaponTraitMod = calcWeaponTraitBonus(attacker, target);
         final double generalTraitMod = calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false);
         final double attributeMod = calcAttributeBonus(attacker, target, skill);
 
-        // Random weapon damage for physical skills (blow).
         final double weaponMod =
                 PlayerConfig.RANDOMIZE_PHYSICAL_SKILL_DAMAGE ? attacker.getRandomDamageMultiplier() : 1.0;
 
@@ -622,8 +559,7 @@ public class Formulas {
                 defence += target.getShldDef();
                 break;
             }
-            case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-            {
+            case SHIELD_DEFENSE_PERFECT_BLOCK: {
                 return 1;
             }
         }
@@ -631,27 +567,22 @@ public class Formulas {
         final boolean isPvP = attacker.isPlayable() && target.isPlayer();
         final boolean isPvE = attacker.isPlayable() && target.isAttackable();
         double damage = 0;
-        final double proximityBonus =
-                attacker.isBehind(target) ? 1.2 : attacker.isInFrontOf(target) ? 1 : 1.1; // Behind: +20% - Side: +10%
+        final double proximityBonus = attacker.isBehind(target) ? 1.2 : attacker.isInFrontOf(target) ? 1 : 1.1;
         final double ssboost = ss ? 1.458 : 1;
         double pvpBonus = 1;
 
         if (isPvP) {
-            // Damage bonuses in PvP fight
             pvpBonus = attacker.calcStat(Stat.PVP_PHYS_SKILL_DMG, 1, null, null);
             pvpBonus *= ClassBalanceConfig.PVP_PHYSICAL_SKILL_DAMAGE_MULTIPLIERS[
                     attacker.asPlayer().getPlayerClass().getId()];
 
-            // Defense bonuses in PvP fight
             defence *= target.calcStat(Stat.PVP_PHYS_SKILL_DEF, 1, null, null);
             defence *= ClassBalanceConfig.PVP_PHYSICAL_SKILL_DEFENCE_MULTIPLIERS[
                     target.asPlayer().getPlayerClass().getId()];
         }
 
-        // Initial damage
         final double baseMod = ((77 * (skill.getPower(isPvP, isPvE) + attacker.getPAtk(target))) / defence) * ssboost;
 
-        // Critical
         final double criticalMod = (attacker.calcStat(Stat.CRITICAL_DAMAGE, 1, target, skill));
         final double criticalModPos = (((attacker.calcStat(Stat.CRITICAL_DAMAGE_POS, 1, target, skill) - 1) / 2) + 1);
         final double criticalVulnMod = (target.calcStat(Stat.DEFENCE_CRITICAL_DAMAGE, 1, target, skill));
@@ -659,11 +590,9 @@ public class Formulas {
                 ((attacker.calcStat(Stat.CRITICAL_DAMAGE_ADD, 0, target, skill) * 6.1 * 77) / defence);
         final double criticalAddVuln = target.calcStat(Stat.DEFENCE_CRITICAL_DAMAGE_ADD, 0, target, skill);
 
-        // Trait, elements
         final double generalTraitMod = calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false);
         final double attributeMod = calcAttributeBonus(attacker, target, skill);
 
-        // Random weapon damage for physical skills (backstab).
         final double weaponMod =
                 PlayerConfig.RANDOMIZE_PHYSICAL_SKILL_DAMAGE ? attacker.getRandomDamageMultiplier() : 1.0;
 
@@ -694,26 +623,14 @@ public class Formulas {
         return Math.max(damage, 1);
     }
 
-    /**
-     * Calculated damage caused by ATTACK of attacker on target.
-     * @param attacker player or NPC that makes ATTACK
-     * @param target player or NPC, target of ATTACK
-     * @param skill
-     * @param shld
-     * @param crit if the ATTACK have critical success
-     * @param ss if weapon item was charged by soulshot
-     * @return
-     */
     public static double calcPhysDam(
             Creature attacker, Creature target, Skill skill, byte shld, boolean crit, boolean ss) {
         final boolean isPvP = attacker.isPlayable() && target.isPlayable();
         final boolean isPvE = attacker.isPlayable() && target.isAttackable();
-        final double proximityBonus =
-                attacker.isBehind(target) ? 1.2 : attacker.isInFrontOf(target) ? 1 : 1.1; // Behind: +20% - Side: +10%
+        final double proximityBonus = attacker.isBehind(target) ? 1.2 : attacker.isInFrontOf(target) ? 1 : 1.1;
         double damage = attacker.getPAtk(target);
         double defence = target.getPDef(attacker);
 
-        // Defense bonuses in PvP fight
         if (isPvP) {
             defence *= (skill == null)
                     ? target.calcStat(Stat.PVP_PHYSICAL_DEF, 1, null, null)
@@ -729,19 +646,16 @@ public class Formulas {
                 }
                 break;
             }
-            case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-            {
+            case SHIELD_DEFENSE_PERFECT_BLOCK: {
                 return 1;
             }
         }
 
-        // Add soulshot boost.
         final int ssBoost = ss ? 2 : 1;
         damage = (skill != null)
                 ? ((damage * ssBoost) + skill.getPower(attacker, target, isPvP, isPvE))
                 : (damage * ssBoost);
         if (crit) {
-            // H5 Damage Formula
             damage = 2
                     * attacker.calcStat(Stat.CRITICAL_DAMAGE, 1, target, skill)
                     * attacker.calcStat(Stat.CRITICAL_DAMAGE_POS, 1, target, skill)
@@ -773,7 +687,6 @@ public class Formulas {
 
         damage *= calcAttackTraitBonus(attacker, target);
 
-        // Weapon random damage.
         if (((skill == null) && PlayerConfig.RANDOMIZE_AUTO_ATTACK_DAMAGE)
                 || ((skill != null) && PlayerConfig.RANDOMIZE_PHYSICAL_SKILL_DAMAGE)) {
             damage *= attacker.getRandomDamageMultiplier();
@@ -793,7 +706,6 @@ public class Formulas {
             damage = 0;
         }
 
-        // Dmg bonuses in PvP fight
         if (isPvP) {
             if (skill == null) {
                 damage *= attacker.calcStat(Stat.PVP_PHYSICAL_DMG, 1, null, null);
@@ -806,7 +718,6 @@ public class Formulas {
             }
         }
 
-        // Physical skill dmg boost
         if (skill != null) {
             damage = attacker.calcStat(Stat.PHYSICAL_SKILL_POWER, damage, null, null);
         }
@@ -884,7 +795,6 @@ public class Formulas {
         final boolean isPvP = attacker.isPlayable() && target.isPlayable();
         final boolean isPvE = attacker.isPlayable() && target.isAttackable();
 
-        // PvP bonuses for defense
         if (isPvP) {
             if (skill.isMagic()) {
                 mDef *= target.calcStat(Stat.PVP_MAGICAL_DEF, 1, null, null);
@@ -897,13 +807,10 @@ public class Formulas {
             }
         }
 
-        // Bonus Spirit shot
         mAtk *= bss ? 4 : sps ? 2 : 1;
 
-        // MDAM Formula.
         double damage = ((91 * Math.sqrt(mAtk)) / mDef) * skill.getPower(attacker, target, isPvP, isPvE);
 
-        // Failure calculation
         if (PlayerConfig.ALT_GAME_MAGICFAILURES && !calcMagicSuccess(attacker, target, skill)) {
             if (attacker.isPlayer()) {
                 if (calcMagicSuccess(attacker, target, skill) && ((target.getLevel() - attacker.getLevel()) <= 9)) {
@@ -943,12 +850,10 @@ public class Formulas {
             }
         }
 
-        // Weapon random damage.
         if (PlayerConfig.RANDOMIZE_MAGICAL_SKILL_DAMAGE) {
             damage *= attacker.getRandomDamageMultiplier();
         }
 
-        // PvP bonuses for damage
         if (isPvP) {
             final Stat stat;
             if (skill.isMagic()) {
@@ -997,8 +902,7 @@ public class Formulas {
                 mDef += target.getShldDef(); // kamael
                 break;
             }
-            case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-            {
+            case SHIELD_DEFENSE_PERFECT_BLOCK: {
                 return 1;
             }
         }
@@ -1007,10 +911,8 @@ public class Formulas {
         final boolean isPvP = target.isPlayable();
         final boolean isPvE = target.isAttackable();
 
-        // Cubics MDAM Formula (similar to PDAM formula, but using 91 instead of 70, also resisted by mDef).
         double damage = 91 * ((mAtk + skill.getPower(isPvP, isPvE)) / mDef);
 
-        // Failure calculation
         final Player owner = attacker.getOwner();
         if (PlayerConfig.ALT_GAME_MAGICFAILURES && !calcMagicSuccess(owner, target, skill)) {
             if (calcMagicSuccess(owner, target, skill) && ((target.getLevel() - skill.getMagicLevel()) <= 9)) {
@@ -1071,20 +973,13 @@ public class Formulas {
         return calcCrit(attacker, target, null);
     }
 
-    /**
-     * Returns true in case of critical hit
-     * @param attacker
-     * @param target
-     * @param skill
-     * @return
-     */
     public static boolean calcCrit(Creature attacker, Creature target, Skill skill) {
         double rate;
         if (skill != null) {
             rate = skill.getBaseCritRate() * 10 * BaseStat.STR.calcBonus(attacker);
         } else {
-            rate = attacker.getStat()
-                    .calcStat(Stat.CRITICAL_RATE_POS, attacker.getStat().getCriticalHit(target, null), target, skill);
+            rate = attacker.calcStat(
+                    Stat.CRITICAL_RATE_POS, attacker.getStat().getCriticalHit(target, null), target, skill);
         }
 
         final boolean isPvP = attacker.isPlayable() && target.isPlayable();
@@ -1092,8 +987,7 @@ public class Formulas {
             if (isPvP) {
                 rate *= ClassBalanceConfig.PVP_PHYSICAL_ATTACK_CRITICAL_CHANCE_MULTIPLIERS[
                         attacker.asPlayer().getPlayerClass().getId()];
-            } else if (attacker.isPlayable() && target.isAttackable()) // isPvE
-            {
+            } else if (attacker.isPlayable() && target.isAttackable()) {
                 rate *= ClassBalanceConfig.PVE_PHYSICAL_ATTACK_CRITICAL_CHANCE_MULTIPLIERS[
                         attacker.asPlayer().getPlayerClass().getId()];
             }
@@ -1101,15 +995,14 @@ public class Formulas {
             if (isPvP) {
                 rate *= ClassBalanceConfig.PVP_PHYSICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[
                         attacker.asPlayer().getPlayerClass().getId()];
-            } else if (attacker.isPlayable() && target.isAttackable()) // isPvE
-            {
+            } else if (attacker.isPlayable() && target.isAttackable()) {
                 rate *= ClassBalanceConfig.PVE_PHYSICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[
                         attacker.asPlayer().getPlayerClass().getId()];
             }
         }
 
-        return (target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE, rate, null, null)
-                        + target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE_ADD, 0, null, null))
+        return (target.calcStat(Stat.DEFENCE_CRITICAL_RATE, rate, null, null)
+                        + target.calcStat(Stat.DEFENCE_CRITICAL_RATE_ADD, 0, null, null))
                 > ClockBridge.random().nextInt(1000);
     }
 
@@ -1117,11 +1010,6 @@ public class Formulas {
         return mRate > ClockBridge.random().nextInt(1000);
     }
 
-    /**
-     * @param target
-     * @param dmg
-     * @return true in case when ATTACK is canceled due to hit
-     */
     public static boolean calcAtkBreak(Creature target, double dmg) {
         if (target.isChanneling()) {
             return false;
@@ -1141,34 +1029,19 @@ public class Formulas {
         }
 
         if (target.isRaid() || target.isInvul() || (init <= 0)) {
-            return false; // No attack break
+            return false;
         }
 
-        // Chance of break is higher with higher dmg.
         init += Math.sqrt(13 * dmg);
-
-        // Chance is affected by target MEN.
         init -= ((BaseStat.MEN.calcBonus(target) * 100) - 100);
-
-        // Calculate all modifiers for ATTACK_CANCEL.
         double rate = target.calcStat(Stat.ATTACK_CANCEL, init, null, null);
-
-        // Adjust the rate to be between 1 and 99.
         rate = Math.clamp(rate, 1, 99);
 
         return ClockBridge.random().nextInt(100) < rate;
     }
 
-    /**
-     * Calculate delay (in milliseconds) before next ATTACK
-     * @param attacker
-     * @param target
-     * @param rate
-     * @return
-     */
     public static int calcPAtkSpd(Creature attacker, Creature target, double rate) {
-        // Measured Oct 2006 by Tank6585, formula by Sami.
-        // attack speed 312 equals 1500 ms delay... (or 300 + 40 ms delay?)
+        // Attack speed 312 equals about 1500 ms delay.
         if (rate < 2) {
             return 2700;
         }
@@ -1176,13 +1049,6 @@ public class Formulas {
         return (int) (470000 / rate);
     }
 
-    /**
-     * Calculate delay (in milliseconds) for skills cast
-     * @param attacker
-     * @param skill
-     * @param skillTime
-     * @return
-     */
     public static int calcAtkSpd(Creature attacker, Skill skill, double skillTime) {
         if (skill.isMagic()) {
             return (int) ((skillTime / attacker.getMAtkSpd()) * 333);
@@ -1191,16 +1057,9 @@ public class Formulas {
         return (int) ((skillTime / attacker.getPAtkSpd()) * 300);
     }
 
-    /**
-     * Formula based on http://l2p.l2wh.com/nonskillattacks.html
-     * @param attacker
-     * @param target
-     * @return {@code true} if hit missed (target evaded), {@code false} otherwise.
-     */
     public static boolean calcHitMiss(Creature attacker, Creature target) {
         int chance = (80 + (2 * (attacker.getAccuracy() - target.getEvasionRate(attacker)))) * 10;
 
-        // Get additional bonus from the conditions when you are attacking.
         chance *= HitConditionBonusData.getInstance().getConditionBonus(attacker, target);
 
         chance = Math.max(chance, 200);
@@ -1209,17 +1068,6 @@ public class Formulas {
         return chance < ClockBridge.random().nextInt(1000);
     }
 
-    /**
-     * Returns:<br>
-     * 0 = shield defense doesn't succeed<br>
-     * 1 = shield defense succeed<br>
-     * 2 = perfect block
-     * @param attacker
-     * @param target
-     * @param skill
-     * @param sendSysMsg
-     * @return
-     */
     public static byte calcShldUse(Creature attacker, Creature target, Skill skill, boolean sendSysMsg) {
         if ((skill != null) && skill.ignoreShield()) {
             return 0;
@@ -1286,7 +1134,6 @@ public class Formulas {
     }
 
     public static boolean calcMagicAffected(Creature actor, Creature target, Skill skill) {
-        // TODO: CHECK/FIX THIS FORMULA UP!!
         double defence = 0;
         if (skill.isActive() && skill.hasNegativeEffect()) {
             defence = target.getMDef(actor, skill);
@@ -1313,15 +1160,7 @@ public class Formulas {
         return skillLevelBonusRateMod * lvlMod;
     }
 
-    /**
-     * Calculates the effect landing success.
-     * @param attacker the attacker
-     * @param target the target
-     * @param skill the skill
-     * @return {@code true} if the effect lands
-     */
     public static boolean calcEffectSuccess(Creature attacker, Creature target, Skill skill) {
-        // StaticObjects can not receive continuous effects.
         if (target.isDoor() || (target instanceof SiegeFlag) || (target instanceof StaticObject)) {
             return false;
         }
@@ -1385,7 +1224,7 @@ public class Formulas {
             final double mAtk = attacker.getMAtk(null, null);
             double val = 0;
             if (attacker.isChargedShot(ShotType.BLESSED_SPIRITSHOTS)) {
-                val = mAtk * 3.0; // 3.0 is the blessed spiritshot multiplier.
+                val = mAtk * 3.0;
             }
 
             val += mAtk;
@@ -1416,12 +1255,10 @@ public class Formulas {
             }
         }
 
-        // Perfect Shield Block.
         if (shld == SHIELD_DEFENSE_PERFECT_BLOCK) {
             return false;
         }
 
-        // If target reflect this skill then the effect will fail.
         if (calcBuffDebuffReflection(target, skill)) {
             return false;
         }
@@ -1431,26 +1268,19 @@ public class Formulas {
             return true;
         }
 
-        // Calculate BaseRate.
         final double baseRate = activateRate > 0 ? activateRate : skill.getPower();
         final double statMod = skill.getBasicProperty().calcBonus(target);
         double rate = (baseRate / statMod);
 
-        // Resist Modifier.
         final double resMod = calcGeneralTraitBonus(attacker.getOwner(), target, skill.getTraitType(), false);
         rate *= resMod;
 
-        // Lvl Bonus Modifier.
         final double lvlBonusMod = calcLvlBonusMod(attacker.getOwner(), target, skill);
         rate *= lvlBonusMod;
 
-        // Element Modifier.
         final double elementMod = calcAttributeBonus(attacker.getOwner(), target, skill);
         rate *= elementMod;
 
-        // Add Matk/Mdef Bonus (TODO: Pending)
-
-        // Check the Rate Limits.
         final double finalRate = Math.clamp(rate, skill.getMinChance(), skill.getMaxChance());
 
         return (ClockBridge.random().nextInt(100) < finalRate);
@@ -1483,7 +1313,6 @@ public class Formulas {
             }
         }
 
-        // General magic resist.
         final double resModifier = target.calcStat(Stat.MAGIC_SUCCESS_RES, 1, null, skill);
         final int rate = 100 - Math.round((float) (lvlModifier * targetModifier * resModifier));
 
@@ -1492,7 +1321,6 @@ public class Formulas {
 
     public static double calcManaDam(
             Creature attacker, Creature target, Skill skill, byte shld, boolean sps, boolean bss, boolean mcrit) {
-        // Formula: (SQR(M.Atk)*Power*(Target Max MP/97))/M.Def
         double mAtk = attacker.getMAtk(target, skill);
         double mDef = target.getMDef(attacker, skill);
         final boolean isPvP = attacker.isPlayable() && target.isPlayable();
@@ -1504,13 +1332,11 @@ public class Formulas {
                 mDef += target.getShldDef();
                 break;
             }
-            case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-            {
+            case SHIELD_DEFENSE_PERFECT_BLOCK: {
                 return 1;
             }
         }
 
-        // Bonus Spiritshot
         mAtk *= bss ? 4 : sps ? 2 : 1;
 
         double damage = (Math.sqrt(mAtk) * skill.getPower(attacker, target, isPvP, isPvE) * (mp / 97)) / mDef;
@@ -1538,7 +1364,6 @@ public class Formulas {
             }
         }
 
-        // Failure calculation
         if (PlayerConfig.ALT_GAME_MAGICFAILURES && !calcMagicSuccess(attacker, target, skill)) {
             if (attacker.isPlayer()) {
                 final SystemMessage sm =
@@ -1606,17 +1431,15 @@ public class Formulas {
     }
 
     public static boolean calcSkillMastery(Creature actor, Skill sk) {
-        // Non players are not affected by Skill Mastery.
         if (!actor.isPlayer()) {
             return false;
         }
 
-        // Static Skills are not affected by Skill Mastery.
         if (sk.isStatic()) {
             return false;
         }
 
-        final int val = (int) actor.getStat().calcStat(Stat.SKILL_MASTERY, 0, null, null);
+        final int val = (int) actor.calcStat(Stat.SKILL_MASTERY, 0, null, null);
         if (val == 0) {
             return false;
         }
@@ -1633,25 +1456,14 @@ public class Formulas {
             }
         }
 
-        chance *= actor.getStat().calcStat(Stat.SKILL_MASTERY_RATE, 1, null, null);
+        chance *= actor.calcStat(Stat.SKILL_MASTERY_RATE, 1, null, null);
         return (ClockBridge.random().nextInt(100)
                 < (chance
                         * ClassBalanceConfig.SKILL_MASTERY_CHANCE_MULTIPLIERS[
                                 actor.asPlayer().getPlayerClass().getId()]));
     }
 
-    /**
-     * Calculates the attribute bonus with the following formula:<br>
-     * diff > 0, so AttBonus = 1,025 + sqrt[(diff^3) / 2] * 0,0001, cannot be above 1,25!<br>
-     * diff < 0, so AttBonus = 0,975 - sqrt[(diff^3) / 2] * 0,0001, cannot be below 0,75!<br>
-     * diff == 0, so AttBonus = 1<br>
-     * It has been tested that physical skills do get affected by attack attribute even<br>
-     * if they don't have any attribute. In that case only the biggest attack attribute is taken.
-     * @param attacker
-     * @param target
-     * @param skill Can be {@code null} if there is no skill used for the attack.
-     * @return The attribute bonus
-     */
+    /** {@code skill} may be null. Skills without an element still use the attacker's biggest attack attribute. */
     public static double calcAttributeBonus(Creature attacker, Creature target, Skill skill) {
         int attackAttribute;
         int defenceAttribute;
@@ -1675,7 +1487,6 @@ public class Formulas {
     }
 
     public static void calcDamageReflected(Creature attacker, Creature target, Skill skill, boolean crit) {
-        // Only melee skills can be reflected.
         if (skill.isMagic() || (skill.getCastRange() > MELEE_ATTACK_RANGE)) {
             return;
         }
@@ -1699,20 +1510,13 @@ public class Formulas {
             counterdmg *= calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false);
             counterdmg *= calcAttributeBonus(attacker, target, skill);
             attacker.reduceCurrentHp(counterdmg, target, skill);
-            if (crit) // TODO: It counters multiple times depending on how much effects skill has not on critical, but
-            // gotta be verified first!
+            if (crit) // TODO: retail may counter once per skill effect on a crit; unverified.
             {
                 attacker.reduceCurrentHp(counterdmg, target, skill);
             }
         }
     }
 
-    /**
-     * Calculate buff/debuff reflection.
-     * @param target
-     * @param skill
-     * @return {@code true} if reflect, {@code false} otherwise.
-     */
     public static boolean calcBuffDebuffReflection(Creature target, Skill skill) {
         if (!skill.isDebuff() || (skill.getActivateRate() == -1)) {
             return false;
@@ -1723,12 +1527,6 @@ public class Formulas {
         return reflectChance > ClockBridge.random().nextInt(100);
     }
 
-    /**
-     * Calculate damage caused by falling
-     * @param creature
-     * @param fallHeight
-     * @return damage
-     */
     public static double calcFallDam(Creature creature, int fallHeight) {
         if (!GeneralConfig.ENABLE_FALLING_DAMAGE || (fallHeight < 0)) {
             return 0;
@@ -1742,7 +1540,7 @@ public class Formulas {
 
         final double blowChance = skill.getBlowChance();
 
-        // Apply Position Bonus (TODO: values are unconfirmed, possibly custom, remove or update when confirmed).
+        // TODO: position bonus values are unconfirmed and possibly custom; verify against retail.
         final double sideMod = (creature.isInFrontOf(target)) ? 1 : (creature.isBehind(target)) ? 2 : 1.5;
 
         final double baseRate = blowChance * dexMod * sideMod;
@@ -1816,18 +1614,15 @@ public class Formulas {
     public static int calcEffectAbnormalTime(Creature caster, Creature target, Skill skill) {
         int time = skill.isPassive() || skill.isToggle() ? -1 : skill.getAbnormalTime();
 
-        // An herb buff will affect both master and servitor, but the buff duration will be half of the normal duration.
-        // If a servitor is not summoned, the master will receive the full buff duration.
+        // Herb buffs hit master and servitor; the servitor gets half the duration.
         if ((target != null) && target.isServitor() && skill.isAbnormalInstant()) {
             time /= 2;
         }
 
-        // If the skill is a mastery skill, the effect will last twice the default time.
         if (calcSkillMastery(caster, skill)) {
             time *= 2;
         }
 
-        // Debuffs Duration Affected by Resistances.
         if ((caster != null)
                 && (target != null)
                 && skill.isDebuff()
@@ -1844,24 +1639,6 @@ public class Formulas {
         return time;
     }
 
-    /**
-     * Calculate Probability in following effects:<br>
-     * TargetCancel,<br>
-     * TargetMeProbability,<br>
-     * SkillTurning,<br>
-     * Betray,<br>
-     * Bluff,<br>
-     * DeleteHate,<br>
-     * RandomizeHate,<br>
-     * DeleteHateOfMe,<br>
-     * TransferHate,<br>
-     * Confuse
-     * @param baseChance chance from effect parameter
-     * @param attacker
-     * @param target
-     * @param skill
-     * @return chance for effect to succeed
-     */
     public static boolean calcProbability(double baseChance, Creature attacker, Creature target, Skill skill) {
         return ClockBridge.random().nextInt(100)
                 < ((((((skill.getMagicLevel() + baseChance) - target.getLevel()) + 30) - target.getINT())
@@ -1869,29 +1646,15 @@ public class Formulas {
                         * calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false));
     }
 
-    /**
-     * Calculates karma lost upon death.
-     * @param player
-     * @param finalExp
-     * @return the amount of karma player has lost.
-     */
     public static int calculateKarmaLost(Player player, long finalExp) {
         final double karmaLossMod = KarmaLossData.getInstance().getModifier(player.getLevel());
-        if (finalExp > 0) // Received experience.
-        {
+        if (finalExp > 0) {
             return (int) ((Math.abs(finalExp / RatesConfig.RATE_KARMA_LOST) / karmaLossMod) / 30);
         }
 
         return (int) ((Math.abs(finalExp) / karmaLossMod) / 30);
     }
 
-    /**
-     * Calculates karma gain upon playable kill.</br>
-     * Updated to High Five on 10.09.2014 by Zealar tested in retail.
-     * @param pkCount
-     * @param isSummon
-     * @return karma points that will be added to the player.
-     */
     public static int calculateKarmaGain(int pkCount, boolean isSummon) {
         int result = 43200;
         if (isSummon) {
@@ -1946,7 +1709,7 @@ public class Formulas {
 
     public static double calcWeaponTraitBonus(Creature attacker, Creature target) {
         final TraitType type = attacker.getAttackType().getTraitType();
-        final double result = target.getStat().getDefenceTraits()[type.ordinal()] - 1.0;
+        final double result = target.getStat().getDefenceTrait(type) - 1.0;
         return 1.0 - result;
     }
 

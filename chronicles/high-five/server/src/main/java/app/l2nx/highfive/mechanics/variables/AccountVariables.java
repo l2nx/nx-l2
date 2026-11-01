@@ -26,14 +26,11 @@
  */
 package app.l2nx.highfive.mechanics.variables;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.managers.AccountVariablesManager;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
@@ -41,19 +38,17 @@ import org.springframework.dao.DataAccessException;
  * @author UnAfraid, Mobius
  */
 @Slf4j
+@SingleWriter
 public class AccountVariables extends AbstractVariables {
 
-    // Asynchronous persistence.
     private static final long SAVE_INTERVAL = 60000; // 1 minute.
     private static final boolean ASYNC_SAVE_ENABLED = true;
 
-    // Public variables.
     public static final String HWID = "HWID";
     public static final String HWIDSLIT_VAR = "	";
 
-    // Private variables.
-    private final AtomicBoolean scheduledSave = new AtomicBoolean(false);
     private final UUID accountId;
+    private boolean saveScheduled;
 
     public AccountVariables(UUID accountId) {
         this.accountId = accountId;
@@ -61,9 +56,7 @@ public class AccountVariables extends AbstractVariables {
     }
 
     public boolean restoreMe() {
-        clearChangeTracking();
-
-        // Restore previous variables.
+        WorldPartition.checkOwner();
         try {
             AccountVariablesManager.getInstance()
                     .findVariables(accountId)
@@ -72,26 +65,24 @@ public class AccountVariables extends AbstractVariables {
             log.warn("Could not restore variables for: {}", accountId, e);
             return false;
         } finally {
-            compareAndSetChanges(true, false);
+            markSaved();
         }
 
         return true;
     }
 
     public boolean storeMe() {
-        // No changes, nothing to store.
+        WorldPartition.checkOwner();
         if (!hasChanges()) {
             return false;
         }
 
-        // If async saving is enabled and not already scheduled, schedule a save.
-        if (ASYNC_SAVE_ENABLED && !scheduledSave.get()) {
-            scheduledSave.set(true);
-
+        if (ASYNC_SAVE_ENABLED && !saveScheduled) {
+            saveScheduled = true;
             WorldPartition.loop()
                     .schedule(
                             () -> {
-                                scheduledSave.set(false);
+                                saveScheduled = false;
                                 saveNow();
                             },
                             SAVE_INTERVAL,
@@ -102,72 +93,33 @@ public class AccountVariables extends AbstractVariables {
         return saveNow();
     }
 
-    /**
-     * Force an immediate save of the variables.
-     * @return true if successful, false otherwise.
-     */
     public boolean saveNow() {
+        WorldPartition.checkOwner();
         if (!hasChanges()) {
             return false;
         }
 
-        return saveNowSync();
-    }
-
-    /**
-     * Synchronous implementation of variable saving with optimized database operations.
-     * @return true if successful, false otherwise.
-     */
-    private boolean saveNowSync() {
-        saveLock.lock();
-
         try {
-            final Map<String, String> changed = new HashMap<>();
-            for (String name : added) {
-                putValue(changed, name);
-            }
-
-            for (String name : modified) {
-                putValue(changed, name);
-            }
-
-            AccountVariablesManager.getInstance().saveVariables(accountId, new HashSet<>(deleted), changed);
-
-            // Clear tracking after successful save.
-            clearChangeTracking();
-            compareAndSetChanges(true, false);
+            AccountVariablesManager.getInstance().saveVariables(accountId, deletedNames(), changedValues());
+            markSaved();
             return true;
         } catch (DataAccessException e) {
             log.warn("Could not update variables for: {}", accountId, e);
             return false;
-        } finally {
-            saveLock.unlock();
-        }
-    }
-
-    private void putValue(Map<String, String> changed, String name) {
-        final Object value = getSet().get(name);
-        if (value != null) {
-            changed.put(name, String.valueOf(value));
         }
     }
 
     public boolean deleteMe() {
-        saveLock.lock();
-
+        WorldPartition.checkOwner();
         try {
             AccountVariablesManager.getInstance().deleteVariables(accountId);
         } catch (DataAccessException e) {
             log.warn("Could not delete variables for: {}", accountId, e);
-            saveLock.unlock();
             return false;
         }
 
-        // Clear all variables.
-        getSet().clear();
+        clearValues();
         clearChangeTracking();
-
-        saveLock.unlock();
         return true;
     }
 }

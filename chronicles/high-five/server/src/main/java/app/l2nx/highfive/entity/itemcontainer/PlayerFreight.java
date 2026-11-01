@@ -76,8 +76,7 @@ public class PlayerFreight extends ItemContainer {
         return (liveItems().size() + slots)
                 <= (owner == null
                         ? PlayerConfig.ALT_FREIGHT_SLOTS
-                        : PlayerConfig.ALT_FREIGHT_SLOTS
-                                + (int) owner.getStat().calcStat(Stat.FREIGHT_LIM, 0, null, null));
+                        : PlayerConfig.ALT_FREIGHT_SLOTS + (int) owner.calcStat(Stat.FREIGHT_LIM, 0, null, null));
     }
 
     @Override

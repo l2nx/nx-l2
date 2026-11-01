@@ -46,17 +46,16 @@ import java.util.LinkedHashSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-// Has an owner like a pet but otherwise acts like a mob; feeding extends its duration.
 @SingleWriter
 public class TamedBeast extends FeedableBeast {
     private int foodType;
 
     private static final int MAX_DISTANCE_FROM_HOME = 30000;
     private static final int MAX_DISTANCE_FROM_OWNER = 2000;
-    private static final int MAX_DURATION = 1200000; // 20 minutes
-    private static final int DURATION_CHECK_INTERVAL = 60000; // 1 minute
-    private static final int DURATION_INCREASE_INTERVAL = 20000; // 20 secs (gained upon feeding)
-    private static final int BUFF_INTERVAL = 5000; // 5 seconds
+    private static final int MAX_DURATION = 1200000;
+    private static final int DURATION_CHECK_INTERVAL = 60000;
+    private static final int DURATION_INCREASE_INTERVAL = 20000;
+    private static final int BUFF_INTERVAL = 5000;
 
     private int remainingTime = MAX_DURATION;
 
@@ -188,8 +187,8 @@ public class TamedBeast extends FeedableBeast {
             durationCheckTask.cancel(true);
         }
 
-        if ((owner != null) && (owner.getTrainedBeasts() != null)) {
-            owner.getTrainedBeasts().remove(this);
+        if (owner != null) {
+            owner.removeTrainedBeast(this);
         }
 
         buffTask = null;
@@ -298,8 +297,8 @@ public class TamedBeast extends FeedableBeast {
         durationCheckTask.cancel(true);
         stopHpMpRegeneration();
 
-        if ((owner != null) && (owner.getTrainedBeasts() != null)) {
-            owner.getTrainedBeasts().remove(this);
+        if (owner != null) {
+            owner.removeTrainedBeast(this);
         }
 
         setTarget(null);

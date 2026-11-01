@@ -227,13 +227,13 @@ public abstract class Vehicle extends Creature {
     @Override
     public VehicleStat getStat() {
         WorldPartition.checkOwner();
-        return (VehicleStat) super.getStat();
+        return (VehicleStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new VehicleStat(this));
+        setStat(new VehicleStat(this, statAccess()));
     }
 
     public boolean isInDock() {

@@ -22,37 +22,35 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.instance.ClanHallManager;
 import app.l2nx.highfive.entity.actor.instance.Folk;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class FolkStatus extends NpcStatus {
     public FolkStatus(Npc activeChar) {
         super(activeChar);
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
-    }
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {}
 
     @Override
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {}
-
-    @Override
-    public void reduceMp(double value) {
-        // If Clan Hall buff are free and it's a Clan Hall Manager MP won't get reduced.
-        if (FeatureConfig.CH_BUFF_FREE && (getActiveChar() instanceof ClanHallManager)) {
+    protected void doReduceMp(double value) {
+        if (FeatureConfig.CH_BUFF_FREE && (creature() instanceof ClanHallManager)) {
             return;
         }
 
-        super.reduceMp(value);
+        super.doReduceMp(value);
     }
 
     @Override
     public Folk getActiveChar() {
-        return (Folk) super.getActiveChar();
+        WorldPartition.checkOwner();
+        return (Folk) creature();
     }
 }

@@ -22,26 +22,36 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.instance.Door;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class DoorStat extends CreatureStat {
-    @Getter
-    @Setter
     private int upgradeHpRatio = 1;
 
-    public DoorStat(Door activeChar) {
-        super(activeChar);
+    public DoorStat(Door activeChar, CreatureAccess access) {
+        super(activeChar, access);
+    }
+
+    public int getUpgradeHpRatio() {
+        WorldPartition.checkOwner();
+        return upgradeHpRatio;
+    }
+
+    public void setUpgradeHpRatio(int value) {
+        WorldPartition.checkOwner();
+        upgradeHpRatio = value;
     }
 
     @Override
     public Door getActiveChar() {
-        return super.getActiveChar().asDoor();
+        WorldPartition.checkOwner();
+        return (Door) creature();
     }
 
     @Override
-    public int getMaxHp() {
-        return super.getMaxHp() * upgradeHpRatio;
+    protected int maxHp() {
+        return super.maxHp() * upgradeHpRatio;
     }
 }

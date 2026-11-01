@@ -98,12 +98,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SingleWriter
 public class Attackable extends Npc {
-    // Raid
     private boolean raid = false;
 
     private boolean raidMinion = false;
 
-    //
     private boolean champion = false;
 
     // Insertion order makes hate ties and random picks over the list replay the same; identity order changes per run.
@@ -114,7 +112,6 @@ public class Attackable extends Npc {
 
     private boolean seeThroughSilentMove = false;
 
-    // Manor
     private boolean seeded = false;
 
     private Seed seed = null;
@@ -123,41 +120,32 @@ public class Attackable extends Npc {
 
     private ItemHolder harvestItem;
 
-    // Spoil
     private int spoilerObjectId;
 
     private Collection<ItemHolder> sweepItems;
 
-    // Over-hit
     private boolean overhit;
 
     private double overhitDamage;
 
     private Creature overhitAttacker;
 
-    // Command channel
     private CommandChannel firstCommandChannelAttacked = null;
 
     private CommandChannelTimer commandChannelTimer = null;
 
     private long commandChannelLastAttack = 0;
 
-    // Soul crystal
     private boolean absorbed;
 
     private final Int2ObjectOpenHashMap<AbsorberInfo> absorbersList = new Int2ObjectOpenHashMap<>();
 
-    // Misc
     private boolean mustGiveExpSp;
 
     private long spawnTime = ClockBridge.gameMillis();
 
-    protected int onKillDelay = 2500; // L2J uses 5000
+    protected int onKillDelay = 2500;
 
-    /**
-     * Creates an attackable NPC.
-     * @param template the attackable NPC template
-     */
     public Attackable(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.Attackable);
@@ -183,9 +171,7 @@ public class Attackable extends Npc {
         return champion;
     }
 
-    /**
-     * @return a read-only copy of the aggro list; its entries are the live {@link AggroInfo} objects
-     */
+    /** A read-only copy of the aggro list; its entries are the live {@link AggroInfo} objects. */
     public Map<Creature, AggroInfo> getAggroList() {
         WorldPartition.checkOwner();
         return Object2ObjectMaps.unmodifiable(new Object2ObjectLinkedOpenHashMap<>(aggroList));
@@ -324,7 +310,7 @@ public class Attackable extends Npc {
     @Override
     public AttackableStatus getStatus() {
         WorldPartition.checkOwner();
-        return (AttackableStatus) super.getStatus();
+        return (AttackableStatus) uncheckedStatus();
     }
 
     @Override
@@ -348,10 +334,6 @@ public class Attackable extends Npc {
         return seeThroughSilentMove;
     }
 
-    /**
-     * Use the skill if minimum checks are pass.
-     * @param skill the skill
-     */
     public void useMagic(Skill skill) {
         WorldPartition.checkOwner();
         if ((skill == null) || isAlikeDead() || skill.isPassive() || isCastingNow() || isSkillDisabled(skill)) {
@@ -379,25 +361,12 @@ public class Attackable extends Npc {
         }
     }
 
-    /**
-     * Reduce the current HP of the Attackable.
-     * @param damage The HP decrease value
-     * @param attacker The Creature who attacks
-     */
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, Skill skill) {
         WorldPartition.checkOwner();
         reduceCurrentHp(damage, attacker, true, false, skill);
     }
 
-    /**
-     * Reduce the current HP of the Attackable, update its aggroList and launch the doDie Task if necessary.
-     * @param damage The HP decrease value
-     * @param attacker The Creature who attacks
-     * @param awake The awake state (If True : stop sleeping)
-     * @param isDOT
-     * @param skill
-     */
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
         WorldPartition.checkOwner();
@@ -407,8 +376,7 @@ public class Attackable extends Npc {
                 && (attacker.getParty() != null)
                 && attacker.getParty().isInCommandChannel()
                 && attacker.getParty().getCommandChannel().meetRaidWarCondition(this)) {
-            if (firstCommandChannelAttacked == null) // looting right isn't set
-            {
+            if (firstCommandChannelAttacked == null) {
                 firstCommandChannelAttacked = attacker.getParty().getCommandChannel();
                 if (firstCommandChannelAttacked != null) {
                     commandChannelTimer = new CommandChannelTimer(this);
@@ -417,20 +385,15 @@ public class Attackable extends Npc {
                     firstCommandChannelAttacked.broadcastPacket(new CreatureSay(
                             null, ChatType.PARTYROOM_ALL, "", "You have looting rights!")); // TODO: retail msg
                 }
-            } else if (attacker.getParty()
-                    .getCommandChannel()
-                    .equals(firstCommandChannelAttacked)) // is in same channel
-            {
-                commandChannelLastAttack = ClockBridge.gameMillis(); // update last attack time
+            } else if (attacker.getParty().getCommandChannel().equals(firstCommandChannelAttacked)) {
+                commandChannelLastAttack = ClockBridge.gameMillis();
             }
         }
 
-        // Add damage and hate to the attacker AggroInfo of the Attackable aggroList.
         if (attacker != null) {
             addDamage(attacker, (int) damage, skill);
         }
 
-        // If this Attackable is a Monster and it has spawned minions, call its minions to battle.
         if (isMonster()) {
             Monster master = asMonster();
 
@@ -444,7 +407,6 @@ public class Attackable extends Npc {
             }
         }
 
-        // Reduce the current HP of the Attackable and launch the doDie Task if necessary.
         super.reduceCurrentHp(damage, attacker, awake, isDOT, skill);
     }
 
@@ -458,19 +420,9 @@ public class Attackable extends Npc {
         return mustGiveExpSp && !isFakePlayer();
     }
 
-    /**
-     * Kill the Attackable (the corpse disappeared after 7 seconds), distribute rewards (EXP, SP, Drops...) and notify Quest Engine.<br>
-     * Actions:<br>
-     * Distribute Exp and SP rewards to Player (including Summon owner) that hit the Attackable and to their Party members<br>
-     * Notify the Quest Engine of the Attackable death if necessary.<br>
-     * Kill the Npc (the corpse disappeared after 7 seconds)<br>
-     * Caution: This method DOESN'T GIVE rewards to Pet.
-     * @param killer The Creature that has killed the Attackable
-     */
     @Override
     public boolean doDie(Creature killer) {
         WorldPartition.checkOwner();
-        // Kill the Npc (the corpse disappeared after 7 seconds).
         if (!super.doDie(killer)) {
             return false;
         }
@@ -479,7 +431,6 @@ public class Attackable extends Npc {
             WorldPartition.loop().defer(() -> notifyKill(killer));
         }
 
-        // Notify to minions if there are.
         if (isMonster()) {
             final Monster mob = asMonster();
             final Monster leader = mob.getLeader();
@@ -554,14 +505,6 @@ public class Attackable extends Npc {
         WorldPartition.loop().defer(() -> distributeRewards(death));
     }
 
-    /**
-     * Distribute Exp and SP rewards to Player (including Summon owner) that hit the Attackable and to their Party members.<br>
-     * Actions:<br>
-     * Get the Player owner of the Servitor (if necessary) and Party in progress.<br>
-     * Calculate the Experience and SP rewards in function of the level difference.<br>
-     * Add Exp and SP rewards to Player (including Summon penalty) and to Party members in the known area of the last attacker.<br>
-     * Caution : This method DOESN'T GIVE rewards to Pet.
-     */
     private void distributeRewards(DeathRewards death) {
         final Creature lastAttacker = death.lastAttacker();
 
@@ -572,18 +515,14 @@ public class Attackable extends Npc {
         long totalDamage = 0;
 
         for (Map.Entry<Creature, Long> dealt : death.damage().entrySet()) {
-            // Get the Creature corresponding to this attacker.
             final Player attacker = dealt.getKey().asPlayer();
             if (attacker == null) {
                 continue;
             }
 
-            // Get damages done by this attacker.
             final long damage = dealt.getValue();
 
-            // Prevent unwanted behavior
             if (damage > 1) {
-                // Check if damage dealer isn't too far from this (killed monster).
                 if (calculateDistance3D(attacker) > PlayerConfig.ALT_PARTY_RANGE) {
                     continue;
                 }
@@ -642,7 +581,6 @@ public class Attackable extends Npc {
         damagingParties.sort(Comparator.comparingLong(c -> -c.damage));
         mostDamageParty = !damagingParties.isEmpty() ? damagingParties.get(0) : null;
 
-        // Manage Base, Quests and Sweep drops of the Attackable
         if ((mostDamageParty != null) && (mostDamageParty.damage > maxDamage)) {
             Player leader = mostDamageParty.party.getLeader();
             doItemDrop(leader);
@@ -841,22 +779,14 @@ public class Attackable extends Npc {
         return damageDealer;
     }
 
-    /**
-     * Add damage and hate to the attacker AggroInfo of the Attackable aggroList.
-     * @param attacker The Creature that gave damages to this Attackable
-     * @param damage The number of damages given by the attacker Creature
-     * @param skill
-     */
     public void addDamage(Creature attacker, int damage, Skill skill) {
         WorldPartition.checkOwner();
         if (attacker == null) {
             return;
         }
 
-        // Notify the Attackable AI with ATTACKED.
         if (!isDead()) {
             try {
-                // If monster is on walk - stop it.
                 if (isWalker()
                         && !isCoreAIDisabled()
                         && WalkingManager.getInstance().isOnWalk(this)) {
@@ -865,7 +795,6 @@ public class Attackable extends Npc {
 
                 getAI().notifyActionAttacked(attacker);
 
-                // Calculate the amount of hate this attackable receives from this attack.
                 final long hateValue = (long) ((((long) damage * 100) / (getLevel() + 7)) * getHateRatio(attacker));
                 addDamageHate(attacker, damage, (int) hateValue);
 
@@ -889,12 +818,7 @@ public class Attackable extends Npc {
         }
     }
 
-    /**
-     * Calculates the hate multiplier declared by the AI parameters SetHateGroup, SetHateOccupation and SetHateRace,<br>
-     * which increase the hate received from players of a matching class category, class or race.
-     * @param attacker the creature generating hate
-     * @return the hate multiplier for this attacker
-     */
+    /** Hate multiplier from the AI parameters SetHateGroup, SetHateOccupation and SetHateRace. */
     public double getHateRatio(Creature attacker) {
         WorldPartition.checkOwner();
         if (!attacker.isPlayer()) {
@@ -924,30 +848,20 @@ public class Attackable extends Npc {
         return 1 + (ratio / 100.0);
     }
 
-    /**
-     * Adds damage and hate to the attacker aggression list for this character.
-     * @param attacker The Creature that gave damages to this Attackable
-     * @param damage The number of damages given by the attacker Creature
-     * @param aggroValue The hate (=damage) given by the attacker Creature
-     */
     public void addDamageHate(Creature attacker, long damage, long aggroValue) {
         WorldPartition.checkOwner();
         if ((attacker == null) || (attacker == this)) {
             return;
         }
 
-        // Check if fake players should aggro each other.
         if (isFakePlayer() && !FakePlayersConfig.FAKE_PLAYER_AGGRO_FPC && attacker.isFakePlayer()) {
             return;
         }
 
-        // Get the AggroInfo of the attacker Creature from the aggroList of the Attackable.
         final AggroInfo ai = aggroList.computeIfAbsent(attacker, AggroInfo::new);
         ai.addDamage(damage);
 
-        // Traps does not cause aggro
-        // Making this hack because not possible to determine if damage made by trap.
-        // So just check for triggered trap here.
+        // Trap damage cannot be told apart, so a triggered trap's hate is skipped.
         long aggro = aggroValue;
         final Player targetPlayer = attacker.asPlayer();
         if ((targetPlayer == null)
@@ -959,12 +873,10 @@ public class Attackable extends Npc {
         if ((targetPlayer != null) && (aggro == 0)) {
             addDamageHate(attacker, 0, 1);
 
-            // Set the intention to the Attackable to ACTIVE.
             if (getAI().getIntention() == Intention.IDLE) {
                 getAI().setIntentionActive();
             }
 
-            // Notify to scripts
             if (EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_AGGRO_RANGE_ENTER, this)) {
                 EventDispatcher.getInstance()
                         .notifyEventAsync(
@@ -980,7 +892,6 @@ public class Attackable extends Npc {
             ai.addHate(1);
         }
 
-        // Set the intention to the Attackable to ACTIVE.
         if ((aggro != 0) && (getAI().getIntention() == Intention.IDLE)) {
             getAI().setIntentionActive();
         }
@@ -996,11 +907,9 @@ public class Attackable extends Npc {
             return;
         }
 
-        if (target == null) // whole aggrolist
-        {
+        if (target == null) {
             final Creature mostHated = getMostHated();
-            if (mostHated == null) // makes target passive for a moment more
-            {
+            if (mostHated == null) {
                 ((AttackableAI) getAI()).setGlobalAggro(-25);
                 return;
             }
@@ -1036,10 +945,6 @@ public class Attackable extends Npc {
         }
     }
 
-    /**
-     * Clears aggroList hate of the Creature without removing from the list.
-     * @param target
-     */
     public void stopHating(Creature target) {
         WorldPartition.checkOwner();
         if (target == null) {
@@ -1052,9 +957,6 @@ public class Attackable extends Npc {
         }
     }
 
-    /**
-     * @return the most hated Creature of the Attackable aggroList.
-     */
     public Creature getMostHated() {
         WorldPartition.checkOwner();
         if (aggroList.isEmpty() || isAlikeDead()) {
@@ -1064,8 +966,6 @@ public class Attackable extends Npc {
         Creature mostHated = null;
         long maxHate = 0;
 
-        // While Interacting over This Map Removing Object is Not Allowed.
-        // Go through the aggroList of the Attackable.
         for (AggroInfo ai : aggroList.values()) {
             if (ai == null) {
                 continue;
@@ -1080,9 +980,6 @@ public class Attackable extends Npc {
         return mostHated;
     }
 
-    /**
-     * @return the 2 most hated Creature of the Attackable aggroList.
-     */
     public List<Creature> get2MostHated() {
         WorldPartition.checkOwner();
         if (aggroList.isEmpty() || isAlikeDead()) {
@@ -1094,8 +991,6 @@ public class Attackable extends Npc {
         long maxHate = 0;
         final List<Creature> result = new ArrayList<>();
 
-        // While iterating over this map removing objects is not allowed.
-        // Go through the aggroList of the Attackable.
         for (AggroInfo ai : aggroList.values()) {
             if (ai == null) {
                 continue;
@@ -1142,9 +1037,7 @@ public class Attackable extends Npc {
         return ObjectLists.unmodifiable(result);
     }
 
-    /**
-     * Walks a copy of the aggro list, so the filter may call out and change it.
-     */
+    /** Walks a copy of the aggro list, so the filter may call out and change it. */
     public void collectAttackers(Predicate<? super Creature> filter, List<? super Creature> into) {
         WorldPartition.checkOwner();
         try (ScratchBuffers.Snapshot<AggroInfo> entries = ScratchBuffers.snapshot(aggroList.values())) {
@@ -1188,10 +1081,6 @@ public class Attackable extends Npc {
         }
     }
 
-    /**
-     * @param target The Creature whose hate level must be returned
-     * @return the hate level of the Attackable against this Creature contained in aggroList.
-     */
     public long getHating(Creature target) {
         WorldPartition.checkOwner();
         if (aggroList.isEmpty() || (target == null)) {
@@ -1206,7 +1095,6 @@ public class Attackable extends Npc {
         if (ai.getAttacker().isPlayer()) {
             final Player act = ai.getAttacker().asPlayer();
             if (act.isInvisible() || act.isInvul() || act.isSpawnProtected()) {
-                // Remove Object Should Use This Method and Can be Blocked While Interacting.
                 aggroList.remove(target);
                 return 0;
             }
@@ -1230,23 +1118,6 @@ public class Attackable extends Npc {
         doItemDrop(getTemplate(), mainDamageDealer);
     }
 
-    /**
-     * Manage Base, Quests and Special Events drops of Attackable (called by calculateRewards).<br>
-     * Concept:<br>
-     * During a Special Event all Attackable can drop extra Items.<br>
-     * Those extra Items are defined in the table allNpcDateDrops of the EventDroplist.<br>
-     * Each Special Event has a start and end date to stop to drop extra Items automatically.<br>
-     * Actions:<br>
-     * Manage drop of Special Events created by GM for a defined period.<br>
-     * Get all possible drops of this Attackable from NpcTemplate and add it Quest drops.<br>
-     * For each possible drops (base + quests), calculate which one must be dropped (random).<br>
-     * Get each Item quantity dropped (random).<br>
-     * Create this or these Item corresponding to each Item Identifier dropped.<br>
-     * If the autoLoot mode is actif and if the Creature that has killed the Attackable is a Player, Give the item(s) to the Player that has killed the Attackable.<br>
-     * If the autoLoot mode isn't actif or if the Creature that has killed the Attackable is not a Player, add this or these item(s) in the world as a visible object at the position where mob was last.
-     * @param npcTemplate
-     * @param mainDamageDealer
-     */
     public void doItemDrop(NpcTemplate npcTemplate, Creature mainDamageDealer) {
         WorldPartition.checkOwner();
         if (mainDamageDealer == null) {
@@ -1255,9 +1126,8 @@ public class Attackable extends Npc {
 
         final Player player = mainDamageDealer.asPlayer();
 
-        // Don't drop anything if the last attacker or owner isn't Player.
         if (player == null) {
-            // Unless its a fake player and they can drop items.
+            // Only a fake player may drop without a player owner.
             if (mainDamageDealer.isFakePlayer() && FakePlayersConfig.FAKE_PLAYER_CAN_DROP_ITEMS) {
                 final Collection<ItemHolder> deathItems =
                         npcTemplate.calculateDrops(DropType.DROP, this, mainDamageDealer);
@@ -1265,7 +1135,6 @@ public class Attackable extends Npc {
                     for (ItemHolder drop : deathItems) {
                         final ItemTemplate item = ItemData.getInstance().getTemplate(drop.getId());
 
-                        // Check if the autoLoot mode is active.
                         if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(item.getId())
                                 || isFlying()
                                 || (!item.hasExImmediateEffect()
@@ -1277,9 +1146,9 @@ public class Attackable extends Npc {
                                 doSimultaneousCast(skillHolder.getSkill());
                             }
 
-                            mainDamageDealer.broadcastInfo(); // ? check if this is necessary
+                            mainDamageDealer.broadcastInfo();
                         } else {
-                            final Item droppedItem = dropItem(mainDamageDealer, drop); // Drop the item on the ground.
+                            final Item droppedItem = dropItem(mainDamageDealer, drop);
                             if (FakePlayersConfig.FAKE_PLAYER_CAN_PICKUP && (droppedItem != null)) {
                                 mainDamageDealer.addFakePlayerDrop(droppedItem);
                             }
@@ -1303,18 +1172,16 @@ public class Attackable extends Npc {
             for (ItemHolder drop : deathItems) {
                 final ItemTemplate item = ItemData.getInstance().getTemplate(drop.getId());
 
-                // Check if the autoLoot mode is active.
                 if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(item.getId())
                         || isFlying()
                         || (!item.hasExImmediateEffect()
                                 && ((!raid && PlayerConfig.AUTO_LOOT) || (raid && PlayerConfig.AUTO_LOOT_RAIDS)))
                         || (item.hasExImmediateEffect() && PlayerConfig.AUTO_LOOT_HERBS)) {
-                    player.doAutoLoot(this, drop); // Give the item(s) to the Player that has killed the Attackable.
+                    player.doAutoLoot(this, drop);
                 } else {
-                    dropItem(player, drop); // Drop the item on the ground.
+                    dropItem(player, drop);
                 }
 
-                // Broadcast message if RaidBoss was defeated.
                 if (raid && !raidMinion && (drop.getCount() > 0)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.C1_DIED_AND_DROPPED_S3_S2);
                     sm.addString(getName());
@@ -1328,49 +1195,31 @@ public class Attackable extends Npc {
         }
     }
 
-    /**
-     * @return the active weapon of this Attackable (= null).
-     */
     public Item getActiveWeapon() {
         WorldPartition.checkOwner();
         return null;
     }
 
-    /**
-     * Verifies if the creature is in the aggro list.
-     * @param creature the creature
-     * @return {@code true} if the creature is in the aggro list, {@code false} otherwise
-     */
     public boolean isInAggroList(Creature creature) {
         WorldPartition.checkOwner();
         return (creature != null) && aggroList.containsKey(creature);
     }
 
-    /**
-     * Clear the aggroList of the Attackable.
-     */
     public void clearAggroList() {
         WorldPartition.checkOwner();
         aggroList.clear();
 
-        // clear overhit values
         overhit = false;
         overhitDamage = 0;
         overhitAttacker = null;
     }
 
-    /**
-     * @return {@code true} if there is a loot to sweep, {@code false} otherwise.
-     */
     @Override
     public boolean isSweepActive() {
         WorldPartition.checkOwner();
         return sweepItems != null;
     }
 
-    /**
-     * @return a copy of dummy items for the spoil loot.
-     */
     public List<ItemTemplate> getSpoilLootItems() {
         WorldPartition.checkOwner();
         final List<ItemTemplate> lootItems = new ArrayList<>();
@@ -1383,9 +1232,6 @@ public class Attackable extends Npc {
         return lootItems;
     }
 
-    /**
-     * @return table containing all Item that can be spoiled.
-     */
     public Collection<ItemHolder> takeSweep() {
         WorldPartition.checkOwner();
         final Collection<ItemHolder> items = sweepItems;
@@ -1393,9 +1239,6 @@ public class Attackable extends Npc {
         return items;
     }
 
-    /**
-     * @return table containing all Item that can be harvested.
-     */
     public ItemHolder takeHarvest() {
         WorldPartition.checkOwner();
         final ItemHolder item = harvestItem;
@@ -1403,13 +1246,6 @@ public class Attackable extends Npc {
         return item;
     }
 
-    /**
-     * Checks if the corpse is too old.
-     * @param attacker the player to validate
-     * @param remainingTime the time to check
-     * @param sendMessage if {@code true} will send a message of corpse too old
-     * @return {@code true} if the corpse is too old
-     */
     public boolean isOldCorpse(Player attacker, int remainingTime, boolean sendMessage) {
         WorldPartition.checkOwner();
         if (!isDead() || (DecayTaskManager.getInstance().getRemainingTime(this) >= remainingTime)) {
@@ -1423,11 +1259,6 @@ public class Attackable extends Npc {
         return true;
     }
 
-    /**
-     * @param sweeper the player to validate.
-     * @param sendMessage sendMessage if {@code true} will send a message of sweep not allowed.
-     * @return {@code true} if is the spoiler or is in the spoiler party.
-     */
     public boolean checkSpoilOwner(Player sweeper, boolean sendMessage) {
         WorldPartition.checkOwner();
         if ((sweeper.getObjectId() == spoilerObjectId) || sweeper.isInLooterParty(spoilerObjectId)) {
@@ -1441,28 +1272,17 @@ public class Attackable extends Npc {
         return false;
     }
 
-    /**
-     * Set the over-hit flag on the Attackable.
-     * @param status The status of the over-hit flag
-     */
     public void overhitEnabled(boolean status) {
         WorldPartition.checkOwner();
         overhit = status;
     }
 
-    /**
-     * Set the over-hit values like the attacker who did the strike and the amount of damage done by the skill.
-     * @param attacker The Creature who hit on the Attackable using the over-hit enabled skill
-     * @param damage The amount of damage done by the over-hit enabled skill on the Attackable
-     */
     public void setOverhitValues(Creature attacker, double damage) {
         WorldPartition.checkOwner();
-        // Calculate the over-hit damage.
-        // Ex: mob had 10 HP left, over-hit skill did 50 damage total, over-hit damage is 40.
+        // Damage beyond the HP left: 10 HP left and 50 dealt is an over-hit of 40.
         final double overhitDmg = -(getCurrentHp() - damage);
         if (overhitDmg < 0) {
-            // We didn't killed the mob with the over-hit strike. (it wasn't really an over-hit strike).
-            // Let's just clear all the over-hit related values.
+            // The strike did not kill, so it was not an over-hit.
             overhitEnabled(false);
             overhitDamage = 0;
             overhitAttacker = null;
@@ -1474,31 +1294,21 @@ public class Attackable extends Npc {
         overhitAttacker = attacker;
     }
 
-    /**
-     * Activate the absorbed soul condition on the Attackable.
-     */
     public void absorbSoul() {
         WorldPartition.checkOwner();
         absorbed = true;
     }
 
-    /**
-     * Adds an attacker that successfully absorbed the soul of this Attackable into the absorbersList.
-     * @param attacker
-     */
     public void addAbsorber(Player attacker) {
         WorldPartition.checkOwner();
-        // If we have no absorbersList initiated, do it
         final AbsorberInfo ai = absorbersList.get(attacker.getObjectId());
 
-        // If the Creature attacker isn't already in the absorbersList of this Attackable, add it
         if (ai == null) {
             absorbersList.put(attacker.getObjectId(), new AbsorberInfo(attacker.getObjectId(), getCurrentHp()));
         } else {
             ai.setAbsorbedHp(getCurrentHp());
         }
 
-        // Set this Attackable as absorbed
         absorbSoul();
     }
 
@@ -1508,13 +1318,6 @@ public class Attackable extends Npc {
         absorbersList.clear();
     }
 
-    /**
-     * Calculate the Experience and SP to distribute to attacker (Player, Servitor or Party) of the Attackable.
-     * @param charLevel The killer level
-     * @param damage The damages given by the attacker (Player, Servitor or Party)
-     * @param totalDamage The total damage done
-     * @return
-     */
     private double[] calculateExpAndSp(int charLevel, long damage, long totalDamage) {
         final int levelDiff = charLevel - getLevel();
         double xp = 0;
@@ -1578,9 +1381,6 @@ public class Attackable extends Npc {
         return Math.min(overhitDamage / getMaxHp(), 0.25);
     }
 
-    /**
-     * Return True.
-     */
     @Override
     public boolean canBeAttacked() {
         WorldPartition.checkOwner();
@@ -1590,36 +1390,29 @@ public class Attackable extends Npc {
     @Override
     public void onSpawn() {
         WorldPartition.checkOwner();
-        // Keep track of the spawn time.
         spawnTime = ClockBridge.gameMillis();
 
         super.onSpawn();
 
-        // Clear mob spoil, seed.
         setSpoilerObjectId(0);
 
-        // Clear all aggro char from list
         clearAggroList();
 
-        // Clear Harvester reward
         harvestItem = null;
 
-        // fake players
         if (isFakePlayer()) {
             clearFakePlayerDrops();
-            setKarma(0); // reset karma
-            setScriptValue(0); // remove pvp flag
-            setRunning(); // don't walk
+            setKarma(0);
+            setScriptValue(0);
+            setRunning();
         } else {
             setWalking();
         }
 
-        // Clear mod Seeded stat
         seeded = false;
         seed = null;
         seederId = 0;
 
-        // Clear overhit value
         overhitEnabled(false);
 
         sweepItems = null;
@@ -1627,36 +1420,26 @@ public class Attackable extends Npc {
 
         setWalking();
 
-        // Check the region where this mob is, do not activate the AI if region is inactive.
         if (hasAI()) {
             // Roll the aggro timeout again, the AI object survives a respawn.
             if (getAI() instanceof AttackableAI) {
                 ((AttackableAI) getAI()).rollGlobalAggro();
             }
 
-            // Set the intention of the Attackable to ACTIVE.
             getAI().setIntentionActive();
 
-            // Check the region where this mob is, do not activate the AI if region is inactive.
             if (!isInActiveRegion()) {
                 getAI().stopAITask();
             }
         }
     }
 
-    /**
-     * Checks if it is spoiled.
-     * @return {@code true} if it is spoiled, {@code false} otherwise
-     */
     public boolean isSpoiled() {
         WorldPartition.checkOwner();
         return spoilerObjectId != 0;
     }
 
-    /**
-     * Sets state of the mob to seeded. Parameters needed to be set before.
-     * @param seeder
-     */
+    /** Needs the seed parameters set first, see {@link #setSeeded(Seed, Player)}. */
     public void setSeeded(Player seeder) {
         WorldPartition.checkOwner();
         if ((seed == null) || (seederId != seeder.getObjectId())) {
@@ -1667,50 +1450,41 @@ public class Attackable extends Npc {
         int count = 1;
         for (int skillId : getTemplate().getSkills().keySet()) {
             switch (skillId) {
-                case 4303: // Strong type x2
-                {
+                case 4303: {
                     count *= 2;
                     break;
                 }
-                case 4304: // Strong type x3
-                {
+                case 4304: {
                     count *= 3;
                     break;
                 }
-                case 4305: // Strong type x4
-                {
+                case 4305: {
                     count *= 4;
                     break;
                 }
-                case 4306: // Strong type x5
-                {
+                case 4306: {
                     count *= 5;
                     break;
                 }
-                case 4307: // Strong type x6
-                {
+                case 4307: {
                     count *= 6;
                     break;
                 }
-                case 4308: // Strong type x7
-                {
+                case 4308: {
                     count *= 7;
                     break;
                 }
-                case 4309: // Strong type x8
-                {
+                case 4309: {
                     count *= 8;
                     break;
                 }
-                case 4310: // Strong type x9
-                {
+                case 4310: {
                     count *= 9;
                     break;
                 }
             }
         }
 
-        // hi-level mobs bonus
         final int diff = getLevel() - seed.getLevel() - 5;
         if (diff > 0) {
             count += diff;
@@ -1719,11 +1493,6 @@ public class Attackable extends Npc {
         harvestItem = new ItemHolder(seed.getCropId(), count * RatesConfig.RATE_DROP_MANOR);
     }
 
-    /**
-     * Sets the seed parameters, but not the seed state
-     * @param seed - instance {@link Seed} of used seed
-     * @param seeder - player who sows the seed
-     */
     public void setSeeded(Seed seed, Player seeder) {
         WorldPartition.checkOwner();
         if (seeded) {
@@ -1734,11 +1503,7 @@ public class Attackable extends Npc {
         seederId = seeder.getObjectId();
     }
 
-    /**
-     * Check if the server allows Random Animation.
-     */
-    // This is located here because Monster and FriendlyMob both extend this class. The other non-pc instances extend
-    // either Npc or Monster.
+    // Here because Monster and FriendlyMob both extend this class.
     @Override
     public boolean hasRandomAnimation() {
         WorldPartition.checkOwner();
@@ -1761,7 +1526,6 @@ public class Attackable extends Npc {
      */
     public float getVitalityPoints(int level, long damage, int maxHp) {
         WorldPartition.checkOwner();
-        // sanity check
         if (damage <= 0) {
             return 0;
         }
@@ -1774,31 +1538,19 @@ public class Attackable extends Npc {
             return 0;
         }
 
-        // negative value - vitality will be consumed
         return -Math.min(damage, maxHp) / divider;
     }
 
-    /*
-     * True if vitality rate for exp and sp should be applied
-     */
     public boolean useVitalityRate() {
         WorldPartition.checkOwner();
         return !champion || ChampionMonstersConfig.CHAMPION_ENABLE_VITALITY;
     }
 
-    /**
-     * Set this Npc as a Raid instance.
-     * @param isRaid
-     */
     public void setIsRaid(boolean isRaid) {
         WorldPartition.checkOwner();
         raid = isRaid;
     }
 
-    /**
-     * Set this Npc as a Minion instance.
-     * @param value
-     */
     public void setIsRaidMinion(boolean value) {
         WorldPartition.checkOwner();
         raid = value;
@@ -1811,9 +1563,6 @@ public class Attackable extends Npc {
         return getLeader() != null;
     }
 
-    /**
-     * @return leader of this minion or null.
-     */
     public Attackable getLeader() {
         WorldPartition.checkOwner();
         return null;

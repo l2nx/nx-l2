@@ -22,20 +22,24 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.instance.StaticObject;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class StaticObjectStat extends CreatureStat {
-    public StaticObjectStat(StaticObject activeChar) {
-        super(activeChar);
+    public StaticObjectStat(StaticObject activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     @Override
     public StaticObject getActiveChar() {
-        return (StaticObject) super.getActiveChar();
+        WorldPartition.checkOwner();
+        return (StaticObject) creature();
     }
 
     @Override
-    public byte getLevel() {
-        return (byte) getActiveChar().getLevel();
+    protected byte level() {
+        return (byte) ((StaticObject) creature()).getLevel();
     }
 }

@@ -136,7 +136,7 @@ public class OfflineTraderTable {
                         case PACKAGE_SELL: {
                             if (player.isSellingBuffs()) {
                                 for (OfflineTradeItem item : items) {
-                                    player.getSellingBuffs().add(new SellBuffHolder(item.itemId(), item.price()));
+                                    player.addSellingBuff(new SellBuffHolder(item.itemId(), item.price()));
                                 }
                             } else {
                                 for (OfflineTradeItem item : items) {
@@ -150,8 +150,7 @@ public class OfflineTraderTable {
                         }
                         case MANUFACTURE: {
                             for (OfflineTradeItem item : items) {
-                                player.getManufactureItems()
-                                        .put(item.itemId(), new ManufactureItem(item.itemId(), item.price()));
+                                player.addManufactureItem(new ManufactureItem(item.itemId(), item.price()));
                             }
 
                             player.setStoreName(trade.title());
@@ -281,11 +280,6 @@ public class OfflineTraderTable {
                 .build();
     }
 
-    /**
-     * Check whether player is able to enter offline mode.
-     * @param player the player to be check.
-     * @return {@code true} if the player is allowed to remain as off-line shop.
-     */
     private boolean offlineMode(Player player) {
         if ((player == null)
                 || player.isInOlympiadMode()
@@ -317,7 +311,6 @@ public class OfflineTraderTable {
             canSetShop = false;
         }
 
-        // Check whether client is null or player is already in offline mode.
         final GameClient client = player.getClient();
         if ((client == null) || client.isDetached()) {
             return false;
@@ -326,11 +319,6 @@ public class OfflineTraderTable {
         return canSetShop;
     }
 
-    /**
-     * Manages the disconnection process of offline traders.
-     * @param player
-     * @return {@code true} when player entered offline mode, otherwise {@code false}
-     */
     public boolean enteredOfflineMode(Player player) {
         if (!offlineMode(player)) {
             return false;
@@ -347,15 +335,13 @@ public class OfflineTraderTable {
         player.leaveParty();
         OlympiadManager.getInstance().unRegisterNoble(player);
 
-        // If the Player has Pet, unsummon it.
         Summon pet = player.getSummon();
         if (pet != null) {
             pet.setRestoreSummon(true);
             pet.unSummon(player);
             pet = player.getSummon();
 
-            // Dead pet wasn't unsummoned, broadcast npcinfo changes (pet will be without owner name - means owner
-            // offline).
+            // A dead pet stays summoned; refresh its npcinfo so it shows no owner name.
             if (pet != null) {
                 pet.broadcastNpcInfo(0);
             }
@@ -370,7 +356,6 @@ public class OfflineTraderTable {
             player.setOfflineStartTime(ClockBridge.wallMillis());
         }
 
-        // Store trade on exit, if realtime saving is enabled.
         if (OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME) {
             onTransaction(player, false);
         }

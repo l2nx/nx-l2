@@ -54,7 +54,7 @@ public class Folk extends Npc {
     @Override
     public FolkStatus getStatus() {
         WorldPartition.checkOwner();
-        return (FolkStatus) super.getStatus();
+        return (FolkStatus) uncheckedStatus();
     }
 
     @Override

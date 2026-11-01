@@ -22,249 +22,235 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.ClassBalanceConfig;
 import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
 import app.l2nx.highfive.entity.actor.transform.Transform;
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.mechanics.stats.Calculator;
 import app.l2nx.highfive.mechanics.stats.MoveType;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.mechanics.stats.TraitType;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Arrays;
-import lombok.Getter;
-import lombok.Setter;
 
+@SingleWriter
 public class CreatureStat {
     private static final int DIVINE_INSPIRATION = 1405;
 
-    @Getter
     private final Creature activeChar;
 
-    @Getter
-    @Setter
+    private final CreatureAccess access;
+
     private long exp = 0;
 
-    @Getter
-    @Setter
     private long sp = 0;
 
-    @Getter
-    @Setter
     private byte level = 1;
 
-    @Getter
     private final float[] attackTraits = new float[TraitType.values().length];
 
-    @Getter
     private final int[] attackTraitsCount = new int[TraitType.values().length];
 
-    @Getter
     private final float[] defenceTraits = new float[TraitType.values().length];
 
-    @Getter
     private final int[] defenceTraitsCount = new int[TraitType.values().length];
 
-    @Getter
     private final int[] traitsInvul = new int[TraitType.values().length];
-    /** Creature's maximum buff count. */
-    @Setter
     private int maxBuffCount = PlayerConfig.BUFFS_MAX_AMOUNT;
-    /** Speed multiplier set by admin gmspeed command */
-    @Setter
     private double gmSpeedMultiplier = 1;
 
-    public CreatureStat(Creature creature) {
+    public CreatureStat(Creature creature, CreatureAccess access) {
         activeChar = creature;
+        this.access = access;
         Arrays.fill(attackTraits, 1.0f);
         Arrays.fill(defenceTraits, 1.0f);
     }
 
-    public double calcStat(Stat stat, double init) {
-        return calcStat(stat, init, null, null);
+    public Creature getActiveChar() {
+        WorldPartition.checkOwner();
+        return activeChar;
+    }
+
+    /** Unchecked, for a subclass method that has already checked the owner. */
+    protected final Creature creature() {
+        return activeChar;
+    }
+
+    /** The creature's template, unchecked, for a method that has already checked the owner. */
+    protected final CreatureTemplate template() {
+        return access.template();
+    }
+
+    public final long getExp() {
+        WorldPartition.checkOwner();
+        return exp();
+    }
+
+    /** Unchecked {@link #getExp()}, the one subclasses override. */
+    protected long exp() {
+        return exp;
+    }
+
+    public void setExp(long value) {
+        WorldPartition.checkOwner();
+        exp = value;
+    }
+
+    public final long getSp() {
+        WorldPartition.checkOwner();
+        return sp();
+    }
+
+    /** Unchecked {@link #getSp()}, the one subclasses override. */
+    protected long sp() {
+        return sp;
+    }
+
+    public void setSp(long value) {
+        WorldPartition.checkOwner();
+        sp = value;
+    }
+
+    public final byte getLevel() {
+        WorldPartition.checkOwner();
+        return level();
+    }
+
+    /** Unchecked {@link #getLevel()}, the one subclasses override. */
+    protected byte level() {
+        return level;
+    }
+
+    public void setLevel(byte value) {
+        WorldPartition.checkOwner();
+        level = value;
+    }
+
+    public void setMaxBuffCount(int value) {
+        WorldPartition.checkOwner();
+        maxBuffCount = value;
+    }
+
+    // Works on the base count: getMaxBuffCount adds the Divine Inspiration level, which must not be folded into it.
+    public void addMaxBuffCount(int delta) {
+        WorldPartition.checkOwner();
+        maxBuffCount = Math.max(0, maxBuffCount + delta);
+    }
+
+    public void setGmSpeedMultiplier(double value) {
+        WorldPartition.checkOwner();
+        gmSpeedMultiplier = value;
     }
 
     /**
-     * Calculate the new value of the state with modifiers that will be applied on the targeted Creature.<br>
-     * <br>
-     * <b><u>Concept</u>:</b><br>
-     * A Creature owns a table of Calculators called <b>_calculators</b>. Each Calculator (a calculator per state) own a table of Func object. A Func object is a mathematic function that permit to calculate the modifier of a state (ex : REGENERATE_HP_RATE...) :<br>
-     * FuncAtkAccuracy -> Math.sqrt(_player.getDEX())*6+_player.getLevel()<br>
-     * When the calc method of a calculator is launched, each mathematical function is called according to its priority <b>_order</b>.<br>
-     * Indeed, Func with lowest priority order is executed firsta and Funcs with the same order are executed in unspecified order.<br>
-     * The result of the calculation is stored in the value property of an Env class instance.
-     * @param stat The stat to calculate the new value with modifiers
-     * @param initVal The initial value of the stat before applying modifiers
-     * @param target The Creature whose properties will be used in the calculation (ex : CON, INT...)
-     * @param skill The Skill whose properties will be used in the calculation (ex : Level...)
-     * @return
+     * The creature's calculation, reached through the access it handed this stat, without the check: for the getters
+     * and the subclasses after their own.
      */
-    public double calcStat(Stat stat, double initVal, Creature target, Skill skill) {
-        double value = initVal;
-        if (stat == null) {
-            return value;
-        }
-
-        final int id = stat.ordinal();
-        final Calculator calc = activeChar.getCalculator(id);
-
-        // If no Func object found, no modifier is applied.
-        if ((calc == null) || (calc.size() == 0)) {
-            return value;
-        }
-
-        // Apply transformation stats.
-        final Transform transform = activeChar.getTransformation();
-        if (transform != null) {
-            final double val = transform.getStat(activeChar.asPlayer(), stat);
-            if (val > 0) {
-                value = val;
-            }
-        }
-
-        // Launch the calculation
-        value = calc.calc(activeChar, target, skill, value);
-
-        // avoid some troubles with negative stats (some stats should never be negative)
-        if (value <= 0) {
-            switch (stat) {
-                case MAX_HP:
-                case MAX_MP:
-                case MAX_CP:
-                case MAGIC_DEFENCE:
-                case POWER_DEFENCE:
-                case POWER_ATTACK:
-                case MAGIC_ATTACK:
-                case POWER_ATTACK_SPEED:
-                case MAGIC_ATTACK_SPEED:
-                case SHIELD_DEFENCE:
-                case STAT_CON:
-                case STAT_DEX:
-                case STAT_INT:
-                case STAT_MEN:
-                case STAT_STR:
-                case STAT_WIT: {
-                    value = 1.0;
-                    break;
-                }
-            }
-        }
-
-        return value;
+    protected final double calc(Stat stat, double initVal, Creature target, Skill skill) {
+        return access.calculate(stat, initVal, target, skill);
     }
 
-    /**
-     * @return the Accuracy (base+modifier) of the Creature in function of the Weapon Expertise Penalty.
-     */
     public int getAccuracy() {
-        return (int) Math.round(calcStat(Stat.ACCURACY_COMBAT, 0, null, null));
+        WorldPartition.checkOwner();
+        return (int) Math.round(calc(Stat.ACCURACY_COMBAT, 0, null, null));
     }
 
-    /**
-     * @return the Attack Speed multiplier (base+modifier) of the Creature to get proper animations.
-     */
     public float getAttackSpeedMultiplier() {
-        return (float) ((1.1 * getPAtkSpd()) / activeChar.getTemplate().getBasePAtkSpd());
+        WorldPartition.checkOwner();
+        return (float) ((1.1 * pAtkSpd()) / template().getBasePAtkSpd());
     }
 
-    /**
-     * @param target
-     * @param init
-     * @return the Critical Damage rate (base+modifier) of the Creature.
-     */
     public double getCriticalDmg(Creature target, double init) {
-        return calcStat(Stat.CRITICAL_DAMAGE, init, target, null);
+        WorldPartition.checkOwner();
+        return calc(Stat.CRITICAL_DAMAGE, init, target, null);
     }
 
-    /**
-     * @param target
-     * @param skill
-     * @return the Critical Hit rate (base+modifier) of the Creature.
-     */
     public int getCriticalHit(Creature target, Skill skill) {
-        double val = calcStat(Stat.CRITICAL_RATE, activeChar.getTemplate().getBaseCritRate(), target, skill);
+        WorldPartition.checkOwner();
+        double val = calc(Stat.CRITICAL_RATE, template().getBaseCritRate(), target, skill);
 
-        // if (!_creature.isGM())
-        // {
         val = Math.min(val, PlayerConfig.MAX_PCRIT_RATE);
-        // }
 
         return (int) (val + .5);
     }
 
-    /**
-     * @param base
-     * @return the Critical Hit Pos rate of the Creature
-     */
     public int getCriticalHitPos(int base) {
-        return (int) calcStat(Stat.CRITICAL_RATE_POS, base);
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.CRITICAL_RATE_POS, base, null, null);
     }
 
-    /**
-     * @param target
-     * @return the Attack Evasion rate (base+modifier) of the Creature.
-     */
     public int getEvasionRate(Creature target) {
-        int val = (int) Math.round(calcStat(Stat.EVASION_RATE, 0, target, null));
+        WorldPartition.checkOwner();
+        int val = (int) Math.round(calc(Stat.EVASION_RATE, 0, target, null));
 
-        // if (!_creature.isGM())
-        // {
         val = Math.min(val, PlayerConfig.MAX_EVASION);
-        // }
 
         return val;
     }
 
-    /**
-     * @param skill
-     * @return the Magical Attack range (base+modifier) of the Creature.
-     */
     public int getMagicalAttackRange(Skill skill) {
+        WorldPartition.checkOwner();
         if (skill != null) {
-            return (int) calcStat(Stat.MAGIC_ATTACK_RANGE, skill.getCastRange(), null, skill);
+            return (int) calc(Stat.MAGIC_ATTACK_RANGE, skill.getCastRange(), null, skill);
         }
 
-        return activeChar.getTemplate().getBaseAttackRange();
+        return template().getBaseAttackRange();
     }
 
-    public int getMaxCp() {
-        return (int) calcStat(Stat.MAX_CP, activeChar.getTemplate().getBaseCpMax());
+    public final int getMaxCp() {
+        WorldPartition.checkOwner();
+        return maxCp();
+    }
+
+    /** Unchecked {@link #getMaxCp()}, the one subclasses override. */
+    protected int maxCp() {
+        return (int) calc(Stat.MAX_CP, template().getBaseCpMax(), null, null);
     }
 
     public int getMaxRecoverableCp() {
-        return (int) calcStat(Stat.MAX_RECOVERABLE_CP, getMaxCp());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.MAX_RECOVERABLE_CP, maxCp(), null, null);
     }
 
-    public int getMaxHp() {
-        return (int) calcStat(Stat.MAX_HP, activeChar.getTemplate().getBaseHpMax());
+    public final int getMaxHp() {
+        WorldPartition.checkOwner();
+        return maxHp();
+    }
+
+    /** Unchecked {@link #getMaxHp()}, the one subclasses override. */
+    protected int maxHp() {
+        return (int) calc(Stat.MAX_HP, template().getBaseHpMax(), null, null);
     }
 
     public int getMaxRecoverableHp() {
-        return (int) calcStat(Stat.MAX_RECOVERABLE_HP, getMaxHp());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.MAX_RECOVERABLE_HP, maxHp(), null, null);
     }
 
-    public int getMaxMp() {
-        return (int) calcStat(Stat.MAX_MP, activeChar.getTemplate().getBaseMpMax());
+    public final int getMaxMp() {
+        WorldPartition.checkOwner();
+        return maxMp();
+    }
+
+    /** Unchecked {@link #getMaxMp()}, the one subclasses override. */
+    protected int maxMp() {
+        return (int) calc(Stat.MAX_MP, template().getBaseMpMax(), null, null);
     }
 
     public int getMaxRecoverableMp() {
-        return (int) calcStat(Stat.MAX_RECOVERABLE_MP, getMaxMp());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.MAX_RECOVERABLE_MP, maxMp(), null, null);
     }
 
-    /**
-     * Return the MAtk (base+modifier) of the Creature.<br>
-     * <br>
-     * <b><u>Example of use</u>: Calculate Magic damage
-     * @param target The Creature targeted by the skill
-     * @param skill The Skill used against the target
-     * @return
-     */
     public double getMAtk(Creature target, Skill skill) {
+        WorldPartition.checkOwner();
         float bonusAtk = 1;
         if (ChampionMonstersConfig.CHAMPION_ENABLE && activeChar.isChampion()) {
             bonusAtk = ChampionMonstersConfig.CHAMPION_ATK;
@@ -274,38 +260,32 @@ public class CreatureStat {
             bonusAtk *= NpcConfig.RAID_MATTACK_MULTIPLIER;
         }
 
-        // Calculate modifiers Magic Attack.
         return Math.min(
-                calcStat(Stat.MAGIC_ATTACK, activeChar.getTemplate().getBaseMAtk() * bonusAtk, target, skill),
-                PlayerConfig.MAX_MATK);
+                calc(Stat.MAGIC_ATTACK, template().getBaseMAtk() * bonusAtk, target, skill), PlayerConfig.MAX_MATK);
     }
 
-    /**
-     * @return the MAtk Speed (base+modifier) of the Creature in function of the Armour Expertise Penalty.
-     */
-    public int getMAtkSpd() {
+    public final int getMAtkSpd() {
+        WorldPartition.checkOwner();
+        return mAtkSpd();
+    }
+
+    /** Unchecked {@link #getMAtkSpd()}, the one subclasses override. */
+    protected int mAtkSpd() {
         float bonusSpdAtk = 1;
         if (ChampionMonstersConfig.CHAMPION_ENABLE && activeChar.isChampion()) {
             bonusSpdAtk = ChampionMonstersConfig.CHAMPION_SPD_ATK;
         }
 
-        double val = calcStat(Stat.MAGIC_ATTACK_SPEED, activeChar.getTemplate().getBaseMAtkSpd() * bonusSpdAtk);
+        double val = calc(Stat.MAGIC_ATTACK_SPEED, template().getBaseMAtkSpd() * bonusSpdAtk, null, null);
 
-        // if (!_creature.isGM())
-        // {
         val = Math.min(val, PlayerConfig.MAX_MATK_SPEED);
-        // }
 
         return (int) val;
     }
 
-    /**
-     * @param target
-     * @param skill
-     * @return the Magic Critical Hit rate (base+modifier) of the Creature.
-     */
     public int getMCriticalHit(Creature target, Skill skill) {
-        int val = (int) calcStat(Stat.MCRITICAL_RATE, 1, target, skill) * 10;
+        WorldPartition.checkOwner();
+        int val = (int) calc(Stat.MCRITICAL_RATE, 1, target, skill) * 10;
 
         if ((skill != null) && (target != null) && activeChar.isPlayable()) {
             if (target.isPlayable()) {
@@ -317,25 +297,15 @@ public class CreatureStat {
             }
         }
 
-        // if (!_creature.isGM())
-        // {
         val = Math.min(val, PlayerConfig.MAX_MCRIT_RATE);
-        // }
 
         return val;
     }
 
-    /**
-     * <b><u>Example of use </u>: Calculate Magic damage.
-     * @param target The Creature targeted by the skill
-     * @param skill The Skill used against the target
-     * @return the MDef (base+modifier) of the Creature against a skill in function of abnormal effects in progress.
-     */
     public double getMDef(Creature target, Skill skill) {
-        // Get the base MDef of the Creature.
-        double defence = activeChar.getTemplate().getBaseMDef();
+        WorldPartition.checkOwner();
+        double defence = template().getBaseMDef();
 
-        // Calculate modifier for Raid Bosses.
         if (activeChar.isRaid()) {
             defence *= NpcConfig.RAID_MDEFENCE_MULTIPLIER;
         }
@@ -350,145 +320,141 @@ public class CreatureStat {
             }
         }
 
-        // Calculate modifiers Magic Attack.
-        return calcStat(Stat.MAGIC_DEFENCE, defence, target, skill);
+        return calc(Stat.MAGIC_DEFENCE, defence, target, skill);
     }
 
-    /**
-     * @return the CON of the Creature (base+modifier).
-     */
     public int getCON() {
-        return (int) calcStat(Stat.STAT_CON, activeChar.getTemplate().getBaseCON());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.STAT_CON, template().getBaseCON(), null, null);
     }
 
-    /**
-     * @return the DEX of the Creature (base+modifier).
-     */
     public int getDEX() {
-        return (int) calcStat(Stat.STAT_DEX, activeChar.getTemplate().getBaseDEX());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.STAT_DEX, template().getBaseDEX(), null, null);
     }
 
-    /**
-     * @return the INT of the Creature (base+modifier).
-     */
     public int getINT() {
-        return (int) calcStat(Stat.STAT_INT, activeChar.getTemplate().getBaseINT());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.STAT_INT, template().getBaseINT(), null, null);
     }
 
-    /**
-     * @return the MEN of the Creature (base+modifier).
-     */
     public int getMEN() {
-        return (int) calcStat(Stat.STAT_MEN, activeChar.getTemplate().getBaseMEN());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.STAT_MEN, template().getBaseMEN(), null, null);
     }
 
-    /**
-     * @return the STR of the Creature (base+modifier).
-     */
     public int getSTR() {
-        return (int) calcStat(Stat.STAT_STR, activeChar.getTemplate().getBaseSTR());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.STAT_STR, template().getBaseSTR(), null, null);
     }
 
-    /**
-     * @return the WIT of the Creature (base+modifier).
-     */
     public int getWIT() {
-        return (int) calcStat(Stat.STAT_WIT, activeChar.getTemplate().getBaseWIT());
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.STAT_WIT, template().getBaseWIT(), null, null);
     }
 
     public double getMovementSpeedMultiplier() {
+        WorldPartition.checkOwner();
         double baseSpeed;
         if (activeChar.isInsideZone(ZoneId.WATER)) {
-            baseSpeed = getBaseMoveSpeed(activeChar.isRunning() ? MoveType.FAST_SWIM : MoveType.SLOW_SWIM);
+            baseSpeed = baseMoveSpeed(activeChar.isRunning() ? MoveType.FAST_SWIM : MoveType.SLOW_SWIM);
         } else {
-            baseSpeed = getBaseMoveSpeed(activeChar.isRunning() ? MoveType.RUN : MoveType.WALK);
+            baseSpeed = baseMoveSpeed(activeChar.isRunning() ? MoveType.RUN : MoveType.WALK);
         }
 
-        return getMoveSpeed() * (1. / baseSpeed);
+        return moveSpeed() * (1. / baseSpeed);
     }
 
-    /**
-     * @return the RunSpeed (base+modifier) of the Creature in function of the Armour Expertise Penalty.
-     */
-    public double getRunSpeed() {
-        final double baseRunSpd =
-                activeChar.isInsideZone(ZoneId.WATER) ? getSwimRunSpeed() : getBaseMoveSpeed(MoveType.RUN);
+    public final double getRunSpeed() {
+        WorldPartition.checkOwner();
+        return runSpeed();
+    }
+
+    /** Unchecked {@link #getRunSpeed()}, the one subclasses override. */
+    protected double runSpeed() {
+        final double baseRunSpd = activeChar.isInsideZone(ZoneId.WATER) ? swimRunSpeed() : baseMoveSpeed(MoveType.RUN);
         if (baseRunSpd <= 0) {
             return 0;
         }
 
-        return calcStat(Stat.MOVE_SPEED, baseRunSpd * gmSpeedMultiplier, null, null);
+        return calc(Stat.MOVE_SPEED, baseRunSpd * gmSpeedMultiplier, null, null);
     }
 
-    /**
-     * @return the WalkSpeed (base+modifier) of the Creature.
-     */
-    public double getWalkSpeed() {
+    public final double getWalkSpeed() {
+        WorldPartition.checkOwner();
+        return walkSpeed();
+    }
+
+    /** Unchecked {@link #getWalkSpeed()}, the one subclasses override. */
+    protected double walkSpeed() {
         final double baseWalkSpd =
-                activeChar.isInsideZone(ZoneId.WATER) ? getSwimWalkSpeed() : getBaseMoveSpeed(MoveType.WALK);
+                activeChar.isInsideZone(ZoneId.WATER) ? swimWalkSpeed() : baseMoveSpeed(MoveType.WALK);
         if (baseWalkSpd <= 0) {
             return 0;
         }
 
-        return calcStat(Stat.MOVE_SPEED, baseWalkSpd * gmSpeedMultiplier);
+        return calc(Stat.MOVE_SPEED, baseWalkSpd * gmSpeedMultiplier, null, null);
     }
 
-    /**
-     * @return the SwimRunSpeed (base+modifier) of the Creature.
-     */
     public double getSwimRunSpeed() {
-        final double baseRunSpd = getBaseMoveSpeed(MoveType.FAST_SWIM);
+        WorldPartition.checkOwner();
+        return swimRunSpeed();
+    }
+
+    private double swimRunSpeed() {
+        final double baseRunSpd = baseMoveSpeed(MoveType.FAST_SWIM);
         if (baseRunSpd <= 0) {
             return 0;
         }
 
-        return calcStat(Stat.MOVE_SPEED, baseRunSpd * gmSpeedMultiplier, null, null);
+        return calc(Stat.MOVE_SPEED, baseRunSpd * gmSpeedMultiplier, null, null);
     }
 
-    /**
-     * @return the SwimWalkSpeed (base+modifier) of the Creature.
-     */
     public double getSwimWalkSpeed() {
-        final double baseWalkSpd = getBaseMoveSpeed(MoveType.SLOW_SWIM);
+        WorldPartition.checkOwner();
+        return swimWalkSpeed();
+    }
+
+    private double swimWalkSpeed() {
+        final double baseWalkSpd = baseMoveSpeed(MoveType.SLOW_SWIM);
         if (baseWalkSpd <= 0) {
             return 0;
         }
 
-        return calcStat(Stat.MOVE_SPEED, baseWalkSpd * gmSpeedMultiplier);
+        return calc(Stat.MOVE_SPEED, baseWalkSpd * gmSpeedMultiplier, null, null);
     }
 
-    /**
-     * @param type movement type
-     * @return the base move speed of given movement type.
-     */
-    public double getBaseMoveSpeed(MoveType type) {
-        return activeChar.getTemplate().getBaseMoveSpeed(type);
+    public final double getBaseMoveSpeed(MoveType type) {
+        WorldPartition.checkOwner();
+        return baseMoveSpeed(type);
     }
 
-    /**
-     * @return the RunSpeed (base+modifier) or WalkSpeed (base+modifier) of the Creature in function of the movement type.
-     */
-    public double getMoveSpeed() {
+    /** Unchecked {@link #getBaseMoveSpeed(MoveType)}, the one subclasses override. */
+    protected double baseMoveSpeed(MoveType type) {
+        return template().getBaseMoveSpeed(type);
+    }
+
+    public final double getMoveSpeed() {
+        WorldPartition.checkOwner();
+        return moveSpeed();
+    }
+
+    /** Unchecked {@link #getMoveSpeed()}, the one subclasses override. */
+    protected double moveSpeed() {
         if (activeChar.isInsideZone(ZoneId.WATER)) {
-            return activeChar.isRunning() ? getSwimRunSpeed() : getSwimWalkSpeed();
+            return activeChar.isRunning() ? swimRunSpeed() : swimWalkSpeed();
         }
 
-        return activeChar.isRunning() ? getRunSpeed() : getWalkSpeed();
+        return activeChar.isRunning() ? runSpeed() : walkSpeed();
     }
 
-    /**
-     * @param skill
-     * @return the MReuse rate (base+modifier) of the Creature.
-     */
     public double getMReuseRate(Skill skill) {
-        return calcStat(Stat.MAGIC_REUSE_RATE, 1, null, skill);
+        WorldPartition.checkOwner();
+        return calc(Stat.MAGIC_REUSE_RATE, 1, null, skill);
     }
 
-    /**
-     * @param target
-     * @return the PAtk (base+modifier) of the Creature.
-     */
     public double getPAtk(Creature target) {
+        WorldPartition.checkOwner();
         float bonusAtk = 1;
         if (ChampionMonstersConfig.CHAMPION_ENABLE && activeChar.isChampion()) {
             bonusAtk = ChampionMonstersConfig.CHAMPION_ATK;
@@ -499,103 +465,96 @@ public class CreatureStat {
         }
 
         return Math.min(
-                calcStat(Stat.POWER_ATTACK, activeChar.getTemplate().getBasePAtk() * bonusAtk, target, null),
-                PlayerConfig.MAX_PATK);
+                calc(Stat.POWER_ATTACK, template().getBasePAtk() * bonusAtk, target, null), PlayerConfig.MAX_PATK);
     }
 
-    /**
-     * @return the PAtk Speed (base+modifier) of the Creature in function of the Armour Expertise Penalty.
-     */
-    public double getPAtkSpd() {
+    public final double getPAtkSpd() {
+        WorldPartition.checkOwner();
+        return pAtkSpd();
+    }
+
+    /** Unchecked {@link #getPAtkSpd()}, the one subclasses override. */
+    protected double pAtkSpd() {
         float bonusAtk = 1;
         if (ChampionMonstersConfig.CHAMPION_ENABLE && activeChar.isChampion()) {
             bonusAtk = ChampionMonstersConfig.CHAMPION_SPD_ATK;
         }
 
-        return Math.round(
-                calcStat(Stat.POWER_ATTACK_SPEED, activeChar.getTemplate().getBasePAtkSpd() * bonusAtk, null, null));
+        return Math.round(calc(Stat.POWER_ATTACK_SPEED, template().getBasePAtkSpd() * bonusAtk, null, null));
     }
 
-    /**
-     * @param target
-     * @return the PDef (base+modifier) of the Creature.
-     */
     public double getPDef(Creature target) {
+        WorldPartition.checkOwner();
         if (activeChar.isPlayable() && (target != null)) {
             if (target.isPlayable()) {
                 return ClassBalanceConfig.PVP_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[
                                 activeChar.asPlayer().getPlayerClass().getId()]
-                        * calcStat(
+                        * calc(
                                 Stat.POWER_DEFENCE,
                                 activeChar.isRaid()
-                                        ? activeChar.getTemplate().getBasePDef() * NpcConfig.RAID_PDEFENCE_MULTIPLIER
-                                        : activeChar.getTemplate().getBasePDef(),
+                                        ? template().getBasePDef() * NpcConfig.RAID_PDEFENCE_MULTIPLIER
+                                        : template().getBasePDef(),
                                 target,
                                 null);
             }
 
             return ClassBalanceConfig.PVE_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[
                             activeChar.asPlayer().getPlayerClass().getId()]
-                    * calcStat(
+                    * calc(
                             Stat.POWER_DEFENCE,
                             activeChar.isRaid()
-                                    ? activeChar.getTemplate().getBasePDef() * NpcConfig.RAID_PDEFENCE_MULTIPLIER
-                                    : activeChar.getTemplate().getBasePDef(),
+                                    ? template().getBasePDef() * NpcConfig.RAID_PDEFENCE_MULTIPLIER
+                                    : template().getBasePDef(),
                             target,
                             null);
         }
 
-        return calcStat(
+        return calc(
                 Stat.POWER_DEFENCE,
                 activeChar.isRaid()
-                        ? activeChar.getTemplate().getBasePDef() * NpcConfig.RAID_PDEFENCE_MULTIPLIER
-                        : activeChar.getTemplate().getBasePDef(),
+                        ? template().getBasePDef() * NpcConfig.RAID_PDEFENCE_MULTIPLIER
+                        : template().getBasePDef(),
                 target,
                 null);
     }
 
-    /**
-     * @return the Physical Attack range (base+modifier) of the Creature.
-     */
     public int getPhysicalAttackRange() {
+        WorldPartition.checkOwner();
         final Transform transform = activeChar.getTransformation();
         int baseAttackRange;
         if (transform != null) {
             baseAttackRange = transform.getBaseAttackRange(activeChar.asPlayer());
         } else if (activeChar.getActiveWeaponItem() == null) {
-            baseAttackRange = activeChar.getTemplate().getBaseAttackRange();
-        } else // Use weapon pAtkRange stat.
-        {
+            baseAttackRange = template().getBaseAttackRange();
+        } else {
             baseAttackRange = 0;
         }
 
-        return (int) calcStat(Stat.POWER_ATTACK_RANGE, baseAttackRange, null, null);
+        return (int) calc(Stat.POWER_ATTACK_RANGE, baseAttackRange, null, null);
     }
 
-    public int getPhysicalAttackAngle() {
+    public final int getPhysicalAttackAngle() {
+        WorldPartition.checkOwner();
+        return physicalAttackAngle();
+    }
+
+    /** Unchecked {@link #getPhysicalAttackAngle()}, the one subclasses override. */
+    protected int physicalAttackAngle() {
         return 0;
     }
 
-    /**
-     * @param target
-     * @return the weapon reuse modifier.
-     */
     public double getWeaponReuseModifier(Creature target) {
-        return calcStat(Stat.ATK_REUSE, 1, target, null);
+        WorldPartition.checkOwner();
+        return calc(Stat.ATK_REUSE, 1, target, null);
     }
 
-    /**
-     * @return the ShieldDef rate (base+modifier) of the Creature.
-     */
     public int getShldDef() {
-        return (int) calcStat(Stat.SHIELD_DEFENCE, 0);
+        WorldPartition.checkOwner();
+        return (int) calc(Stat.SHIELD_DEFENCE, 0, null, null);
     }
 
-    /**
-     * @param skill
-     * @return the mpConsume.
-     */
     public int getMpConsume(Skill skill) {
+        WorldPartition.checkOwner();
         if (skill == null) {
             return 1;
         }
@@ -609,45 +568,41 @@ public class CreatureStat {
             mpConsume += activeChar.getDanceCount() * nextDanceMpCost;
         }
 
-        mpConsume = calcStat(Stat.MP_CONSUME, mpConsume, null, skill);
+        mpConsume = calc(Stat.MP_CONSUME, mpConsume, null, skill);
         if (skill.isDance()) {
-            return (int) calcStat(Stat.DANCE_MP_CONSUME_RATE, mpConsume);
+            return (int) calc(Stat.DANCE_MP_CONSUME_RATE, mpConsume, null, null);
         }
 
         if (skill.isMagic()) {
-            return (int) calcStat(Stat.MAGICAL_MP_CONSUME_RATE, mpConsume);
+            return (int) calc(Stat.MAGICAL_MP_CONSUME_RATE, mpConsume, null, null);
         }
 
-        return (int) calcStat(Stat.PHYSICAL_MP_CONSUME_RATE, mpConsume);
+        return (int) calc(Stat.PHYSICAL_MP_CONSUME_RATE, mpConsume, null, null);
     }
 
-    /**
-     * @param skill
-     * @return the mpInitialConsume.
-     */
     public int getMpInitialConsume(Skill skill) {
-        return skill == null ? 1 : (int) calcStat(Stat.MP_CONSUME, skill.getMpInitialConsume(), null, skill);
+        WorldPartition.checkOwner();
+        return skill == null ? 1 : (int) calc(Stat.MP_CONSUME, skill.getMpInitialConsume(), null, skill);
     }
 
     public byte getAttackElement() {
+        WorldPartition.checkOwner();
         final Item weaponInstance = activeChar.getActiveWeaponInstance();
 
-        // 1st order - weapon element
         if ((weaponInstance != null) && (weaponInstance.getAttackElementType() >= 0)) {
             return weaponInstance.getAttackElementType();
         }
 
-        // temp fix starts
         int tempVal = 0;
         final int[] stats = {0, 0, 0, 0, 0, 0};
 
         byte returnVal = -2;
-        stats[0] = (int) calcStat(Stat.FIRE_POWER, activeChar.getTemplate().getBaseFire());
-        stats[1] = (int) calcStat(Stat.WATER_POWER, activeChar.getTemplate().getBaseWater());
-        stats[2] = (int) calcStat(Stat.WIND_POWER, activeChar.getTemplate().getBaseWind());
-        stats[3] = (int) calcStat(Stat.EARTH_POWER, activeChar.getTemplate().getBaseEarth());
-        stats[4] = (int) calcStat(Stat.HOLY_POWER, activeChar.getTemplate().getBaseHoly());
-        stats[5] = (int) calcStat(Stat.DARK_POWER, activeChar.getTemplate().getBaseDark());
+        stats[0] = (int) calc(Stat.FIRE_POWER, template().getBaseFire(), null, null);
+        stats[1] = (int) calc(Stat.WATER_POWER, template().getBaseWater(), null, null);
+        stats[2] = (int) calc(Stat.WIND_POWER, template().getBaseWind(), null, null);
+        stats[3] = (int) calc(Stat.EARTH_POWER, template().getBaseEarth(), null, null);
+        stats[4] = (int) calc(Stat.HOLY_POWER, template().getBaseHoly(), null, null);
+        stats[5] = (int) calc(Stat.DARK_POWER, template().getBaseDark(), null, null);
         for (byte x = 0; x < 6; x++) {
             if (stats[x] > tempVal) {
                 returnVal = x;
@@ -656,32 +611,28 @@ public class CreatureStat {
         }
 
         return returnVal;
-        // temp fix ends
-
-        /*
-         * uncomment me once deadlocks in getAllEffects() fixed return creature.getElementIdFromEffects();
-         */
     }
 
     public int getAttackElementValue(byte attackAttribute) {
+        WorldPartition.checkOwner();
         switch (attackAttribute) {
             case Elementals.FIRE: {
-                return (int) calcStat(Stat.FIRE_POWER, activeChar.getTemplate().getBaseFire());
+                return (int) calc(Stat.FIRE_POWER, template().getBaseFire(), null, null);
             }
             case Elementals.WATER: {
-                return (int) calcStat(Stat.WATER_POWER, activeChar.getTemplate().getBaseWater());
+                return (int) calc(Stat.WATER_POWER, template().getBaseWater(), null, null);
             }
             case Elementals.WIND: {
-                return (int) calcStat(Stat.WIND_POWER, activeChar.getTemplate().getBaseWind());
+                return (int) calc(Stat.WIND_POWER, template().getBaseWind(), null, null);
             }
             case Elementals.EARTH: {
-                return (int) calcStat(Stat.EARTH_POWER, activeChar.getTemplate().getBaseEarth());
+                return (int) calc(Stat.EARTH_POWER, template().getBaseEarth(), null, null);
             }
             case Elementals.HOLY: {
-                return (int) calcStat(Stat.HOLY_POWER, activeChar.getTemplate().getBaseHoly());
+                return (int) calc(Stat.HOLY_POWER, template().getBaseHoly(), null, null);
             }
             case Elementals.DARK: {
-                return (int) calcStat(Stat.DARK_POWER, activeChar.getTemplate().getBaseDark());
+                return (int) calc(Stat.DARK_POWER, template().getBaseDark(), null, null);
             }
             default: {
                 return 0;
@@ -690,56 +641,115 @@ public class CreatureStat {
     }
 
     public int getDefenseElementValue(byte defenseAttribute) {
+        WorldPartition.checkOwner();
         switch (defenseAttribute) {
             case Elementals.FIRE: {
-                return (int) calcStat(Stat.FIRE_RES, activeChar.getTemplate().getBaseFireRes());
+                return (int) calc(Stat.FIRE_RES, template().getBaseFireRes(), null, null);
             }
             case Elementals.WATER: {
-                return (int) calcStat(Stat.WATER_RES, activeChar.getTemplate().getBaseWaterRes());
+                return (int) calc(Stat.WATER_RES, template().getBaseWaterRes(), null, null);
             }
             case Elementals.WIND: {
-                return (int) calcStat(Stat.WIND_RES, activeChar.getTemplate().getBaseWindRes());
+                return (int) calc(Stat.WIND_RES, template().getBaseWindRes(), null, null);
             }
             case Elementals.EARTH: {
-                return (int) calcStat(Stat.EARTH_RES, activeChar.getTemplate().getBaseEarthRes());
+                return (int) calc(Stat.EARTH_RES, template().getBaseEarthRes(), null, null);
             }
             case Elementals.HOLY: {
-                return (int) calcStat(Stat.HOLY_RES, activeChar.getTemplate().getBaseHolyRes());
+                return (int) calc(Stat.HOLY_RES, template().getBaseHolyRes(), null, null);
             }
             case Elementals.DARK: {
-                return (int) calcStat(Stat.DARK_RES, activeChar.getTemplate().getBaseDarkRes());
+                return (int) calc(Stat.DARK_RES, template().getBaseDarkRes(), null, null);
             }
             default: {
-                return (int) activeChar.getTemplate().getBaseElementRes();
+                return (int) template().getBaseElementRes();
             }
         }
     }
 
     public float getAttackTrait(TraitType traitType) {
+        WorldPartition.checkOwner();
         return attackTraits[traitType.ordinal()];
     }
 
     public boolean hasAttackTrait(TraitType traitType) {
+        WorldPartition.checkOwner();
         return attackTraitsCount[traitType.ordinal()] > 0;
     }
 
+    public void addAttackTrait(TraitType traitType, float multiplier) {
+        WorldPartition.checkOwner();
+        attackTraits[traitType.ordinal()] *= multiplier;
+        attackTraitsCount[traitType.ordinal()]++;
+    }
+
+    /** Undoes {@link #addAttackTrait}; a trait never added is left as is. */
+    public void removeAttackTrait(TraitType traitType, float multiplier) {
+        WorldPartition.checkOwner();
+        if (attackTraitsCount[traitType.ordinal()] == 0) {
+            return;
+        }
+
+        attackTraits[traitType.ordinal()] /= multiplier;
+        attackTraitsCount[traitType.ordinal()]--;
+    }
+
     public float getDefenceTrait(TraitType traitType) {
+        WorldPartition.checkOwner();
         return defenceTraits[traitType.ordinal()];
     }
 
     public boolean hasDefenceTrait(TraitType traitType) {
+        WorldPartition.checkOwner();
         return defenceTraitsCount[traitType.ordinal()] > 0;
     }
 
+    public void addDefenceTrait(TraitType traitType, float multiplier) {
+        WorldPartition.checkOwner();
+        defenceTraits[traitType.ordinal()] *= multiplier;
+        defenceTraitsCount[traitType.ordinal()]++;
+    }
+
+    /** Undoes {@link #addDefenceTrait}; a trait never added is left as is. */
+    public void removeDefenceTrait(TraitType traitType, float multiplier) {
+        WorldPartition.checkOwner();
+        if (defenceTraitsCount[traitType.ordinal()] == 0) {
+            return;
+        }
+
+        defenceTraits[traitType.ordinal()] /= multiplier;
+        defenceTraitsCount[traitType.ordinal()]--;
+    }
+
     public boolean isTraitInvul(TraitType traitType) {
+        WorldPartition.checkOwner();
         return traitsInvul[traitType.ordinal()] > 0;
     }
 
-    /**
-     * Gets the maximum buff count.
-     * @return the maximum buff count
-     */
+    public void addTraitInvul(TraitType traitType) {
+        WorldPartition.checkOwner();
+        traitsInvul[traitType.ordinal()]++;
+    }
+
+    public void removeTraitInvul(TraitType traitType) {
+        WorldPartition.checkOwner();
+        if (traitsInvul[traitType.ordinal()] > 0) {
+            traitsInvul[traitType.ordinal()]--;
+        }
+    }
+
     public int getMaxBuffCount() {
+        WorldPartition.checkOwner();
         return maxBuffCount + activeChar.getSkillLevel(DIVINE_INSPIRATION);
+    }
+
+    /**
+     * What a stat reads of its creature without the ownership check. A creature hands it to its own stat only, whose
+     * getters check once before reading through it.
+     */
+    public interface CreatureAccess {
+        double calculate(Stat stat, double initVal, Creature target, Skill skill);
+
+        CreatureTemplate template();
     }
 }

@@ -65,9 +65,6 @@ public class OfflinePlayTable {
         instance = this;
     }
 
-    /**
-     * Restores all offline play players on server start.
-     */
     public void restoreOfflinePlayers() {
         log.info("Loading offline auto players...");
 
@@ -87,11 +84,10 @@ public class OfflinePlayTable {
                         final int id = entry.targetId();
                         switch (entry.type()) {
                             case ACTIVE_SOULSHOT -> player.addAutoSoulShot(id);
-                            case AUTO_SUPPLY_ITEM ->
-                                settings.getAutoSupplyItems().add(id);
-                            case AUTO_BUFF -> settings.getAutoBuffs().add(id);
-                            case AUTO_SKILL -> settings.getAutoSkills().add(id);
-                            case AUTO_ACTION -> settings.getAutoActions().add(id);
+                            case AUTO_SUPPLY_ITEM -> settings.addAutoSupplyItem(id);
+                            case AUTO_BUFF -> settings.addAutoBuff(id);
+                            case AUTO_SKILL -> settings.addAutoSkill(id);
+                            case AUTO_ACTION -> settings.addAutoAction(id);
                             case AUTO_POTION_ITEM -> settings.setAutoPotionItem(id);
                             case CUSTOM_AUTO_POTION_SYSTEM -> {
                                 if (AutoPotionsConfig.AUTO_POTIONS_ENABLED) {
@@ -117,9 +113,6 @@ public class OfflinePlayTable {
                                         .nextInt(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
                     }
 
-                    // player.broadcastUserInfo();
-
-                    // Start auto play and auto use.
                     AutoPlayTaskManager.getInstance().startAutoPlay(player);
                     AutoUseTaskManager.getInstance().startAutoUseTask(player);
 
@@ -137,7 +130,6 @@ public class OfflinePlayTable {
             log.warn("Error while loading offline auto players. {}", e.getMessage(), e);
         }
 
-        // Restore parties.
         if (AutoPlayConfig.ENABLE_AUTO_ASSIST) {
             try {
                 int nParties = 0;
@@ -167,7 +159,6 @@ public class OfflinePlayTable {
             }
         }
 
-        // Clear all party data in one operation.
         try {
             offlinePlayRepository.deleteAllPartyMembers();
         } catch (DataAccessException e) {
@@ -175,29 +166,25 @@ public class OfflinePlayTable {
         }
     }
 
-    /**
-     * Stores the player entering offline play mode.
-     * @param player the player
-     */
     public void storeOfflinePlay(Player player) {
         final List<OfflinePlayEntry> entries = new ArrayList<>();
         for (int shotId : player.getAutoSoulShot()) {
             entries.add(entry(OfflinePlayEntryType.ACTIVE_SOULSHOT, shotId));
         }
 
-        for (Integer itemId : player.getAutoUseSettings().getAutoSupplyItems()) {
+        for (int itemId : player.getAutoUseSettings().getAutoSupplyItems()) {
             entries.add(entry(OfflinePlayEntryType.AUTO_SUPPLY_ITEM, itemId));
         }
 
-        for (Integer buffId : player.getAutoUseSettings().getAutoBuffs()) {
+        for (int buffId : player.getAutoUseSettings().getAutoBuffs()) {
             entries.add(entry(OfflinePlayEntryType.AUTO_BUFF, buffId));
         }
 
-        for (Integer skillId : player.getAutoUseSettings().getAutoSkills()) {
+        for (int skillId : player.getAutoUseSettings().getAutoSkills()) {
             entries.add(entry(OfflinePlayEntryType.AUTO_SKILL, skillId));
         }
 
-        for (Integer actionId : player.getAutoUseSettings().getAutoActions()) {
+        for (int actionId : player.getAutoUseSettings().getAutoActions()) {
             entries.add(entry(OfflinePlayEntryType.AUTO_ACTION, actionId));
         }
 
@@ -243,10 +230,6 @@ public class OfflinePlayTable {
         }
     }
 
-    /**
-     * Handles player removal of offline play mode.
-     * @param player the player
-     */
     public void removeOfflinePlay(Player player) {
         try {
             offlinePlayRepository.deleteEntries(player.getObjectId());

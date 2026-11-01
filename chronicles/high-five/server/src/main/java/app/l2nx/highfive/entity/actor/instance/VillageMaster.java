@@ -377,7 +377,7 @@ public class VillageMaster extends Folk {
                     break;
                 }
                 case 2: {
-                    if (player.getSubClasses().isEmpty()) {
+                    if (!player.hasSubClasses()) {
                         html.setFile(player, "data/html/villagemaster/SubClass_ChangeNo.htm");
                     } else {
                         final StringBuilder content2 = new StringBuilder(200);
@@ -409,8 +409,7 @@ public class VillageMaster extends Folk {
                     break;
                 }
                 case 3: {
-                    if ((player.getSubClasses() == null)
-                            || player.getSubClasses().isEmpty()) {
+                    if (!player.hasSubClasses()) {
                         html.setFile(player, "data/html/villagemaster/SubClass_ModifyEmpty.htm");
                         break;
                     }
@@ -431,39 +430,32 @@ public class VillageMaster extends Folk {
 
                         html.replace("%list%", content3.toString());
                     } else {
-                        // retail html contain only 3 subclasses
                         html.setFile(player, "data/html/villagemaster/SubClass_Modify.htm");
-                        if (player.getSubClasses().containsKey(1)) {
+                        if (player.hasSubClass(1)) {
                             html.replace(
                                     "%sub1%",
                                     ClassListData.getInstance()
-                                            .getClass(player.getSubClasses()
-                                                    .get(1)
-                                                    .getId())
+                                            .getClass(player.getSubClass(1).getId())
                                             .className());
                         } else {
                             html.replace("<a action=\"bypass npc_%objectId%_Subclass 6 1\">%sub1%</a><br>", "");
                         }
 
-                        if (player.getSubClasses().containsKey(2)) {
+                        if (player.hasSubClass(2)) {
                             html.replace(
                                     "%sub2%",
                                     ClassListData.getInstance()
-                                            .getClass(player.getSubClasses()
-                                                    .get(2)
-                                                    .getId())
+                                            .getClass(player.getSubClass(2).getId())
                                             .className());
                         } else {
                             html.replace("<a action=\"bypass npc_%objectId%_Subclass 6 2\">%sub2%</a><br>", "");
                         }
 
-                        if (player.getSubClasses().containsKey(3)) {
+                        if (player.hasSubClass(3)) {
                             html.replace(
                                     "%sub3%",
                                     ClassListData.getInstance()
-                                            .getClass(player.getSubClasses()
-                                                    .get(3)
-                                                    .getId())
+                                            .getClass(player.getSubClass(3).getId())
                                             .className());
                         } else {
                             html.replace("<a action=\"bypass npc_%objectId%_Subclass 6 3\">%sub3%</a><br>", "");
@@ -485,7 +477,7 @@ public class VillageMaster extends Folk {
                         allowAddition = false;
                     }
 
-                    if (allowAddition && !player.getSubClasses().isEmpty()) {
+                    if (allowAddition && player.hasSubClasses()) {
                         for (Iterator<SubClassHolder> subList = iterSubClasses(player); subList.hasNext(); ) {
                             final SubClassHolder subClass = subList.next();
                             if (subClass.getLevel() < 75) {
@@ -529,8 +521,7 @@ public class VillageMaster extends Folk {
                         }
                     } else {
                         try {
-                            if (!checkVillageMaster(
-                                    player.getSubClasses().get(paramOne).getPlayerClass())) {
+                            if (!checkVillageMaster(player.getSubClass(paramOne).getPlayerClass())) {
                                 return;
                             }
                         } catch (NullPointerException e) {
@@ -586,7 +577,6 @@ public class VillageMaster extends Folk {
                     break;
                 }
                 case 7: {
-                    // The subclass entry is removed from the list even when the change fails.
                     if (!player.getClient().getFloodProtectors().canChangeSubclass()) {
                         return;
                     }
@@ -717,8 +707,7 @@ public class VillageMaster extends Folk {
                     subclasses.remove(PlayerClass.FEMALE_SOULBREAKER);
                 }
 
-                if (!player.getSubClasses().containsKey(2)
-                        || (player.getSubClasses().get(2).getLevel() < 75)) {
+                if (!player.hasSubClass(2) || (player.getSubClass(2).getLevel() < 75)) {
                     subclasses.remove(PlayerClass.INSPECTOR);
                 }
             } else {

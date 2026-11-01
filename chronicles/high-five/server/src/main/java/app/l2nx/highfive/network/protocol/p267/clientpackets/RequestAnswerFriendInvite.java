@@ -55,8 +55,7 @@ public class RequestAnswerFriendInvite extends ClientPacket {
             return;
         }
 
-        if (player.getFriendList().contains(requestor.getObjectId()) //
-                || requestor.getFriendList().contains(player.getObjectId())) {
+        if (player.isFriend(requestor.getObjectId()) || requestor.isFriend(player.getObjectId())) {
             requestor.sendPacket(SystemMessageId.THIS_PLAYER_IS_ALREADY_REGISTERED_ON_YOUR_FRIENDS_LIST);
             return;
         }
@@ -68,19 +67,16 @@ public class RequestAnswerFriendInvite extends ClientPacket {
                         new SystemMessage(SystemMessageId.THAT_PERSON_HAS_BEEN_SUCCESSFULLY_ADDED_TO_YOUR_FRIEND_LIST);
                 requestor.sendPacket(msg);
 
-                // Player added to your friend list.
                 msg = new SystemMessage(SystemMessageId.S1_HAS_BEEN_ADDED_TO_YOUR_FRIENDS_LIST);
                 msg.addString(player.getName());
                 requestor.sendPacket(msg);
-                requestor.getFriendList().add(player.getObjectId());
+                requestor.addFriend(player.getObjectId());
 
-                // has joined as friend.
                 msg = new SystemMessage(SystemMessageId.S1_HAS_JOINED_AS_A_FRIEND);
                 msg.addString(requestor.getName());
                 player.sendPacket(msg);
-                player.getFriendList().add(requestor.getObjectId());
+                player.addFriend(requestor.getObjectId());
 
-                // Send notifications for both player in order to show them online
                 player.sendPacket(new FriendPacket(true, requestor.getObjectId()));
                 requestor.sendPacket(new FriendPacket(true, player.getObjectId()));
             } catch (DataAccessException e) {

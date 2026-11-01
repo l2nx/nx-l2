@@ -45,7 +45,7 @@ public class EnlargeAbnormalSlot extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        effected.getStat().setMaxBuffCount(effected.getStat().getMaxBuffCount() + slots);
+        effected.getStat().addMaxBuffCount(slots);
     }
 
     @Override
@@ -55,6 +55,6 @@ public class EnlargeAbnormalSlot extends AbstractEffect {
 
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
-        effected.getStat().setMaxBuffCount(Math.max(0, effected.getStat().getMaxBuffCount() - slots));
+        effected.getStat().addMaxBuffCount(-slots);
     }
 }

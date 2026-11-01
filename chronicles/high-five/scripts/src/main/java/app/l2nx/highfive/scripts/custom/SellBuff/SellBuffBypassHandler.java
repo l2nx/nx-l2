@@ -92,7 +92,7 @@ public class SellBuffBypassHandler implements IBypassHandler {
             case "sellbuffstart": {
                 if (player.isSellingBuffs() || (params == null) || params.isEmpty()) {
                     return false;
-                } else if (player.getSellingBuffs().isEmpty()) {
+                } else if (!player.hasSellingBuffs()) {
                     player.sendMessage("Your list of buffs is empty, please add some buffs first!");
                     return false;
                 } else {
@@ -164,10 +164,7 @@ public class SellBuffBypassHandler implements IBypassHandler {
                         return false;
                     }
 
-                    final SellBuffHolder holder = player.getSellingBuffs().stream()
-                            .filter(h -> (h.getSkillId() == skillToChange.getId()))
-                            .findFirst()
-                            .orElse(null);
+                    final SellBuffHolder holder = player.getSellingBuff(skillToChange.getId());
                     if (holder != null) {
                         player.sendMessage("Price of "
                                 + player.getKnownSkill(holder.getSkillId()).getName() + " has been changed to " + price
@@ -197,11 +194,8 @@ public class SellBuffBypassHandler implements IBypassHandler {
                         return false;
                     }
 
-                    final SellBuffHolder holder = player.getSellingBuffs().stream()
-                            .filter(h -> (h.getSkillId() == skillToRemove.getId()))
-                            .findFirst()
-                            .orElse(null);
-                    if ((holder != null) && player.getSellingBuffs().remove(holder)) {
+                    final SellBuffHolder holder = player.getSellingBuff(skillToRemove.getId());
+                    if ((holder != null) && player.removeSellingBuff(holder)) {
                         player.sendMessage("Skill "
                                 + player.getKnownSkill(holder.getSkillId()).getName() + " has been removed!");
                         SellBuffsManager.getInstance().sendBuffEditMenu(player);
@@ -242,12 +236,12 @@ public class SellBuffBypassHandler implements IBypassHandler {
                     } else if (price > SellBuffsConfig.SELLBUFF_MAX_PRICE) {
                         player.sendMessage("Too big price! Maximum price is " + SellBuffsConfig.SELLBUFF_MAX_PRICE);
                         return false;
-                    } else if (player.getSellingBuffs().size() >= SellBuffsConfig.SELLBUFF_MAX_BUFFS) {
+                    } else if (player.getSellingBuffCount() >= SellBuffsConfig.SELLBUFF_MAX_BUFFS) {
                         player.sendMessage("You already reached max count of buffs! Max buffs is: "
                                 + SellBuffsConfig.SELLBUFF_MAX_BUFFS);
                         return false;
                     } else if (!SellBuffsManager.getInstance().isInSellList(player, skillToAdd)) {
-                        player.getSellingBuffs().add(new SellBuffHolder(skillToAdd.getId(), price));
+                        player.addSellingBuff(new SellBuffHolder(skillToAdd.getId(), price));
                         player.sendMessage(skillToAdd.getName() + " has been added!");
                         SellBuffsManager.getInstance().sendBuffChoiceMenu(player, 0);
                     }
@@ -320,7 +314,6 @@ public class SellBuffBypassHandler implements IBypassHandler {
                         return false;
                     }
 
-                    // Check if buff requires item to cast and seller has enough.
                     final int itemConsumeId = skillToBuy.getItemConsumeId();
                     final int itemConsumeCount = skillToBuy.getItemConsumeCount();
                     if ((itemConsumeId > 0) && (itemConsumeCount > 0)) {
@@ -330,7 +323,6 @@ public class SellBuffBypassHandler implements IBypassHandler {
                                     ItemData.getInstance().getTemplate(itemConsumeId);
                             final String itemName = (requiredItem != null) ? requiredItem.getName() : "required item";
 
-                            // Check if the seller is online before sending them the message.
                             if (seller.isOnline()) {
                                 seller.sendMessage(player.getName() + " tried to buy " + skillToBuy.getName()
                                         + " but you do not have enough " + itemName + "!");
@@ -343,10 +335,7 @@ public class SellBuffBypassHandler implements IBypassHandler {
                         }
                     }
 
-                    final SellBuffHolder holder = seller.getSellingBuffs().stream()
-                            .filter(h -> (h.getSkillId() == skillToBuy.getId()))
-                            .findFirst()
-                            .orElse(null);
+                    final SellBuffHolder holder = seller.getSellingBuff(skillToBuy.getId());
                     if (holder != null) {
                         if (Quest.getQuestItemsCount(player, SellBuffsConfig.SELLBUFF_PAYMENT_ID)
                                 >= holder.getPrice()) {
@@ -354,13 +343,11 @@ public class SellBuffBypassHandler implements IBypassHandler {
                             Quest.giveItems(seller, SellBuffsConfig.SELLBUFF_PAYMENT_ID, holder.getPrice());
                             seller.reduceCurrentMp(skillToBuy.getMpConsume() * SellBuffsConfig.SELLBUFF_MP_MULTIPLER);
 
-                            // Consume item(s) required by the buff.
                             if ((itemConsumeId > 0) && (itemConsumeCount > 0)) {
                                 seller.destroyItemByItemId(
                                         ItemProcessType.FEE, itemConsumeId, itemConsumeCount, player, true);
                             }
 
-                            // Cast buff.
                             skillToBuy.activateSkill(seller, Collections.singletonList(player));
                         } else {
                             final ItemTemplate item =
@@ -418,7 +405,6 @@ public class SellBuffBypassHandler implements IBypassHandler {
                         return false;
                     }
 
-                    // Check if buff requires item to cast and seller has enough.
                     final int itemConsumeId = skillToBuy.getItemConsumeId();
                     final int itemConsumeCount = skillToBuy.getItemConsumeCount();
                     if ((itemConsumeId > 0) && (itemConsumeCount > 0)) {
@@ -428,7 +414,6 @@ public class SellBuffBypassHandler implements IBypassHandler {
                                     ItemData.getInstance().getTemplate(itemConsumeId);
                             final String itemName = (requiredItem != null) ? requiredItem.getName() : "required item";
 
-                            // Check if the seller is online before sending them the message.
                             if (seller.isOnline()) {
                                 seller.sendMessage(player.getName() + " tried to buy " + skillToBuy.getName()
                                         + " but you do not have enough " + itemName + "!");
@@ -441,10 +426,7 @@ public class SellBuffBypassHandler implements IBypassHandler {
                         }
                     }
 
-                    final SellBuffHolder holder = seller.getSellingBuffs().stream()
-                            .filter(h -> (h.getSkillId() == skillToBuy.getId()))
-                            .findFirst()
-                            .orElse(null);
+                    final SellBuffHolder holder = seller.getSellingBuff(skillToBuy.getId());
                     if (holder != null) {
                         if (Quest.getQuestItemsCount(player, SellBuffsConfig.SELLBUFF_PAYMENT_ID)
                                 >= holder.getPrice()) {
@@ -457,13 +439,11 @@ public class SellBuffBypassHandler implements IBypassHandler {
                                 seller.reduceCurrentMp(
                                         skillToBuy.getMpConsume() * SellBuffsConfig.SELLBUFF_MP_MULTIPLER);
 
-                                // Consume item(s) required by the buff.
                                 if ((itemConsumeId > 0) && (itemConsumeCount > 0)) {
                                     seller.destroyItemByItemId(
                                             ItemProcessType.FEE, itemConsumeId, itemConsumeCount, player, true);
                                 }
 
-                                // Cast buff.
                                 skillToBuy.activateSkill(seller, Collections.singletonList(player.getSummon()));
                             }
                         } else {

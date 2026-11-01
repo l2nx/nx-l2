@@ -16,14 +16,22 @@ import static org.mockito.Mockito.when;
 import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.partition.WorldLoopExtension;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
+@ExtendWith(WorldLoopExtension.class)
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock(WorldLoopExtension.LOCK)
 class PlayerPortTest {
     private final Player player = mock(Player.class, CALLS_REAL_METHODS);
     private final GameClient client = mock(GameClient.class);
@@ -34,24 +42,35 @@ class PlayerPortTest {
         @Test
         void getPort_shouldBeTheClientPort() {
             when(client.port()).thenReturn(port);
-            player.setClient(client);
 
-            assertThat(player.getPort()).isSameAs(port);
+            final ClientPort actual = WorldLoopExtension.callInPass(() -> {
+                player.setClient(client);
+                return player.getPort();
+            });
+
+            assertThat(actual).isSameAs(port);
         }
 
         @Test
         void getPort_shouldBeDetached_whenThePlayerHasNoClient() {
-            player.setClient(null);
+            final ClientPort actual = WorldLoopExtension.callInPass(() -> {
+                player.setClient(null);
+                return player.getPort();
+            });
 
-            assertThat(player.getPort()).isSameAs(ClientPort.DETACHED);
+            assertThat(actual).isSameAs(ClientPort.DETACHED);
         }
 
         @Test
         void getPort_shouldBeDetached_whenTheClientIsDetached() {
             when(client.isDetached()).thenReturn(true);
-            player.setClient(client);
 
-            assertThat(player.getPort()).isSameAs(ClientPort.DETACHED);
+            final ClientPort actual = WorldLoopExtension.callInPass(() -> {
+                player.setClient(client);
+                return player.getPort();
+            });
+
+            assertThat(actual).isSameAs(ClientPort.DETACHED);
         }
     }
 
@@ -61,7 +80,6 @@ class PlayerPortTest {
         @ValueSource(booleans = {true, false})
         void observerPorts_shouldBeThePortsOfThePlayersWhoSeeIt(boolean includeSelf) {
             when(client.port()).thenReturn(port);
-            player.setClient(client);
             final Player watching = observer();
             final Player blind = observer();
             doReturn(true).when(player).isVisibleFor(watching);
@@ -77,7 +95,10 @@ class PlayerPortTest {
                             return null;
                         });
 
-                actual = player.observerPorts(includeSelf);
+                actual = WorldLoopExtension.callInPass(() -> {
+                    player.setClient(client);
+                    return player.observerPorts(includeSelf);
+                });
             }
 
             assertThat(actual).isEqualTo(includeSelf ? List.of(port, watching.getPort()) : List.of(watching.getPort()));

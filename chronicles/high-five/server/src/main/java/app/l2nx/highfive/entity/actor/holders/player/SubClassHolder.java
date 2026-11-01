@@ -19,38 +19,23 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Character Sub-Class Definition<br>
  * Used to store key information about a character's sub-class.
  * @author Tempy
  */
+@SingleWriter
 public class SubClassHolder {
-    private static final byte MAX_LEVEL =
-            PlayerConfig.MAX_SUBCLASS_LEVEL < ExperienceData.getInstance().getMaxLevel()
-                    ? PlayerConfig.MAX_SUBCLASS_LEVEL
-                    : (byte) (ExperienceData.getInstance().getMaxLevel() - 1);
-
-    @Getter
     private PlayerClass playerClass;
-
-    @Getter
-    private long exp = ExperienceData.getInstance().getExpForLevel(PlayerConfig.BASE_SUBCLASS_LEVEL);
-
-    @Getter
-    @Setter
-    private long sp = 0;
-
-    @Getter
+    private long exp;
+    private long sp;
     private byte level = PlayerConfig.BASE_SUBCLASS_LEVEL;
-
-    @Getter
-    @Setter
     private int classIndex = 1;
 
     public SubClassHolder(int classId, long exp, int sp, byte level, int classIndex) {
@@ -62,60 +47,101 @@ public class SubClassHolder {
     }
 
     public SubClassHolder(int classId, int classIndex) {
-        // Used for defining a sub class using default values for XP, SP and player level.
         playerClass = PlayerClass.getPlayerClass(classId);
+        exp = ExperienceData.getInstance().getExpForLevel(PlayerConfig.BASE_SUBCLASS_LEVEL);
         this.classIndex = classIndex;
     }
 
     public SubClassHolder() {
-        // Used for specifying ALL attributes of a sub class directly,
-        // using the preset default values.
+        exp = ExperienceData.getInstance().getExpForLevel(PlayerConfig.BASE_SUBCLASS_LEVEL);
+    }
+
+    // Read from the experience table on use, not at class load, so the class loads before the table does.
+    private static byte maxLevel() {
+        final byte tableMax = ExperienceData.getInstance().getMaxLevel();
+        return PlayerConfig.MAX_SUBCLASS_LEVEL < tableMax ? PlayerConfig.MAX_SUBCLASS_LEVEL : (byte) (tableMax - 1);
     }
 
     public int getId() {
+        WorldPartition.checkOwner();
         return playerClass.getId();
     }
 
+    public PlayerClass getPlayerClass() {
+        WorldPartition.checkOwner();
+        return playerClass;
+    }
+
     public void setPlayerClass(int id) {
+        WorldPartition.checkOwner();
         playerClass = PlayerClass.getPlayerClass(id);
     }
 
-    public void setExp(long expValue) {
-        if (expValue > (ExperienceData.getInstance().getExpForLevel(MAX_LEVEL + 1) - 1)) {
-            exp = ExperienceData.getInstance().getExpForLevel(MAX_LEVEL + 1) - 1;
-            return;
-        }
+    public long getExp() {
+        WorldPartition.checkOwner();
+        return exp;
+    }
 
-        exp = expValue;
+    public void setExp(long expValue) {
+        WorldPartition.checkOwner();
+        final long expCap = ExperienceData.getInstance().getExpForLevel(maxLevel() + 1) - 1;
+        exp = Math.min(expValue, expCap);
+    }
+
+    public long getSp() {
+        WorldPartition.checkOwner();
+        return sp;
+    }
+
+    public void setSp(long sp) {
+        WorldPartition.checkOwner();
+        this.sp = sp;
+    }
+
+    public byte getLevel() {
+        WorldPartition.checkOwner();
+        return level;
     }
 
     public void setLevel(byte levelValue) {
-        if (levelValue > MAX_LEVEL) {
-            level = MAX_LEVEL;
-            return;
+        WorldPartition.checkOwner();
+        final byte maxLevel = maxLevel();
+        if (levelValue > maxLevel) {
+            level = maxLevel;
         } else if (levelValue < PlayerConfig.BASE_SUBCLASS_LEVEL) {
             level = PlayerConfig.BASE_SUBCLASS_LEVEL;
-            return;
+        } else {
+            level = levelValue;
         }
+    }
 
-        level = levelValue;
+    public int getClassIndex() {
+        WorldPartition.checkOwner();
+        return classIndex;
+    }
+
+    public void setClassIndex(int classIndex) {
+        WorldPartition.checkOwner();
+        this.classIndex = classIndex;
     }
 
     public void incLevel() {
-        if (level == MAX_LEVEL) {
+        WorldPartition.checkOwner();
+        if (level == maxLevel()) {
             return;
         }
 
         level++;
-        setExp(ExperienceData.getInstance().getExpForLevel(getLevel()));
+        setExp(ExperienceData.getInstance().getExpForLevel(level));
     }
 
     public void decLevel() {
+        WorldPartition.checkOwner();
         if (level == PlayerConfig.BASE_SUBCLASS_LEVEL) {
             return;
         }
 
         level--;
-        setExp(ExperienceData.getInstance().getExpForLevel(getLevel()));
+        setExp(ExperienceData.getInstance().getExpForLevel(level));
     }
 }

@@ -66,7 +66,6 @@ public class MagicalSoulDamage extends AbstractEffect {
         final byte shld = Formulas.calcShldUse(effector, effected, skill);
         int damage = (int) Formulas.calcMagicDam(effector, effected, skill, shld, sps, bss, mcrit);
         if ((skill.getMaxSoulConsumeCount() > 0) && effector.isPlayer()) {
-            // Souls Formula (each soul increase +4.8%)
             final int chargedSouls = (effector.asPlayer().getChargedSouls() <= skill.getMaxSoulConsumeCount())
                     ? effector.asPlayer().getChargedSouls()
                     : skill.getMaxSoulConsumeCount();
@@ -74,14 +73,12 @@ public class MagicalSoulDamage extends AbstractEffect {
         }
 
         if (damage > 0) {
-            // Manage attack or cast break of the target (calculating rate, sending message...)
             if (!effected.isRaid() && Formulas.calcAtkBreak(effected, damage)) {
                 effected.breakAttack();
                 effected.breakCast();
             }
 
-            // Shield Deflect Magic: Reflect all damage on caster.
-            if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill)
+            if (effected.calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill)
                     > ClockBridge.random().nextInt(100)) {
                 effector.reduceCurrentHp(damage, effected, skill);
                 effector.notifyDamageReceived(damage, effected, skill, mcrit, false);

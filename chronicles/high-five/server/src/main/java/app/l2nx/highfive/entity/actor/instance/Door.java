@@ -164,13 +164,13 @@ public class Door extends Creature {
     @Override
     public DoorTemplate getTemplate() {
         WorldPartition.checkOwner();
-        return (DoorTemplate) super.getTemplate();
+        return (DoorTemplate) uncheckedTemplate();
     }
 
     @Override
     public DoorStatus getStatus() {
         WorldPartition.checkOwner();
-        return (DoorStatus) super.getStatus();
+        return (DoorStatus) uncheckedStatus();
     }
 
     @Override
@@ -182,13 +182,13 @@ public class Door extends Creature {
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new DoorStat(this));
+        setStat(new DoorStat(this, statAccess()));
     }
 
     @Override
     public DoorStat getStat() {
         WorldPartition.checkOwner();
-        return (DoorStat) super.getStat();
+        return (DoorStat) uncheckedStat();
     }
 
     public boolean isOpenableBySkill() {
@@ -219,7 +219,7 @@ public class Door extends Creature {
     @Override
     public int getLevel() {
         WorldPartition.checkOwner();
-        return getTemplate().getLevel();
+        return ((DoorTemplate) uncheckedTemplate()).getLevel();
     }
 
     @Override
@@ -265,7 +265,6 @@ public class Door extends Creature {
         return dmg;
     }
 
-    // TODO: Replace index with the castle id itself.
     public Castle getCastle() {
         WorldPartition.checkOwner();
         if (castleIndex < 0) {
@@ -279,7 +278,6 @@ public class Door extends Creature {
         return CastleManager.getInstance().getCastles().get(castleIndex);
     }
 
-    // TODO: Replace index with the fort id itself.
     public Fort getFort() {
         WorldPartition.checkOwner();
         if (fortIndex < 0) {

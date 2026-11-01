@@ -69,14 +69,12 @@ public class MagicalDamage extends AbstractEffect {
         final byte shld = Formulas.calcShldUse(effector, effected, skill);
         final int damage = (int) Formulas.calcMagicDam(effector, effected, skill, shld, sps, bss, mcrit);
         if (damage > 0) {
-            // Manage attack or cast break of the target (calculating rate, sending message...)
             if (!effected.isRaid() && Formulas.calcAtkBreak(effected, damage)) {
                 effected.breakAttack();
                 effected.breakCast();
             }
 
-            // Shield Deflect Magic: Reflect all damage on caster.
-            if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill)
+            if (effected.calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill)
                     > ClockBridge.random().nextInt(100)) {
                 effector.reduceCurrentHp(damage, effected, skill);
                 effector.notifyDamageReceived(damage, effected, skill, mcrit, false);

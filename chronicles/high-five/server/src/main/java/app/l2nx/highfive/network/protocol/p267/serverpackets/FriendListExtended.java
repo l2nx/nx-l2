@@ -32,12 +32,9 @@ import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-/**
- * Support for "Chat with Friends" dialog. <br />
- * This packet is sent only at login.
- * @author mrTJO, UnAfraid
- */
+/** Sent only at login. */
 public class FriendListExtended extends ServerPacket {
     private final List<FriendInfo> info;
 
@@ -58,8 +55,9 @@ public class FriendListExtended extends ServerPacket {
     }
 
     public FriendListExtended(Player player) {
-        info = new ArrayList<>(player.getFriendList().size());
-        for (int objId : player.getFriendList()) {
+        final Set<Integer> friends = player.getFriendList();
+        info = new ArrayList<>(friends.size());
+        for (int objId : friends) {
             final String name = CharInfoTable.getInstance().getNameById(objId);
             final Player player1 = World.getPlayer(objId);
             boolean online = false;
@@ -92,10 +90,10 @@ public class FriendListExtended extends ServerPacket {
         ServerPackets.FRIEND_LIST.writeId(this, buffer);
         buffer.writeInt(this.info.size());
         for (FriendInfo info : this.info) {
-            buffer.writeInt(info.objId); // character id
+            buffer.writeInt(info.objId);
             buffer.writeString(info.name);
-            buffer.writeInt(info.online); // online
-            buffer.writeInt(info.online ? info.objId : 0); // object id if online
+            buffer.writeInt(info.online);
+            buffer.writeInt(info.online ? info.objId : 0);
             buffer.writeInt(info.classid);
             buffer.writeInt(info.level);
         }

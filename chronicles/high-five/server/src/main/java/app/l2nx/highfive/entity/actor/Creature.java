@@ -242,6 +242,8 @@ public abstract class Creature extends WorldObject {
 
     private CreatureStat stat;
 
+    private final CreatureStat.CreatureAccess statAccess = new StatAccess();
+
     private CreatureStatus status;
 
     private CreatureTemplate template;
@@ -524,6 +526,16 @@ public abstract class Creature extends WorldObject {
         return stat;
     }
 
+    /** Unchecked {@link #getStat()}, for the typed getters of the subclasses after their own check. */
+    protected final CreatureStat uncheckedStat() {
+        return stat;
+    }
+
+    /** For the stat of this creature only, built by {@link #initCharStat()}. */
+    protected final CreatureStat.CreatureAccess statAccess() {
+        return statAccess;
+    }
+
     public void setStat(CreatureStat stat) {
         WorldPartition.checkOwner();
         this.stat = stat;
@@ -531,6 +543,11 @@ public abstract class Creature extends WorldObject {
 
     public CreatureStatus getStatus() {
         WorldPartition.checkOwner();
+        return status;
+    }
+
+    /** Unchecked {@link #getStatus()}, for the typed getters of the subclasses after their own check. */
+    protected final CreatureStatus uncheckedStatus() {
         return status;
     }
 
@@ -544,7 +561,10 @@ public abstract class Creature extends WorldObject {
         return template;
     }
 
-    // For toString only: logging calls it from any thread, where the checked getter would throw.
+    /**
+     * Unchecked {@link #getTemplate()}, for the typed getters of the subclasses after their own check and for toString,
+     * which logging calls from any thread, where the checked getter would throw.
+     */
     protected final CreatureTemplate uncheckedTemplate() {
         return template;
     }
@@ -566,11 +586,6 @@ public abstract class Creature extends WorldObject {
     public void setKarma(int karma) {
         WorldPartition.checkOwner();
         this.karma = karma;
-    }
-
-    public Calculator getCalculator(int statId) {
-        WorldPartition.checkOwner();
-        return calculators[statId];
     }
 
     public Map<Integer, Skill> getSkills() {
@@ -768,8 +783,13 @@ public abstract class Creature extends WorldObject {
         return false;
     }
 
-    public Transform getTransformation() {
+    public final Transform getTransformation() {
         WorldPartition.checkOwner();
+        return transformation();
+    }
+
+    /** Unchecked {@link #getTransformation()}, the one subclasses override. */
+    protected Transform transformation() {
         return null;
     }
 
@@ -972,19 +992,14 @@ public abstract class Creature extends WorldObject {
     /** HP and MP only; CP is not sent. */
     public void broadcastStatusUpdate() {
         WorldPartition.checkOwner();
-        if (status.getStatusListener().isEmpty() || !needHpUpdate()) {
+        if (!status.hasStatusListeners() || !needHpUpdate()) {
             return;
         }
 
         final StatusUpdate su = new StatusUpdate(this);
         su.addAttribute(StatusUpdate.MAX_HP, stat.getMaxHp());
         su.addAttribute(StatusUpdate.CUR_HP, (int) status.getCurrentHp());
-
-        for (Creature temp : status.getStatusListener()) {
-            if (temp != null) {
-                temp.sendPacket(su);
-            }
-        }
+        status.forEachStatusListener(listener -> listener.sendPacket(su));
     }
 
     public void sendMessage(String text) {
@@ -1572,7 +1587,7 @@ public abstract class Creature extends WorldObject {
 
         if (!isAffected(EffectFlag.POLEARM_SINGLE_TARGET)) {
             // Without Polearm Mastery (skill 216) max simultaneous attacks is 3 (1 by default + 2 in skill 3599).
-            int attackCountMax = (int) stat.calcStat(Stat.ATTACK_COUNT_MAX, 1, null, null);
+            int attackCountMax = (int) calcStat(Stat.ATTACK_COUNT_MAX, 1, null, null);
             if (attackCountMax > 1) {
                 final double headingAngle = LocationUtil.convertHeadingToDegree(getHeading());
                 final int maxRadius = stat.getPhysicalAttackRange();
@@ -2695,7 +2710,7 @@ public abstract class Creature extends WorldObject {
 
     public void initCharStat() {
         WorldPartition.checkOwner();
-        stat = new CreatureStat(this);
+        stat = new CreatureStat(this, statAccess);
     }
 
     public void initCharStatus() {
@@ -2813,7 +2828,6 @@ public abstract class Creature extends WorldObject {
         effectList.stopAllEffects();
     }
 
-    /** Stops all effects except those that last through death. */
     public void stopAllEffectsExceptThoseThatLastThroughDeath() {
         WorldPartition.checkOwner();
         effectList.stopAllEffectsExceptThoseThatLastThroughDeath();
@@ -3468,7 +3482,6 @@ public abstract class Creature extends WorldObject {
 
     public void revalidateZone(boolean force) {
         WorldPartition.checkOwner();
-        // This function is called too often from movement code.
         if (!force
                 && (calculateDistance3D(lastZoneValidateLocation)
                         < (isNpc() && !isInCombat() ? NpcConfig.MAX_DRIFT_RANGE : 100))) {
@@ -3982,9 +3995,10 @@ public abstract class Creature extends WorldObject {
                     && ((weapon.getItemType() == WeaponType.BOW) || (weapon.getItemType() == WeaponType.CROSSBOW)));
             int reflectedDamage = 0;
             if (!isBow && !target.isInvul()) {
-                // quick fix for no drop from raid if boss attack high-level char with damage reflection
+                // A raid boss hitting a much higher-level player gets no reflected damage, or it would die without a
+                // drop.
                 if (!target.isRaid() || (asPlayer() == null) || (asPlayer().getLevel() <= (target.getLevel() + 8))) {
-                    final double reflectPercent = target.getStat().calcStat(Stat.REFLECT_DAMAGE_PERCENT, 0, null, null);
+                    final double reflectPercent = target.calcStat(Stat.REFLECT_DAMAGE_PERCENT, 0, null, null);
                     if (reflectPercent > 0) {
                         reflectedDamage = (int) ((reflectPercent / 100.) * damage);
                         if (reflectedDamage > target.getMaxHp()) {
@@ -4002,7 +4016,7 @@ public abstract class Creature extends WorldObject {
             }
 
             if (!isBow) {
-                double absorbPercent = stat.calcStat(Stat.ABSORB_DAMAGE_PERCENT, 0, null, null);
+                double absorbPercent = calcStat(Stat.ABSORB_DAMAGE_PERCENT, 0, null, null);
                 if (absorbPercent > 0) {
                     final int maxCanAbsorb = (int) (stat.getMaxRecoverableHp() - status.getCurrentHp());
                     int absorbDamage = (int) ((absorbPercent / 100.) * damage);
@@ -4015,7 +4029,7 @@ public abstract class Creature extends WorldObject {
                     }
                 }
 
-                absorbPercent = stat.calcStat(Stat.ABSORB_MANA_DAMAGE_PERCENT, 0, null, null);
+                absorbPercent = calcStat(Stat.ABSORB_MANA_DAMAGE_PERCENT, 0, null, null);
                 if (absorbPercent > 0) {
                     final int maxCanAbsorb = (int) (stat.getMaxRecoverableMp() - status.getCurrentMp());
                     int absorbDamage = (int) ((absorbPercent / 100.) * damage);
@@ -4921,7 +4935,7 @@ public abstract class Creature extends WorldObject {
         WorldPartition.checkOwner();
         int random;
         if (getActiveWeaponItem() != null) {
-            random = (int) stat.calcStat(Stat.RANDOM_DAMAGE, 0);
+            random = (int) calcStat(Stat.RANDOM_DAMAGE, 0);
         } else {
             random = 5 + (int) Math.sqrt(getLevel());
         }
@@ -4933,13 +4947,65 @@ public abstract class Creature extends WorldObject {
 
     public double calcStat(Stat stat, double init) {
         WorldPartition.checkOwner();
-        return this.stat.calcStat(stat, init, null, null);
+        return calculate(stat, init, null, null);
     }
 
-    // TODO: remove once CreatureStatus is complete
     public double calcStat(Stat stat, double init, Creature target, Skill skill) {
         WorldPartition.checkOwner();
-        return this.stat.calcStat(stat, init, target, skill);
+        return calculate(stat, init, target, skill);
+    }
+
+    // Here rather than in CreatureStat: the creature owns the calculators and the transformation, so the calculation
+    // reads them without a check per field; the stat reaches it through statAccess() after its own check.
+    private double calculate(Stat stat, double initVal, Creature target, Skill skill) {
+        double value = initVal;
+        if (stat == null) {
+            return value;
+        }
+
+        final Calculator calc = calculators[stat.ordinal()];
+
+        // If no Func object found, no modifier is applied.
+        if ((calc == null) || (calc.size() == 0)) {
+            return value;
+        }
+
+        final Transform transform = transformation();
+        if (transform != null) {
+            final double val = transform.getStat(asPlayer(), stat);
+            if (val > 0) {
+                value = val;
+            }
+        }
+
+        value = calc.calc(this, target, skill, value);
+
+        // avoid some troubles with negative stats (some stats should never be negative)
+        if (value <= 0) {
+            switch (stat) {
+                case MAX_HP:
+                case MAX_MP:
+                case MAX_CP:
+                case MAGIC_DEFENCE:
+                case POWER_DEFENCE:
+                case POWER_ATTACK:
+                case MAGIC_ATTACK:
+                case POWER_ATTACK_SPEED:
+                case MAGIC_ATTACK_SPEED:
+                case SHIELD_DEFENCE:
+                case STAT_CON:
+                case STAT_DEX:
+                case STAT_INT:
+                case STAT_MEN:
+                case STAT_STR:
+                case STAT_WIT: {
+                    value = 1.0;
+                    break;
+                }
+            }
+        }
+
+        return value;
     }
 
     public int getAccuracy() {
@@ -5706,5 +5772,17 @@ public abstract class Creature extends WorldObject {
     public void removeBuffInfoTime(BuffInfo info) {
         WorldPartition.checkOwner();
         buffFinishTask.removeBuffInfo(info);
+    }
+
+    private final class StatAccess implements CreatureStat.CreatureAccess {
+        @Override
+        public double calculate(Stat stat, double initVal, Creature target, Skill skill) {
+            return Creature.this.calculate(stat, initVal, target, skill);
+        }
+
+        @Override
+        public CreatureTemplate template() {
+            return template;
+        }
     }
 }

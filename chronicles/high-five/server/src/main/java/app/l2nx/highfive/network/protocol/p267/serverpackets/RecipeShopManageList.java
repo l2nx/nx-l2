@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.item.recipe.RecipeList;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Map;
 
 public class RecipeShopManageList extends ServerPacket {
     private final Player seller;
@@ -45,15 +45,8 @@ public class RecipeShopManageList extends ServerPacket {
         }
 
         if (this.seller.hasManufactureShop()) {
-            final Iterator<ManufactureItem> it =
-                    this.seller.getManufactureItems().values().iterator();
-            ManufactureItem item;
-            while (it.hasNext()) {
-                item = it.next();
-                if ((item.isDwarven() != dwarven) || !seller.hasRecipeList(item.getRecipeId())) {
-                    it.remove();
-                }
-            }
+            this.seller.removeManufactureItemsIf(
+                    item -> (item.isDwarven() != dwarven) || !seller.hasRecipeList(item.getRecipeId()));
         }
     }
 
@@ -66,7 +59,7 @@ public class RecipeShopManageList extends ServerPacket {
         if (recipes == null) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(recipes.size()); // number of items in recipe book
+            buffer.writeInt(recipes.size());
             int count = 0;
             for (RecipeList recipe : recipes) {
                 count++;
@@ -78,8 +71,9 @@ public class RecipeShopManageList extends ServerPacket {
         if (!seller.hasManufactureShop()) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(seller.getManufactureItems().size());
-            for (ManufactureItem item : seller.getManufactureItems().values()) {
+            final Map<Integer, ManufactureItem> items = seller.getManufactureItems();
+            buffer.writeInt(items.size());
+            for (ManufactureItem item : items.values()) {
                 buffer.writeInt(item.getRecipeId());
                 buffer.writeInt(0);
                 buffer.writeLong(item.getCost());

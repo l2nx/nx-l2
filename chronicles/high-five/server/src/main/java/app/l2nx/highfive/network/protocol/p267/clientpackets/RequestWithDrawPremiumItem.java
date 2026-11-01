@@ -27,9 +27,6 @@ import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExGetPremiumItemList;
 
-/**
- * @author Gnacik
- */
 public class RequestWithDrawPremiumItem extends ClientPacket {
     private int itemNum;
     private int charId;
@@ -55,7 +52,7 @@ public class RequestWithDrawPremiumItem extends ClientPacket {
                     "[RequestWithDrawPremiumItem] Incorrect owner, Player: " + player.getName(),
                     GeneralConfig.DEFAULT_PUNISH);
             return;
-        } else if (player.getPremiumItemList().isEmpty()) {
+        } else if (!player.hasPremiumItems()) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "[RequestWithDrawPremiumItem] Player: " + player.getName() + " try to get item with empty list!",
@@ -71,7 +68,7 @@ public class RequestWithDrawPremiumItem extends ClientPacket {
             return;
         }
 
-        final PremiumItem item = player.getPremiumItemList().get(itemNum);
+        final PremiumItem item = player.getPremiumItem(itemNum);
         if (item == null) {
             return;
         } else if (item.getCount() < itemCount) {
@@ -84,11 +81,11 @@ public class RequestWithDrawPremiumItem extends ClientPacket {
             item.updateCount(itemsLeft);
             player.updatePremiumItem(itemNum, itemsLeft);
         } else {
-            player.getPremiumItemList().remove(itemNum);
+            player.removePremiumItem(itemNum);
             player.deletePremiumItem(itemNum);
         }
 
-        if (player.getPremiumItemList().isEmpty()) {
+        if (!player.hasPremiumItems()) {
             player.sendPacket(SystemMessageId.THERE_ARE_NO_MORE_DIMENSIONAL_ITEMS_TO_BE_FOUND);
         } else {
             player.sendPacket(new ExGetPremiumItemList(player));

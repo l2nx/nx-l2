@@ -55,16 +55,14 @@ public class SpiritShot implements IItemHandler {
         final Weapon weaponItem = player.getActiveWeaponItem();
         final int itemId = item.getId();
 
-        // Check if Spirit shot can be used
         if ((weaponInst == null) || (weaponItem.getSpiritShotCount() == 0)) {
-            if (!player.getAutoSoulShot().contains(itemId)) {
+            if (!player.hasAutoSoulShot(itemId)) {
                 player.sendPacket(SystemMessageId.YOU_MAY_NOT_USE_SPIRITSHOTS);
             }
 
             return false;
         }
 
-        // Check if Spirit shot is already active
         if (player.isChargedShot(ShotType.SPIRITSHOTS)) {
             return false;
         }
@@ -74,14 +72,13 @@ public class SpiritShot implements IItemHandler {
                 && (weaponInst.getTemplate().getCrystalTypePlus()
                         == item.getTemplate().getCrystalTypePlus());
         if (!gradeCheck) {
-            if (!player.getAutoSoulShot().contains(itemId)) {
+            if (!player.hasAutoSoulShot(itemId)) {
                 player.sendPacket(SystemMessageId.YOUR_SPIRITSHOT_DOES_NOT_MATCH_THE_WEAPON_S_GRADE);
             }
 
             return false;
         }
 
-        // Consume Spirit shot if player has enough of them
         if (!player.destroyItem(
                 ItemProcessType.NONE, item.getObjectId(), weaponItem.getSpiritShotCount(), null, false)) {
             if (!player.disableAutoShot(itemId)) {
@@ -91,10 +88,8 @@ public class SpiritShot implements IItemHandler {
             return false;
         }
 
-        // Charge Spirit shot
         player.setChargedShot(ShotType.SPIRITSHOTS, true);
 
-        // Send message to client.
         player.sendPacket(SystemMessageId.YOUR_SPIRITSHOT_HAS_BEEN_ENABLED);
         player.broadcastSkillPacket(
                 new MagicSkillUse(player, player, skills[0].getSkillId(), skills[0].getSkillLevel(), 0, 0), player);

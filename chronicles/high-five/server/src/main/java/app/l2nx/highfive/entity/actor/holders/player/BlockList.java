@@ -26,30 +26,40 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import java.util.HashSet;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 @Slf4j
+@SingleWriter
 public class BlockList {
 
-    private static final Map<Integer, Set<Integer>> OFFLINE_LIST = new ConcurrentHashMap<>();
+    private static final int OFFLINE_LIST_MAX = 10_000;
+
+    // Every change is written to the database at once, so an evicted list is reloaded intact; least recently used
+    // goes first, so the lists of everyone who ever logged out cannot accumulate.
+    private static final LinkedHashMap<Integer, IntLinkedOpenHashSet> OFFLINE_LIST =
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, IntLinkedOpenHashSet> eldest) {
+                    return size() > OFFLINE_LIST_MAX;
+                }
+            };
 
     private final Player owner;
 
-    @Getter(AccessLevel.PRIVATE)
-    private Set<Integer> blockList;
+    // Insertion order is the order the ignore list is shown in.
+    private IntLinkedOpenHashSet blockList;
 
     public BlockList(Player owner) {
         this.owner = owner;
@@ -69,7 +79,7 @@ public class BlockList {
     }
 
     private void removeFromBlockList(int target) {
-        blockList.remove(Integer.valueOf(target));
+        blockList.remove(target);
         try {
             CharacterRelationsManager.getInstance().unblock(owner.getObjectId(), target);
         } catch (DataAccessException e) {
@@ -78,11 +88,12 @@ public class BlockList {
     }
 
     public void playerLogout() {
+        WorldPartition.checkOwner();
         OFFLINE_LIST.put(owner.getObjectId(), blockList);
     }
 
-    private static Set<Integer> loadList(int objId) {
-        final Set<Integer> list = new HashSet<>();
+    private static IntLinkedOpenHashSet loadList(int objId) {
+        final IntLinkedOpenHashSet list = new IntLinkedOpenHashSet();
         try {
             for (int blockedId : CharacterRelationsManager.getInstance().findBlockedIds(objId)) {
                 if (blockedId != objId) {
@@ -97,10 +108,12 @@ public class BlockList {
     }
 
     public boolean isInBlockList(Player target) {
+        WorldPartition.checkOwner();
         return blockList.contains(target.getObjectId());
     }
 
     public boolean isInBlockList(int targetId) {
+        WorldPartition.checkOwner();
         return blockList.contains(targetId);
     }
 
@@ -109,11 +122,13 @@ public class BlockList {
     }
 
     public static boolean isBlocked(Player listOwner, Player target) {
+        WorldPartition.checkOwner();
         final BlockList blockList = listOwner.getBlockList();
         return blockList.isBlockAll() || blockList.isInBlockList(target);
     }
 
     public static boolean isBlocked(Player listOwner, int targetId) {
+        WorldPartition.checkOwner();
         final BlockList blockList = listOwner.getBlockList();
         return blockList.isBlockAll() || blockList.isInBlockList(targetId);
     }
@@ -123,16 +138,17 @@ public class BlockList {
     }
 
     public static void addToBlockList(Player listOwner, int targetId) {
+        WorldPartition.checkOwner();
         if (listOwner == null) {
             return;
         }
 
-        if (listOwner.getFriendList().contains(targetId)) {
+        if (listOwner.isFriend(targetId)) {
             listOwner.sendPacket(SystemMessageId.THIS_PLAYER_IS_ALREADY_REGISTERED_ON_YOUR_FRIENDS_LIST);
             return;
         }
 
-        if (listOwner.getBlockList().getBlockList().contains(targetId)) {
+        if (listOwner.getBlockList().blockList.contains(targetId)) {
             listOwner.sendMessage("Already in ignore list.");
             return;
         }
@@ -153,12 +169,13 @@ public class BlockList {
     }
 
     public static void removeFromBlockList(Player listOwner, int targetId) {
+        WorldPartition.checkOwner();
         if (listOwner == null) {
             return;
         }
 
         SystemMessage sm;
-        if (!listOwner.getBlockList().getBlockList().contains(targetId)) {
+        if (!listOwner.getBlockList().blockList.contains(targetId)) {
             sm = new SystemMessage(SystemMessageId.THAT_IS_AN_INCORRECT_TARGET);
             listOwner.sendPacket(sm);
             return;
@@ -173,38 +190,38 @@ public class BlockList {
     }
 
     public static boolean isInBlockList(Player listOwner, Player target) {
+        WorldPartition.checkOwner();
         return listOwner.getBlockList().isInBlockList(target);
     }
 
     public boolean isBlockAll(Player listOwner) {
+        WorldPartition.checkOwner();
         return listOwner.getBlockList().isBlockAll();
     }
 
     public static void setBlockAll(Player listOwner, boolean newValue) {
+        WorldPartition.checkOwner();
         listOwner.getBlockList().setBlockAll(newValue);
     }
 
     public static void sendListToOwner(Player listOwner) {
+        WorldPartition.checkOwner();
         int i = 1;
         listOwner.sendPacket(SystemMessageId.IGNORE_LIST);
-        for (int playerId : listOwner.getBlockList().getBlockList()) {
+        for (int playerId : listOwner.getBlockList().blockList.toIntArray()) {
             listOwner.sendMessage((i++) + ". " + CharInfoTable.getInstance().getNameById(playerId));
         }
 
         listOwner.sendPacket(SystemMessageId.EMPTY_3);
     }
 
-    /**
-     * @param ownerId object id of owner block list
-     * @param targetId object id of potential blocked player
-     * @return true if blocked
-     */
     public static boolean isInBlockList(int ownerId, int targetId) {
+        WorldPartition.checkOwner();
         final Player player = World.getPlayer(ownerId);
         if (player != null) {
             return isBlocked(player, targetId);
         }
 
-        return OFFLINE_LIST.computeIfAbsent(ownerId, k -> loadList(k)).contains(targetId);
+        return OFFLINE_LIST.computeIfAbsent(ownerId, BlockList::loadList).contains(targetId);
     }
 }

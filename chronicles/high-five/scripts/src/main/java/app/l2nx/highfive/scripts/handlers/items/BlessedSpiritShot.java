@@ -53,7 +53,6 @@ public class BlessedSpiritShot implements IItemHandler {
 
         final Player player = playable.asPlayer();
 
-        // Disable Blessed SpiritShots in Olympiad.
         if (player.isInOlympiadMode() && OlympiadConfig.OLYMPIAD_DISABLE_BLESSED_SPIRITSHOTS) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_USE_THAT_ITEM_IN_A_GRAND_OLYMPIAD_MATCH);
             return false;
@@ -63,34 +62,30 @@ public class BlessedSpiritShot implements IItemHandler {
         final Weapon weaponItem = player.getActiveWeaponItem();
         final int itemId = item.getId();
 
-        // Check if Blessed SpiritShot can be used.
         if ((weaponInst == null) || (weaponItem == null) || (weaponItem.getSpiritShotCount() == 0)) {
-            if (!player.getAutoSoulShot().contains(itemId)) {
+            if (!player.hasAutoSoulShot(itemId)) {
                 player.sendPacket(SystemMessageId.YOU_MAY_NOT_USE_SPIRITSHOTS);
             }
 
             return false;
         }
 
-        // Check if Blessed SpiritShot is already active (it can be charged over SpiritShot).
         if (player.isChargedShot(ShotType.BLESSED_SPIRITSHOTS)) {
             return false;
         }
 
-        // Check for correct grade
         final boolean gradeCheck = item.isEtcItem()
                 && (item.getEtcItem().getDefaultAction() == ActionType.SPIRITSHOT)
                 && (weaponInst.getTemplate().getCrystalTypePlus()
                         == item.getTemplate().getCrystalTypePlus());
         if (!gradeCheck) {
-            if (!player.getAutoSoulShot().contains(itemId)) {
+            if (!player.hasAutoSoulShot(itemId)) {
                 player.sendPacket(SystemMessageId.YOUR_SPIRITSHOT_DOES_NOT_MATCH_THE_WEAPON_S_GRADE);
             }
 
             return false;
         }
 
-        // Consume Blessed SpiritShot if player has enough of them.
         if (!player.destroyItem(
                 ItemProcessType.NONE, item.getObjectId(), weaponItem.getSpiritShotCount(), null, false)) {
             if (!player.disableAutoShot(itemId)) {
@@ -100,7 +95,6 @@ public class BlessedSpiritShot implements IItemHandler {
             return false;
         }
 
-        // Send message to client.
         player.sendPacket(SystemMessageId.YOUR_SPIRITSHOT_HAS_BEEN_ENABLED);
         player.setChargedShot(ShotType.BLESSED_SPIRITSHOTS, true);
         player.broadcastSkillPacket(

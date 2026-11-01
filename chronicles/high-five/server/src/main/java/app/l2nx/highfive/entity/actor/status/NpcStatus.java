@@ -22,24 +22,22 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.Duel;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class NpcStatus extends CreatureStatus {
     public NpcStatus(Npc activeChar) {
         super(activeChar);
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
-    }
-
-    @Override
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
-        final Npc npc = getActiveChar();
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
+        final Npc npc = (Npc) creature();
         if (npc.isDead()) {
             return;
         }
@@ -50,15 +48,15 @@ public class NpcStatus extends CreatureStatus {
                 attackerPlayer.setDuelState(Duel.DUELSTATE_INTERRUPTED);
             }
 
-            // Add attackers to npc's attacker list.
             npc.addAttackerToAttackByList(attacker);
         }
 
-        super.reduceHp(value, attacker, awake, isDOT, isHpConsumption);
+        super.doReduceHp(value, attacker, awake, isDOT, isHpConsumption);
     }
 
     @Override
     public Npc getActiveChar() {
-        return super.getActiveChar().asNpc();
+        WorldPartition.checkOwner();
+        return (Npc) creature();
     }
 }

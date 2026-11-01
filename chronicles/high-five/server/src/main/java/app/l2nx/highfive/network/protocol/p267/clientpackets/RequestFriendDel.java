@@ -36,9 +36,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
-/**
- * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
- */
 @Slf4j
 public class RequestFriendDel extends ClientPacket {
     private String name;
@@ -65,7 +62,7 @@ public class RequestFriendDel extends ClientPacket {
             return;
         }
 
-        if (!player.getFriendList().contains(id)) {
+        if (!player.isFriend(id)) {
             sm = new SystemMessage(SystemMessageId.C1_IS_NOT_ON_YOUR_FRIEND_LIST);
             sm.addString(name);
             player.sendPacket(sm);
@@ -75,17 +72,16 @@ public class RequestFriendDel extends ClientPacket {
         try {
             CharacterRelationsManager.getInstance().removeFriendship(player.getObjectId(), id);
 
-            // Player deleted from your friend list.
             sm = new SystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST);
             sm.addString(name);
             player.sendPacket(sm);
 
-            player.getFriendList().remove(Integer.valueOf(id));
+            player.removeFriend(id);
             player.sendPacket(new FriendPacket(false, id));
 
             final Player target = World.getPlayer(name);
             if (target != null) {
-                target.getFriendList().remove(Integer.valueOf(player.getObjectId()));
+                target.removeFriend(player.getObjectId());
                 target.sendPacket(new FriendPacket(false, player.getObjectId()));
             }
         } catch (DataAccessException e) {

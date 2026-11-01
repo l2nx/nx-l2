@@ -69,7 +69,7 @@ class SeedOfInfinityManagerTest {
     class OpenSeed {
         @Test
         void openSeed_shouldLogCloseTime_whenSeedOpens() {
-            SeedOfInfinityManager.openSeed(OPEN_DURATION);
+            WorldLoopExtension.runInPass(() -> SeedOfInfinityManager.openSeed(OPEN_DURATION));
 
             final String expectedTime = DateFormatUtils.format(NOW + OPEN_DURATION, "dd/MM/yyyy HH:mm:ss");
             assertThat(appender.list)

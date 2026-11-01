@@ -67,22 +67,11 @@ public class DefenceTrait extends AbstractEffect {
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
-        synchronized (charStat.getDefenceTraits()) {
-            for (Entry<TraitType, Float> trait : defenceTraits.entrySet()) {
-                if (trait.getValue() < 2.0f) {
-                    if (charStat.getDefenceTraitsCount()[trait.getKey().ordinal()] == 0) {
-                        continue;
-                    }
-
-                    charStat.getDefenceTraits()[trait.getKey().ordinal()] /= trait.getValue();
-                    charStat.getDefenceTraitsCount()[trait.getKey().ordinal()]--;
-                } else {
-                    if (charStat.getTraitsInvul()[trait.getKey().ordinal()] == 0) {
-                        continue;
-                    }
-
-                    charStat.getTraitsInvul()[trait.getKey().ordinal()]--;
-                }
+        for (Entry<TraitType, Float> trait : defenceTraits.entrySet()) {
+            if (trait.getValue() < 2.0f) {
+                charStat.removeDefenceTrait(trait.getKey(), trait.getValue());
+            } else {
+                charStat.removeTraitInvul(trait.getKey());
             }
         }
     }
@@ -90,14 +79,11 @@ public class DefenceTrait extends AbstractEffect {
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
-        synchronized (charStat.getDefenceTraits()) {
-            for (Entry<TraitType, Float> trait : defenceTraits.entrySet()) {
-                if (trait.getValue() < 2.0f) {
-                    charStat.getDefenceTraits()[trait.getKey().ordinal()] *= trait.getValue();
-                    charStat.getDefenceTraitsCount()[trait.getKey().ordinal()]++;
-                } else {
-                    charStat.getTraitsInvul()[trait.getKey().ordinal()]++;
-                }
+        for (Entry<TraitType, Float> trait : defenceTraits.entrySet()) {
+            if (trait.getValue() < 2.0f) {
+                charStat.addDefenceTrait(trait.getKey(), trait.getValue());
+            } else {
+                charStat.addTraitInvul(trait.getKey());
             }
         }
     }

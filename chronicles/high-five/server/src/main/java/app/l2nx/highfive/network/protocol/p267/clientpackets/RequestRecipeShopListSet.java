@@ -29,7 +29,6 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
 import app.l2nx.highfive.entity.item.recipe.ManufactureItem;
-import app.l2nx.highfive.entity.item.recipe.RecipeList;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
@@ -37,9 +36,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.RecipeShopMsg;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
-/**
- * RequestRecipeShopListSet client packet class.
- */
 public class RequestRecipeShopListSet extends ClientPacket {
     private static final int BATCH_LENGTH = 12;
 
@@ -97,11 +93,9 @@ public class RequestRecipeShopListSet extends ClientPacket {
             return;
         }
 
-        player.getManufactureItems().clear();
+        player.clearManufactureItems();
         for (ManufactureItem i : items) {
-            final RecipeList list = RecipeData.getInstance().getRecipeList(i.getRecipeId());
-            if (!player.getDwarvenRecipeBook().contains(list)
-                    && !player.getCommonRecipeBook().contains(list)) {
+            if (!player.hasRecipeList(i.getRecipeId())) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! " + player + " of account " + player.getAccountName()
@@ -120,7 +114,7 @@ public class RequestRecipeShopListSet extends ClientPacket {
                 return;
             }
 
-            player.getManufactureItems().put(i.getRecipeId(), i);
+            player.addManufactureItem(i);
         }
 
         player.setStoreName(!player.hasManufactureShop() ? "" : player.getStoreName());

@@ -22,8 +22,11 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class DoorStatus extends CreatureStatus {
     public DoorStatus(Door activeChar) {
         super(activeChar);
@@ -31,6 +34,7 @@ public class DoorStatus extends CreatureStatus {
 
     @Override
     public Door getActiveChar() {
-        return super.getActiveChar().asDoor();
+        WorldPartition.checkOwner();
+        return (Door) creature();
     }
 }

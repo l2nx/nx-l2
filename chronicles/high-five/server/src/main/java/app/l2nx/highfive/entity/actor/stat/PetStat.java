@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.custom.ClassBalanceConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.data.xml.PetDataTable;
@@ -33,16 +34,19 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class PetStat extends SummonStat {
-    public PetStat(Pet activeChar) {
-        super(activeChar);
+    public PetStat(Pet activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     public boolean addExp(int value) {
-        final Pet pet = getActiveChar();
+        WorldPartition.checkOwner();
+        final Pet pet = pet();
         if (pet.isUncontrollable() || !super.addExp(value)) {
             return false;
         }
@@ -56,8 +60,9 @@ public class PetStat extends SummonStat {
     }
 
     public boolean addExpAndSp(double addToExp, double addToSp) {
+        WorldPartition.checkOwner();
         final long finalExp = Math.round(addToExp);
-        final Pet pet = getActiveChar();
+        final Pet pet = pet();
         if (pet.isUncontrollable() || !addExp(finalExp)) {
             return false;
         }
@@ -71,17 +76,14 @@ public class PetStat extends SummonStat {
 
     @Override
     public boolean addLevel(byte value) {
+        WorldPartition.checkOwner();
         if ((getLevel() + value) > (getMaxLevel() - 1)) {
             return false;
         }
 
         final boolean levelIncreased = super.addLevel(value);
 
-        // Sync up exp with current level.
-        // if (getExp() > getExpForLevel(getLevel() + 1) || getExp() < getExpForLevel(getLevel()))
-        // setExp(Experience.LEVEL[getLevel()]);
-
-        final Pet pet = getActiveChar();
+        final Pet pet = pet();
         final StatusUpdate su = new StatusUpdate(pet);
         su.addAttribute(StatusUpdate.LEVEL, getLevel());
         su.addAttribute(StatusUpdate.MAX_HP, getMaxHp());
@@ -91,7 +93,6 @@ public class PetStat extends SummonStat {
             pet.broadcastPacket(new SocialAction(pet.getObjectId(), SocialAction.LEVEL_UP));
         }
 
-        // Send a Server->Client packet PetInfo to the Player.
         pet.updateAndBroadcastStatus(1);
 
         if (pet.getControlItem() != null) {
@@ -103,7 +104,8 @@ public class PetStat extends SummonStat {
 
     @Override
     public long getExpForLevel(int level) {
-        final Pet pet = getActiveChar();
+        WorldPartition.checkOwner();
+        final Pet pet = pet();
         try {
             return PetDataTable.getInstance()
                     .getPetLevelData(pet.getId(), level)
@@ -123,20 +125,24 @@ public class PetStat extends SummonStat {
 
     @Override
     public Pet getActiveChar() {
-        return super.getActiveChar().asPet();
+        WorldPartition.checkOwner();
+        return pet();
     }
 
     public int getFeedBattle() {
-        return getActiveChar().getPetLevelData().getPetFeedBattle();
+        WorldPartition.checkOwner();
+        return pet().getPetLevelData().getPetFeedBattle();
     }
 
     public int getFeedNormal() {
-        return getActiveChar().getPetLevelData().getPetFeedNormal();
+        WorldPartition.checkOwner();
+        return pet().getPetLevelData().getPetFeedNormal();
     }
 
     @Override
     public void setLevel(byte value) {
-        final Pet pet = getActiveChar();
+        WorldPartition.checkOwner();
+        final Pet pet = pet();
         pet.setPetData(
                 PetDataTable.getInstance().getPetLevelData(pet.getTemplate().getId(), value));
         if (pet.getPetLevelData() == null) {
@@ -155,71 +161,74 @@ public class PetStat extends SummonStat {
     }
 
     public int getMaxFeed() {
-        return getActiveChar().getPetLevelData().getPetMaxFeed();
+        WorldPartition.checkOwner();
+        return pet().getPetLevelData().getPetMaxFeed();
     }
 
     @Override
-    public int getMaxHp() {
-        return (int) calcStat(Stat.MAX_HP, getActiveChar().getPetLevelData().getPetMaxHP(), null, null);
+    protected int maxHp() {
+        return (int) calc(Stat.MAX_HP, pet().getPetLevelData().getPetMaxHP(), null, null);
     }
 
     @Override
-    public int getMaxMp() {
-        return (int) calcStat(Stat.MAX_MP, getActiveChar().getPetLevelData().getPetMaxMP(), null, null);
+    protected int maxMp() {
+        return (int) calc(Stat.MAX_MP, pet().getPetLevelData().getPetMaxMP(), null, null);
     }
 
     @Override
     public double getMAtk(Creature target, Skill skill) {
-        return calcStat(Stat.MAGIC_ATTACK, getActiveChar().getPetLevelData().getPetMAtk(), target, skill);
+        WorldPartition.checkOwner();
+        return calc(Stat.MAGIC_ATTACK, pet().getPetLevelData().getPetMAtk(), target, skill);
     }
 
     @Override
     public double getMDef(Creature target, Skill skill) {
-        return calcStat(Stat.MAGIC_DEFENCE, getActiveChar().getPetLevelData().getPetMDef(), target, skill);
+        WorldPartition.checkOwner();
+        return calc(Stat.MAGIC_DEFENCE, pet().getPetLevelData().getPetMDef(), target, skill);
     }
 
     @Override
     public double getPAtk(Creature target) {
-        return calcStat(Stat.POWER_ATTACK, getActiveChar().getPetLevelData().getPetPAtk(), target, null);
+        WorldPartition.checkOwner();
+        return calc(Stat.POWER_ATTACK, pet().getPetLevelData().getPetPAtk(), target, null);
     }
 
     @Override
     public double getPDef(Creature target) {
+        WorldPartition.checkOwner();
+        final Pet pet = pet();
         if (target != null) {
             if (target.isPlayable()) {
                 return ClassBalanceConfig.PVP_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[
-                                getActiveChar().asPlayer().getPlayerClass().getId()]
-                        * calcStat(
-                                Stat.POWER_DEFENCE,
-                                getActiveChar().getPetLevelData().getPetPDef(),
-                                target,
-                                null);
+                                pet.asPlayer().getPlayerClass().getId()]
+                        * calc(Stat.POWER_DEFENCE, pet.getPetLevelData().getPetPDef(), target, null);
             }
 
             return ClassBalanceConfig.PVE_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[
-                            getActiveChar().asPlayer().getPlayerClass().getId()]
-                    * calcStat(
-                            Stat.POWER_DEFENCE,
-                            getActiveChar().getPetLevelData().getPetPDef(),
-                            target,
-                            null);
+                            pet.asPlayer().getPlayerClass().getId()]
+                    * calc(Stat.POWER_DEFENCE, pet.getPetLevelData().getPetPDef(), target, null);
         }
 
-        return calcStat(Stat.POWER_DEFENCE, getActiveChar().getPetLevelData().getPetPDef(), target, null);
+        return calc(Stat.POWER_DEFENCE, pet.getPetLevelData().getPetPDef(), target, null);
     }
 
     @Override
-    public double getPAtkSpd() {
-        return getActiveChar().isHungry() ? super.getPAtkSpd() / 2 : super.getPAtkSpd();
+    protected double pAtkSpd() {
+        return pet().isHungry() ? super.pAtkSpd() / 2 : super.pAtkSpd();
     }
 
     @Override
-    public int getMAtkSpd() {
-        return getActiveChar().isHungry() ? super.getMAtkSpd() / 2 : super.getMAtkSpd();
+    protected int mAtkSpd() {
+        return pet().isHungry() ? super.mAtkSpd() / 2 : super.mAtkSpd();
     }
 
     @Override
     public int getMaxLevel() {
+        WorldPartition.checkOwner();
         return ExperienceData.getInstance().getMaxPetLevel();
+    }
+
+    private Pet pet() {
+        return (Pet) creature();
     }
 }

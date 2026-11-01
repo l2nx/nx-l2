@@ -23,14 +23,17 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
@@ -42,19 +45,30 @@ import org.springframework.dao.DataAccessException;
  * @author UnAfraid, mrTJO
  */
 @Slf4j
+@SingleWriter
 public class ContactList {
 
     private final Player player;
 
-    @Getter
-    private final Set<String> allContacts = ConcurrentHashMap.newKeySet();
+    // Insertion order is the order of the client's contact list.
+    private final ObjectLinkedOpenHashSet<String> allContacts = new ObjectLinkedOpenHashSet<>();
 
     public ContactList(Player player) {
         this.player = player;
-        restore();
+        load();
+    }
+
+    public List<String> getAllContacts() {
+        WorldPartition.checkOwner();
+        return allContacts.isEmpty() ? List.of() : ObjectLists.unmodifiable(new ObjectArrayList<>(allContacts));
     }
 
     public void restore() {
+        WorldPartition.checkOwner();
+        load();
+    }
+
+    private void load() {
         allContacts.clear();
 
         try {
@@ -74,6 +88,7 @@ public class ContactList {
     }
 
     public boolean add(String name) {
+        WorldPartition.checkOwner();
         if (allContacts.contains(name)) {
             player.sendPacket(SystemMessageId.THE_NAME_ALREADY_EXISTS_ON_THE_ADDED_LIST);
             return false;
@@ -122,6 +137,7 @@ public class ContactList {
     }
 
     public void remove(String name) {
+        WorldPartition.checkOwner();
         if (!allContacts.contains(name)) {
             player.sendPacket(SystemMessageId.THE_NAME_IS_NOT_CURRENTLY_REGISTERED);
             return;

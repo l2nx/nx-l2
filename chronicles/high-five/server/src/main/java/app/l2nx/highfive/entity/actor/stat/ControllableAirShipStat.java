@@ -22,24 +22,29 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.instance.ControllableAirShip;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class ControllableAirShipStat extends VehicleStat {
-    public ControllableAirShipStat(ControllableAirShip activeChar) {
-        super(activeChar);
+    public ControllableAirShipStat(ControllableAirShip activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     @Override
     public ControllableAirShip getActiveChar() {
-        return (ControllableAirShip) super.getActiveChar();
+        WorldPartition.checkOwner();
+        return (ControllableAirShip) creature();
     }
 
     @Override
-    public double getMoveSpeed() {
-        if (getActiveChar().isInDock() || (getActiveChar().getFuel() > 0)) {
-            return super.getMoveSpeed();
+    protected double moveSpeed() {
+        final ControllableAirShip ship = (ControllableAirShip) creature();
+        if (ship.isInDock() || (ship.getFuel() > 0)) {
+            return super.moveSpeed();
         }
 
-        return super.getMoveSpeed() * 0.05f;
+        return super.moveSpeed() * 0.05f;
     }
 }

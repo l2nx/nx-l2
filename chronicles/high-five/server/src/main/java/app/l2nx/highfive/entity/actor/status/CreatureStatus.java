@@ -22,32 +22,32 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
+import java.util.function.Consumer;
 
+@SingleWriter
 public class CreatureStatus {
 
-    @Getter
     private final Creature activeChar;
 
-    @Getter
-    private double currentHp = 0; // Current HP of the Creature
+    private double currentHp = 0;
 
-    @Getter
-    private double currentMp = 0; // Current MP of the Creature
+    private double currentMp = 0;
 
-    /** Array containing all clients that need to be notified about hp/mp updates of the Creature */
-    private Set<Creature> statusListener;
+    // Created on the first listener: most creatures are never targeted. Linked for a stable send order.
+    private ObjectLinkedOpenHashSet<Creature> statusListener;
 
-    private Future<?> regTask;
+    private ScheduledFuture<?> regTask;
 
     protected byte flagsRegenActive = 0;
 
@@ -59,88 +59,92 @@ public class CreatureStatus {
         activeChar = creature;
     }
 
-    /**
-     * Add the object to the list of Creature that must be informed of HP/MP updates of this Creature.<br>
-     * <br>
-     * <b><u>Concept</u>:</b><br>
-     * <br>
-     * Each Creature owns a list called <b>statusListener</b> that contains all Player to inform of HP/MP updates.<br>
-     * Players who must be informed are players that target this Creature.<br>
-     * When a RegenTask is in progress sever just need to go through this list to send Server->Client packet StatusUpdate.<br>
-     * <br>
-     * <b><u>Example of use</u>:</b>
-     * <ul>
-     * <li>Target a PC or NPC</li>
-     * <ul>
-     * @param object Creature to add to the listener
-     */
+    public Creature getActiveChar() {
+        WorldPartition.checkOwner();
+        return activeChar;
+    }
+
+    /** Unchecked, for a subclass method that has already checked the owner. */
+    protected final Creature creature() {
+        return activeChar;
+    }
+
+    public double getCurrentHp() {
+        WorldPartition.checkOwner();
+        return currentHp;
+    }
+
+    public double getCurrentMp() {
+        WorldPartition.checkOwner();
+        return currentMp;
+    }
+
     public void addStatusListener(Creature object) {
+        WorldPartition.checkOwner();
+        Objects.requireNonNull(object, "object");
         if (object == activeChar) {
             return;
         }
 
-        getStatusListener().add(object);
-    }
-
-    /**
-     * Remove the object from the list of Creature that must be informed of HP/MP updates of this Creature.<br>
-     * <br>
-     * <b><u>Concept</u>:</b><br>
-     * <br>
-     * Each Creature owns a list called <b>statusListener</b> that contains all Player to inform of HP/MP updates.<br>
-     * Players who must be informed are players that target this Creature.<br>
-     * When a RegenTask is in progress sever just need to go through this list to send Server->Client packet StatusUpdate.<br>
-     * <br>
-     * <b><u>Example of use </u>:</b>
-     * <ul>
-     * <li>Untarget a PC or NPC</li>
-     * </ul>
-     * @param object Creature to add to the listener
-     */
-    public void removeStatusListener(Creature object) {
-        getStatusListener().remove(object);
-    }
-
-    /**
-     * Return the list of Creature that must be informed of HP/MP updates of this Creature.<br>
-     * <br>
-     * <b><u>Concept</u>:</b><br>
-     * <br>
-     * Each Creature owns a list called <b>statusListener</b> that contains all Player to inform of HP/MP updates.<br>
-     * Players who must be informed are players that target this Creature.<br>
-     * When a RegenTask is in progress sever just need to go through this list to send Server->Client packet StatusUpdate.
-     * @return The list of Creature to inform or null if empty
-     */
-    public Set<Creature> getStatusListener() {
         if (statusListener == null) {
-            statusListener = ConcurrentHashMap.newKeySet();
+            statusListener = new ObjectLinkedOpenHashSet<>();
         }
 
-        return statusListener;
+        statusListener.add(object);
     }
 
-    // place holder, only PcStatus has CP
-    public void reduceCp(int value) {}
-
-    /**
-     * Reduce the current HP of the Creature and launch the doDie Task if necessary.
-     * @param value
-     * @param attacker
-     */
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
+    public void removeStatusListener(Creature object) {
+        WorldPartition.checkOwner();
+        if (statusListener != null) {
+            statusListener.remove(object);
+        }
     }
 
-    public void reduceHp(double value, Creature attacker, boolean isHpConsumption) {
-        reduceHp(value, attacker, true, false, isHpConsumption);
+    public boolean hasStatusListeners() {
+        WorldPartition.checkOwner();
+        return (statusListener != null) && !statusListener.isEmpty();
     }
 
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
+    /** Walks a copy, so the action may add or remove listeners. */
+    public void forEachStatusListener(Consumer<Creature> action) {
+        WorldPartition.checkOwner();
+        if (statusListener == null) {
+            return;
+        }
+
+        try (ScratchBuffers.Snapshot<Creature> listeners = ScratchBuffers.snapshot(statusListener)) {
+            for (int i = 0; i < listeners.size(); i++) {
+                action.accept(listeners.get(i));
+            }
+        }
+    }
+
+    // No-op: only PcStatus has CP.
+    public void reduceCp(int value) {
+        WorldPartition.checkOwner();
+    }
+
+    public final void reduceHp(double value, Creature attacker) {
+        WorldPartition.checkOwner();
+        doReduceHp(value, attacker, true, false, false);
+    }
+
+    public final void reduceHp(double value, Creature attacker, boolean isHpConsumption) {
+        WorldPartition.checkOwner();
+        doReduceHp(value, attacker, true, false, isHpConsumption);
+    }
+
+    public final void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
+        WorldPartition.checkOwner();
+        doReduceHp(value, attacker, awake, isDOT, isHPConsumption);
+    }
+
+    /** Unchecked {@link #reduceHp(double, Creature, boolean, boolean, boolean)}, the one subclasses override. */
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
         if (activeChar.isDead()) {
             return;
         }
 
-        // invul handling
         if (activeChar.isInvul() && !(isDOT || isHPConsumption)) {
             return;
         }
@@ -162,11 +166,10 @@ public class CreatureStatus {
         }
 
         if (value > 0) {
-            setCurrentHp(Math.max(currentHp - value, 0));
+            doSetCurrentHp(Math.max(currentHp - value, 0), true);
         }
 
-        if ((activeChar.getCurrentHp() < 0.5) && activeChar.isMortal()) // Die
-        {
+        if ((activeChar.getCurrentHp() < 0.5) && activeChar.isMortal()) {
             activeChar.abortAttack();
             activeChar.abortCast();
 
@@ -174,106 +177,97 @@ public class CreatureStatus {
         }
     }
 
-    public void reduceMp(double value) {
-        setCurrentMp(Math.max(currentMp - value, 0));
+    public final void reduceMp(double value) {
+        WorldPartition.checkOwner();
+        doReduceMp(value);
     }
 
-    /**
-     * Start the HP/MP/CP Regeneration task.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Calculate the regen task period</li>
-     * <li>Launch the HP/MP/CP Regeneration task with Medium priority</li>
-     * </ul>
-     */
-    public synchronized void startHpMpRegeneration() {
+    /** Unchecked {@link #reduceMp(double)}, the one subclasses override. */
+    protected void doReduceMp(double value) {
+        doSetCurrentMp(Math.max(currentMp - value, 0), true);
+    }
+
+    public void startHpMpRegeneration() {
+        WorldPartition.checkOwner();
+        startRegeneration();
+    }
+
+    /** Unchecked {@link #startHpMpRegeneration()}, for methods that have already checked the owner. */
+    protected final void startRegeneration() {
         if ((regTask == null) && !activeChar.isDead()) {
-            // Get the Regeneration period.
             final int period = Formulas.getRegeneratePeriod(activeChar);
 
-            // Create the HP/MP/CP Regeneration task.
             regTask = WorldPartition.loop()
                     .scheduleAtFixedRate(this::doRegeneration, period, period, TimeUnit.MILLISECONDS);
         }
     }
 
-    /**
-     * Stop the HP/MP/CP Regeneration task.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Set the RegenActive flag to False</li>
-     * <li>Stop the HP/MP/CP Regeneration task</li>
-     * </ul>
-     */
-    public synchronized void stopHpMpRegeneration() {
+    public void stopHpMpRegeneration() {
+        WorldPartition.checkOwner();
+        stopRegeneration();
+    }
+
+    /** Unchecked {@link #stopHpMpRegeneration()}, for methods that have already checked the owner. */
+    protected final void stopRegeneration() {
         if (regTask != null) {
-            // Stop the HP/MP/CP Regeneration task.
             regTask.cancel(false);
             regTask = null;
-
-            // Set the RegenActive flag to false.
             flagsRegenActive = 0;
         }
     }
 
-    // place holder, only PcStatus has CP
+    // No-op: only PcStatus has CP.
     public double getCurrentCp() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
-    // place holder, only PcStatus has CP
-    public void setCurrentCp(double newCp) {}
-
-    public void setCurrentHp(double newHp) {
-        setCurrentHp(newHp, true);
+    // No-op: only PcStatus has CP.
+    public void setCurrentCp(double newCp) {
+        WorldPartition.checkOwner();
     }
 
-    /**
-     * Sets the current hp of this character.
-     * @param newHp the new hp
-     * @param broadcastPacket if true StatusUpdate packet will be broadcasted.
-     * @return @{code true} if hp was changed, @{code false} otherwise.
-     */
-    public boolean setCurrentHp(double newHp, boolean broadcastPacket) {
-        // Get the Max HP of the Creature.
+    public final void setCurrentHp(double newHp) {
+        WorldPartition.checkOwner();
+        doSetCurrentHp(newHp, true);
+    }
+
+    public final boolean setCurrentHp(double newHp, boolean broadcastPacket) {
+        WorldPartition.checkOwner();
+        return doSetCurrentHp(newHp, broadcastPacket);
+    }
+
+    /** Unchecked {@link #setCurrentHp(double, boolean)}, the one subclasses override. */
+    protected boolean doSetCurrentHp(double newHp, boolean broadcastPacket) {
         final int currentHp = (int) this.currentHp;
         final double maxHp = activeChar.getMaxHp();
 
-        // Tempfix for updating UserInfo when skills like Final Frenzy and Final Fortress conditions activate.
+        // Crossing 30% HP refreshes UserInfo: Final Frenzy and Final Fortress activate there.
         final double thirtyPercent = maxHp * 0.3;
         final boolean updateUserInfo = activeChar.isPlayer()
                 && (((currentHp < thirtyPercent) && (newHp > thirtyPercent))
                         || ((currentHp > thirtyPercent) && (newHp < thirtyPercent)));
 
-        synchronized (this) {
-            if (activeChar.isDead()) {
-                return false;
+        if (activeChar.isDead()) {
+            return false;
+        }
+
+        if (newHp >= maxHp) {
+            this.currentHp = maxHp;
+            flagsRegenActive &= ~REGEN_FLAG_HP;
+
+            if (flagsRegenActive == 0) {
+                stopRegeneration();
             }
+        } else {
+            this.currentHp = newHp;
+            flagsRegenActive |= REGEN_FLAG_HP;
 
-            if (newHp >= maxHp) {
-                // Set the RegenActive flag to false.
-                this.currentHp = maxHp;
-                flagsRegenActive &= ~REGEN_FLAG_HP;
-
-                // Stop the HP/MP/CP Regeneration task.
-                if (flagsRegenActive == 0) {
-                    stopHpMpRegeneration();
-                }
-            } else {
-                // Set the RegenActive flag to true.
-                this.currentHp = newHp;
-                flagsRegenActive |= REGEN_FLAG_HP;
-
-                // Start the HP/MP/CP Regeneration task with Medium priority.
-                startHpMpRegeneration();
-            }
+            startRegeneration();
         }
 
         final boolean hpWasChanged = currentHp != this.currentHp;
 
-        // Send the Server->Client packet StatusUpdate with current HP and MP to all other Player to inform.
         if (hpWasChanged && broadcastPacket) {
             activeChar.broadcastStatusUpdate();
         }
@@ -286,55 +280,48 @@ public class CreatureStatus {
     }
 
     public void setCurrentHpMp(double newHp, double newMp) {
-        final boolean hpChanged = setCurrentHp(newHp, false);
-        final boolean mpChanged = setCurrentMp(newMp, false);
+        WorldPartition.checkOwner();
+        final boolean hpChanged = doSetCurrentHp(newHp, false);
+        final boolean mpChanged = doSetCurrentMp(newMp, false);
         if (hpChanged || mpChanged) {
             activeChar.broadcastStatusUpdate();
         }
     }
 
-    public void setCurrentMp(double newMp) {
-        setCurrentMp(newMp, true);
+    public final void setCurrentMp(double newMp) {
+        WorldPartition.checkOwner();
+        doSetCurrentMp(newMp, true);
     }
 
-    /**
-     * Sets the current mp of this character.
-     * @param newMp the new mp
-     * @param broadcastPacket if true StatusUpdate packet will be broadcasted.
-     * @return @{code true} if mp was changed, @{code false} otherwise.
-     */
-    public boolean setCurrentMp(double newMp, boolean broadcastPacket) {
-        // Get the Max MP of the Creature.
+    public final boolean setCurrentMp(double newMp, boolean broadcastPacket) {
+        WorldPartition.checkOwner();
+        return doSetCurrentMp(newMp, broadcastPacket);
+    }
+
+    private boolean doSetCurrentMp(double newMp, boolean broadcastPacket) {
         final int currentMp = (int) this.currentMp;
         final int maxMp = activeChar.getMaxMp();
 
-        synchronized (this) {
-            if (activeChar.isDead()) {
-                return false;
+        if (activeChar.isDead()) {
+            return false;
+        }
+
+        if (newMp >= maxMp) {
+            this.currentMp = maxMp;
+            flagsRegenActive &= ~REGEN_FLAG_MP;
+
+            if (flagsRegenActive == 0) {
+                stopRegeneration();
             }
+        } else {
+            this.currentMp = newMp;
+            flagsRegenActive |= REGEN_FLAG_MP;
 
-            if (newMp >= maxMp) {
-                // Set the RegenActive flag to false.
-                this.currentMp = maxMp;
-                flagsRegenActive &= ~REGEN_FLAG_MP;
-
-                // Stop the HP/MP/CP Regeneration task.
-                if (flagsRegenActive == 0) {
-                    stopHpMpRegeneration();
-                }
-            } else {
-                // Set the RegenActive flag to true.
-                this.currentMp = newMp;
-                flagsRegenActive |= REGEN_FLAG_MP;
-
-                // Start the HP/MP/CP Regeneration task with Medium priority.
-                startHpMpRegeneration();
-            }
+            startRegeneration();
         }
 
         final boolean mpWasChanged = currentMp != this.currentMp;
 
-        // Send the Server->Client packet StatusUpdate with current HP and MP to all other Player to inform.
         if (mpWasChanged && broadcastPacket) {
             activeChar.broadcastStatusUpdate();
         }
@@ -343,14 +330,13 @@ public class CreatureStatus {
     }
 
     protected void doRegeneration() {
-        // Modify the current HP/MP of the Creature and broadcast Server->Client packet StatusUpdate.
         if (!activeChar.isDead()
                 && ((currentHp < activeChar.getMaxRecoverableHp()) || (currentMp < activeChar.getMaxRecoverableMp()))) {
             final double newHp = currentHp + Formulas.calcHpRegen(activeChar);
             final double newMp = currentMp + Formulas.calcMpRegen(activeChar);
             setCurrentHpMp(newHp, newMp);
         } else {
-            stopHpMpRegeneration();
+            stopRegeneration();
         }
     }
 }

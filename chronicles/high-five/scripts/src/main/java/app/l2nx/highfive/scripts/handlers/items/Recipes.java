@@ -68,11 +68,11 @@ public class Recipes implements IItemHandler {
         if (rp.isDwarvenRecipe()) {
             canCraft = player.hasDwarvenCraft();
             recipeLevel = (rp.getLevel() > player.getDwarvenCraft());
-            recipeLimit = (player.getDwarvenRecipeBook().size() >= player.getDwarfRecipeLimit());
+            recipeLimit = (player.getDwarvenRecipeCount() >= player.getDwarfRecipeLimit());
         } else {
             canCraft = player.hasCommonCraft();
             recipeLevel = (rp.getLevel() > player.getCommonCraft());
-            recipeLimit = (player.getCommonRecipeBook().size() >= player.getCommonRecipeLimit());
+            recipeLimit = (player.getCommonRecipeCount() >= player.getCommonRecipeLimit());
         }
 
         if (!canCraft) {

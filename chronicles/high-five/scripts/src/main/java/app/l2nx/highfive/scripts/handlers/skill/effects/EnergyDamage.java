@@ -111,15 +111,14 @@ public class EnergyDamage extends AbstractEffect {
                 weaponTypeBoost = 77;
             }
 
-            // charge count should be the count before casting the skill but since its reduced before calling effects
-            // we add skill consume charges to current charges
+            // Charges are already consumed before effects run, so add the consumed count back.
             final double energyChargesBoost = (((attacker.getCharges() + skill.getChargeConsumeCount()) - 1) * 0.2) + 1;
             attack += power;
             attack *= ssBoost;
             attack *= energyChargesBoost;
             attack *= weaponTypeBoost;
             if (effected.isPlayer()) {
-                defence *= effected.getStat().calcStat(Stat.PVP_PHYS_SKILL_DEF, 1.0);
+                defence *= effected.calcStat(Stat.PVP_PHYS_SKILL_DEF, 1.0);
             }
 
             if (effected.isPlayable()) {
@@ -133,18 +132,16 @@ public class EnergyDamage extends AbstractEffect {
             damage = attack / defence;
             damage *= damageMultiplier;
             if (effected.isPlayer()) {
-                damage *= attacker.getStat().calcStat(Stat.PVP_PHYS_SKILL_DMG, 1.0);
-                damage = attacker.getStat().calcStat(Stat.PHYSICAL_SKILL_POWER, damage);
+                damage *= attacker.calcStat(Stat.PVP_PHYS_SKILL_DMG, 1.0);
+                damage = attacker.calcStat(Stat.PHYSICAL_SKILL_POWER, damage);
             }
 
             critical = (BaseStat.STR.calcBonus(attacker) * criticalChance)
                     > (ClockBridge.random().nextDouble() * 100);
             if (critical) {
                 damage *= 2;
-                // Critical Boost: “True Damage” from your Passive 193 (Critical Power).
                 final double critAdd = attacker.calcStat(Stat.CRITICAL_DAMAGE_ADD, 0, effected, skill);
-                damage += critAdd; // Absolute (applies to both mobs and players).
-                // (optional retail) Additive resistance of the target.
+                damage += critAdd;
                 damage += effected.calcStat(Stat.DEFENCE_CRITICAL_DAMAGE_ADD, 0, effected, skill);
             }
 
@@ -162,7 +159,6 @@ public class EnergyDamage extends AbstractEffect {
             effected.reduceCurrentHp(damage, attacker, skill);
             effected.notifyDamageReceived(damage, attacker, skill, critical, false);
 
-            // Check if damage should be reflected
             Formulas.calcDamageReflected(attacker, effected, skill, critical);
         }
     }

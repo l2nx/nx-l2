@@ -93,13 +93,13 @@ public class ControllableAirShip extends AirShip {
     @Override
     public ControllableAirShipStat getStat() {
         WorldPartition.checkOwner();
-        return (ControllableAirShipStat) super.getStat();
+        return (ControllableAirShipStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new ControllableAirShipStat(this));
+        setStat(new ControllableAirShipStat(this, statAccess()));
     }
 
     @Override

@@ -46,19 +46,16 @@ public class RequestFriendInvite extends ClientPacket {
 
         final Player friend = World.getPlayer(name);
 
-        // Target is not found in the game.
         if ((friend == null) || !friend.isOnline() || friend.isInvisible()) {
             player.sendPacket(SystemMessageId.THE_USER_WHO_REQUESTED_TO_BECOME_FRIENDS_IS_NOT_FOUND_IN_THE_GAME);
             return;
         }
 
-        // You cannot add yourself to your own friend list.
         if (friend == player) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_ADD_YOURSELF_TO_YOUR_OWN_FRIEND_LIST);
             return;
         }
 
-        // Target is in olympiad.
         if (player.isInOlympiadMode() || friend.isInOlympiadMode()) {
             player.sendPacket(
                     SystemMessageId
@@ -66,7 +63,6 @@ public class RequestFriendInvite extends ClientPacket {
             return;
         }
 
-        // Target blocked active player.
         if (BlockList.isBlocked(friend, player)) {
             player.sendMessage("You are in target's block list.");
             return;
@@ -74,7 +70,6 @@ public class RequestFriendInvite extends ClientPacket {
 
         SystemMessage sm;
 
-        // Target is blocked.
         if (BlockList.isBlocked(player, friend)) {
             sm = new SystemMessage(SystemMessageId.YOU_HAVE_BLOCKED_C1);
             sm.addString(friend.getName());
@@ -82,13 +77,11 @@ public class RequestFriendInvite extends ClientPacket {
             return;
         }
 
-        // Target already in friend list.
-        if (player.getFriendList().contains(friend.getObjectId())) {
+        if (player.isFriend(friend.getObjectId())) {
             player.sendPacket(SystemMessageId.THIS_PLAYER_IS_ALREADY_REGISTERED_ON_YOUR_FRIENDS_LIST);
             return;
         }
 
-        // Target is busy.
         if (friend.isProcessingRequest()) {
             sm = new SystemMessage(SystemMessageId.C1_IS_ON_ANOTHER_TASK_PLEASE_TRY_AGAIN_LATER);
             sm.addString(name);
@@ -96,7 +89,6 @@ public class RequestFriendInvite extends ClientPacket {
             return;
         }
 
-        // Friend request sent.
         player.onTransactionRequest(friend);
         friend.sendPacket(new FriendAddRequest(player.getName()));
         sm = new SystemMessage(SystemMessageId.YOU_VE_REQUESTED_C1_TO_BE_ON_YOUR_FRIENDS_LIST);

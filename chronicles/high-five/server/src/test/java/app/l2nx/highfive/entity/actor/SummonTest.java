@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
@@ -16,6 +17,7 @@ import app.l2nx.engine.core.identity.WireHandleAllocator;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.item.type.ActionType;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 
@@ -76,6 +79,29 @@ class SummonTest {
             WorldLoopExtension.runInPass(() -> actual.set(summon.getOwner()));
 
             assertThat(actual.get()).isSameAs(expected);
+        }
+    }
+
+    @Nested
+    class RechargeShots {
+        static Stream<Arguments> kinds() {
+            return Stream.of(
+                    Arguments.of(true, true, ActionType.SUMMON_SOULSHOT, ActionType.SUMMON_SPIRITSHOT),
+                    Arguments.of(true, false, ActionType.SUMMON_SOULSHOT, null),
+                    Arguments.of(false, true, null, ActionType.SUMMON_SPIRITSHOT),
+                    Arguments.of(false, false, null, null));
+        }
+
+        @ParameterizedTest(name = "physical={0}, magic={1}")
+        @MethodSource("kinds")
+        void rechargeShots_shouldChargeTheOwnersSummonShots(
+                boolean physical, boolean magic, ActionType soulshot, ActionType spiritshot) {
+            final Player owner = mock(Player.class);
+            final Summon summon = summonOnTheLoop(owner);
+
+            WorldLoopExtension.runInPass(() -> summon.rechargeShots(physical, magic));
+
+            verify(owner).chargeAutoShots(soulshot, spiritshot);
         }
     }
 

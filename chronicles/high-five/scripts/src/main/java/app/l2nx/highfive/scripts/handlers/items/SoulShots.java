@@ -57,9 +57,8 @@ public class SoulShots implements IItemHandler {
         final Weapon weaponItem = player.getActiveWeaponItem();
         final int itemId = item.getId();
 
-        // Check if Soul shot can be used.
         if ((weaponInst == null) || (weaponItem.getSoulShotCount() == 0)) {
-            if (!player.getAutoSoulShot().contains(itemId)) {
+            if (!player.hasAutoSoulShot(itemId)) {
                 player.sendPacket(SystemMessageId.CANNOT_USE_SOULSHOTS);
             }
 
@@ -71,7 +70,7 @@ public class SoulShots implements IItemHandler {
                 && (weaponInst.getTemplate().getCrystalTypePlus()
                         == item.getTemplate().getCrystalTypePlus());
         if (!gradeCheck) {
-            if (!player.getAutoSoulShot().contains(itemId)) {
+            if (!player.hasAutoSoulShot(itemId)) {
                 player.sendPacket(
                         SystemMessageId
                                 .THE_SOULSHOT_YOU_ARE_ATTEMPTING_TO_USE_DOES_NOT_MATCH_THE_GRADE_OF_YOUR_EQUIPPED_WEAPON);
@@ -80,12 +79,10 @@ public class SoulShots implements IItemHandler {
             return false;
         }
 
-        // Check if Soul shot is already active.
         if (player.isChargedShot(ShotType.SOULSHOTS)) {
             return false;
         }
 
-        // Consume Soul shots if player has enough of them.
         int count = weaponItem.getSoulShotCount();
         if ((weaponItem.getReducedSoulShot() > 0)
                 && (ClockBridge.random().nextInt(100) < weaponItem.getReducedSoulShotChance())) {
@@ -100,10 +97,8 @@ public class SoulShots implements IItemHandler {
             return false;
         }
 
-        // Charge soul shot
         weaponInst.setChargedShot(ShotType.SOULSHOTS, true);
 
-        // Send message to client.
         player.sendPacket(SystemMessageId.YOUR_SOULSHOTS_ARE_ENABLED);
         World.broadcastToSelfAndVisiblePlayersInRange(
                 player,

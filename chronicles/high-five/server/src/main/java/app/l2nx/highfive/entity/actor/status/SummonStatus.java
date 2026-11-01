@@ -22,26 +22,24 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.holders.player.Duel;
 import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.LocationUtil;
 
+@SingleWriter
 public class SummonStatus extends PlayableStatus {
     public SummonStatus(Summon activeChar) {
         super(activeChar);
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
-    }
-
-    @Override
-    public void reduceHp(double amount, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
-        final Summon summon = getActiveChar();
+    protected void doReduceHp(double amount, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption) {
+        final Summon summon = (Summon) creature();
         if ((attacker == null) || summon.isDead()) {
             return;
         }
@@ -61,8 +59,7 @@ public class SummonStatus extends PlayableStatus {
                     && summon.getParty().getMembers().contains(caster)) {
                 int transferDmg = Math.min(
                         (int) caster.getCurrentHp() - 1,
-                        ((int) value * (int) summon.getStat().calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null))
-                                / 100);
+                        ((int) value * (int) summon.calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null)) / 100);
                 if (transferDmg > 0) {
                     int membersInRange = 0;
                     for (Player member : caster.getParty().getMembers()) {
@@ -89,12 +86,10 @@ public class SummonStatus extends PlayableStatus {
         } else if ((caster != null)
                 && (caster == summon.getOwner())
                 && LocationUtil.checkIfInRange(1000, summon, caster, true)
-                && !caster.isDead()) // When no party, transfer only to owner (caster).
-        {
+                && !caster.isDead()) {
             int transferDmg = Math.min(
                     (int) caster.getCurrentHp() - 1,
-                    ((int) value * (int) summon.getStat().calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null))
-                            / 100);
+                    ((int) value * (int) summon.calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null)) / 100);
             if (transferDmg > 0) {
                 if (attacker.isPlayable() && (caster.getCurrentCp() > 0)) {
                     if (caster.getCurrentCp() > transferDmg) {
@@ -110,11 +105,12 @@ public class SummonStatus extends PlayableStatus {
             }
         }
 
-        super.reduceHp(value, attacker, awake, isDOT, isHPConsumption);
+        super.doReduceHp(value, attacker, awake, isDOT, isHPConsumption);
     }
 
     @Override
     public Summon getActiveChar() {
-        return super.getActiveChar().asSummon();
+        WorldPartition.checkOwner();
+        return (Summon) creature();
     }
 }

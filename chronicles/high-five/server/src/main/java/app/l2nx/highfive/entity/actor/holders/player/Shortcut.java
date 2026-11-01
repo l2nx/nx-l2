@@ -22,32 +22,23 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class Shortcut {
     /** Slot from 0 to 11. */
-    @Getter
     private final int slot;
     /** Page from 0 to 9. */
-    @Getter
     private final int page;
-    /** Type: item, skill, action, macro, recipe, bookmark. */
-    @Getter
+
     private final ShortcutType type;
-    /** Shortcut ID. */
-    @Getter
     private final int id;
-    /** Shortcut level (skills). */
-    @Getter
     private final int level;
     /** Character type: 1 player, 2 summon. */
-    @Getter
     private final int characterType;
-    /** Shared reuse group. */
-    @Getter
-    @Setter
+
     private int sharedReuseGroup = -1;
 
     public Shortcut(int slot, int page, ShortcutType type, int id, int level, int characterType) {
@@ -57,5 +48,45 @@ public class Shortcut {
         this.id = id;
         this.level = level;
         this.characterType = characterType;
+    }
+
+    public int getSlot() {
+        WorldPartition.checkOwner();
+        return slot;
+    }
+
+    public int getPage() {
+        WorldPartition.checkOwner();
+        return page;
+    }
+
+    public ShortcutType getType() {
+        WorldPartition.checkOwner();
+        return type;
+    }
+
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public int getLevel() {
+        WorldPartition.checkOwner();
+        return level;
+    }
+
+    public int getCharacterType() {
+        WorldPartition.checkOwner();
+        return characterType;
+    }
+
+    public int getSharedReuseGroup() {
+        WorldPartition.checkOwner();
+        return sharedReuseGroup;
+    }
+
+    public void setSharedReuseGroup(int sharedReuseGroup) {
+        WorldPartition.checkOwner();
+        this.sharedReuseGroup = sharedReuseGroup;
     }
 }

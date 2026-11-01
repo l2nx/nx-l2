@@ -25,9 +25,6 @@ import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
-/**
- * @author -Wooden-, KenM
- */
 public class ExStorageMaxCount extends ServerPacket {
     private final int inventory;
     private final int warehouse;
@@ -47,7 +44,7 @@ public class ExStorageMaxCount extends ServerPacket {
         clan = PlayerConfig.WAREHOUSE_SLOTS_CLAN;
         receipeD = player.getDwarfRecipeLimit();
         recipe = player.getCommonRecipeLimit();
-        inventoryExtraSlots = (int) player.getStat().calcStat(Stat.INV_LIM, 0, null, null);
+        inventoryExtraSlots = (int) player.calcStat(Stat.INV_LIM, 0, null, null);
         inventoryQuestItems = PlayerConfig.INVENTORY_MAXIMUM_QUEST_ITEMS;
     }
 
@@ -61,7 +58,7 @@ public class ExStorageMaxCount extends ServerPacket {
         buffer.writeInt(privateBuy);
         buffer.writeInt(receipeD);
         buffer.writeInt(recipe);
-        buffer.writeInt(inventoryExtraSlots); // Belt inventory slots increase count
+        buffer.writeInt(inventoryExtraSlots);
         buffer.writeInt(inventoryQuestItems);
     }
 }

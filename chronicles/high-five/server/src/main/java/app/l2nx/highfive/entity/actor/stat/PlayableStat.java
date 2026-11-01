@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.data.xml.PetDataTable;
@@ -34,17 +35,20 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.playable.OnPlayableExpChanged;
 import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public class PlayableStat extends CreatureStat {
 
-    public PlayableStat(Playable activeChar) {
-        super(activeChar);
+    public PlayableStat(Playable activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     public boolean addExp(long amount) {
-        final Playable playable = getActiveChar();
+        WorldPartition.checkOwner();
+        final Playable playable = playable();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYABLE_EXP_CHANGED, playable)) {
             final TerminateReturn term = EventDispatcher.getInstance()
                     .notifyEvent(
@@ -72,12 +76,11 @@ public class PlayableStat extends CreatureStat {
         setExp(getExp() + value);
         byte minimumLevel = 1;
         if (playable.isPet()) {
-            // Get minimum level from NpcTemplate.
             minimumLevel = (byte) PetDataTable.getInstance()
                     .getPetMinLevel(playable.asPet().getTemplate().getId());
         }
 
-        byte level = minimumLevel; // minimum level
+        byte level = minimumLevel;
         for (byte tmp = level; tmp <= getMaxLevel(); tmp++) {
             if (getExp() >= getExpForLevel(tmp)) {
                 continue;
@@ -95,6 +98,7 @@ public class PlayableStat extends CreatureStat {
     }
 
     public boolean removeExp(long amount) {
+        WorldPartition.checkOwner();
         long value = amount;
         if ((getExp() - value) < 0) {
             value = getExp() - 1;
@@ -102,9 +106,8 @@ public class PlayableStat extends CreatureStat {
 
         setExp(getExp() - value);
         byte minimumLevel = 1;
-        final Playable playable = getActiveChar();
+        final Playable playable = playable();
         if (playable.isPet()) {
-            // Get minimum level from NpcTemplate.
             minimumLevel = (byte) PetDataTable.getInstance()
                     .getPetMinLevel(playable.asPet().getTemplate().getId());
         }
@@ -127,6 +130,7 @@ public class PlayableStat extends CreatureStat {
     }
 
     public boolean removeExpAndSp(long removeExp, long removeSp) {
+        WorldPartition.checkOwner();
         boolean expRemoved = false;
         boolean spRemoved = false;
         if (removeExp > 0) {
@@ -141,6 +145,7 @@ public class PlayableStat extends CreatureStat {
     }
 
     public boolean addLevel(byte amount) {
+        WorldPartition.checkOwner();
         byte value = amount;
         if ((getLevel() + value) > (getMaxLevel() - 1)) {
             if (getLevel() < (getMaxLevel() - 1)) {
@@ -154,12 +159,11 @@ public class PlayableStat extends CreatureStat {
         value += getLevel();
         setLevel(value);
 
-        // Sync up exp with current level.
         if ((getExp() >= getExpForLevel(getLevel() + 1)) || (getExpForLevel(getLevel()) > getExp())) {
             setExp(getExpForLevel(getLevel()));
         }
 
-        final Playable playable = getActiveChar();
+        final Playable playable = playable();
         if (!levelIncreased && playable.isPlayer() && !playable.isGM() && PlayerConfig.DECREASE_SKILL_LEVEL) {
             playable.asPlayer().checkPlayerSkills();
         }
@@ -175,6 +179,7 @@ public class PlayableStat extends CreatureStat {
     }
 
     public boolean addSp(long amount) {
+        WorldPartition.checkOwner();
         if (amount < 0) {
             log.warn("wrong usage");
             return false;
@@ -195,6 +200,7 @@ public class PlayableStat extends CreatureStat {
     }
 
     public boolean removeSp(long amount) {
+        WorldPartition.checkOwner();
         final long currentSp = getSp();
         if (currentSp < amount) {
             setSp(getSp() - currentSp);
@@ -206,47 +212,54 @@ public class PlayableStat extends CreatureStat {
     }
 
     public long getExpForLevel(int level) {
+        WorldPartition.checkOwner();
         return ExperienceData.getInstance().getExpForLevel(level);
     }
 
     @Override
-    public double getRunSpeed() {
-        final Playable playable = getActiveChar();
+    protected double runSpeed() {
+        final Playable playable = playable();
         if (playable.isInsideZone(ZoneId.SWAMP)) {
             final SwampZone zone = ZoneManager.getInstance().getZone(playable, SwampZone.class);
             if (zone != null) {
-                return super.getRunSpeed() * zone.getMoveBonus();
+                return super.runSpeed() * zone.getMoveBonus();
             }
         }
 
-        return super.getRunSpeed();
+        return super.runSpeed();
     }
 
     @Override
-    public double getWalkSpeed() {
-        final Playable playable = getActiveChar();
+    protected double walkSpeed() {
+        final Playable playable = playable();
         if (playable.isInsideZone(ZoneId.SWAMP)) {
             final SwampZone zone = ZoneManager.getInstance().getZone(playable, SwampZone.class);
             if (zone != null) {
-                return super.getWalkSpeed() * zone.getMoveBonus();
+                return super.walkSpeed() * zone.getMoveBonus();
             }
         }
 
-        return super.getWalkSpeed();
+        return super.walkSpeed();
     }
 
     @Override
     public Playable getActiveChar() {
-        return super.getActiveChar().asPlayable();
+        WorldPartition.checkOwner();
+        return playable();
     }
 
     public int getMaxLevel() {
+        WorldPartition.checkOwner();
         return ExperienceData.getInstance().getMaxLevel();
     }
 
     @Override
-    public int getPhysicalAttackAngle() {
-        final Weapon weapon = getActiveChar().getActiveWeaponItem();
-        return weapon != null ? weapon.getBaseAttackAngle() : super.getPhysicalAttackAngle();
+    protected int physicalAttackAngle() {
+        final Weapon weapon = playable().getActiveWeaponItem();
+        return weapon != null ? weapon.getBaseAttackAngle() : super.physicalAttackAngle();
+    }
+
+    private Playable playable() {
+        return (Playable) creature();
     }
 }

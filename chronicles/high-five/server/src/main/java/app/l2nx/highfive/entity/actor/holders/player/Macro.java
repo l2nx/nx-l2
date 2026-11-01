@@ -24,12 +24,13 @@ package app.l2nx.highfive.entity.actor.holders.player;
 
 import java.util.List;
 import lombok.Getter;
-import lombok.Setter;
 
+/**
+ * Immutable, so the presets of the initial shortcut data can sit in every player's macro list.
+ */
 public class Macro {
     @Getter
-    @Setter
-    private int id;
+    private final int id;
 
     @Getter
     private final int icon;
@@ -46,21 +47,16 @@ public class Macro {
     @Getter
     private final List<MacroCmd> commands;
 
-    /**
-     * Constructor for macros.
-     * @param id the macro ID
-     * @param icon the icon ID
-     * @param name the macro name
-     * @param descr the macro description
-     * @param acronym the macro acronym
-     * @param list the macro command list
-     */
     public Macro(int id, int icon, String name, String descr, String acronym, List<MacroCmd> list) {
         this.id = id;
         this.icon = icon;
         this.name = name;
         this.descr = descr;
         this.acronym = acronym;
-        commands = list;
+        commands = List.copyOf(list);
+    }
+
+    public Macro withId(int newId) {
+        return new Macro(newId, icon, name, descr, acronym, commands);
     }
 }

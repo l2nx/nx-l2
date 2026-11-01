@@ -56,26 +56,16 @@ public class AttackTrait extends AbstractEffect {
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
-        synchronized (charStat.getAttackTraits()) {
-            for (Entry<TraitType, Float> trait : attackTraits.entrySet()) {
-                if (charStat.getAttackTraitsCount()[trait.getKey().ordinal()] == 0) {
-                    continue;
-                }
-
-                charStat.getAttackTraits()[trait.getKey().ordinal()] /= trait.getValue();
-                charStat.getAttackTraitsCount()[trait.getKey().ordinal()]--;
-            }
+        for (Entry<TraitType, Float> trait : attackTraits.entrySet()) {
+            charStat.removeAttackTrait(trait.getKey(), trait.getValue());
         }
     }
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
-        synchronized (charStat.getAttackTraits()) {
-            for (Entry<TraitType, Float> trait : attackTraits.entrySet()) {
-                charStat.getAttackTraits()[trait.getKey().ordinal()] *= trait.getValue();
-                charStat.getAttackTraitsCount()[trait.getKey().ordinal()]++;
-            }
+        for (Entry<TraitType, Float> trait : attackTraits.entrySet()) {
+            charStat.addAttackTrait(trait.getKey(), trait.getValue());
         }
     }
 }

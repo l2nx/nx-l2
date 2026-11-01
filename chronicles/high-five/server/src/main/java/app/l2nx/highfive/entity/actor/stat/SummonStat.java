@@ -22,15 +22,19 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class SummonStat extends PlayableStat {
-    public SummonStat(Summon activeChar) {
-        super(activeChar);
+    public SummonStat(Summon activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     @Override
     public Summon getActiveChar() {
-        return super.getActiveChar().asSummon();
+        WorldPartition.checkOwner();
+        return (Summon) creature();
     }
 }

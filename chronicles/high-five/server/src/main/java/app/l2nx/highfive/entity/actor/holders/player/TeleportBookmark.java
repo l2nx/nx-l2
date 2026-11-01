@@ -19,27 +19,18 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.Location;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author UnAfraid
  */
+@SingleWriter
 public class TeleportBookmark extends Location {
-    @Getter
     private final int id;
-
-    @Getter
-    @Setter
     private int icon;
-
-    @Getter
-    @Setter
     private String name;
-
-    @Getter
-    @Setter
     private String tag;
 
     public TeleportBookmark(int id, int x, int y, int z, int icon, String tag, String name) {
@@ -47,6 +38,41 @@ public class TeleportBookmark extends Location {
         this.id = id;
         this.icon = icon;
         this.name = name;
+        this.tag = tag;
+    }
+
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public int getIcon() {
+        WorldPartition.checkOwner();
+        return icon;
+    }
+
+    public void setIcon(int icon) {
+        WorldPartition.checkOwner();
+        this.icon = icon;
+    }
+
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public void setName(String name) {
+        WorldPartition.checkOwner();
+        this.name = name;
+    }
+
+    public String getTag() {
+        WorldPartition.checkOwner();
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        WorldPartition.checkOwner();
         this.tag = tag;
     }
 }

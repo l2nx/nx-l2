@@ -63,12 +63,9 @@ import lombok.extern.slf4j.Slf4j;
 public class RecipeManager {
     protected static final Map<Integer, RecipeItemMaker> activeMakers = new ConcurrentHashMap<>();
 
-    protected RecipeManager() {
-        // Prevent external initialization.
-    }
+    protected RecipeManager() {}
 
     public void requestBookOpen(Player player, boolean isDwarvenCraft) {
-        // Check if player is trying to alter recipe book while engaged in manufacturing.
         if (!activeMakers.containsKey(player.getObjectId())) {
             final RecipeBookItemList response = new RecipeBookItemList(isDwarvenCraft, player.getMaxMp());
             response.addRecipes(isDwarvenCraft ? player.getDwarvenRecipeBook() : player.getCommonRecipeBook());
@@ -80,7 +77,7 @@ public class RecipeManager {
     }
 
     public void requestMakeItemAbort(Player player) {
-        activeMakers.remove(player.getObjectId()); // TODO: anything else here?
+        activeMakers.remove(player.getObjectId());
     }
 
     public void requestManufactureItem(Player manufacturer, int recipeListId, Player player) {
@@ -89,8 +86,7 @@ public class RecipeManager {
             return;
         }
 
-        if (!manufacturer.getDwarvenRecipeBook().contains(recipeList)
-                && !manufacturer.getCommonRecipeBook().contains(recipeList)) {
+        if (!manufacturer.hasRecipeList(recipeList.getId())) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
@@ -99,7 +95,6 @@ public class RecipeManager {
             return;
         }
 
-        // Check if manufacturer is under manufacturing store or private store.
         if (PlayerConfig.ALT_GAME_CREATION && activeMakers.containsKey(manufacturer.getObjectId())) {
             player.sendPacket(
                     SystemMessageId
@@ -119,7 +114,6 @@ public class RecipeManager {
     }
 
     public void requestMakeItem(Player player, int recipeListId) {
-        // Check if player is trying to operate a private store or private workshop while engaged in combat.
         if ((player.isInCombat() && !PlayerConfig.CRAFTING_IN_COMBAT) || player.isInDuel()) {
             player.sendPacket(
                     SystemMessageId
@@ -132,8 +126,7 @@ public class RecipeManager {
             return;
         }
 
-        if (!player.getDwarvenRecipeBook().contains(recipeList)
-                && !player.getCommonRecipeBook().contains(recipeList)) {
+        if (!player.hasRecipeList(recipeList.getId())) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
@@ -142,7 +135,6 @@ public class RecipeManager {
             return;
         }
 
-        // Check if player is busy (possible if alt game creation is enabled).
         if (PlayerConfig.ALT_GAME_CREATION && activeMakers.containsKey(player.getObjectId())) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.S2_S1);
             sm.addItemName(recipeList.getItemId());
@@ -216,27 +208,23 @@ public class RecipeManager {
                 return;
             }
 
-            // Validate recipe list.
             if (recipeList.getRecipes().length == 0) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 abort();
                 return;
             }
 
-            // Validate skill level.
             if (recipeList.getLevel() > skillLevel) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 abort();
                 return;
             }
 
-            // Check that customer can afford to pay for creation services.
             if (player != target) {
-                final ManufactureItem item = player.getManufactureItems().get(recipeList.getId());
+                final ManufactureItem item = player.getManufactureItem(recipeList.getId());
                 if (item != null) {
                     price = item.getCost();
-                    if (target.getAdena() < price) // check price
-                    {
+                    if (target.getAdena() < price) {
                         target.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
                         abort();
                         return;
@@ -244,7 +232,6 @@ public class RecipeManager {
                 }
             }
 
-            // Make temporary items.
             items = listItems(false);
             if (items == null) {
                 abort();
@@ -255,13 +242,11 @@ public class RecipeManager {
                 totalItems += i.getQuantity();
             }
 
-            // Initial statUse checks.
             if (!calculateStatUse(false, false)) {
                 abort();
                 return;
             }
 
-            // Initial AltStatChange checks.
             if (PlayerConfig.ALT_GAME_CREATION) {
                 calculateAltStatChange();
             }
@@ -288,13 +273,6 @@ public class RecipeManager {
                 return;
             }
 
-            // if (!_player.isOnline() || !_target.isOnline())
-            // {
-            // LOGGER.warning("Player or target is not online, aborting " + _target + _player);
-            // abort();
-            // return;
-            // }
-
             if (PlayerConfig.ALT_GAME_CREATION && !activeMakers.containsKey(player.getObjectId())) {
                 if (target != player) {
                     target.sendMessage("Manufacture aborted");
@@ -309,32 +287,28 @@ public class RecipeManager {
 
             if (PlayerConfig.ALT_GAME_CREATION && !items.isEmpty()) {
                 if (!calculateStatUse(true, true)) {
-                    return; // check stat use
+                    return;
                 }
 
-                updateCurMp(); // Update craft window mp bar.
-                grabSomeItems(); // Grab (equip) some more items with a nice msg to player.
+                updateCurMp();
+                grabSomeItems();
 
-                // If still not empty, schedule another pass.
                 if (!items.isEmpty()) {
                     delay = (int) (PlayerConfig.ALT_GAME_CREATION_SPEED
                             * player.getMReuseRate(skill)
                             * GameTimeTaskManager.TICKS_PER_SECOND
                             * GameTimeTaskManager.MILLIS_IN_TICK);
 
-                    // FIXME: please fix this packet to show crafting animation (somebody)
                     player.broadcastSkillPacket(new MagicSkillUse(player, skillId, skillLevel, delay, 0), player);
                     player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
                     WorldPartition.loop().schedule(this, 100 + delay, TimeUnit.MILLISECONDS);
                 } else {
-                    // For alt mode, wait delay msec before finishing.
                     player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
                     // TODO: an abort during this delay does not cancel the craft (#82).
                     WorldPartition.loop().schedule(this::finishCrafting, delay, TimeUnit.MILLISECONDS);
                 }
 
-            } // For old craft mode just finish.
-            else {
+            } else {
                 finishCrafting();
             }
         }
@@ -344,7 +318,6 @@ public class RecipeManager {
                 calculateStatUse(false, true);
             }
 
-            // First take adena for manufacture.
             if ((target != player)
                     && (price > 0)
                     && (target.transferItem(
@@ -353,8 +326,7 @@ public class RecipeManager {
                                     price,
                                     player.getInventory(),
                                     player)
-                            == null)) // Customer must pay for services.
-            {
+                            == null)) {
                 target.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
                 abort();
                 return;
@@ -391,7 +363,6 @@ public class RecipeManager {
                 updateMakeInfo(success);
             }
 
-            // update load and mana bar of craft window
             updateCurMp();
             updateCurLoad();
             activeMakers.remove(player.getObjectId());
@@ -443,7 +414,6 @@ public class RecipeManager {
             }
         }
 
-        // AltStatChange parameters make their effect here.
         private void calculateAltStatChange() {
             itemGrab = skillLevel;
             for (RecipeStatHolder altStatChange : recipeList.getAltStatChange()) {
@@ -456,22 +426,19 @@ public class RecipeManager {
                 }
             }
 
-            // Determine number of creation passes needed.
             creationPasses = (totalItems / itemGrab) + ((totalItems % itemGrab) != 0 ? 1 : 0);
             if (creationPasses < 1) {
                 creationPasses = 1;
             }
         }
 
-        // StatUse
         private boolean calculateStatUse(boolean isWait, boolean isReduce) {
             boolean ret = true;
             for (RecipeStatHolder statUse : recipeList.getStatUse()) {
                 final double modifiedValue = statUse.getValue() / creationPasses;
                 if (statUse.getType() == StatType.HP) {
-                    // we do not want to kill the player, so its CurrentHP must be greater than the reduce value
+                    // Crafting must not kill the crafter, hence the strict comparison.
                     if (player.getCurrentHp() <= modifiedValue) {
-                        // rest (wait for HP)
                         if (PlayerConfig.ALT_GAME_CREATION && isWait) {
                             player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
                             WorldPartition.loop().schedule(this, 100 + delay, TimeUnit.MILLISECONDS);
@@ -486,7 +453,6 @@ public class RecipeManager {
                     }
                 } else if (statUse.getType() == StatType.MP) {
                     if (player.getCurrentMp() < modifiedValue) {
-                        // rest (wait for MP)
                         if (PlayerConfig.ALT_GAME_CREATION && isWait) {
                             player.sendPacket(new SetupGauge(player.getObjectId(), 0, delay));
                             WorldPartition.loop().schedule(this, 100 + delay, TimeUnit.MILLISECONDS);
@@ -500,7 +466,6 @@ public class RecipeManager {
                         player.reduceCurrentMp(modifiedValue);
                     }
                 } else {
-                    // there is an unknown StatUse value
                     target.sendMessage("Recipe error!!!, please tell this to your GM.");
                     ret = false;
                     abort();
@@ -520,7 +485,6 @@ public class RecipeManager {
                     final Item item = inv.getItemByItemId(recipe.itemId());
                     final long itemQuantityAmount = item == null ? 0 : item.getCount();
 
-                    // check materials
                     if (itemQuantityAmount < recipe.quantity()) {
                         sm = new SystemMessage(SystemMessageId.YOU_ARE_MISSING_S2_S1_REQUIRED_TO_CREATE_THAT);
                         sm.addItemName(recipe.itemId());
@@ -531,7 +495,6 @@ public class RecipeManager {
                         return null;
                     }
 
-                    // make new temporary object, just for counting purposes
                     materials.add(new RecipeItemInfo(item, recipe.quantity()));
                 }
             }
@@ -567,7 +530,6 @@ public class RecipeManager {
             int itemCount = recipeList.getCount();
             final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
 
-            // check that the current recipe has a rare production or not
             if ((rareProdId != -1) && ((rareProdId == itemId) || PlayerConfig.CRAFT_MASTERWORK)) {
                 if (ClockBridge.random().nextInt(100)
                         < (recipeList.getRarity() * PlayerConfig.CRAFT_MASTERWORK_CHANCE_RATE)) {
@@ -578,10 +540,8 @@ public class RecipeManager {
 
             target.getInventory().addItem(ItemProcessType.CRAFT, itemId, itemCount, target, player);
 
-            // inform customer of earned item
             SystemMessage sm = null;
             if (target != player) {
-                // inform manufacturer of earned profit
                 if (itemCount == 1) {
                     sm = new SystemMessage(
                             SystemMessageId.S2_HAS_BEEN_CREATED_FOR_C1_AFTER_THE_PAYMENT_OF_S3_ADENA_WAS_RECEIVED);
@@ -652,9 +612,7 @@ public class RecipeManager {
                     sp /= 4;
                 }
 
-                // Added multiplication of Creation speed with XP/SP gain slower crafting -> more XP,
-                // faster crafting -> less XP you can use ALT_GAME_CREATION_XP_RATE/SP to modify XP/SP gained (default =
-                // 1)
+                // Slower crafting (higher ALT_GAME_CREATION_SPEED) yields more XP/SP.
                 player.addExpAndSp(
                         (int) player.calcStat(
                                 Stat.EXPSP_RATE,
@@ -668,7 +626,7 @@ public class RecipeManager {
                                 null));
             }
 
-            updateMakeInfo(true); // success
+            updateMakeInfo(true);
         }
     }
 

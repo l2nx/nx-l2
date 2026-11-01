@@ -97,7 +97,7 @@ public class SummonCubic extends AbstractEffect {
             player.removeCubic(cubicId);
         } else {
             final int allowedCubicCount = Math.max(1, player.getStat().getMaxCubicCount());
-            while (player.getCubics().size() >= allowedCubicCount) {
+            while (player.getCubicCount() >= allowedCubicCount) {
                 if (player.removeFirstCubic() == null) {
                     break;
                 }

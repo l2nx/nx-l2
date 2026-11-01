@@ -22,26 +22,37 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Vehicle;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class VehicleStat extends CreatureStat {
-    @Setter
     private float moveSpeed = 0;
 
-    @Setter
     private int rotationSpeed = 0;
 
-    public VehicleStat(Vehicle activeChar) {
-        super(activeChar);
+    public VehicleStat(Vehicle activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     @Override
-    public double getMoveSpeed() {
+    protected double moveSpeed() {
         return moveSpeed;
     }
 
+    public void setMoveSpeed(float value) {
+        WorldPartition.checkOwner();
+        moveSpeed = value;
+    }
+
     public double getRotationSpeed() {
+        WorldPartition.checkOwner();
         return rotationSpeed;
+    }
+
+    public void setRotationSpeed(int value) {
+        WorldPartition.checkOwner();
+        rotationSpeed = value;
     }
 }

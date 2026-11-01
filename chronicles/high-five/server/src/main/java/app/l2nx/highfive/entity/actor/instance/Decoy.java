@@ -203,7 +203,7 @@ public class Decoy extends Creature {
     @Override
     public int getLevel() {
         WorldPartition.checkOwner();
-        return getTemplate().getLevel();
+        return ((NpcTemplate) uncheckedTemplate()).getLevel();
     }
 
     public void deleteMe(Player owner) {
@@ -221,7 +221,7 @@ public class Decoy extends Creature {
     @Override
     public NpcTemplate getTemplate() {
         WorldPartition.checkOwner();
-        return (NpcTemplate) super.getTemplate();
+        return (NpcTemplate) uncheckedTemplate();
     }
 
     @Override

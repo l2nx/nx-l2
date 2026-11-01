@@ -26,6 +26,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.recipe.ManufactureItem;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import java.util.Map;
 
 public class RecipeShopSellList extends ServerPacket {
     private final Player buyer;
@@ -40,14 +41,15 @@ public class RecipeShopSellList extends ServerPacket {
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.RECIPE_SHOP_SELL_LIST.writeId(this, buffer);
         buffer.writeInt(manufacturer.getObjectId());
-        buffer.writeInt((int) manufacturer.getCurrentMp()); // Creator's MP
-        buffer.writeInt(manufacturer.getMaxMp()); // Creator's MP
-        buffer.writeLong(buyer.getAdena()); // Buyer Adena
+        buffer.writeInt((int) manufacturer.getCurrentMp());
+        buffer.writeInt(manufacturer.getMaxMp());
+        buffer.writeLong(buyer.getAdena());
         if (!manufacturer.hasManufactureShop()) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(manufacturer.getManufactureItems().size());
-            for (ManufactureItem temp : manufacturer.getManufactureItems().values()) {
+            final Map<Integer, ManufactureItem> items = manufacturer.getManufactureItems();
+            buffer.writeInt(items.size());
+            for (ManufactureItem temp : items.values()) {
                 buffer.writeInt(temp.getRecipeId());
                 buffer.writeInt(0); // unknown
                 buffer.writeLong(temp.getCost());

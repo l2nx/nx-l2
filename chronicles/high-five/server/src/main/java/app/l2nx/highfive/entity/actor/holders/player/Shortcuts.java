@@ -26,6 +26,8 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
 import app.l2nx.highfive.entity.item.instance.Item;
@@ -34,31 +36,37 @@ import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExAutoSoulShot;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShortcutInit;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ShortcutRegister;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterShortcut;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 @Slf4j
+@SingleWriter
 public class Shortcuts {
     private static final int MAX_SHORTCUTS_PER_BAR = 12;
     private final Player owner;
-    private final Map<Integer, Shortcut> shortcuts = new ConcurrentHashMap<>();
+    // Registration order is the order of the client's shortcut list.
+    private final Int2ObjectLinkedOpenHashMap<Shortcut> shortcuts = new Int2ObjectLinkedOpenHashMap<>();
 
     public Shortcuts(Player owner) {
         this.owner = owner;
     }
 
     public Collection<Shortcut> getAllShortcuts() {
-        return shortcuts.values();
+        WorldPartition.checkOwner();
+        return shortcuts.isEmpty() ? List.of() : ObjectLists.unmodifiable(new ObjectArrayList<>(shortcuts.values()));
     }
 
     public Shortcut getShortcut(int slot, int page) {
+        WorldPartition.checkOwner();
         Shortcut sc = shortcuts.get(slot + (page * MAX_SHORTCUTS_PER_BAR));
 
-        // Verify shortcut.
         if ((sc != null)
                 && (sc.getType() == ShortcutType.ITEM)
                 && (owner.getInventory().getItemByObjectId(sc.getId()) == null)) {
@@ -70,7 +78,7 @@ public class Shortcuts {
     }
 
     public void registerShortcut(Shortcut shortcut) {
-        // Verify shortcut.
+        WorldPartition.checkOwner();
         if (shortcut.getType() == ShortcutType.ITEM) {
             final Item item = owner.getInventory().getItemByObjectId(shortcut.getId());
             if (item == null) {
@@ -105,6 +113,7 @@ public class Shortcuts {
     }
 
     public void deleteShortcut(int slot, int page) {
+        WorldPartition.checkOwner();
         final Shortcut old = shortcuts.remove(slot + (page * MAX_SHORTCUTS_PER_BAR));
         if ((old == null) || (owner == null)) {
             return;
@@ -126,11 +135,17 @@ public class Shortcuts {
     }
 
     public void deleteShortcutByObjectId(int objectId) {
+        WorldPartition.checkOwner();
+        Shortcut found = null;
         for (Shortcut shortcut : shortcuts.values()) {
             if ((shortcut.getType() == ShortcutType.ITEM) && (shortcut.getId() == objectId)) {
-                deleteShortcut(shortcut.getSlot(), shortcut.getPage());
+                found = shortcut;
                 break;
             }
+        }
+
+        if (found != null) {
+            deleteShortcut(found.getSlot(), found.getPage());
         }
     }
 
@@ -144,6 +159,7 @@ public class Shortcuts {
     }
 
     public boolean restoreMe() {
+        WorldPartition.checkOwner();
         shortcuts.clear();
         try {
             for (CharacterShortcut stored :
@@ -157,14 +173,15 @@ public class Shortcuts {
             return false;
         }
 
-        // Verify shortcuts
-        for (Shortcut sc : getAllShortcuts()) {
-            if (sc.getType() == ShortcutType.ITEM) {
-                final Item item = owner.getInventory().getItemByObjectId(sc.getId());
-                if (item == null) {
-                    deleteShortcut(sc.getSlot(), sc.getPage());
-                } else if (item.isEtcItem()) {
-                    sc.setSharedReuseGroup(item.getEtcItem().getSharedReuseGroup());
+        try (ScratchBuffers.Snapshot<Shortcut> restored = ScratchBuffers.snapshot(shortcuts.values())) {
+            for (Shortcut sc : restored) {
+                if (sc.getType() == ShortcutType.ITEM) {
+                    final Item item = owner.getInventory().getItemByObjectId(sc.getId());
+                    if (item == null) {
+                        deleteShortcut(sc.getSlot(), sc.getPage());
+                    } else if (item.isEtcItem()) {
+                        sc.setSharedReuseGroup(item.getEtcItem().getSharedReuseGroup());
+                    }
                 }
             }
         }
@@ -172,19 +189,16 @@ public class Shortcuts {
         return true;
     }
 
-    /**
-     * Updates the shortcut bars with the new skill.
-     * @param skillId the skill Id to search and update.
-     * @param skillLevel the skill level to update.
-     */
     public void updateShortcuts(int skillId, int skillLevel) {
-        // Update all the shortcuts for this skill.
-        for (Shortcut sc : shortcuts.values()) {
-            if ((sc.getId() == skillId) && (sc.getType() == ShortcutType.SKILL)) {
-                final Shortcut newsc =
-                        new Shortcut(sc.getSlot(), sc.getPage(), sc.getType(), sc.getId(), skillLevel, 1);
-                owner.sendPacket(new ShortcutRegister(newsc));
-                owner.registerShortcut(newsc);
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Shortcut> current = ScratchBuffers.snapshot(shortcuts.values())) {
+            for (Shortcut sc : current) {
+                if ((sc.getId() == skillId) && (sc.getType() == ShortcutType.SKILL)) {
+                    final Shortcut newsc =
+                            new Shortcut(sc.getSlot(), sc.getPage(), sc.getType(), sc.getId(), skillLevel, 1);
+                    owner.sendPacket(new ShortcutRegister(newsc));
+                    owner.registerShortcut(newsc);
+                }
             }
         }
     }

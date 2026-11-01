@@ -285,13 +285,13 @@ public class Pet extends Summon {
     @Override
     public PetStat getStat() {
         WorldPartition.checkOwner();
-        return (PetStat) super.getStat();
+        return (PetStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new PetStat(this));
+        setStat(new PetStat(this, statAccess()));
     }
 
     @Override
@@ -904,8 +904,6 @@ public class Pet extends Summon {
     }
 
     private void deathPenalty() {
-        // TODO: Need Correct Penalty
-
         final int level = getStat().getLevel();
         final double percentLost = (-0.07 * level) + 6.5;
 
@@ -942,7 +940,7 @@ public class Pet extends Summon {
     @Override
     public int getLevel() {
         WorldPartition.checkOwner();
-        return getStat().getLevel();
+        return uncheckedStat().getLevel();
     }
 
     public int getMaxFed() {

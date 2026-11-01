@@ -43,24 +43,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Avant-Garde AI.<br>
- * Sub-Class Certification system, skill learning and certification canceling.<br>
- * Transformation skill learning and transformation scroll sell.
  * @author Zoey76
  */
 @Slf4j
 public class AvantGarde extends Script {
-    // NPC
     private static final int AVANT_GARDE = 32323;
 
-    // Items
     // @formatter:off
     private static final int[] ITEMS = {
         10280, 10281, 10282, 10283, 10284, 10285, 10286, 10287, 10288, 10289, 10290, 10291, 10292, 10293, 10294, 10612
     };
     // @formatter:on
 
-    // Misc
     private static final String[] QUEST_VAR_NAMES = {
         "EmergentAbility65-", "EmergentAbility70-", "ClassAbility75-", "ClassAbility80-"
     };
@@ -143,7 +137,7 @@ public class AvantGarde extends Script {
                 break;
             }
             case "CancelCertification": {
-                if (player.getSubClasses().isEmpty()) {
+                if (!player.hasSubClasses()) {
                     htmltext = "32323-07.html";
                 } else if (player.isSubClassActive()) {
                     htmltext = "32323-08.html";
@@ -229,7 +223,8 @@ public class AvantGarde extends Script {
                         final Item item = player.getInventory().getItemByItemId(itemId);
                         if (item != null) {
                             log.warn(
-                                    "{}: {} had 'extra' certification skill books while cancelling sub-class certifications!",
+                                    "{}: {} had 'extra' certification skill books while cancelling sub-class"
+                                            + " certifications!",
                                     getClass().getName(),
                                     player);
                             player.destroyItem(ItemProcessType.DESTROY, item, npc, false);
@@ -253,10 +248,6 @@ public class AvantGarde extends Script {
         return "32323-01.html";
     }
 
-    /**
-     * Display the Sub-Class Skill list to the player.
-     * @param player the player
-     */
     public static void showSubClassSkillList(Player player) {
         final List<SkillLearn> subClassSkills = SkillTreeData.getInstance().getAvailableSubClassSkills(player);
         final AcquireSkillList asl = new AcquireSkillList(AcquireSkillType.SUBCLASS);
@@ -276,10 +267,6 @@ public class AvantGarde extends Script {
         }
     }
 
-    /**
-     * This displays Transformation Skill List to the player.
-     * @param player the active character.
-     */
     public static void showTransformSkillList(Player player) {
         final List<SkillLearn> skills = SkillTreeData.getInstance().getAvailableTransformSkills(player);
         final AcquireSkillList asl = new AcquireSkillList(AcquireSkillType.TRANSFORM);
@@ -296,7 +283,6 @@ public class AvantGarde extends Script {
             final int minlevel = SkillTreeData.getInstance()
                     .getMinLevelForNewSkill(player, SkillTreeData.getInstance().getTransformSkillTree());
             if (minlevel > 0) {
-                // No more skills to learn, come back when you level.
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId
                                 .YOU_DO_NOT_HAVE_ANY_FURTHER_SKILLS_TO_LEARN_COME_BACK_WHEN_YOU_HAVE_REACHED_LEVEL_S1);

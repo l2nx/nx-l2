@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -123,19 +124,30 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.net.Inet4Address;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SingleWriter
 public final class PlayerWorldEntry {
-    private static final Map<String, ClientHardwareInfoHolder> TRACE_HWINFO = new ConcurrentHashMap<>();
+    private static final int TRACE_HWINFO_MAX = 10_000;
+
+    // Least recently used trace goes first, so a stream of new routes cannot grow the map without bound.
+    private static final LinkedHashMap<String, ClientHardwareInfoHolder> TRACE_HWINFO =
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, ClientHardwareInfoHolder> eldest) {
+                    return size() > TRACE_HWINFO_MAX;
+                }
+            };
 
     private PlayerWorldEntry() {}
 
     public static void enter(Player player, List<Inet4Address> route) {
+        WorldPartition.checkOwner();
         final GameClient client = player.getClient();
         if (player.hasEnteredWorld()) {
             return;
@@ -158,7 +170,6 @@ public final class PlayerWorldEntry {
 
         player.sendPacket(new UserInfo(player));
 
-        // Restore to instanced area if enabled.
         if (GeneralConfig.RESTORE_PLAYER_INSTANCE) {
             player.setInstanceId(InstanceManager.getInstance().getPlayer(player.getObjectId()));
         } else {
@@ -170,10 +181,7 @@ public final class PlayerWorldEntry {
 
         if (!player.isGM()) {
             player.updatePvpTitleAndColor(false);
-        }
-
-        // Apply special GM properties to the GM when entering.
-        else {
+        } else {
             gmStartupProcess:
             {
                 if (GeneralConfig.GM_STARTUP_BUILDER_HIDE
@@ -226,14 +234,12 @@ public final class PlayerWorldEntry {
             }
         }
 
-        // Set dead status if applies.
         if (player.getCurrentHp() < 0.5) {
             player.setDead(true);
         }
 
         boolean showClanNotice = false;
 
-        // Clan related checks are here.
         final Clan clan = player.getClan();
         if (clan != null) {
             player.sendPacket(new PledgeSkillList(clan));
@@ -294,7 +300,6 @@ public final class PlayerWorldEntry {
             player.sendPacket(new PledgeShowMemberListAll(clan, player));
             player.sendPacket(new PledgeStatusChanged(clan));
 
-            // Residential skills support
             if (clan.getCastleId() > 0) {
                 final Castle castle = CastleManager.getInstance().getCastleByOwner(clan);
                 if (castle != null) {
@@ -320,7 +325,6 @@ public final class PlayerWorldEntry {
             player.setSiegeSide(TerritoryWarManager.getInstance().getRegisteredTerritoryId(player));
         }
 
-        // Updating Seal of Strife Buff/Debuff
         if (SevenSigns.getInstance().isSealValidationPeriod()
                 && (SevenSigns.getInstance().getSealOwner(SevenSigns.SEAL_STRIFE) != SevenSigns.CABAL_NULL)) {
             final int cabal = SevenSigns.getInstance().getPlayerCabal(player.getObjectId());
@@ -349,26 +353,19 @@ public final class PlayerWorldEntry {
             player.checkRecoBonusTask();
         }
 
-        // Send Macro List
         player.getMacros().sendUpdate();
 
-        // Send Item List
         player.sendPacket(new ItemList(player, false));
 
-        // Send Teleport Bookmark List.
         player.sendPacket(new ExGetBookMarkInfoPacket(player));
 
-        // Send Shortcuts
         player.sendPacket(new ShortcutInit(player));
 
-        // Send Action list
         player.sendPacket(ExBasicActionList.STATIC_PACKET);
 
-        // Send Dye Information
         player.sendPacket(new HennaInfo(player));
         Quest.playerEnter(player);
 
-        // Faction System
         if (FactionSystemConfig.FACTION_SYSTEM_ENABLED) {
             final PlayerAppearance appearance = player.getAppearance();
             if (player.isGood()) {
@@ -412,7 +409,6 @@ public final class PlayerWorldEntry {
 
         player.sendPacket(new EtcStatusUpdate(player));
 
-        // Expand Skill
         player.sendPacket(new ExStorageMaxCount(player));
         player.sendPacket(new FriendList(player));
         SystemMessage sm = new SystemMessage(SystemMessageId.YOUR_FRIEND_S1_JUST_LOGGED_IN);
@@ -456,8 +452,7 @@ public final class PlayerWorldEntry {
             PetitionManager.getInstance().checkPetitionMessages(player);
         }
 
-        if (player.isAlikeDead()) // dead or fake dead
-        {
+        if (player.isAlikeDead()) {
             // No broadcast needed since the player will already spawn dead to others.
             player.sendPacket(new Die(player));
         }
@@ -505,7 +500,6 @@ public final class PlayerWorldEntry {
                             .YOU_HAVE_RECENTLY_BEEN_DISMISSED_FROM_A_CLAN_YOU_ARE_NOT_ALLOWED_TO_JOIN_ANOTHER_CLAN_FOR_24_HOURS);
         }
 
-        // Remove combat flag before teleporting.
         if (player.getInventory().getItemByItemId(9819) != null) {
             final Fort fort = FortManager.getInstance().getFort(player);
             if (fort != null) {
@@ -519,7 +513,6 @@ public final class PlayerWorldEntry {
             }
         }
 
-        // Attacker or spectator logging in to a siege zone.
         if (!player.isGM()
                 && player.isInsideZone(ZoneId.SIEGE)
                 && (!player.isInSiege() || (player.getSiegeState() < 2))) {
@@ -546,7 +539,6 @@ public final class PlayerWorldEntry {
             }
         }
 
-        // Remove demonic weapon if character is not cursed weapon equipped.
         if ((player.getInventory().getItemByItemId(8190) != null) && !player.isCursedWeaponEquipped()) {
             player.destroyItem(ItemProcessType.DESTROY, player.getInventory().getItemByItemId(8190), null, true);
         }
@@ -565,7 +557,6 @@ public final class PlayerWorldEntry {
         final int birthday = player.checkBirthDay();
         if (birthday == 0) {
             player.sendPacket(SystemMessageId.HAPPY_BIRTHDAY_ALEGRIA_HAS_SENT_YOU_A_BIRTHDAY_GIFT);
-            // player.sendPacket(new ExBirthdayPopup()); Removed in H5?
         } else if (birthday != -1) {
             sm = new SystemMessage(
                     SystemMessageId
@@ -574,7 +565,7 @@ public final class PlayerWorldEntry {
             player.sendPacket(sm);
         }
 
-        if (!player.getPremiumItemList().isEmpty()) {
+        if (player.hasPremiumItems()) {
             player.sendPacket(ExNotifyPremiumItem.STATIC_PACKET);
         }
 
@@ -583,7 +574,6 @@ public final class PlayerWorldEntry {
             OfflineTraderTable.getInstance().onTransaction(player, true);
         }
 
-        // Check if expoff is enabled.
         if (player.getVariables().getBoolean("EXPOFF", false)) {
             player.disableExpGain();
             player.sendMessage("Experience gain is disabled.");
@@ -591,18 +581,15 @@ public final class PlayerWorldEntry {
 
         player.broadcastUserInfo();
 
-        // Prevent relogin in game gfx.
         player.sendPacket(new ValidateLocation(player));
 
         // Unstuck players that had client open when server crashed.
         player.sendPacket(ActionFailed.STATIC_PACKET);
 
-        // Delayed HWID checks.
         if (ServerConfig.HARDWARE_INFO_ENABLED) {
             WorldPartition.loop()
                     .schedule(
                             () -> {
-                                // Generate trace string.
                                 final StringBuilder sb = new StringBuilder();
                                 for (int[] i : tracert) {
                                     for (int j : i) {
@@ -616,20 +603,16 @@ public final class PlayerWorldEntry {
                                 // Whether a hardware info packet was received during this session, before any fallback.
                                 final ClientHardwareInfoHolder freshHwInfo = client.getHardwareInfo();
 
-                                // Get hardware info from client.
                                 ClientHardwareInfoHolder hwInfo = freshHwInfo;
                                 if (hwInfo != null) {
                                     hwInfo.store(player);
                                     TRACE_HWINFO.put(trace, hwInfo);
                                 } else {
-                                    // Get hardware info from stored tracert map.
                                     hwInfo = TRACE_HWINFO.get(trace);
                                     if (hwInfo != null) {
                                         hwInfo.store(player);
                                         client.setHardwareInfo(hwInfo);
-                                    }
-                                    // Get hardware info from account variables.
-                                    else {
+                                    } else {
                                         final String storedInfo =
                                                 player.getAccountVariables().getString(AccountVariables.HWID, "");
                                         if (!storedInfo.isEmpty()) {
@@ -648,7 +631,6 @@ public final class PlayerWorldEntry {
                                     }
                                 }
 
-                                // Banned?
                                 if ((hwInfo != null)
                                         && PunishmentManager.getInstance()
                                                 .hasPunishment(
@@ -659,17 +641,14 @@ public final class PlayerWorldEntry {
                                     return;
                                 }
 
-                                // Kick if HWID is missing. When RequireFreshHWID is enabled a packet must be received
-                                // during
-                                // this session; otherwise a previously stored value is accepted.
+                                // With RequireFreshHWID a packet must arrive this session; otherwise a stored value
+                                // passes.
                                 if (ServerConfig.KICK_MISSING_HWID
                                         && (ServerConfig.REQUIRE_FRESH_HWID
                                                 ? (freshHwInfo == null)
                                                 : (hwInfo == null))) {
                                     Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-                                }
-                                // Check max players per HWID.
-                                else if (ServerConfig.MAX_PLAYERS_PER_HWID > 0) {
+                                } else if (ServerConfig.MAX_PLAYERS_PER_HWID > 0) {
                                     int count = 0;
                                     for (Player plr : World.getPlayers()) {
                                         if (plr.isOnlineInt() == 1) {
@@ -690,7 +669,6 @@ public final class PlayerWorldEntry {
                             TimeUnit.MILLISECONDS);
         }
 
-        // Check if the player is a Dark Elf and has the Shadow Sense skill.
         if ((player.getRace() == Race.DARK_ELF)) {
             final Skill shadowSense = player.getKnownSkill(CommonSkill.SHADOW_SENSE.getId());
             if (shadowSense != null) {
@@ -709,10 +687,8 @@ public final class PlayerWorldEntry {
 
         AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OFFLINE_PLAY, player);
 
-        // EnterWorld has finished.
         player.setEnteredWorld();
 
-        // Wedding checks.
         if (WeddingConfig.ALLOW_WEDDING) {
             final int playerObjectId = player.getObjectId();
             for (Couple couple : CoupleManager.getInstance().getCouples()) {

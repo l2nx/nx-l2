@@ -169,7 +169,7 @@ public class SiegeFlag extends Npc {
     @Override
     public SiegeFlagStatus getStatus() {
         WorldPartition.checkOwner();
-        return (SiegeFlagStatus) super.getStatus();
+        return (SiegeFlagStatus) uncheckedStatus();
     }
 
     @Override

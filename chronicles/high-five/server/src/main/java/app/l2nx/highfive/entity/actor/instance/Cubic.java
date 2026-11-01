@@ -72,7 +72,6 @@ public class Cubic {
     public static final int SPARK_CUBIC = 8;
     public static final int ATTRACT_CUBIC = 9;
 
-    // TODO: Check/fix the max range
     public static final int MAX_MAGIC_RANGE = 900;
 
     public static final int SKILL_CUBIC_HEAL = 4051;
@@ -504,7 +503,6 @@ public class Cubic {
 
             applyCubicEffects(skill, target);
 
-            // Negative effects are tracked by the duel so they are removed when it ends.
             if (target.isPlayer()) {
                 final Player player = target.asPlayer();
                 if (player.isInDuel() && skill.hasNegativeEffect() && (owner.getDuelId() == player.getDuelId())) {
@@ -538,7 +536,7 @@ public class Cubic {
                     target.breakCast();
                 }
 
-                if (target.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, target, skill)
+                if (target.calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, target, skill)
                         > ClockBridge.random().nextInt(100)) {
                     damage = 0;
                 } else {
@@ -560,7 +558,6 @@ public class Cubic {
             final byte shld = Formulas.calcShldUse(this.owner, target, skill);
             final int damage = (int) Formulas.calcMagicDam(this, target, skill, mcrit, shld);
 
-            // TODO: Unhardcode fixed value.
             final double hpAdd = (0.4 * damage);
             final Player owner = this.owner;
             final double hp = ((owner.getCurrentHp() + hpAdd) > owner.getMaxHp()
@@ -592,7 +589,6 @@ public class Cubic {
                     && Formulas.calcCubicSkillSuccess(this, target, skill, Formulas.SHIELD_DEFENSE_FAILED)) {
                 applyCubicEffects(skill, target);
 
-                // Negative effects are tracked by the duel so they are removed when it ends.
                 if (target.isPlayer()) {
                     final Player player = target.asPlayer();
                     if (player.isInDuel() && skill.hasNegativeEffect() && (owner.getDuelId() == player.getDuelId())) {
@@ -633,7 +629,6 @@ public class Cubic {
         double percentleft = 100.0;
         Party party = owner.getParty();
 
-        // Treat non-party duels as solo context for heal target selection.
         if (owner.isInDuel()
                 && !DuelManager.getInstance().getDuel(owner.getDuelId()).isPartyDuel()) {
             party = null;

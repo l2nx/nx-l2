@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
@@ -32,6 +33,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.SubClassHolder;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.actor.status.PlayerStatus;
+import app.l2nx.highfive.entity.actor.templates.PlayerTemplate;
 import app.l2nx.highfive.entity.actor.transform.TransformTemplate;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.zone.ZoneId;
@@ -50,25 +52,19 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowMemberLis
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PlayerStat extends PlayableStat {
-    private int oldMaxHp; // stats watch
-    private int oldMaxMp; // stats watch
-    private int oldMaxCp; // stats watch
+    private int oldMaxHp;
+    private int oldMaxMp;
+    private int oldMaxCp;
     private float vitalityPoints = 1;
     private byte vitalityLevel = 0;
 
-    @Getter
     private long startingExp;
-    /** Player's maximum cubic count. */
-    @Getter
-    @Setter
     private int maxCubicCount = 1;
-    /** Player's maximum talisman count. */
-    private final AtomicInteger talismanSlots = new AtomicInteger();
+    private int talismanSlots;
 
     private boolean cloakSlot = false;
     private boolean pausedNevitHourglass = false;
@@ -78,15 +74,15 @@ public class PlayerStat extends PlayableStat {
     public static final int MAX_VITALITY_POINTS = VITALITY_LEVELS[4];
     public static final int MIN_VITALITY_POINTS = 1;
 
-    public PlayerStat(Player player) {
-        super(player);
+    public PlayerStat(Player player, CreatureAccess access) {
+        super(player, access);
     }
 
     @Override
     public boolean addExp(long value) {
-        final Player player = getActiveChar();
+        WorldPartition.checkOwner();
+        final Player player = player();
 
-        // Allowed to gain exp?
         if (!player.getAccessLevel().canGainExp()) {
             return false;
         }
@@ -95,7 +91,6 @@ public class PlayerStat extends PlayableStat {
             return false;
         }
 
-        // Set new karma
         if (!player.isCursedWeaponEquipped() && (player.getKarma() > 0) && !player.isInsideZone(ZoneId.PVP)) {
             final int karmaLost = Formulas.calculateKarmaLost(player, value);
             if (karmaLost > 0) {
@@ -106,15 +101,14 @@ public class PlayerStat extends PlayableStat {
             }
         }
 
-        // EXP status update currently not used in retail.
         player.updateUserInfo();
         return true;
     }
 
     public boolean addExpAndSp(double addToExpValue, double addToSpValue, boolean useBonuses) {
-        final Player player = getActiveChar();
+        WorldPartition.checkOwner();
+        final Player player = player();
 
-        // Allowed to gain exp/sp?
         if (!player.getAccessLevel().canGainExp()) {
             return false;
         }
@@ -127,7 +121,6 @@ public class PlayerStat extends PlayableStat {
         double bonusExp = 1;
         double bonusSp = 1;
 
-        // Start Nevit's Hourglass
         if (PlayerConfig.NEVIT_ENABLED && (addToExp > 0) && !player.isInsideZone(ZoneId.PEACE)) {
             player.startNevitHourglassTask();
 
@@ -149,13 +142,11 @@ public class PlayerStat extends PlayableStat {
         addToSp *= bonusSp;
         double ratioTakenByPlayer = 0;
 
-        // if this player has a pet and it is in his range he takes from the owner's Exp, give the pet Exp now
         if (player.hasPet() && (player.calculateDistance3D(player.getSummon()) < PlayerConfig.ALT_PARTY_RANGE)) {
             final Pet pet = player.getSummon().asPet();
             ratioTakenByPlayer = pet.getPetLevelData().getOwnerExpTaken() / 100f;
 
-            // only give exp/sp to the pet by taking from the owner if the pet has a non-zero, positive ratio
-            // allow possible customizations that would have the pet earning more than 100% of the owner's exp/sp
+            // Cap at 100%: a customized pet ratio above it would leave the owner negative exp/sp.
             if (ratioTakenByPlayer > 1) {
                 ratioTakenByPlayer = 1;
             }
@@ -164,7 +155,6 @@ public class PlayerStat extends PlayableStat {
                 pet.addExpAndSp(addToExp * (1 - ratioTakenByPlayer), addToSp * (1 - ratioTakenByPlayer));
             }
 
-            // now adjust the max ratio to avoid the owner earning negative exp/sp
             addToExp *= ratioTakenByPlayer;
             addToSp *= ratioTakenByPlayer;
         }
@@ -203,20 +193,21 @@ public class PlayerStat extends PlayableStat {
 
     @Override
     public boolean removeExpAndSp(long addToExp, long addToSp) {
+        WorldPartition.checkOwner();
         return removeExpAndSp(addToExp, addToSp, true);
     }
 
     public boolean removeExpAndSp(long addToExp, long addToSp, boolean sendMessage) {
+        WorldPartition.checkOwner();
         final int level = getLevel();
         if (!super.removeExpAndSp(addToExp, addToSp)) {
             return false;
         }
 
         if (sendMessage) {
-            // Send a Server->Client System Message to the Player.
             SystemMessage sm = new SystemMessage(SystemMessageId.YOUR_EXPERIENCE_HAS_DECREASED_BY_S1);
             sm.addLong(addToExp);
-            final Player player = getActiveChar();
+            final Player player = player();
             player.sendPacket(sm);
             sm = new SystemMessage(SystemMessageId.YOUR_SP_HAS_DECREASED_BY_S1);
             sm.addLong(addToSp);
@@ -231,12 +222,12 @@ public class PlayerStat extends PlayableStat {
 
     @Override
     public boolean addLevel(byte value) {
+        WorldPartition.checkOwner();
         if ((getLevel() + value) > (ExperienceData.getInstance().getMaxLevel() - 1)) {
             return false;
         }
 
-        // Notify to scripts
-        final Player player = getActiveChar();
+        final Player player = player();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_LEVEL_CHANGED, player)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
@@ -262,7 +253,6 @@ public class PlayerStat extends PlayableStat {
             player.sendPacket(SystemMessageId.YOUR_LEVEL_HAS_INCREASED);
         }
 
-        // Give AutoGet skills and all normal skills if Auto-Learn is activated.
         player.rewardSkills();
 
         final Clan clan = player.getClan();
@@ -272,14 +262,13 @@ public class PlayerStat extends PlayableStat {
         }
 
         if (player.isInParty()) {
-            player.getParty().recalculatePartyLevel(); // Recalculate the party level.
+            player.getParty().recalculatePartyLevel();
         }
 
         if (player.isTransformed() || player.isInStance()) {
             player.getTransformation().onLevelUp(player);
         }
 
-        // Synchronize level with pet if possible.
         if (player.hasPet()) {
             final Pet pet = player.getSummon().asPet();
             if (pet.getPetData().isSynchLevel() && (pet.getLevel() != getLevel())) {
@@ -300,16 +289,12 @@ public class PlayerStat extends PlayableStat {
         su.addAttribute(StatusUpdate.MAX_MP, getMaxMp());
         player.sendPacket(su);
 
-        // Update the overloaded status of the Player.
         player.refreshOverloaded();
 
-        // Update the expertise status of the Player.
         player.refreshExpertisePenalty();
 
-        // Send a Server->Client packet UserInfo to the Player.
         player.updateUserInfo();
 
-        // Nevit System
         if (PlayerConfig.NEVIT_ENABLED) {
             player.sendPacket(new ExVoteSystemInfo(player));
             player.getNevitSystem().addPoints(2000);
@@ -320,11 +305,12 @@ public class PlayerStat extends PlayableStat {
 
     @Override
     public boolean addSp(long value) {
+        WorldPartition.checkOwner();
         if (!super.addSp(value)) {
             return false;
         }
 
-        final Player player = getActiveChar();
+        final Player player = player();
         final StatusUpdate su = new StatusUpdate(player);
         su.addAttribute(StatusUpdate.SP, (int) getSp());
         player.sendPacket(su);
@@ -334,58 +320,77 @@ public class PlayerStat extends PlayableStat {
 
     @Override
     public long getExpForLevel(int level) {
+        WorldPartition.checkOwner();
         return ExperienceData.getInstance().getExpForLevel(level);
     }
 
     @Override
     public Player getActiveChar() {
-        return super.getActiveChar().asPlayer();
+        WorldPartition.checkOwner();
+        return player();
     }
 
     @Override
-    public long getExp() {
-        final Player player = getActiveChar();
+    protected long exp() {
+        final Player player = player();
         if (player.isSubClassActive()) {
-            return player.getSubClasses().get(player.getClassIndex()).getExp();
+            return player.getSubClass(player.getClassIndex()).getExp();
         }
 
-        return super.getExp();
+        return super.exp();
     }
 
     public long getBaseExp() {
-        return super.getExp();
+        WorldPartition.checkOwner();
+        return super.exp();
     }
 
     @Override
     public void setExp(long value) {
-        final Player player = getActiveChar();
+        WorldPartition.checkOwner();
+        final Player player = player();
         if (player.isSubClassActive()) {
-            player.getSubClasses().get(player.getClassIndex()).setExp(value);
+            player.getSubClass(player.getClassIndex()).setExp(value);
         } else {
             super.setExp(value);
         }
     }
 
+    public long getStartingExp() {
+        WorldPartition.checkOwner();
+        return startingExp;
+    }
+
     public void setStartingExp(long value) {
+        WorldPartition.checkOwner();
         if (GeneralConfig.BOTREPORT_ENABLE) {
             startingExp = value;
         }
     }
 
-    /**
-     * Gets the maximum talisman count.
-     * @return the maximum talisman count
-     */
+    public int getMaxCubicCount() {
+        WorldPartition.checkOwner();
+        return maxCubicCount;
+    }
+
+    public void setMaxCubicCount(int value) {
+        WorldPartition.checkOwner();
+        maxCubicCount = value;
+    }
+
     public int getTalismanSlots() {
-        return talismanSlots.get();
+        WorldPartition.checkOwner();
+        return talismanSlots;
     }
 
     public void addTalismanSlots(int count) {
-        talismanSlots.addAndGet(count);
+        WorldPartition.checkOwner();
+        talismanSlots += count;
     }
 
     public boolean canEquipCloak() {
-        if (!getActiveChar().hasEnteredWorld()) {
+        WorldPartition.checkOwner();
+        if (!player().hasEnteredWorld()) {
             return true;
         }
 
@@ -393,57 +398,63 @@ public class PlayerStat extends PlayableStat {
     }
 
     public void setCloakSlotStatus(boolean cloakSlot) {
+        WorldPartition.checkOwner();
         this.cloakSlot = cloakSlot;
     }
 
     public boolean hasPausedNevitHourglass() {
+        WorldPartition.checkOwner();
         return pausedNevitHourglass;
     }
 
     public void setPausedNevitHourglassStatus(boolean value) {
+        WorldPartition.checkOwner();
         pausedNevitHourglass = value;
-        getActiveChar().sendPacket(new ExVoteSystemInfo(getActiveChar()));
+        final Player player = player();
+        player.sendPacket(new ExVoteSystemInfo(player));
     }
 
     @Override
-    public byte getLevel() {
-        final Player player = getActiveChar();
+    protected byte level() {
+        final Player player = player();
         if (player.isSubClassActive()) {
-            final SubClassHolder holder = player.getSubClasses().get(player.getClassIndex());
+            final SubClassHolder holder = player.getSubClass(player.getClassIndex());
             if (holder != null) {
                 return holder.getLevel();
             }
         }
 
-        return super.getLevel();
+        return super.level();
     }
 
     public byte getBaseLevel() {
-        return super.getLevel();
+        WorldPartition.checkOwner();
+        return super.level();
     }
 
     @Override
     public void setLevel(byte value) {
+        WorldPartition.checkOwner();
         byte level = value;
         if (level > (ExperienceData.getInstance().getMaxLevel() - 1)) {
             level = (byte) (ExperienceData.getInstance().getMaxLevel() - 1);
         }
 
-        final Player player = getActiveChar();
+        final Player player = player();
         if (player.isSubClassActive()) {
-            player.getSubClasses().get(player.getClassIndex()).setLevel(value);
+            player.getSubClass(player.getClassIndex()).setLevel(value);
         } else {
             super.setLevel(level);
         }
     }
 
     @Override
-    public int getMaxCp() {
+    protected int maxCp() {
         // Get the Max CP (base+modifier) of the Player.
-        final Player player = getActiveChar();
+        final Player player = player();
         final int val = (player == null)
                 ? 1
-                : (int) calcStat(Stat.MAX_CP, player.getTemplate().getBaseCpMax(player.getLevel()));
+                : (int) calc(Stat.MAX_CP, ((PlayerTemplate) template()).getBaseCpMax(level()), null, null);
         if (val != oldMaxCp) {
             oldMaxCp = val;
 
@@ -460,12 +471,12 @@ public class PlayerStat extends PlayableStat {
     }
 
     @Override
-    public int getMaxHp() {
+    protected int maxHp() {
         // Get the Max HP (base+modifier) of the Player.
-        final Player player = getActiveChar();
+        final Player player = player();
         final int val = (player == null)
                 ? 1
-                : (int) calcStat(Stat.MAX_HP, player.getTemplate().getBaseHpMax(player.getLevel()));
+                : (int) calc(Stat.MAX_HP, ((PlayerTemplate) template()).getBaseHpMax(level()), null, null);
         if (val != oldMaxHp) {
             oldMaxHp = val;
 
@@ -482,12 +493,12 @@ public class PlayerStat extends PlayableStat {
     }
 
     @Override
-    public int getMaxMp() {
+    protected int maxMp() {
         // Get the Max MP (base+modifier) of the Player.
-        final Player player = getActiveChar();
+        final Player player = player();
         final int val = (player == null)
                 ? 1
-                : (int) calcStat(Stat.MAX_MP, player.getTemplate().getBaseMpMax(player.getLevel()));
+                : (int) calc(Stat.MAX_MP, ((PlayerTemplate) template()).getBaseMpMax(level()), null, null);
         if (val != oldMaxMp) {
             oldMaxMp = val;
 
@@ -504,24 +515,26 @@ public class PlayerStat extends PlayableStat {
     }
 
     @Override
-    public long getSp() {
-        final Player player = getActiveChar();
+    protected long sp() {
+        final Player player = player();
         if (player.isSubClassActive()) {
-            return player.getSubClasses().get(player.getClassIndex()).getSp();
+            return player.getSubClass(player.getClassIndex()).getSp();
         }
 
-        return super.getSp();
+        return super.sp();
     }
 
     public long getBaseSp() {
-        return super.getSp();
+        WorldPartition.checkOwner();
+        return super.sp();
     }
 
     @Override
     public void setSp(long value) {
-        final Player player = getActiveChar();
+        WorldPartition.checkOwner();
+        final Player player = player();
         if (player.isSubClassActive()) {
-            player.getSubClasses().get(player.getClassIndex()).setSp(value);
+            player.getSubClass(player.getClassIndex()).setSp(value);
         } else {
             super.setSp(value);
         }
@@ -532,8 +545,8 @@ public class PlayerStat extends PlayableStat {
      * @return the base move speed of given movement type.
      */
     @Override
-    public double getBaseMoveSpeed(MoveType type) {
-        final Player player = getActiveChar();
+    protected double baseMoveSpeed(MoveType type) {
+        final Player player = player();
         if (player.isTransformed()) {
             final TransformTemplate template = player.getTransformation().getTemplate(player);
             if (template != null) {
@@ -547,15 +560,15 @@ public class PlayerStat extends PlayableStat {
             }
         }
 
-        return super.getBaseMoveSpeed(type);
+        return super.baseMoveSpeed(type);
     }
 
     @Override
-    public double getRunSpeed() {
-        double val = super.getRunSpeed() + PlayerConfig.RUN_SPD_BOOST;
+    protected double runSpeed() {
+        double val = super.runSpeed() + PlayerConfig.RUN_SPD_BOOST;
 
         // Apply max run speed cap.
-        final Player player = getActiveChar();
+        final Player player = player();
         if ((val > PlayerConfig.MAX_RUN_SPEED) && !player.isGM()) {
             return PlayerConfig.MAX_RUN_SPEED;
         }
@@ -577,11 +590,11 @@ public class PlayerStat extends PlayableStat {
     }
 
     @Override
-    public double getWalkSpeed() {
-        double val = super.getWalkSpeed() + PlayerConfig.RUN_SPD_BOOST;
+    protected double walkSpeed() {
+        double val = super.walkSpeed() + PlayerConfig.RUN_SPD_BOOST;
 
         // Apply max run speed cap.
-        final Player player = getActiveChar();
+        final Player player = player();
         if ((val > PlayerConfig.MAX_RUN_SPEED) && !player.isGM()) {
             return PlayerConfig.MAX_RUN_SPEED;
         }
@@ -602,9 +615,9 @@ public class PlayerStat extends PlayableStat {
     }
 
     @Override
-    public double getPAtkSpd() {
-        final double val = super.getPAtkSpd();
-        if ((val > PlayerConfig.MAX_PATK_SPEED) && !getActiveChar().isGM()) {
+    protected double pAtkSpd() {
+        final double val = super.pAtkSpd();
+        if ((val > PlayerConfig.MAX_PATK_SPEED) && !player().isGM()) {
             return PlayerConfig.MAX_PATK_SPEED;
         }
 
@@ -626,7 +639,7 @@ public class PlayerStat extends PlayableStat {
         }
 
         if (!quiet && (level != vitalityLevel)) {
-            final Player player = getActiveChar();
+            final Player player = player();
             if (level < vitalityLevel) {
                 player.sendPacket(SystemMessageId.YOUR_VITALITY_HAS_DECREASED);
             } else {
@@ -647,6 +660,7 @@ public class PlayerStat extends PlayableStat {
      * Return current vitality points in integer format
      */
     public int getVitalityPoints() {
+        WorldPartition.checkOwner();
         return (int) vitalityPoints;
     }
 
@@ -654,6 +668,7 @@ public class PlayerStat extends PlayableStat {
      * Set current vitality points to this value if quiet = true - does not send system messages
      */
     public void setVitalityPoints(int value, boolean quiet) {
+        WorldPartition.checkOwner();
         final int points = Math.clamp(value, MIN_VITALITY_POINTS, MAX_VITALITY_POINTS);
         if (points == vitalityPoints) {
             return;
@@ -661,24 +676,25 @@ public class PlayerStat extends PlayableStat {
 
         vitalityPoints = points;
         updateVitalityLevel(quiet);
-        getActiveChar().sendPacket(new ExVitalityPointInfo(getVitalityPoints()));
+        player().sendPacket(new ExVitalityPointInfo((int) vitalityPoints));
     }
 
-    public synchronized void updateVitalityPoints(float value, boolean useRates, boolean quiet) {
+    public void updateVitalityPoints(float value, boolean useRates, boolean quiet) {
+        WorldPartition.checkOwner();
         if ((value == 0) || !PlayerConfig.ENABLE_VITALITY) {
             return;
         }
 
         float points = value;
         if (useRates) {
-            final Player player = getActiveChar();
+            final Player player = player();
             if (player.isLucky()) {
                 return;
             }
 
             if (points < 0) // vitality consumed
             {
-                int stat = (int) calcStat(Stat.VITALITY_CONSUME_RATE, 1, player, null);
+                int stat = (int) calc(Stat.VITALITY_CONSUME_RATE, 1, player, null);
                 if (player.getNevitSystem().isAdventBlessingActive()) {
                     stat = -10; // increase Vitality During Blessing
                 }
@@ -716,9 +732,14 @@ public class PlayerStat extends PlayableStat {
     }
 
     public double getVitalityMultiplier() {
+        WorldPartition.checkOwner();
+        return vitalityMultiplier();
+    }
+
+    private double vitalityMultiplier() {
         double vitality = 1.0;
         if (PlayerConfig.ENABLE_VITALITY) {
-            switch (getVitalityLevel()) {
+            switch (effectiveVitalityLevel()) {
                 case 1: {
                     vitality = RatesConfig.RATE_VITALITY_LEVEL_1;
                     break;
@@ -745,7 +766,12 @@ public class PlayerStat extends PlayableStat {
      * @return the vitalityLevel
      */
     public byte getVitalityLevel() {
-        if (getActiveChar().getNevitSystem().isAdventBlessingActive()) {
+        WorldPartition.checkOwner();
+        return effectiveVitalityLevel();
+    }
+
+    private byte effectiveVitalityLevel() {
+        if (player().getNevitSystem().isAdventBlessingActive()) {
             return 4;
         }
 
@@ -753,6 +779,7 @@ public class PlayerStat extends PlayableStat {
     }
 
     public double getExpBonusMultiplier() {
+        WorldPartition.checkOwner();
         double bonus = 1.0;
         double vitality = 1.0;
         double nevits = 1.0;
@@ -760,16 +787,16 @@ public class PlayerStat extends PlayableStat {
         double bonusExp = 1.0;
 
         // Bonus from Vitality System.
-        vitality = getVitalityMultiplier();
+        vitality = vitalityMultiplier();
 
         // Bonus from Nevit's Blessing
-        nevits = getActiveChar().getNevitHourglassMultiplier();
+        nevits = player().getNevitHourglassMultiplier();
 
         // Bonus from Nevit's Hunting
         // TODO: Nevit's hunting bonus
 
         // Bonus exp from skills.
-        bonusExp = 1 + (calcStat(Stat.BONUS_EXP, 0, null, null) / 100);
+        bonusExp = 1 + (calc(Stat.BONUS_EXP, 0, null, null) / 100);
         if (vitality > 1.0) {
             bonus += (vitality - 1);
         }
@@ -796,6 +823,7 @@ public class PlayerStat extends PlayableStat {
     }
 
     public double getSpBonusMultiplier() {
+        WorldPartition.checkOwner();
         double bonus = 1.0;
         double vitality = 1.0;
         double nevits = 1.0;
@@ -803,16 +831,16 @@ public class PlayerStat extends PlayableStat {
         double bonusSp = 1.0;
 
         // Bonus from Vitality System.
-        vitality = getVitalityMultiplier();
+        vitality = vitalityMultiplier();
 
         // Bonus from Nevit's Blessing
-        nevits = getActiveChar().getNevitHourglassMultiplier();
+        nevits = player().getNevitHourglassMultiplier();
 
         // Bonus from Nevit's Hunting
         // TODO: Nevit's hunting bonus
 
         // Bonus sp from skills.
-        bonusSp = 1 + (calcStat(Stat.BONUS_SP, 0, null, null) / 100);
+        bonusSp = 1 + (calc(Stat.BONUS_SP, 0, null, null) / 100);
         if (vitality > 1.0) {
             bonus += (vitality - 1);
         }
@@ -839,18 +867,26 @@ public class PlayerStat extends PlayableStat {
     }
 
     public double getBonusDropAdenaMultiplier() {
-        return 1 + (calcStat(Stat.BONUS_DROP_ADENA, 0, null, null) / 100);
+        WorldPartition.checkOwner();
+        return 1 + (calc(Stat.BONUS_DROP_ADENA, 0, null, null) / 100);
     }
 
     public double getBonusDropAmountMultiplier() {
-        return 1 + (calcStat(Stat.BONUS_DROP_AMOUNT, 0, null, null) / 100);
+        WorldPartition.checkOwner();
+        return 1 + (calc(Stat.BONUS_DROP_AMOUNT, 0, null, null) / 100);
     }
 
     public double getBonusDropRateMultiplier() {
-        return 1 + (calcStat(Stat.BONUS_DROP_RATE, 0, null, null) / 100);
+        WorldPartition.checkOwner();
+        return 1 + (calc(Stat.BONUS_DROP_RATE, 0, null, null) / 100);
     }
 
     public double getBonusSpoilRateMultiplier() {
-        return 1 + (calcStat(Stat.BONUS_SPOIL_RATE, 0, null, null) / 100);
+        WorldPartition.checkOwner();
+        return 1 + (calc(Stat.BONUS_SPOIL_RATE, 0, null, null) / 100);
+    }
+
+    private Player player() {
+        return (Player) creature();
     }
 }

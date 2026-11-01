@@ -22,8 +22,11 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PlayableStatus extends CreatureStatus {
     public PlayableStatus(Playable activeChar) {
         super(activeChar);
@@ -31,6 +34,7 @@ public class PlayableStatus extends CreatureStatus {
 
     @Override
     public Playable getActiveChar() {
-        return super.getActiveChar().asPlayable();
+        WorldPartition.checkOwner();
+        return (Playable) creature();
     }
 }

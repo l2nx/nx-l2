@@ -136,7 +136,6 @@ import org.slf4j.LoggerFactory;
 @SingleWriter
 public class Npc extends Creature {
     public static final int INTERACTION_DISTANCE = 250;
-    /** Maximum distance where the drop may appear given this NPC position. */
     public static final int RANDOM_ITEM_DROP_LIMIT = 70;
     /** Ids of NPCs that see creatures through the OnCreatureSee event. */
     private static final IntOpenHashSet CREATURE_SEE_IDS = new IntOpenHashSet();
@@ -429,19 +428,19 @@ public class Npc extends Creature {
     @Override
     public NpcStat getStat() {
         WorldPartition.checkOwner();
-        return (NpcStat) super.getStat();
+        return (NpcStat) uncheckedStat();
     }
 
     @Override
     public void initCharStat() {
         WorldPartition.checkOwner();
-        setStat(new NpcStat(this));
+        setStat(new NpcStat(this, statAccess()));
     }
 
     @Override
     public NpcStatus getStatus() {
         WorldPartition.checkOwner();
-        return (NpcStatus) super.getStatus();
+        return (NpcStatus) uncheckedStatus();
     }
 
     @Override
@@ -453,7 +452,7 @@ public class Npc extends Creature {
     @Override
     public NpcTemplate getTemplate() {
         WorldPartition.checkOwner();
-        return (NpcTemplate) super.getTemplate();
+        return (NpcTemplate) uncheckedTemplate();
     }
 
     @Override
@@ -471,7 +470,7 @@ public class Npc extends Creature {
     @Override
     public int getLevel() {
         WorldPartition.checkOwner();
-        return getTemplate().getLevel();
+        return ((NpcTemplate) uncheckedTemplate()).getLevel();
     }
 
     public boolean isAggressive() {

@@ -28,7 +28,6 @@ import app.l2nx.highfive.entity.actor.holders.player.Macro;
 import app.l2nx.highfive.entity.actor.holders.player.MacroCmd;
 import app.l2nx.highfive.network.SystemMessageId;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class RequestMakeMacro extends ClientPacket {
@@ -70,33 +69,26 @@ public class RequestMakeMacro extends ClientPacket {
             return;
         }
 
-        // Enter the name of the macro.
         if (macro.getName().isEmpty()) {
             player.sendPacket(SystemMessageId.ENTER_THE_NAME_OF_THE_MACRO);
             return;
         }
 
-        // Invalid macro. Refer to the Help file for instructions.
         if (commandsLength > 255) {
             player.sendPacket(SystemMessageId.INVALID_MACRO_REFER_TO_THE_HELP_FILE_FOR_INSTRUCTIONS);
             return;
         }
 
-        // You may create up to 48 macros.
-        final Collection<Macro> macros = player.getMacros().getAllMacroses().values();
-        if (macros.size() > 48) {
+        if (player.getMacros().getMacroCount() > 48) {
             player.sendPacket(SystemMessageId.YOU_MAY_CREATE_UP_TO_48_MACROS);
             return;
         }
 
-        // That name is already assigned to another macro.
-        if (macros.stream()
-                .anyMatch(m -> m.getName().equalsIgnoreCase(macro.getName()) && (m.getId() != macro.getId()))) {
+        if (player.getMacros().isNameTaken(macro.getName(), macro.getId())) {
             player.sendPacket(SystemMessageId.ENTER_THE_NAME_OF_THE_MACRO);
             return;
         }
 
-        // Macro descriptions may contain up to 32 characters.
         if (macro.getDescr().length() > 32) {
             player.sendPacket(SystemMessageId.MACRO_DESCRIPTIONS_MAY_CONTAIN_UP_TO_32_CHARACTERS);
             return;

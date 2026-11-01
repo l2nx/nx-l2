@@ -22,22 +22,20 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class AttackableStatus extends NpcStatus {
     public AttackableStatus(Attackable activeChar) {
         super(activeChar);
     }
 
     @Override
-    public void reduceHp(double value, Creature attacker) {
-        reduceHp(value, attacker, true, false, false);
-    }
-
-    @Override
-    public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
-        final Attackable attackable = getActiveChar();
+    protected void doReduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption) {
+        final Attackable attackable = (Attackable) creature();
         if (attackable.isDead()) {
             return;
         }
@@ -52,16 +50,16 @@ public class AttackableStatus extends NpcStatus {
             attackable.overhitEnabled(false);
         }
 
-        super.reduceHp(value, attacker, awake, isDOT, isHpConsumption);
+        super.doReduceHp(value, attacker, awake, isDOT, isHpConsumption);
 
         if (!attackable.isDead()) {
-            // And the attacker's hit didn't kill the mob, clear the over-hit flag.
             attackable.overhitEnabled(false);
         }
     }
 
     @Override
     public Attackable getActiveChar() {
-        return super.getActiveChar().asAttackable();
+        WorldPartition.checkOwner();
+        return (Attackable) creature();
     }
 }

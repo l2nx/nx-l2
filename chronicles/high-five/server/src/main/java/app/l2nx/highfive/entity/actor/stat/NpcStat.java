@@ -22,25 +22,34 @@
  */
 package app.l2nx.highfive.entity.actor.stat;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class NpcStat extends CreatureStat {
-    public NpcStat(Npc activeChar) {
-        super(activeChar);
+    public NpcStat(Npc activeChar, CreatureAccess access) {
+        super(activeChar, access);
     }
 
     @Override
-    public byte getLevel() {
-        return getActiveChar().getTemplate().getLevel();
+    protected byte level() {
+        return ((NpcTemplate) template()).getLevel();
     }
 
     @Override
     public Npc getActiveChar() {
-        return super.getActiveChar().asNpc();
+        WorldPartition.checkOwner();
+        return npc();
     }
 
     @Override
-    public int getPhysicalAttackAngle() {
-        return getActiveChar().getTemplate().getBaseAttackAngle();
+    protected int physicalAttackAngle() {
+        return npc().getTemplate().getBaseAttackAngle();
+    }
+
+    private Npc npc() {
+        return (Npc) creature();
     }
 }

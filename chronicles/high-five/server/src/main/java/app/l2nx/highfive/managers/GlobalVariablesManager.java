@@ -26,18 +26,23 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.mechanics.variables.AbstractVariables;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.world.GlobalVariableRepository;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@SingleWriter
 public class GlobalVariablesManager extends AbstractVariables {
-    private static volatile GlobalVariablesManager instance;
+    // Plain, not volatile: the context creates the bean before the world loop runs its first pass, and handing work
+    // to the loop through its inbox publishes the reference.
+    private static GlobalVariablesManager instance;
 
-    // Public variable names
     public static final String DAILY_TASK_RESET = "DAILY_TASK_RESET";
 
     private final GlobalVariableRepository variableRepository;
@@ -48,30 +53,36 @@ public class GlobalVariablesManager extends AbstractVariables {
     }
 
     public boolean restoreMe() {
+        WorldPartition.checkOwner();
         try {
-            variableRepository.findAll().forEach(this::set);
+            variableRepository.findAll().forEach((name, value) -> set(name, value, false));
         } catch (DataAccessException e) {
             log.warn("Couldn't restore global variables.");
             return false;
         }
 
-        log.info("Loaded {} variables.", getSet().size());
+        log.info("Loaded {} variables.", allValues().size());
         return true;
     }
 
+    // Replaces every row, so the change tracking only resets.
     public boolean storeMe() {
+        WorldPartition.checkOwner();
+        final Map<String, Object> values = allValues();
         try {
-            variableRepository.replaceAll(getSet());
+            variableRepository.replaceAll(values);
         } catch (DataAccessException e) {
             log.warn("Couldn't save global variables to database.", e);
             return false;
         }
 
-        log.info("Stored {} variables.", getSet().size());
+        markSaved();
+        log.info("Stored {} variables.", values.size());
         return true;
     }
 
     public boolean deleteMe() {
+        WorldPartition.checkOwner();
         try {
             variableRepository.deleteAll();
         } catch (DataAccessException e) {
@@ -84,6 +95,7 @@ public class GlobalVariablesManager extends AbstractVariables {
 
     // TODO: callers receive the bean through their constructor (#41).
     public static GlobalVariablesManager getInstance() {
+        WorldPartition.checkOwner();
         final GlobalVariablesManager current = instance;
         if (current == null) {
             throw new IllegalStateException("GlobalVariablesManager is used before the Spring context created it.");

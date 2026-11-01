@@ -8,8 +8,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import app.l2nx.highfive.entity.ScratchBuffers.IntSnapshot;
 import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import it.unimi.dsi.fastutil.ints.AbstractIntCollection;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import java.util.AbstractCollection;
@@ -155,6 +160,31 @@ class ScratchBuffersTest {
     }
 
     @Nested
+    class IntEmpty {
+        @Test
+        void intEmpty_shouldBeEmpty_whenTheDepthHeldElementsBefore() {
+            final AtomicReference<int[]> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                try (IntSnapshot earlier = ScratchBuffers.intSnapshot(IntArrayList.of(1, 2))) {
+                    earlier.add(3);
+                }
+
+                try (IntSnapshot lease = ScratchBuffers.intEmpty()) {
+                    actual.set(lease.toIntArray());
+                }
+            });
+
+            assertThat(actual.get()).isNotNull().isEmpty();
+        }
+
+        @Test
+        void intEmpty_shouldThrow_whenCalledOffTheLoop() {
+            assertThatThrownBy(ScratchBuffers::intEmpty).isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
     class Refill {
         @Test
         void refill_shouldHoldExactlyTheNewSource_whenTheLeaseHeldMore() {
@@ -260,6 +290,165 @@ class ScratchBuffersTest {
 
                 return null;
             }
+        }
+    }
+
+    @Nested
+    class IntSnapshotLease {
+        @Test
+        void intSnapshot_shouldHoldExactlyTheSourceInItsOrder_whenTheDepthHeldMoreBefore() {
+            final AtomicReference<int[]> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                try (IntSnapshot earlier = ScratchBuffers.intSnapshot(IntArrayList.of(9, 8, 7, 6, 5))) {
+                    earlier.add(4);
+                }
+
+                try (IntSnapshot snapshot = ScratchBuffers.intSnapshot(IntLinkedOpenHashSet.of(3, 1, 2))) {
+                    actual.set(snapshot.toIntArray());
+                }
+            });
+
+            assertThat(actual.get()).containsExactly(3, 1, 2);
+        }
+
+        @Test
+        void intSnapshot_shouldLeaseAnotherBuffer_whenNested() {
+            final AtomicReference<Object> outer = new AtomicReference<>();
+            final AtomicReference<Object> inner = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                try (IntSnapshot outerSnapshot = ScratchBuffers.intSnapshot(IntArrayList.of(1));
+                        IntSnapshot innerSnapshot = ScratchBuffers.intSnapshot(IntArrayList.of(2))) {
+                    outer.set(outerSnapshot);
+                    inner.set(innerSnapshot);
+                }
+            });
+
+            assertThat(inner.get()).isNotNull().isNotSameAs(outer.get());
+        }
+
+        @Test
+        void intSnapshot_shouldReuseTheBufferOfEachDepth_whenLeasedAgain() {
+            final AtomicReference<List<Object>> first = new AtomicReference<>();
+            final AtomicReference<List<Object>> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                first.set(leaseTwoIntDepths());
+                actual.set(leaseTwoIntDepths());
+            });
+
+            assertThat(actual.get())
+                    .hasSize(2)
+                    .zipSatisfy(
+                            first.get(),
+                            (again, firstLease) -> assertThat(again).isSameAs(firstLease));
+        }
+
+        @Test
+        void intSnapshot_shouldFreeTheDepth_whenTheCopyThrows() {
+            final AtomicReference<Throwable> thrown = new AtomicReference<>();
+            final AtomicReference<Object> before = new AtomicReference<>();
+            final AtomicReference<Object> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                try (IntSnapshot lease = ScratchBuffers.intSnapshot(IntArrayList.of())) {
+                    before.set(lease);
+                }
+
+                thrown.set(catchThrowable(() -> ScratchBuffers.intSnapshot(new FailingIntCollection())));
+                try (IntSnapshot lease = ScratchBuffers.intSnapshot(IntArrayList.of())) {
+                    actual.set(lease);
+                }
+            });
+
+            assertThat(thrown.get()).isInstanceOf(UnsupportedOperationException.class);
+            assertThat(actual.get()).isNotNull().isSameAs(before.get());
+        }
+
+        @Test
+        void intSnapshot_shouldKeepItsOwnDepth_whenAnObjectLeaseIsOpen() {
+            final AtomicReference<Throwable> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                final IntSnapshot ints = ScratchBuffers.intSnapshot(IntArrayList.of(1));
+                final Snapshot<Object> objects = ScratchBuffers.empty();
+                actual.set(catchThrowable(ints::close));
+                objects.close();
+            });
+
+            assertThat(actual.get()).isNull();
+        }
+
+        @Test
+        void intSnapshot_shouldThrow_whenCalledOffTheLoop() {
+            assertThatThrownBy(() -> ScratchBuffers.intSnapshot(IntArrayList.of(1)))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        private static List<Object> leaseTwoIntDepths() {
+            try (IntSnapshot outer = ScratchBuffers.intSnapshot(IntArrayList.of(1));
+                    IntSnapshot inner = ScratchBuffers.intSnapshot(IntArrayList.of(2))) {
+                return List.of(outer, inner);
+            }
+        }
+    }
+
+    @Nested
+    class IntClose {
+        @Test
+        void close_shouldClearTheIntBuffer() {
+            final AtomicReference<int[]> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                final IntSnapshot lease = ScratchBuffers.intSnapshot(IntArrayList.of(1, 2));
+                lease.close();
+                actual.set(lease.toIntArray());
+            });
+
+            assertThat(actual.get()).isNotNull().isEmpty();
+        }
+
+        @Test
+        void close_shouldThrow_whenAnOuterIntLeaseIsClosedFirst() {
+            final AtomicReference<Throwable> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                try (IntSnapshot outer = ScratchBuffers.intSnapshot(IntArrayList.of(1));
+                        IntSnapshot inner = ScratchBuffers.intSnapshot(IntArrayList.of(2))) {
+                    actual.set(catchThrowable(outer::close));
+                }
+            });
+
+            assertThat(actual.get()).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        void close_shouldThrow_whenTheIntLeaseIsClosedOffTheLoop() {
+            final AtomicReference<IntSnapshot> lease = new AtomicReference<>();
+            WorldLoopExtension.runInPass(() -> lease.set(ScratchBuffers.intSnapshot(IntArrayList.of(1))));
+
+            final Throwable actual = catchThrowable(() -> lease.get().close());
+            WorldLoopExtension.runInPass(() -> lease.get().close());
+
+            assertThat(actual).isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    private static final class FailingIntCollection extends AbstractIntCollection {
+        @Override
+        public IntIterator iterator() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public int[] toArray(int[] a) {
+            throw new UnsupportedOperationException();
         }
     }
 
