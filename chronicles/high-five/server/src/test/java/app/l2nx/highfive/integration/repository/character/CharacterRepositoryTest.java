@@ -23,6 +23,7 @@ import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -645,11 +646,14 @@ class CharacterRepositoryTest extends RepositoryTest {
         @ParameterizedTest(name = "created {0} h before now -> birthday")
         @ValueSource(longs = {8760 + 1, 8760 + 23})
         void findBirthdays_shouldReturnCharacter_whenAnniversaryInWindow(long hoursBeforeNow) {
-            final UUID id = insertCharacter(EntityIds.next(), NOW.minus(Duration.ofHours(hoursBeforeNow)));
+            final Instant createdAt = NOW.minus(Duration.ofHours(hoursBeforeNow));
+            final UUID id = insertCharacter(EntityIds.next(), createdAt);
 
             final List<BirthdayCharacter> actual = repository.findBirthdays(NOW.minus(Duration.ofDays(1)), NOW);
 
-            assertThat(actual).contains(birthday(registry.handleOf(id), name(id), 1));
+            assertThat(actual)
+                    .contains(birthday(
+                            id, name(id), 1, createdAt.atOffset(ZoneOffset.UTC).getYear() + 1));
         }
 
         @ParameterizedTest(name = "created {0} h before now -> no birthday")
@@ -659,7 +663,7 @@ class CharacterRepositoryTest extends RepositoryTest {
 
             final List<BirthdayCharacter> actual = repository.findBirthdays(NOW.minus(Duration.ofDays(1)), NOW);
 
-            assertThat(actual).extracting(BirthdayCharacter::objectId).doesNotContain(registry.handleOf(id));
+            assertThat(actual).extracting(BirthdayCharacter::id).doesNotContain(id);
         }
     }
 
@@ -764,11 +768,7 @@ class CharacterRepositoryTest extends RepositoryTest {
         return CharacterClanAlly.builder().clanId(clanId).allyId(allyId).build();
     }
 
-    private static BirthdayCharacter birthday(int objectId, String name, int age) {
-        return BirthdayCharacter.builder()
-                .objectId(objectId)
-                .name(name)
-                .age(age)
-                .build();
+    private static BirthdayCharacter birthday(UUID id, String name, int age, int year) {
+        return BirthdayCharacter.builder().id(id).name(name).age(age).year(year).build();
     }
 }

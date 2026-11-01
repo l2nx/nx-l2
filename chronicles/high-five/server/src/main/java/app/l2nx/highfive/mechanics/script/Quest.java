@@ -61,17 +61,16 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.holders.ItemHolder;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
-import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.entity.itemcontainer.PetInventory;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.entity.itemcontainer.PlayerWarehouse;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.interfaces.IPositionable;
+import app.l2nx.highfive.mail.WorldMail;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.managers.InstanceManager;
-import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.managers.ScriptManager;
@@ -147,7 +146,6 @@ import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.Movie;
-import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
@@ -4113,13 +4111,13 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     }
 
     /**
-     * Extensive player ownership check for single or multiple items.<br>
-     * Checks inventory, warehouse, summon and mail attachments.
+     * Extensive player ownership check for single or multiple items in the world: inventory, warehouse and summon. The
+     * mail attachments live in the database and are asked with {@link #hasMailAttachment}.
      * @param player the player to check for quest items
      * @param itemIds a list of item IDs to check for
-     * @return {@code true} if player owns at least one items, {@code false} otherwise.
+     * @return {@code true} if player holds at least one items, {@code false} otherwise.
      */
-    public boolean ownsAtLeastOneItem(Player player, int... itemIds) {
+    public boolean holdsAtLeastOneItem(Player player, int... itemIds) {
         // Inventory.
         final PlayerInventory inventory = player.getInventory();
         for (int itemId : itemIds) {
@@ -4148,30 +4146,16 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             }
         }
 
-        // Mail attachments.
-        if (GeneralConfig.ALLOW_MAIL) {
-            final List<MailMessage> inbox = MailManager.getInstance().getInbox(player.getObjectId());
-            for (int itemId : itemIds) {
-                for (MailMessage message : inbox) {
-                    final Mail mail = message.getAttachments();
-                    if ((mail != null) && (mail.getItemByItemId(itemId) != null)) {
-                        return true;
-                    }
-                }
-            }
-
-            final List<MailMessage> outbox = MailManager.getInstance().getOutbox(player.getObjectId());
-            for (int itemId : itemIds) {
-                for (MailMessage message : outbox) {
-                    final Mail mail = message.getAttachments();
-                    if ((mail != null) && (mail.getItemByItemId(itemId) != null)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
         return false;
+    }
+
+    /**
+     * Asks whether a mail the player sent or received still holds one of the items as an attachment.
+     * @param result on a later pass of the world loop; never called when the player left the world meanwhile
+     * @param itemIds a list of item IDs to check for
+     */
+    public void hasMailAttachment(Player player, Consumer<Boolean> result, int... itemIds) {
+        WorldMail.getInstance().hasAttached(player, itemIds, result);
     }
 
     /**

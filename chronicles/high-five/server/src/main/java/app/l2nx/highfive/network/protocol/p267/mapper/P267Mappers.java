@@ -31,7 +31,17 @@ public final class P267Mappers {
             new WorldLeftMapper(),
             new RestartAnsweredMapper(),
             new PositionCorrectedMapper(),
-            new ChatMessageMapper());
+            new ChatMessageMapper(),
+            new ReceivedMailListMapper(),
+            new SentMailListMapper(),
+            new ReceivedMailOpenedMapper(),
+            new SentMailOpenedMapper(),
+            new MailableItemsMapper(),
+            new MailArrivedMapper(),
+            new MailSentMapper(),
+            new MailStateChangedMapper(),
+            new MailRefusedMapper(),
+            new MailDoneMapper());
 
     private static final Set<Class<? extends ViewEvent>> DROPPED = Set.of();
 

@@ -36,11 +36,13 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.login.LoginService;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.security.SecondaryPasswordAuth;
 import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.highfive.util.FloodProtectors;
@@ -242,6 +244,8 @@ public class GameClient {
 
             if (answer == 0) {
                 if (PlayerConfig.DELETE_DAYS == 0) {
+                    // Due at once: a deletion the mail refuses is retried when the character list is shown next.
+                    PlayerPersistenceManager.getInstance().updateDeleteTime(objectId, ClockBridge.wallMillis());
                     deleteCharByObjId(objectId);
                 } else {
                     PlayerPersistenceManager.getInstance()
@@ -279,14 +283,11 @@ public class GameClient {
             return;
         }
 
-        try {
-            PlayerPersistenceManager.getInstance().deleteCharacter(objectId);
-        } catch (DataAccessException e) {
-            log.error("Error deleting character {}.", objectId, e);
-            return;
-        }
-
-        CharInfoTable.getInstance().removeName(objectId);
+        PlayerPersistenceManager.getInstance().deleteCharacter(objectId, deleted -> {
+            if (deleted) {
+                CharInfoTable.getInstance().removeName(objectId);
+            }
+        });
     }
 
     public Player load(int characterSlot) {
@@ -306,6 +307,10 @@ public class GameClient {
             } else {
                 player.storeMe();
                 player.deleteMe();
+                final Player released = player;
+                IdManager.getInstance()
+                        .findId(objectId)
+                        .ifPresent(id -> WorldPartition.loadedCharacters().release(id, released));
             }
 
             return null;

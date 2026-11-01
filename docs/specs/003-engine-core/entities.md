@@ -71,7 +71,6 @@ State that spans partitions has its own single writer:
 | party    | all parties: membership, leader, loot rules             |
 | olympiad | registration, points, match making, periods             |
 | siege    | castle and fortress ownership, siege schedule and state |
-| mail     | mail and attachments                                    |
 | auction  | auctions and bids                                       |
 | events   | scripted world events with global state                 |
 

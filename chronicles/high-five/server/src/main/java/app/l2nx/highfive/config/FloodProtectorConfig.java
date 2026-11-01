@@ -44,7 +44,6 @@ public class FloodProtectorConfig {
     public static FloodProtectorSettings FLOOD_PROTECTOR_MULTISELL;
     public static FloodProtectorSettings FLOOD_PROTECTOR_TRANSACTION;
     public static FloodProtectorSettings FLOOD_PROTECTOR_MANUFACTURE;
-    public static FloodProtectorSettings FLOOD_PROTECTOR_SENDMAIL;
     public static FloodProtectorSettings FLOOD_PROTECTOR_CHARACTER_SELECT;
     public static FloodProtectorSettings FLOOD_PROTECTOR_ITEM_AUCTION;
     public static FloodProtectorSettings FLOOD_PROTECTOR_PLAYER_ACTION;
@@ -62,7 +61,6 @@ public class FloodProtectorConfig {
         FLOOD_PROTECTOR_MULTISELL = new FloodProtectorSettings("MultiSellFloodProtector");
         FLOOD_PROTECTOR_TRANSACTION = new FloodProtectorSettings("TransactionFloodProtector");
         FLOOD_PROTECTOR_MANUFACTURE = new FloodProtectorSettings("ManufactureFloodProtector");
-        FLOOD_PROTECTOR_SENDMAIL = new FloodProtectorSettings("SendMailFloodProtector");
         FLOOD_PROTECTOR_CHARACTER_SELECT = new FloodProtectorSettings("CharacterSelectFloodProtector");
         FLOOD_PROTECTOR_ITEM_AUCTION = new FloodProtectorSettings("ItemAuctionFloodProtector");
         FLOOD_PROTECTOR_PLAYER_ACTION = new FloodProtectorSettings("PlayerActionFloodProtector");
@@ -85,7 +83,6 @@ public class FloodProtectorConfig {
         loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_MULTISELL, "MultiSell", 1);
         loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_TRANSACTION, "Transaction", 10);
         loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_MANUFACTURE, "Manufacture", 3);
-        loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_SENDMAIL, "SendMail", 100);
         loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_CHARACTER_SELECT, "CharacterSelect", 30);
         loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_ITEM_AUCTION, "ItemAuction", 9);
         loadFloodProtectorConfig(configs, FLOOD_PROTECTOR_PLAYER_ACTION, "PlayerAction", 3);

@@ -17,6 +17,7 @@ import com.tngtech.archunit.lang.ArchRule;
         importOptions = ImportOption.DoNotIncludeTests.class)
 class SliceLayoutArchitectureTest {
     private static final SliceLayoutRules RULES = SliceLayoutRules.CHRONICLE;
+    private static final SliceLayoutRules ENGINE = SliceLayoutRules.ENGINE;
 
     @ArchTest
     static final ArchRule subpackages = RULES.subpackages();
@@ -61,5 +62,40 @@ class SliceLayoutArchitectureTest {
     @ArchTest
     static void modules(JavaClasses classes) {
         RULES.modules().verify();
+    }
+
+    @ArchTest
+    static final ArchRule engineSubpackages = ENGINE.subpackages();
+
+    @ArchTest
+    static final ArchRule engineHandlers = ENGINE.handlers();
+
+    @ArchTest
+    static final ArchRule engineHandlerConstructors = ENGINE.handlerConstructors();
+
+    @ArchTest
+    static final ArchRule engineCommands = ENGINE.commands();
+
+    @ArchTest
+    static final ArchRule engineCommandPackages = ENGINE.commandPackages();
+
+    @ArchTest
+    static final ArchRule engineViewEvents = ENGINE.viewEvents();
+
+    @ArchTest
+    static final ArchRule enginePorts = ENGINE.ports();
+
+    @ArchTest
+    static final ArchRule engineLegacyUsesSliceApi = ENGINE.legacyUsesSliceApi();
+
+    @ArchTest
+    static final ArchRule engineNoImplOrGateway = ENGINE.noImplOrGateway();
+
+    @ArchTest
+    static final ArchRule engineRepositories = ENGINE.repositories();
+
+    @ArchTest
+    static void engineModules(JavaClasses classes) {
+        ENGINE.modules().verify();
     }
 }

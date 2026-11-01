@@ -1,6 +1,15 @@
 # SPDX-FileCopyrightText: 2026 L2NX contributors
 # SPDX-License-Identifier: Apache-2.0
 
+# Engine modules ship their changelogs in their jars and reference the chronicle baseline, so they come after it;
+# chronicle changesets that reference a module table live in after-engine/ and come after the modules.
 databaseChangeLog:
   - includeAll:
       path: db/liquibase/
+      maxDepth: 1
+  - include:
+      file: db/engine/core/changelog.sql
+  - include:
+      file: db/engine/mail/changelog.sql
+  - includeAll:
+      path: db/liquibase/after-engine/

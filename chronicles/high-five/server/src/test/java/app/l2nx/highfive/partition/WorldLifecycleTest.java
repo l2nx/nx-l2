@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.engine.core.clock.SystemGameClock;
+import app.l2nx.engine.core.identity.EntityIds;
 import app.l2nx.engine.core.loop.EngineProperties;
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.partition.PartitionRuntime;
@@ -27,8 +28,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -42,6 +45,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
+import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.context.support.GenericApplicationContext;
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -63,8 +67,15 @@ class WorldLifecycleTest {
     private final WorldShutdown shutdown = mock(WorldShutdown.class);
     private final OnlinePlayersGauge onlinePlayers = new OnlinePlayersGauge(registry);
     private final WorldSystem system = mock(WorldSystem.class);
+    private final LifecycleProperties phases = phases();
     private final WorldLifecycle lifecycle =
-            new WorldLifecycle(runtime, loader, shutdown, onlinePlayers, List.of(system));
+            new WorldLifecycle(runtime, loader, shutdown, onlinePlayers, List.of(system), phases);
+
+    private static LifecycleProperties phases() {
+        final LifecycleProperties properties = new LifecycleProperties();
+        properties.setTimeoutPerShutdownPhase(Duration.ofSeconds(1));
+        return properties;
+    }
 
     private Loop previous;
 
@@ -180,6 +191,45 @@ class WorldLifecycleTest {
 
     @Nested
     class Stop {
+        @Test
+        void stop_shouldWaitForTheValueTransactionsInFlight_beforeTheShutdown() throws Exception {
+            lifecycle.start();
+            final UUID characterId = EntityIds.next();
+            final AtomicBoolean ended = new AtomicBoolean();
+            final AtomicBoolean endedBeforeShutdown = new AtomicBoolean();
+            onTheWorldLoop(() -> {
+                WorldPartition.inFlightCharacters().begin(characterId);
+                WorldPartition.loop()
+                        .schedule(
+                                () -> {
+                                    ended.set(true);
+                                    WorldPartition.inFlightCharacters().end(characterId);
+                                },
+                                100,
+                                TimeUnit.MILLISECONDS);
+            });
+            doAnswer(invocation -> {
+                        endedBeforeShutdown.set(ended.get());
+                        return null;
+                    })
+                    .when(shutdown)
+                    .run();
+
+            lifecycle.stop();
+
+            assertThat(endedBeforeShutdown).isTrue();
+        }
+
+        @Test
+        void stop_shouldShutDownAfterTheBound_whenATransactionStaysInFlight() throws Exception {
+            lifecycle.start();
+            onTheWorldLoop(() -> WorldPartition.inFlightCharacters().begin(EntityIds.next()));
+
+            lifecycle.stop();
+
+            verify(shutdown).run();
+        }
+
         @Test
         void stop_shouldRunTheShutdownOnTheWorldLoop_beforeReturning() {
             lifecycle.start();

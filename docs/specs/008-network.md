@@ -237,7 +237,9 @@ flowchart LR
   timeout is a deadline of the owner.
 - **Game state is built by game code, never as a side effect of sending.** The actions an HTML dialog allows are
   recorded by the slice before it emits `HtmlDialogOpened`; the mapper only serializes. Mappers have no side
-  effects.
+  effects, with one exception: a mapper may record the session-local wire ids it issues (the `p267` mail numbers,
+  [spec 010 D13](010-mail/spec.md#1-decisions)) in a table of the connection, which the decoders read back. Such a
+  table holds only ids the client was shown, never game state, and ends with the connection.
 
 ### Session states
 

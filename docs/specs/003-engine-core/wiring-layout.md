@@ -80,8 +80,9 @@ onto it and the longer it is exercised. The order follows the stages: `clock` (E
 Only `session` depends on `libs/network` (its transport, settings and meters); an ArchUnit rule in `engine/core` keeps
 the other packages transport-free.
 
-Game mechanics shared by chronicles still join `engine/` only by proven overlap when Essence arrives
-([spec 001 §4](../001-project-design.md#4-module-layout)).
+Game mechanics shared by chronicles join `engine/` only by proven overlap
+([spec 001 §4](../001-project-design.md#4-module-layout)). Such a module (`engine/mail` first) keeps the slice layout
+below under `app.l2nx.engine.<module>`, and the chronicle implements its SPI in a slice of the same name.
 
 ### Chronicle
 
@@ -102,7 +103,8 @@ app.l2nx.highfive
   chat        chat commands, rules and delivery, the `ChatMessage` view event
   partition   the world partition: world load and shutdown hook, `WorldSystem` (how a slice installs its periodic
               systems into the world loop), the static bridges of legacy code to the world loop and to background tasks
-  combat  skill  effect  ai  item  trade  mail  auction
+  mail        the chronicle SPI of `engine/mail`: item snapshots and moves, participants
+  combat  skill  effect  ai  item  trade  auction
   clan  party  siege  olympiad  quest  reflection  ...
 ```
 
@@ -126,7 +128,8 @@ app.l2nx.highfive.<slice>
   system/      systems                                                            internal
   model/       components, internal value types and enums                         internal
   template/    static data: templates, loader, registry                           internal
-  repository/  @Repository classes and their row records                          internal
+  repository/  @Repository classes, their row records and the slice's value    internal
+               transactions (the only writers of the slice's tables)
 ```
 
 - **`view/` is what an adapter may read:** the view events and the read-only views a mapper reads to serialize them.

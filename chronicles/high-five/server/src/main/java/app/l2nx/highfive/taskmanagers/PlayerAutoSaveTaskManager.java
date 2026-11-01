@@ -25,6 +25,7 @@ package app.l2nx.highfive.taskmanagers;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Iterator;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class PlayerAutoSaveTaskManager implements Runnable {
 
                 if (currentTime > time) {
                     if ((player != null) && player.isOnline()) {
-                        player.autoSave();
+                        autoSave(player);
                         PLAYER_TIMES.put(player, currentTime + GeneralConfig.CHAR_DATA_STORE_INTERVAL);
                         break; // Prevent SQL flood.
                     }
@@ -77,6 +78,18 @@ public class PlayerAutoSaveTaskManager implements Runnable {
         }
 
         working = false;
+    }
+
+    // Saving before an in-flight value transaction settles would undo its committed move.
+    static void autoSave(Player player) {
+        final Runnable save = () -> {
+            if (player.isOnline()) {
+                player.autoSave();
+            }
+        };
+        IdManager.getInstance()
+                .findId(player.getObjectId())
+                .ifPresentOrElse(id -> WorldPartition.inFlightCharacters().whenIdle(id, save), save);
     }
 
     public void add(Player player) {

@@ -41,7 +41,6 @@ public class FloodProtectors {
     private final FloodProtectorAction multiSell;
     private final FloodProtectorAction transaction;
     private final FloodProtectorAction manufacture;
-    private final FloodProtectorAction sendMail;
     private final FloodProtectorAction characterSelect;
     private final FloodProtectorAction itemAuction;
     private final FloodProtectorAction playerAction;
@@ -62,7 +61,6 @@ public class FloodProtectors {
         multiSell = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_MULTISELL);
         transaction = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_TRANSACTION);
         manufacture = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_MANUFACTURE);
-        sendMail = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_SENDMAIL);
         characterSelect = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_CHARACTER_SELECT);
         itemAuction = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_ITEM_AUCTION);
         playerAction = new FloodProtectorAction(client, FloodProtectorConfig.FLOOD_PROTECTOR_PLAYER_ACTION);
@@ -110,10 +108,6 @@ public class FloodProtectors {
 
     public boolean canManufacture() {
         return manufacture.canPerformAction();
-    }
-
-    public boolean canSendMail() {
-        return sendMail.canPerformAction();
     }
 
     public boolean canSelectCharacter() {

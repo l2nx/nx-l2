@@ -150,7 +150,6 @@ app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.net
 app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.EtcStatusUpdate
 app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.ExBasicActionList
 app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.ExGetBookMarkInfoPacket
-app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.ExNoticePostArrived
 app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.ExNotifyPremiumItem
 app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.ExRotation
 app.l2nx.highfive.entity.actor.PlayerWorldEntry references app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowContactList
@@ -440,7 +439,6 @@ app.l2nx.highfive.managers.HandysBlockCheckerManager references app.l2nx.highfiv
 app.l2nx.highfive.managers.HandysBlockCheckerManager references app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameChangeTeam
 app.l2nx.highfive.managers.HandysBlockCheckerManager references app.l2nx.highfive.network.protocol.p267.serverpackets.ExCubeGameRemovePlayer
 app.l2nx.highfive.managers.HandysBlockCheckerManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
-app.l2nx.highfive.managers.MailManager references app.l2nx.highfive.network.protocol.p267.serverpackets.ExNoticePostArrived
 app.l2nx.highfive.managers.PcCafePointsManager references app.l2nx.highfive.network.protocol.p267.serverpackets.ExPCCafePointInfo
 app.l2nx.highfive.managers.PcCafePointsManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.managers.PetitionManager references app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay
@@ -1212,7 +1210,6 @@ app.l2nx.highfive.session.LegacyNotices references app.l2nx.highfive.network.pro
 app.l2nx.highfive.session.LegacyNotices references app.l2nx.highfive.network.protocol.p267.serverpackets.SSQInfo
 app.l2nx.highfive.taskmanagers.AttackStanceTaskManager references app.l2nx.highfive.network.protocol.p267.serverpackets.AutoAttackStop
 app.l2nx.highfive.taskmanagers.GameTimeTaskManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
-app.l2nx.highfive.taskmanagers.MessageDeletionTaskManager references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.util.FloodProtectorAction references app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld
 app.l2nx.highfive.util.GeoUtils references app.l2nx.highfive.network.protocol.p267.serverpackets.ExServerPrimitive
 app.l2nx.highfive.util.HtmlUtil references app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage

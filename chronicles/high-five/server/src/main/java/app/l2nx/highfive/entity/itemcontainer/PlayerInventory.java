@@ -478,16 +478,22 @@ public class PlayerInventory extends Inventory {
     }
 
     /**
-     * Destroys unequipped items first; several non-stackable items are destroyed one by one.
+     * Destroys unequipped items first; several non-stackable items are destroyed one by one. Pending items are left
+     * out, so a count only they could cover destroys nothing.
      */
     @Override
     public Item destroyItemByItemId(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
         WorldPartition.checkOwner();
         try (Snapshot<Item> items = ScratchBuffers.empty()) {
             Item destroyItem = null;
+            long unequipped = 0;
             for (Item item : liveItems()) {
-                if (item.getId() == itemId) {
+                if ((item.getId() == itemId) && !item.isPending()) {
                     items.add(item);
+                    if (!item.isEquipped()) {
+                        unequipped++;
+                    }
+
                     if ((destroyItem == null) || destroyItem.isEquipped()) {
                         destroyItem = item;
                     }
@@ -499,7 +505,7 @@ public class PlayerInventory extends Inventory {
             }
 
             if (!destroyItem.isStackable() && (count > 1)) {
-                if (getInventoryItemCount(itemId, -1, false) < count) {
+                if (unequipped < count) {
                     return null;
                 }
 
@@ -561,6 +567,11 @@ public class PlayerInventory extends Inventory {
         }
 
         super.addItem(item);
+        if (item.getId() == ADENA_ID) {
+            adenaInstance = item;
+        } else if (item.getId() == ANCIENT_ADENA_ID) {
+            ancientAdenaInstance = item;
+        }
     }
 
     @Override
@@ -759,6 +770,25 @@ public class PlayerInventory extends Inventory {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + owner + "]";
+    }
+
+    /**
+     * Shows the owner the items committed value transactions changed, each as its last change says.
+     *
+     * @param fullList whether the whole list follows, so the client drops a stack it may still show twice
+     */
+    public void sendCommittedChanges(List<Item> changed, boolean fullList) {
+        WorldPartition.checkOwner();
+        final InventoryUpdate update = new InventoryUpdate();
+        update.addItems(changed);
+        owner.sendInventoryUpdate(update);
+        if (fullList) {
+            owner.sendItemList(false);
+        }
+
+        final StatusUpdate load = new StatusUpdate(owner);
+        load.addAttribute(StatusUpdate.CUR_LOAD, owner.getCurrentLoad());
+        owner.sendPacket(load);
     }
 
     public void applyItemSkills() {

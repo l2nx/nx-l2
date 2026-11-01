@@ -79,7 +79,7 @@ public class CharacterService {
         try {
             for (CharacterRow row : slots.findByAccount(accountId)) {
                 final long deleteAt = epochMillisOrZero(row.deleteAt());
-                if ((deleteAt > 0) && (ClockBridge.wallMillis() > deleteAt)) {
+                if ((deleteAt > 0) && (ClockBridge.wallMillis() >= deleteAt)) {
                     deleteExpired(row);
                     continue;
                 }

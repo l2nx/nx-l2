@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# The chronicle tables the module references or its test store writes, cut to what the tests need.
+databaseChangeLog:
+  - changeSet:
+      id: test-chronicle
+      author: l2nx
+      changes:
+        - sql:
+            sql: >
+              CREATE TABLE characters (
+                  id uuid PRIMARY KEY,
+                  name text NOT NULL UNIQUE,
+                  gm boolean NOT NULL DEFAULT false
+              );
+              CREATE TABLE items (
+                  id uuid PRIMARY KEY,
+                  owner_id uuid,
+                  location text NOT NULL CHECK (location IN ('INVENTORY', 'WAREHOUSE', 'MAIL')),
+                  mail_id uuid,
+                  item_template_id integer NOT NULL,
+                  count bigint NOT NULL CHECK (count >= 0)
+              );
+  - include:
+      file: db/engine/core/changelog.sql
+  - include:
+      file: db/engine/mail/changelog.sql

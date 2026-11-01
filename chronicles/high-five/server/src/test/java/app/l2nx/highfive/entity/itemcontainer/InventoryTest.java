@@ -52,11 +52,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 class InventoryTest {
     private static final int SWORD_ID = 20_000_020;
     private static final int ARROW_ID = 20_000_021;
+    private static final int SHIELD_ID = 20_000_022;
 
     private final IdentityRegistry registry =
             new IdentityRegistry(new WireHandleAllocator(Clock.systemUTC(), Duration.ofMinutes(5)));
     private final EtcItem sword = new EtcItem(new StatSet(Map.of("item_id", SWORD_ID, "name", "Sword")));
     private final EtcItem arrow = new EtcItem(new StatSet(Map.of("item_id", ARROW_ID, "name", "Arrow")));
+    private final EtcItem shield =
+            new EtcItem(new StatSet(Map.of("item_id", SHIELD_ID, "name", "Shield", "bodypart", "lhand")));
 
     @BeforeEach
     void managers() {
@@ -250,10 +253,62 @@ class InventoryTest {
         }
 
         @Test
+        void dropItem_shouldKeepTheItem_whenItIsPending() {
+            final Doll doll = new Doll();
+            final Item[] dropped = new Item[2];
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                final Item item = item(sword);
+                doll.put(item);
+                ItemContainerTest.whilePending(item, () -> {
+                    dropped[0] = doll.dropItem(ItemProcessType.NONE, item, null, null);
+                    dropped[1] = doll.dropItem(ItemProcessType.NONE, item.getObjectId(), 1, null, null);
+                    return null;
+                });
+                return doll.getSize();
+            });
+
+            assertThat(dropped).containsOnlyNulls();
+            assertThat(actual).isOne();
+        }
+
+        @Test
         void dropItem_shouldReturnNull_whenTheInventoryDoesNotHoldTheItem() {
             final Doll doll = new Doll();
             final Item actual =
                     WorldLoopExtension.callInPass(() -> doll.dropItem(ItemProcessType.NONE, item(sword), null, null));
+
+            assertThat(actual).isNull();
+        }
+    }
+
+    @Nested
+    class Equip {
+        @Test
+        void equipItem_shouldEquipTheItem_whenItIsNotPending() {
+            final Doll doll = new Doll();
+            final Item[] expected = new Item[1];
+            final Item actual = WorldLoopExtension.callInPass(() -> {
+                expected[0] = item(shield);
+                doll.put(expected[0]);
+                doll.equipItem(expected[0]);
+                return doll.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
+            });
+
+            assertThat(actual).isSameAs(expected[0]);
+        }
+
+        @Test
+        void equipItem_shouldLeaveThePaperdoll_whenTheItemIsPending() {
+            final Doll doll = new Doll();
+            final Item actual = WorldLoopExtension.callInPass(() -> {
+                final Item item = item(shield);
+                doll.put(item);
+                ItemContainerTest.whilePending(item, () -> {
+                    doll.equipItem(item);
+                    return null;
+                });
+                return doll.getPaperdollItem(Inventory.PAPERDOLL_LHAND);
+            });
 
             assertThat(actual).isNull();
         }

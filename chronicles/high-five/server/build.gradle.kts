@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":libs:gslink"))
     implementation(project(":libs:logging"))
     api(project(":engine:core"))
+    implementation(project(":engine:mail"))
     implementation(libs.bucket4j.core)
     implementation(libs.classgraph)
     implementation(libs.commons.lang3)
@@ -46,8 +47,7 @@ tasks.withType<Test>().configureEach {
     workingDir = layout.projectDirectory.dir("../datapack").asFile
 }
 
-// Only the single-writer ruleset runs: it covers synchronized blocks, which ArchUnit cannot see. Tests, fixtures
-// and benchmarks may lock freely.
+// Only the single-writer ruleset runs: it covers synchronized blocks, which ArchUnit cannot see.
 pmd {
     toolVersion = libs.versions.pmd.get()
     ruleSets = listOf()

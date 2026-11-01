@@ -6,14 +6,22 @@ package app.l2nx.highfive.partition;
 
 import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.partition.PartitionRuntime;
+import app.l2nx.engine.core.persistence.value.InFlightCharacters;
 import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.WorldShutdown;
+import java.time.Duration;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +40,7 @@ class WorldLifecycle implements SmartLifecycle {
     private final WorldShutdown shutdown;
     private final OnlinePlayersGauge onlinePlayers;
     private final List<WorldSystem> systems;
+    private final LifecycleProperties lifecycle;
     private volatile boolean running;
     private boolean worldShutDown;
 
@@ -52,6 +61,7 @@ class WorldLifecycle implements SmartLifecycle {
         try {
             final CompletableFuture<Void> done = new CompletableFuture<>();
             try {
+                awaitValueTransactions();
                 WorldPartition.offer(() -> runInto(done, this::shutDownWorld));
             } catch (RejectedExecutionException e) {
                 log.warn("The world loop stopped before the server; the world shutdown ran in its shutdown hooks");
@@ -78,6 +88,42 @@ class WorldLifecycle implements SmartLifecycle {
         systems.forEach(system -> system.install(loop));
         loader.load();
         loop.addShutdownHook(_ -> shutDownWorld());
+    }
+
+    /** The final saves write every character's memory, so they wait for in-flight value transactions; the loop keeps running. */
+    private void awaitValueTransactions() {
+        final CompletableFuture<Void> idle = new CompletableFuture<>();
+        WorldPartition.offer(() -> whenNoneInFlight(WorldPartition.inFlightCharacters(), () -> idle.complete(null)));
+        final Duration bound = lifecycle.getTimeoutPerShutdownPhase();
+        try {
+            idle.get(bound.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            WorldPartition.offer(() -> log.warn(
+                    "Saving the world after {} with value transactions still in flight for {}",
+                    bound,
+                    WorldPartition.inFlightCharacters().characters()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            throw new IllegalStateException(e.getCause());
+        }
+    }
+
+    static void whenNoneInFlight(InFlightCharacters inFlight, Runnable done) {
+        final Set<UUID> left = inFlight.characters();
+        if (left.isEmpty()) {
+            done.run();
+            return;
+        }
+        final int[] waiting = {left.size()};
+        for (UUID characterId : left) {
+            inFlight.whenIdle(characterId, () -> {
+                waiting[0]--;
+                if (waiting[0] == 0) {
+                    whenNoneInFlight(inFlight, done);
+                }
+            });
+        }
     }
 
     private void shutDownWorld() {

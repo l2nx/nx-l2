@@ -8,8 +8,11 @@ dependencies {
     api(project(":libs:boot"))
     api(libs.spring.boot)
     api(libs.micrometer.core)
+    api(libs.spring.jdbc)
+    api(libs.spring.tx)
     api(libs.uuid.creator)
     api(project(":libs:network"))
+    implementation(project(":libs:database"))
     implementation(project(":libs:logging"))
     implementation(libs.spring.boot.autoconfigure)
     implementation(libs.bucket4j.core)
@@ -19,6 +22,9 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.jqwik)
+    testImplementation(testFixtures(project(":libs:database")))
+    testImplementation(libs.liquibase.core)
+    testRuntimeOnly(libs.postgresql)
 
     testFixturesImplementation(platform(libs.spring.boot.dependencies))
 

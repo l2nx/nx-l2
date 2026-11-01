@@ -28,18 +28,14 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 /**
- * Master of Enchanting event AI.
  * @author Gnacik
  */
 public class MasterOfEnchanting extends LongTimeEvent {
-    // NPC
     private static final int MASTER_YOGI = 32599;
 
-    // Items
     private static final int MASTER_YOGI_STAFF = 13539;
     private static final int MASTER_YOGI_SCROLL = 13540;
 
-    // Misc
     private static final int STAFF_PRICE = 1000000;
     private static final int SCROLL_24_PRICE = 5000000;
     private static final int SCROLL_24_TIME = 6;
@@ -60,14 +56,14 @@ public class MasterOfEnchanting extends LongTimeEvent {
     public String onEvent(String event, Npc npc, Player player) {
         String htmltext = event;
         if (event.equalsIgnoreCase("buy_staff")) {
-            if (!ownsAtLeastOneItem(player, MASTER_YOGI_STAFF)
-                    && (getQuestItemsCount(player, Inventory.ADENA_ID) > STAFF_PRICE)) {
-                takeItems(player, Inventory.ADENA_ID, STAFF_PRICE);
-                giveItems(player, MASTER_YOGI_STAFF, 1);
-                htmltext = "32599-staffbuyed.htm";
-            } else {
-                htmltext = "32599-staffcant.htm";
+            if (!canBuyStaff(player)) {
+                return "32599-staffcant.htm";
             }
+
+            // Mailboxes answer on a later pass; a second click may have bought the staff meanwhile.
+            hasMailAttachment(
+                    player, attached -> showHtmlFile(player, buyStaff(player, attached), npc), MASTER_YOGI_STAFF);
+            htmltext = null;
         } else if (event.equalsIgnoreCase("buy_scroll_24")) {
             if (player.getCreateDate().after(getStartDate())) {
                 return "32599-birth.htm";
@@ -108,8 +104,7 @@ public class MasterOfEnchanting extends LongTimeEvent {
                     htmltext = "32599-scroll24.htm";
                 }
 
-                // Little glitch. There is no SystemMessage with seconds only.
-                // If time is less than 1 minute player can buy scrolls
+                // No SystemMessage exists for seconds only, so under a minute the player may buy scrolls.
                 else if (getQuestItemsCount(player, Inventory.ADENA_ID) > SCROLL_24_PRICE) {
                     takeItems(player, Inventory.ADENA_ID, SCROLL_24_PRICE);
                     giveItems(player, MASTER_YOGI_SCROLL, 24);
@@ -248,6 +243,21 @@ public class MasterOfEnchanting extends LongTimeEvent {
     @Override
     public String onFirstTalk(Npc npc, Player player) {
         return npc.getId() + ".htm";
+    }
+
+    private boolean canBuyStaff(Player player) {
+        return !holdsAtLeastOneItem(player, MASTER_YOGI_STAFF)
+                && (getQuestItemsCount(player, Inventory.ADENA_ID) > STAFF_PRICE);
+    }
+
+    private String buyStaff(Player player, boolean staffInMail) {
+        if (staffInMail || !canBuyStaff(player)) {
+            return "32599-staffcant.htm";
+        }
+
+        takeItems(player, Inventory.ADENA_ID, STAFF_PRICE);
+        giveItems(player, MASTER_YOGI_STAFF, 1);
+        return "32599-staffbuyed.htm";
     }
 
     public static void main(String[] args) {

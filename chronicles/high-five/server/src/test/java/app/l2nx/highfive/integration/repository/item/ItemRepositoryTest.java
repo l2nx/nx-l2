@@ -113,21 +113,6 @@ class ItemRepositoryTest extends RepositoryTest {
     }
 
     @Nested
-    class FindByMail {
-        @Test
-        void findByMail_shouldReturnAttachmentsWithMailHandleAsSlot() {
-            final UUID mail = insertMail(insertCharacter());
-            final UUID item = insertItem(null, ADENA, ItemLocation.MAIL, null, mail);
-
-            final List<ItemRow> actual = repository.findByMail(handle(mail));
-
-            assertThat(actual)
-                    .extracting(ItemRow::objectId, ItemRow::locationSlot)
-                    .containsExactly(tuple(handle(item), handle(mail)));
-        }
-    }
-
-    @Nested
     class FindPaperdoll {
         @Test
         void findPaperdoll_shouldReturnEquippedItemsOnly() {
@@ -249,20 +234,6 @@ class ItemRepositoryTest extends RepositoryTest {
         }
 
         @Test
-        void insert_shouldStoreMailAndNoOwner_whenAttachment() {
-            final UUID sender = insertCharacter();
-            final UUID mail = insertMail(insertCharacter());
-            final ItemRow item = item(ItemLocation.MAIL, handle(mail));
-
-            repository.insert(handle(sender), item);
-
-            assertThat(storedItem(item.objectId()))
-                    .containsEntry("owner_id", null)
-                    .containsEntry("mail_id", mail)
-                    .containsEntry("location_slot", null);
-        }
-
-        @Test
         void insert_shouldStoreClanAsOwner_whenClanWarehouse() {
             final UUID clan = insertClan();
             final ItemRow item = item(ItemLocation.CLANWH, 0);
@@ -276,23 +247,21 @@ class ItemRepositoryTest extends RepositoryTest {
     @Nested
     class Update {
         @Test
-        void update_shouldMoveItemIntoMail() {
+        void update_shouldLeaveTheRow_whenAMailHoldsIt() {
             final UUID sender = insertCharacter();
             final UUID mail = insertMail(insertCharacter());
-            final UUID stored = insertItem(sender, ADENA, ItemLocation.INVENTORY, 0, null);
+            final UUID attached = insertItem(null, ADENA, ItemLocation.MAIL, null, mail);
 
             repository.update(
                     handle(sender),
-                    item(ItemLocation.MAIL, handle(mail)).toBuilder()
-                            .objectId(handle(stored))
+                    item(ItemLocation.INVENTORY, 0).toBuilder()
+                            .objectId(handle(attached))
                             .build());
 
-            assertThat(storedItem(handle(stored)))
+            assertThat(storedItem(handle(attached)))
                     .containsEntry("owner_id", null)
                     .containsEntry("mail_id", mail)
-                    .containsEntry("location", "MAIL")
-                    .containsEntry("count", 3L)
-                    .containsEntry("item_template_id", ADENA);
+                    .containsEntry("location", "MAIL");
         }
 
         @Test
@@ -332,48 +301,6 @@ class ItemRepositoryTest extends RepositoryTest {
     }
 
     @Nested
-    class MoveMailToWarehouse {
-        @Test
-        void moveMailToWarehouse_shouldGiveAttachmentsToOwnerWarehouse() {
-            final UUID sender = insertCharacter();
-            final UUID mail = insertMail(insertCharacter());
-            final UUID attachment = insertItem(null, ADENA, ItemLocation.MAIL, null, mail);
-            final UUID other = insertItem(null, ADENA, ItemLocation.MAIL, null, insertMail(insertCharacter()));
-
-            final List<ItemRow> actual = repository.moveMailToWarehouse(handle(mail), handle(sender));
-
-            assertThat(actual)
-                    .extracting(ItemRow::objectId, ItemRow::location, ItemRow::locationSlot)
-                    .containsExactly(tuple(handle(attachment), ItemLocation.WAREHOUSE, 0));
-            assertThat(storedItem(handle(attachment)))
-                    .containsEntry("owner_id", sender)
-                    .containsEntry("location", "WAREHOUSE")
-                    .containsEntry("mail_id", null);
-            assertThat(count("SELECT count(*) FROM items WHERE id = ? AND location = 'MAIL'", other))
-                    .isOne();
-        }
-    }
-
-    @Nested
-    class DeleteByMail {
-        @Test
-        void deleteByMail_shouldRemoveAttachmentsAndReturnHandlesInUse() {
-            final UUID mail = insertMail(insertCharacter());
-            final int loaded = handle(insertItem(null, ADENA, ItemLocation.MAIL, null, mail));
-            final UUID neverLoaded = insertItem(null, ADENA, ItemLocation.MAIL, null, mail);
-            final UUID other = insertItem(null, ADENA, ItemLocation.MAIL, null, insertMail(insertCharacter()));
-
-            final List<Integer> actual = repository.deleteByMail(handle(mail));
-
-            assertThat(actual).containsExactly(loaded);
-            assertThat(count("SELECT count(*) FROM items WHERE mail_id = ?", mail))
-                    .isZero();
-            assertThat(registry.findHandle(neverLoaded)).isEmpty();
-            assertThat(count("SELECT count(*) FROM items WHERE id = ?", other)).isOne();
-        }
-    }
-
-    @Nested
     class Delete {
         @Test
         void delete_shouldRemoveItemWithItsAugmentation() {
@@ -387,6 +314,16 @@ class ItemRepositoryTest extends RepositoryTest {
             assertThat(count("SELECT count(*) FROM items WHERE id = ?", item)).isZero();
             assertThat(count("SELECT count(*) FROM item_augmentations WHERE item_id = ?", item))
                     .isZero();
+        }
+
+        @Test
+        void delete_shouldLeaveTheRow_whenAMailHoldsIt() {
+            final UUID attached = insertItem(null, ADENA, ItemLocation.MAIL, null, insertMail(insertCharacter()));
+
+            repository.delete(handle(attached));
+
+            assertThat(count("SELECT count(*) FROM items WHERE id = ?", attached))
+                    .isOne();
         }
     }
 
@@ -574,11 +511,14 @@ class ItemRepositoryTest extends RepositoryTest {
     static UUID insertMail(UUID receiver) {
         final UUID id = EntityIds.next();
         JDBC.sql("""
-            INSERT INTO mails (
-                id, receiver_id, expires_at, has_attachments, unread, deleted_by_sender, deleted_by_receiver,
-                sender_type, returned)
-            VALUES (?, ?, ?, true, true, true, false, 'NEWS', false)\
-            """).param(id).param(receiver).param(JdbcTimes.utc(NOW)).update();
+            INSERT INTO mails (id, type, receiver_id, receiver_name, subject, attachments, sent_at, expires_at)
+            VALUES (?, 'SYSTEM', ?, 'receiver', 'subject', 'ATTACHED', ?, ?)\
+            """)
+                .param(id)
+                .param(receiver)
+                .param(JdbcTimes.utc(NOW))
+                .param(JdbcTimes.utc(NOW))
+                .update();
         return id;
     }
 }

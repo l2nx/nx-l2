@@ -5,6 +5,8 @@ lists what is open.
 
 ## Open
 
+- [#154](https://github.com/l2nx/nx-l2/issues/154) Hide Receive and Cancel on a settled mail with a client patch
+- [#155](https://github.com/l2nx/nx-l2/issues/155) Move the remaining item and adena transfers onto value transactions
 - [#151](https://github.com/l2nx/nx-l2/issues/151) Engine core performance: regressions and improvements left for later
 - [#152](https://github.com/l2nx/nx-l2/issues/152) ItemContainer.getItems copies the container on every call
 - [#1](https://github.com/l2nx/nx-l2/issues/1) Push GPLv3 out of the build
@@ -37,7 +39,6 @@ lists what is open.
 - [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
 - [#55](https://github.com/l2nx/nx-l2/issues/55) Pet.destroyItem never sends the disappeared message
 - [#56](https://github.com/l2nx/nx-l2/issues/56) Ended long-time event items on the ground come back after a restart
-- [#57](https://github.com/l2nx/nx-l2/issues/57) Mail keeps its cash-on-delivery price after its attachments are destroyed
 - [#58](https://github.com/l2nx/nx-l2/issues/58) Castle circlets stay with the old owner from the second change of owner on
 - [#59](https://github.com/l2nx/nx-l2/issues/59) A clan hall sale auction without bids leaves its row behind
 - [#61](https://github.com/l2nx/nx-l2/issues/61) Castle.setOwner throws for a castle without a territory
@@ -69,7 +70,7 @@ lists what is open.
 - [#102](https://github.com/l2nx/nx-l2/issues/102) Close the gaps in the architecture rules: scheduled work, randomness and slice layout gates
 - [#103](https://github.com/l2nx/nx-l2/issues/103) Cut engine loop overhead and attribute heavy tasks in the meters
 - [#104](https://github.com/l2nx/nx-l2/issues/104) Set database statement, lock and connection timeouts and resize the pool for the single-writer loop
-- [#105](https://github.com/l2nx/nx-l2/issues/105) Update memory only after commit in mail and clan destruction
+- [#105](https://github.com/l2nx/nx-l2/issues/105) Update memory only after commit in clan destruction
 - [#106](https://github.com/l2nx/nx-l2/issues/106) Save a character in one transaction
 - [#107](https://github.com/l2nx/nx-l2/issues/107) Enforce the repository handle contract and issue handles only on demand
 - [#108](https://github.com/l2nx/nx-l2/issues/108) Database config and value hygiene: default password, changelog paths, blank legacy text

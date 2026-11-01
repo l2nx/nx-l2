@@ -11,8 +11,7 @@ import lombok.Builder;
 /**
  * A stored item in the legacy terms of {@code Item}; the owner is not part of the row, every query names it.
  *
- * @param locationSlot paperdoll slot (PAPERDOLL, PET_EQUIP), sort order (INVENTORY), the mail handle (MAIL), 0
- *     elsewhere
+ * @param locationSlot paperdoll slot (PAPERDOLL, PET_EQUIP), sort order (INVENTORY), 0 elsewhere
  * @param mana shadow item mana, {@code -1} for an ordinary item
  * @param expiresAt {@code null} for an item without a time limit
  */

@@ -4,6 +4,17 @@
  */
 package app.l2nx.highfive.network.protocol.p267;
 
+import app.l2nx.engine.mail.command.CancelMail;
+import app.l2nx.engine.mail.command.DeleteReceivedMail;
+import app.l2nx.engine.mail.command.DeleteSentMail;
+import app.l2nx.engine.mail.command.ListMailableItems;
+import app.l2nx.engine.mail.command.ListReceivedMail;
+import app.l2nx.engine.mail.command.ListSentMail;
+import app.l2nx.engine.mail.command.OpenReceivedMail;
+import app.l2nx.engine.mail.command.OpenSentMail;
+import app.l2nx.engine.mail.command.ReceiveAttachments;
+import app.l2nx.engine.mail.command.ReturnMail;
+import app.l2nx.engine.mail.command.SendMail;
 import app.l2nx.highfive.character.command.CreateCharacter;
 import app.l2nx.highfive.character.command.DeleteCharacter;
 import app.l2nx.highfive.character.command.EnterWorld;
@@ -32,8 +43,10 @@ import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBook
 import app.l2nx.highfive.network.protocol.p267.decoder.CharacterDecoders;
 import app.l2nx.highfive.network.protocol.p267.decoder.ChatDecoders;
 import app.l2nx.highfive.network.protocol.p267.decoder.LoginDecoders;
+import app.l2nx.highfive.network.protocol.p267.decoder.MailDecoders;
 import app.l2nx.highfive.network.protocol.p267.decoder.MovementDecoders;
 import app.l2nx.highfive.session.GameContext;
+import app.l2nx.protocol.game.p267.clientpackets.GameClientExOpcode;
 import app.l2nx.protocol.game.p267.clientpackets.GameClientOpcode;
 import io.netty.buffer.ByteBuf;
 import java.util.function.Supplier;
@@ -104,6 +117,44 @@ public final class P267Inbound {
         table.command(
                 GameClientOpcode.CANNOT_MOVE_ANYMORE.opcode(), MoveBlocked.class, MovementDecoders::cannotMoveAnymore);
         table.command(GameClientOpcode.SAY2.opcode(), SendChat.class, ChatDecoders::say2);
+        mail(table);
+    }
+
+    private static void mail(OpcodeTable.Builder table) {
+        table.exCommand(
+                GameClientExOpcode.REQUEST_POST_ITEM_LIST.opcode(),
+                ListMailableItems.class,
+                MailDecoders::postItemList);
+        table.exCommand(GameClientExOpcode.REQUEST_SEND_POST.opcode(), SendMail.class, MailDecoders::sendPost);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_RECEIVED_POST_LIST.opcode(),
+                ListReceivedMail.class,
+                MailDecoders::receivedPostList);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_DELETE_RECEIVED_POST.opcode(),
+                DeleteReceivedMail.class,
+                MailDecoders::deleteReceivedPost);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_RECEIVED_POST.opcode(), OpenReceivedMail.class, MailDecoders::receivedPost);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_POST_ATTACHMENT.opcode(),
+                ReceiveAttachments.class,
+                MailDecoders::postAttachment);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_REJECT_POST_ATTACHMENT.opcode(),
+                ReturnMail.class,
+                MailDecoders::rejectPostAttachment);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_SENT_POST_LIST.opcode(), ListSentMail.class, MailDecoders::sentPostList);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_DELETE_SENT_POST.opcode(),
+                DeleteSentMail.class,
+                MailDecoders::deleteSentPost);
+        table.exCommand(GameClientExOpcode.REQUEST_SENT_POST.opcode(), OpenSentMail.class, MailDecoders::sentPost);
+        table.exCommand(
+                GameClientExOpcode.REQUEST_CANCEL_POST_ATTACHMENT.opcode(),
+                CancelMail.class,
+                MailDecoders::cancelPostAttachment);
     }
 
     private static InboundDecoder legacy(Supplier<? extends ClientPacket> supplier) {

@@ -135,7 +135,7 @@ public class CharacterRepository {
         """;
     // Latest anniversary of the creation not in the future; age() follows the session time zone.
     private static final String SELECT_BIRTHDAYS = """
-        SELECT id, name, age
+        SELECT id, name, age, extract(year FROM created_at AT TIME ZONE 'UTC')::integer + age AS year
         FROM (SELECT id, name, created_at, extract(year FROM age(?, created_at))::integer AS age FROM characters) c
         WHERE age > 0 AND created_at + make_interval(years => age) >= ?\
         """;
@@ -463,9 +463,10 @@ public class CharacterRepository {
                 .param(JdbcTimes.utc(now))
                 .param(JdbcTimes.utc(since))
                 .query((rs, rowNum) -> BirthdayCharacter.builder()
-                        .objectId(registry.handleOf(rs.getObject("id", UUID.class)))
+                        .id(rs.getObject("id", UUID.class))
                         .name(rs.getString("name"))
                         .age(rs.getInt("age"))
+                        .year(rs.getInt("year"))
                         .build())
                 .list();
     }

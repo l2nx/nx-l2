@@ -22,31 +22,25 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Items owned by a character (inventory, paperdoll, warehouse, freight, pet) or a clan (clan warehouse), and items
- * attached to a mail. The legacy owner handle of a mail attachment (the sender, or -1) is not stored: the mail owns it.
+ * Items owned by a character (inventory, paperdoll, warehouse, freight, pet) or a clan (clan warehouse). Rows attached
+ * to a mail belong to the mail module: no write by handle here touches one.
  */
 @Repository
 @RequiredArgsConstructor
 public class ItemRepository {
     // NULLS FIRST: the pet inventory has no slot, and MySQL sorted its 0 before the equipped slots.
     private static final String SELECT_BY_OWNER_AND_LOCATIONS = """
-        SELECT id, item_template_id, count, location, location_slot, mail_id, enchant_level,
+        SELECT id, item_template_id, count, location, location_slot, enchant_level,
                custom_type1, custom_type2, mana_left, expires_at
         FROM items
         WHERE owner_id = ? AND location IN (?, ?)
         ORDER BY location_slot NULLS FIRST\
         """;
     private static final String SELECT_BY_OWNER_AND_LOCATION = """
-        SELECT id, item_template_id, count, location, location_slot, mail_id, enchant_level,
+        SELECT id, item_template_id, count, location, location_slot, enchant_level,
                custom_type1, custom_type2, mana_left, expires_at
         FROM items
         WHERE owner_id = ? AND location = ?\
-        """;
-    private static final String SELECT_BY_MAIL = """
-        SELECT id, item_template_id, count, location, location_slot, mail_id, enchant_level,
-               custom_type1, custom_type2, mana_left, expires_at
-        FROM items
-        WHERE mail_id = ?\
         """;
     private static final String SELECT_PAPERDOLL = """
         SELECT id, item_template_id, location_slot, enchant_level
@@ -64,29 +58,22 @@ public class ItemRepository {
         """;
     private static final String INSERT_ITEM = """
         INSERT INTO items (
-            id, owner_id, item_template_id, count, location, location_slot, mail_id, enchant_level,
+            id, owner_id, item_template_id, count, location, location_slot, enchant_level,
             custom_type1, custom_type2, mana_left, expires_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
+    // A late save cannot pull back a row a value transaction moved into a mail.
     private static final String UPDATE_ITEM = """
         UPDATE items
-        SET owner_id = ?, count = ?, location = ?, location_slot = ?, mail_id = ?, enchant_level = ?,
+        SET owner_id = ?, count = ?, location = ?, location_slot = ?, enchant_level = ?,
             custom_type1 = ?, custom_type2 = ?, mana_left = ?, expires_at = ?
-        WHERE id = ?\
+        WHERE id = ? AND mail_id IS NULL\
         """;
     // Moves equipped items only: other locations have no slot to keep, and items in transit belong to no one.
     private static final String UNEQUIP_ALL =
             "UPDATE items SET location = 'INVENTORY' WHERE owner_id = ? AND location = 'PAPERDOLL'";
-    private static final String DELETE_ITEM = "DELETE FROM items WHERE id = ?";
-    private static final String RETURN_MAIL_TO_WAREHOUSE = """
-        UPDATE items
-        SET owner_id = ?, location = 'WAREHOUSE', mail_id = NULL
-        WHERE mail_id = ?
-        RETURNING id, item_template_id, count, location, location_slot, mail_id, enchant_level,
-                  custom_type1, custom_type2, mana_left, expires_at\
-        """;
+    private static final String DELETE_ITEM = "DELETE FROM items WHERE id = ? AND mail_id IS NULL";
     private static final String DELETE_BY_OWNER = "DELETE FROM items WHERE owner_id = ? RETURNING id";
-    private static final String DELETE_BY_MAIL = "DELETE FROM items WHERE mail_id = ? RETURNING id";
     private static final String DELETE_BY_OWNER_AND_TEMPLATE =
             "DELETE FROM items WHERE owner_id = ? AND item_template_id = ?";
     private static final String DELETE_BY_TEMPLATE = "DELETE FROM items WHERE item_template_id = ?";
@@ -120,16 +107,6 @@ public class ItemRepository {
                         .sql(SELECT_BY_OWNER_AND_LOCATION)
                         .param(id)
                         .param(location.name())
-                        .query((rs, rowNum) -> toItem(rs))
-                        .list())
-                .orElse(List.of());
-    }
-
-    public List<ItemRow> findByMail(int messageId) {
-        return registry.findId(messageId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_BY_MAIL)
-                        .param(id)
                         .query((rs, rowNum) -> toItem(rs))
                         .list())
                 .orElse(List.of());
@@ -181,18 +158,17 @@ public class ItemRepository {
     }
 
     /**
-     * @param ownerId the character or clan handle; ignored for a mail attachment
+     * @param ownerId the character or clan handle
      */
     public void insert(int ownerId, ItemRow item) {
         jdbcClient
                 .sql(INSERT_ITEM)
                 .param(registry.idOf(item.objectId()))
-                .param(owner(ownerId, item))
+                .param(References.required(registry, ownerId))
                 .param(item.itemId())
                 .param(item.count())
                 .param(item.location().name())
                 .param(slot(item))
-                .param(mail(item))
                 .param(item.enchantLevel())
                 .param(item.customType1())
                 .param(item.customType2())
@@ -202,17 +178,16 @@ public class ItemRepository {
     }
 
     /**
-     * @param ownerId the character or clan handle; ignored for a mail attachment
+     * @param ownerId the character or clan handle
      */
     public void update(int ownerId, ItemRow item) {
         registry.findId(item.objectId())
                 .ifPresent(id -> jdbcClient
                         .sql(UPDATE_ITEM)
-                        .param(owner(ownerId, item))
+                        .param(References.required(registry, ownerId))
                         .param(item.count())
                         .param(item.location().name())
                         .param(slot(item))
-                        .param(mail(item))
                         .param(item.enchantLevel())
                         .param(item.customType1())
                         .param(item.customType2())
@@ -222,24 +197,13 @@ public class ItemRepository {
                         .update());
     }
 
-    public List<ItemRow> moveMailToWarehouse(int messageId, int ownerId) {
-        return registry.findId(messageId)
-                .map(id -> jdbcClient
-                        .sql(RETURN_MAIL_TO_WAREHOUSE)
-                        .param(References.required(registry, ownerId))
-                        .param(id)
-                        .query((rs, rowNum) -> toItem(rs))
-                        .list())
-                .orElse(List.of());
-    }
-
     public void unequipAll(int characterId) {
         registry.findId(characterId)
                 .ifPresent(id -> jdbcClient.sql(UNEQUIP_ALL).param(id).update());
     }
 
     /**
-     * Its augmentation, elementals, variables, pet and pet effects go with it.
+     * Its augmentation, elementals, variables, pet and pet effects go with it; a row attached to a mail stays.
      */
     public void delete(int objectId) {
         registry.findId(objectId)
@@ -251,14 +215,6 @@ public class ItemRepository {
      */
     public List<Integer> deleteByOwner(int ownerId) {
         return deletedHandles(ownerId, DELETE_BY_OWNER);
-    }
-
-    /**
-     * @return the handles of the deleted attachments that are in use, for the caller to release once the deletion
-     *     commits
-     */
-    public List<Integer> deleteByMail(int messageId) {
-        return deletedHandles(messageId, DELETE_BY_MAIL);
     }
 
     public int deleteByOwner(int ownerId, int itemId) {
@@ -318,31 +274,19 @@ public class ItemRepository {
     }
 
     private ItemRow toItem(ResultSet rs) throws SQLException {
-        final ItemLocation location = ItemLocation.valueOf(rs.getString("location"));
         final Integer manaLeft = rs.getObject("mana_left", Integer.class);
         return ItemRow.builder()
                 .objectId(registry.handleOf(rs.getObject("id", UUID.class)))
                 .itemId(rs.getInt("item_template_id"))
                 .count(rs.getLong("count"))
-                .location(location)
-                .locationSlot(
-                        location == ItemLocation.MAIL
-                                ? registry.handleOf(rs.getObject("mail_id", UUID.class))
-                                : rs.getInt("location_slot"))
+                .location(ItemLocation.valueOf(rs.getString("location")))
+                .locationSlot(rs.getInt("location_slot"))
                 .enchantLevel(rs.getInt("enchant_level"))
                 .customType1(rs.getInt("custom_type1"))
                 .customType2(rs.getInt("custom_type2"))
                 .mana(manaLeft == null ? -1 : manaLeft)
                 .expiresAt(JdbcTimes.instant(rs, "expires_at"))
                 .build();
-    }
-
-    private UUID owner(int ownerId, ItemRow item) {
-        return item.location() == ItemLocation.MAIL ? null : References.required(registry, ownerId);
-    }
-
-    private UUID mail(ItemRow item) {
-        return item.location() == ItemLocation.MAIL ? References.required(registry, item.locationSlot()) : null;
     }
 
     private static Integer slot(ItemRow item) {

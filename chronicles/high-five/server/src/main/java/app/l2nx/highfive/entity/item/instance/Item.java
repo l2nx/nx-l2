@@ -62,7 +62,6 @@ import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.managers.ItemsOnGroundManager;
-import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.MercTicketManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
@@ -1149,8 +1148,7 @@ public class Item extends WorldObject {
 
     public void updateDatabase(boolean force) {
         WorldPartition.checkOwner();
-        // An attachment is written with its mail, in the transaction that sends it.
-        if ((itemLocation == ItemLocation.MAIL) && !MailManager.getInstance().isSent(locationSlot)) {
+        if (isPending()) {
             return;
         }
 
@@ -1176,10 +1174,59 @@ public class Item extends WorldObject {
     }
 
     /**
+     * Whether a value transaction in flight reserved the item, or awaits a new row of its stackable template. A pending
+     * item is refused by every mutating container operation and by saves, which would undo the commit.
+     */
+    public boolean isPending() {
+        WorldPartition.checkOwner();
+        return WorldPartition.pendingItems().isPending(getObjectId())
+                || (!existsInDb && WorldPartition.awaitedStacks().isAwaited(ownerId, id));
+    }
+
+    public boolean hasRow() {
+        WorldPartition.checkOwner();
+        return existsInDb;
+    }
+
+    public void markRowStored() {
+        WorldPartition.checkOwner();
+        existsInDb = true;
+        storedInDb = false;
+    }
+
+    /**
      * @return the stored item, or {@code null} when its template is unknown
      */
     public static Item restoreFromDb(int ownerId, ItemRow row) {
         WorldPartition.checkOwner();
+        final Item inst = fromRow(ownerId, row);
+        if ((inst != null) && inst.isEquipable()) {
+            inst.restoreAttributes();
+        }
+
+        return inst;
+    }
+
+    public static Item restoreCommitted(
+            int ownerId, ItemRow row, Integer augmentationId, List<ItemElemental> elementals) {
+        WorldPartition.checkOwner();
+        final Item inst = fromRow(ownerId, row);
+        if (inst == null) {
+            return null;
+        }
+
+        if (augmentationId != null) {
+            inst.augmentation = new Augmentation(augmentationId);
+        }
+
+        for (ItemElemental elemental : elementals) {
+            inst.applyAttribute(elemental.element(), elemental.value());
+        }
+
+        return inst;
+    }
+
+    private static Item fromRow(int ownerId, ItemRow row) {
         final ItemTemplate item = ItemData.getInstance().getTemplate(row.itemId());
         if (item == null) {
             log.error("Item item_id={} not known, object_id={}", row.itemId(), row.objectId());
@@ -1199,11 +1246,6 @@ public class Item extends WorldObject {
 
         inst.mana = row.mana();
         inst.time = row.expiresAt() == null ? -1 : row.expiresAt().toEpochMilli();
-
-        if (inst.isEquipable()) {
-            inst.restoreAttributes();
-        }
-
         return inst;
     }
 

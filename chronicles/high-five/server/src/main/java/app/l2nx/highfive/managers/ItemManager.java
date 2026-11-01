@@ -45,7 +45,6 @@ import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.item.OnItemCreate;
-import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
@@ -310,10 +309,6 @@ public class ItemManager {
         return itemRepository.findByOwner(ownerId, location);
     }
 
-    public List<ItemRow> findAttachments(int messageId) {
-        return itemRepository.findByMail(messageId);
-    }
-
     public List<PaperdollItem> findPaperdoll(int characterId) {
         return itemRepository.findPaperdoll(characterId);
     }
@@ -368,6 +363,7 @@ public class ItemManager {
 
     /**
      * Rows of unloaded items are deleted after the scan; only the single writer stops a container loading them meanwhile.
+     * The rows attached to a mail go too, so a claim of that mail finds them gone and settles it destroyed.
      */
     public void destroyItemsOfTemplate(int itemId) {
         WorldPartition.checkOwner();
@@ -447,10 +443,6 @@ public class ItemManager {
             case CLANWH -> {
                 final Clan clan = ClanTable.getInstance().getClan(item.getOwnerId());
                 yield clan == null ? null : clan.getWarehouse();
-            }
-            case MAIL -> {
-                final MailMessage message = MailManager.getInstance().getMessage(item.getLocationSlot());
-                yield message == null ? null : message.getAttachments();
             }
             default -> null;
         };

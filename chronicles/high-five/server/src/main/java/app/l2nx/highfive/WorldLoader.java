@@ -30,7 +30,6 @@ import app.l2nx.highfive.config.ConfigLoader;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -112,7 +111,6 @@ import app.l2nx.highfive.managers.CastleManorManager;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.managers.CoupleManager;
 import app.l2nx.highfive.managers.CursedWeaponsManager;
-import app.l2nx.highfive.managers.CustomMailManager;
 import app.l2nx.highfive.managers.DailyResetManager;
 import app.l2nx.highfive.managers.DayNightSpawnManager;
 import app.l2nx.highfive.managers.DimensionalRiftManager;
@@ -127,7 +125,6 @@ import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.managers.ItemsOnGroundManager;
-import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.MercTicketManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PetitionManager;
@@ -379,14 +376,6 @@ public class WorldLoader {
 
         if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND) {
             AntiFeedManager.getInstance().registerEvent(AntiFeedManager.OFFLINE_PLAY);
-        }
-
-        if (GeneralConfig.ALLOW_MAIL) {
-            MailManager.getInstance().load();
-        }
-
-        if (CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_ENABLED) {
-            CustomMailManager.getInstance().load();
         }
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_SERVER_START)) {

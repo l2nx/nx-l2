@@ -194,6 +194,7 @@ libs/                 knows no game rules; reusable by any server
 engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata
   adapter             app.l2nx.engine.adapter  L2NX adapter host
+  mail                app.l2nx.engine.mail     the postbox shared by the chronicles (spec 010)
   core                app.l2nx.engine.core     partition runtime (spec 003); later what HF and Essence share
 protocols/            one client wire protocol each, named by client protocol version (spec 008 §8)
   login/c621          app.l2nx.protocol.login.c621   login protocol revision c621
@@ -223,7 +224,7 @@ What goes where:
 - **`engine/`** knows _how_: moving, seeing a target, talking to L2NX.
 - **`chronicles/<chronicle>/server`** knows _what_ the chronicle is: classes, damage formulas, enchanting,
   olympiad, the chronicle's client packets. Today almost all Mobius code lands here; it moves into `engine/`
-  only once two chronicles prove it identical.
+  only once the chronicles are proven identical in it.
 - **`scripts`** is a delivery unit of its own (§4.1).
 - **`boot`** is the assembly module: the Spring Boot application class, `application.yaml`, the distribution
   and the Docker image. A chronicle's `boot` assembles `server`, `scripts`, `datapack`, `engine/*` and `libs/*`
@@ -243,8 +244,10 @@ Rules:
   game systems belong to the chronicle. The engine exposes extension points: SPI, handler registries.
 - **The engine is not extracted up front.** With HF alone, `engine/` takes `geo`, `adapter` and `core`, where
   `core` holds only the chronicle-agnostic runtime of [spec 003](003-engine-core/spec.md): partition loops, clock,
-  identity, sessions, replication and persistence mechanisms. Shared game mechanics are extracted when Essence
-  arrives, by comparing the two Mobius trees.
+  identity, sessions, replication and persistence mechanisms. A shared game mechanic is extracted once the overlap
+  is proven by comparing the Mobius trees of the chronicles, which can happen before the second chronicle lands;
+  the module's spec records the comparison and every SPI method is checked against both trees. `engine/mail`
+  ([spec 010](010-mail/spec.md)) is the first such module; the rest are extracted when Essence arrives.
 - **A datapack lives in its chronicle's directory.** Code and data change in one commit, so they cannot drift
   apart.
 - **The package follows the path.** A module's root package is listed above; a new module picks its package by

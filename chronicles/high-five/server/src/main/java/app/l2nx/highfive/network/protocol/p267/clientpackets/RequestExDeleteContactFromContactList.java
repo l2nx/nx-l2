@@ -19,8 +19,8 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
-import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mail.WorldMail;
 
 /**
  * Format: (ch)S S: Character Name
@@ -36,7 +36,7 @@ public class RequestExDeleteContactFromContactList extends ClientPacket {
 
     @Override
     protected void runImpl() {
-        if (!GeneralConfig.ALLOW_MAIL) {
+        if (!WorldMail.getInstance().enabled()) {
             return;
         }
 

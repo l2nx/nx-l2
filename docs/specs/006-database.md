@@ -54,7 +54,13 @@ servers from MariaDB.
   `chronicles/high-five/server/src/main/resources/db/liquibase/` (the schema belongs to the chronicle), wired by
   `spring.liquibase.change-log` and `includeAll`. Formatted SQL, files `NNN-<name>.sql` zero-padded (`includeAll`
   sorts alphabetically), changeset ids `login:NNN-<purpose>` and `game:NNN-<purpose>`. Until the package rework (E10)
-  the changesets of every feature live in this one directory and sequence.
+  the changesets of every chronicle feature live in this one directory and sequence.
+- **An engine module owns its tables** (`engine/core` value transactions, `engine/mail`): its changelog ships in the
+  module's jar under `db/engine/<module>/` with changeset ids `<module>:NNN-<purpose>`, and the server changelog
+  includes it explicitly after the chronicle baseline (the module cannot know a chronicle's `includeAll` directory).
+  A chronicle table that references a module table (`items.mail_id`) gets that foreign key in a chronicle changeset
+  after the include. The server changelog runs, in order: the chronicle directory (`includeAll`, `maxDepth: 1`), the
+  engine modules' changelogs, then the chronicle's `db/liquibase/after-engine/` directory for such changesets.
 - **Changes to a populated table** start with `SET LOCAL lock_timeout = '5s'` (a session-level `SET` would stay on the
   pooled connection after the migration) and add constraints `NOT VALID` first; indexes on populated tables are built
   `CONCURRENTLY` in a changeset with `runInTransaction:false`.
@@ -162,9 +168,9 @@ later, together with the module that owns them.
   its bridge, and through `ScriptContext` once it exists.
 - **Writes that belong together run in one transaction:** a write inside one repository (the DELETE + INSERT pairs
   of skills, effects and shortcuts) is a `@Transactional` repository method; a write across repositories (a
-  character save with its subclasses, a character deletion with its mail) runs in the owning bean's
-  `TransactionTemplate`. In-memory changes that follow such a write are applied after the commit, so a rollback
-  leaves memory as it was. Item and currency transfers get their transaction, ledger and outbox in E3.
+  character save with its subclasses) runs in the owning bean's `TransactionTemplate`. In-memory changes that follow
+  such a write are applied after the commit, so a rollback leaves memory as it was. Item and currency transfers are
+  value transactions ([persistence.md §3](003-engine-core/persistence.md#3-value-transactions)); mail is the first.
 
 ## 6. Tests
 

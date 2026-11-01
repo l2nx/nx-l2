@@ -20,7 +20,9 @@ SPDX-License-Identifier = "MIT"
 [[annotations]]
 path = [
   "chronicles/high-five/server/src/main/resources/db/liquibase/000-baseline.sql",
+  "chronicles/high-five/server/src/main/resources/db/liquibase/after-engine/*.sql",
   "login/server/src/main/resources/db/liquibase/000-baseline.sql",
+  "engine/*/src/main/resources/db/engine/*/changelog.sql",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 L2NX contributors"

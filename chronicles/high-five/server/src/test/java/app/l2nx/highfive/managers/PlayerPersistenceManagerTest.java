@@ -4,18 +4,22 @@
  */
 package app.l2nx.highfive.managers;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.identity.EntityIds;
+import app.l2nx.highfive.mail.WorldMail;
 import app.l2nx.highfive.repository.character.CharacterHennaRepository;
 import app.l2nx.highfive.repository.character.CharacterInstanceTimeRepository;
 import app.l2nx.highfive.repository.character.CharacterItemReuseRepository;
@@ -37,7 +41,10 @@ import app.l2nx.highfive.repository.character.model.CharacterSkill;
 import app.l2nx.highfive.repository.character.model.CharacterSubclass;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -50,6 +57,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 class PlayerPersistenceManagerTest {
     private static final int OBJECT_ID = 268_435_457;
+    private static final UUID CHARACTER_ID = EntityIds.next();
 
     private final CharacterRepository characters = mock(CharacterRepository.class);
     private final CharacterSubclassRepository subclasses = mock(CharacterSubclassRepository.class);
@@ -57,9 +65,11 @@ class PlayerPersistenceManagerTest {
     private final CharacterSkillSaveRepository skillSaves = mock(CharacterSkillSaveRepository.class);
     private final CharacterInstanceTimeRepository instanceTimes = mock(CharacterInstanceTimeRepository.class);
     private final ItemRepository items = mock(ItemRepository.class);
-    private final MailManager mail = mock(MailManager.class);
+    private final WorldMail mail = mock(WorldMail.class);
     private final IdManager ids = mock(IdManager.class);
     private final TransactionTemplate transactions = mock(TransactionTemplate.class);
+
+    private final List<Boolean> answers = new ArrayList<>();
 
     private PlayerPersistenceManager manager;
 
@@ -74,6 +84,7 @@ class PlayerPersistenceManagerTest {
         doAnswer(invocation -> invocation.<TransactionCallback<?>>getArgument(0).doInTransaction(null))
                 .when(transactions)
                 .execute(any());
+        when(ids.findId(OBJECT_ID)).thenReturn(Optional.of(CHARACTER_ID));
         manager = new PlayerPersistenceManager(
                 characters,
                 subclasses,
@@ -100,29 +111,84 @@ class PlayerPersistenceManagerTest {
     @Nested
     class DeleteCharacter {
         @Test
-        void deleteCharacter_shouldReturnMailThenDeleteRowsThenReleaseHandles() {
+        void deleteCharacter_shouldSettleMailThenDeleteRowsThenReleaseHandles() {
             final int itemHandle = OBJECT_ID + 1;
             when(items.deleteByOwner(OBJECT_ID)).thenReturn(List.of(itemHandle));
+            settleMail(true);
 
-            manager.deleteCharacter(OBJECT_ID);
+            manager.deleteCharacter(OBJECT_ID, answers::add);
 
             final InOrder order = inOrder(mail, items, characters, ids);
-            order.verify(mail).deleteMailOfCharacter(OBJECT_ID);
+            order.verify(mail).onCharacterDeleted(eq(CHARACTER_ID), any());
             order.verify(items).deleteByOwner(OBJECT_ID);
             order.verify(characters).delete(OBJECT_ID);
             order.verify(ids).releaseId(itemHandle);
             order.verify(ids).releaseId(OBJECT_ID);
+            assertThat(answers).containsExactly(true);
         }
 
         @Test
-        void deleteCharacter_shouldKeepHandle_whenDeletionFails() {
-            doThrow(new DataIntegrityViolationException("mail")).when(mail).deleteMailOfCharacter(OBJECT_ID);
+        void deleteCharacter_shouldKeepCharacter_whenMailIsNotSettled() {
+            settleMail(false);
 
-            assertThatThrownBy(() -> manager.deleteCharacter(OBJECT_ID))
-                    .isInstanceOf(DataIntegrityViolationException.class);
+            manager.deleteCharacter(OBJECT_ID, answers::add);
 
             verify(characters, never()).delete(anyInt());
             verify(ids, never()).releaseId(anyInt());
+            assertThat(answers).containsExactly(false);
+        }
+
+        @Test
+        void deleteCharacter_shouldKeepHandles_whenRowDeletionFails() {
+            settleMail(true);
+            doThrow(new DataIntegrityViolationException("character"))
+                    .when(characters)
+                    .delete(OBJECT_ID);
+
+            manager.deleteCharacter(OBJECT_ID, answers::add);
+
+            verify(ids, never()).releaseId(anyInt());
+            assertThat(answers).containsExactly(false);
+        }
+
+        @Test
+        void deleteCharacter_shouldSettleMailOnce_whenDeletionIsUnderWay() {
+            manager.deleteCharacter(OBJECT_ID, answers::add);
+            manager.deleteCharacter(OBJECT_ID, answers::add);
+
+            verify(mail, times(1)).onCharacterDeleted(eq(CHARACTER_ID), any());
+            assertThat(answers).isEmpty();
+        }
+
+        @Test
+        void deleteCharacter_shouldRetry_whenPreviousAttemptWasRefused() {
+            settleMail(false);
+            manager.deleteCharacter(OBJECT_ID, answers::add);
+            settleMail(true);
+
+            manager.deleteCharacter(OBJECT_ID, answers::add);
+
+            verify(characters).delete(OBJECT_ID);
+            assertThat(answers).containsExactly(false, true);
+        }
+
+        @Test
+        void deleteCharacter_shouldAnswerFalse_whenCharacterWasNeverStored() {
+            when(ids.findId(OBJECT_ID)).thenReturn(Optional.empty());
+
+            manager.deleteCharacter(OBJECT_ID, answers::add);
+
+            verify(mail, never()).onCharacterDeleted(any(), any());
+            assertThat(answers).containsExactly(false);
+        }
+
+        private void settleMail(boolean settled) {
+            doAnswer(invocation -> {
+                        invocation.<Consumer<Boolean>>getArgument(1).accept(settled);
+                        return null;
+                    })
+                    .when(mail)
+                    .onCharacterDeleted(eq(CHARACTER_ID), any());
         }
     }
 

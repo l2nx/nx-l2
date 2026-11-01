@@ -1,0 +1,53 @@
+{
+  "snapshot": {
+    "title": "Attachment snapshots: classic build versus L2NX",
+    "desc": "One letter with a +7 sword with Fire 150 attached, received on two servers. Classic build: the attachment is the live item only, so after the receive the letter lists nothing. L2NX: the live item moves to the inventory and the letter keeps the immutable snapshot taken at send, marked as received.",
+    "classic_title": "Classic build",
+    "l2nx_title": "L2NX",
+    "subject": "A gift for you",
+    "enchant": "+7",
+    "detail": "Fire 150",
+    "receive": "Receive",
+    "inventory": "inventory",
+    "empty": "no attachments",
+    "classic_caption": "Attachment = live item: nothing left after receive",
+    "l2nx_caption": "Attachment = snapshot + live item: snapshot stays"
+  },
+  "transaction": {
+    "title": "Receive persistence: classic build versus L2NX",
+    "desc": "Classic build: the receiver and the letter are written separately; a crash between the writes persists the item in both. L2NX: one ACID transaction; a crash before the commit rolls everything back, the retry with the same idempotency key commits once, and a further retry with that key is replayed without executing.",
+    "classic_title": "Classic build",
+    "l2nx_title": "L2NX",
+    "database": "database",
+    "row_receiver": "receiver",
+    "row_mail": "letter",
+    "save1": "save receiver",
+    "save2": "save letter",
+    "dupe": "DUPE",
+    "two": "two swords after restart",
+    "classic_caption": "Two writes, no transaction: a crash in between dupes",
+    "tx": "transaction",
+    "nothing": "crash before commit: rolled back",
+    "retry": "retry, same key",
+    "committed": "committed once",
+    "again": "retry, same key",
+    "replayed": "key exists: replayed, not executed",
+    "l2nx_caption": "One ACID transaction, idempotent by key"
+  },
+  "race": {
+    "title": "Receive and cancel racing on one letter: conditional update",
+    "desc": "Receive and Cancel on one letter at the same moment. Both are conditional updates WHERE attachments = ATTACHED on the letter row; the receive commits first and the row becomes RECEIVED, the cancel matches no row and is refused with already received.",
+    "heading": "Receive and cancel, concurrent",
+    "receiver": "receiver",
+    "sender": "sender",
+    "receive": "Receive",
+    "cancel": "Cancel",
+    "mail": "letter",
+    "attached": "ATTACHED",
+    "received": "RECEIVED",
+    "condition": "WHERE ATTACHED",
+    "win": "Receive: committed",
+    "lose": "Cancel: 0 rows, refused",
+    "caption": "Optimistic concurrency on the row: one commit"
+  }
+}

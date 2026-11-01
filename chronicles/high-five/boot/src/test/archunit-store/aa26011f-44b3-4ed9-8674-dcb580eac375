@@ -45,8 +45,6 @@ Class <app.l2nx.highfive.repository.item.ItemElementalRepository> does not resid
 Class <app.l2nx.highfive.repository.item.ItemRepository> does not reside in the repository package of a slice in (ItemRepository.java:0)
 Class <app.l2nx.highfive.repository.item.ItemVariableRepository> does not reside in the repository package of a slice in (ItemVariableRepository.java:0)
 Class <app.l2nx.highfive.repository.item.PrimeShopTransactionRepository> does not reside in the repository package of a slice in (PrimeShopTransactionRepository.java:0)
-Class <app.l2nx.highfive.repository.mail.CustomMailRepository> does not reside in the repository package of a slice in (CustomMailRepository.java:0)
-Class <app.l2nx.highfive.repository.mail.MailRepository> does not reside in the repository package of a slice in (MailRepository.java:0)
 Class <app.l2nx.highfive.repository.minigame.LotteryRepository> does not reside in the repository package of a slice in (LotteryRepository.java:0)
 Class <app.l2nx.highfive.repository.minigame.MonsterRaceRepository> does not reside in the repository package of a slice in (MonsterRaceRepository.java:0)
 Class <app.l2nx.highfive.repository.offline.OfflinePlayRepository> does not reside in the repository package of a slice in (OfflinePlayRepository.java:0)

@@ -25,9 +25,11 @@ package app.l2nx.highfive.network;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
+import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -103,10 +105,30 @@ public class Disconnection {
     }
 
     /**
-     * Stores the player's data and deletes it if the player is online.<br>
+     * Stores the player's data and deletes it if the player is online, once no value transaction of the character is
+     * in flight: a save of the memory before its outcome would undo the committed move.<br>
      * If an error occurs during the process, a warning is logged.
      */
     public void storeAndDelete() {
+        if (player == null) {
+            store();
+            return;
+        }
+        IdManager.getInstance()
+                .findId(player.getObjectId())
+                .ifPresentOrElse(
+                        id -> WorldPartition.inFlightCharacters().whenIdle(id, () -> storeAndRelease(id)), this::store);
+    }
+
+    private void storeAndRelease(UUID characterId) {
+        try {
+            store();
+        } finally {
+            WorldPartition.loadedCharacters().release(characterId, player);
+        }
+    }
+
+    private void store() {
         try {
             if (player != null) {
                 player.storeMe();

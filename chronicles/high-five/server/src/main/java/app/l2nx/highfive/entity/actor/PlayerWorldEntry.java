@@ -61,6 +61,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.login.LoginService;
+import app.l2nx.highfive.mail.WorldMail;
 import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.managers.CastleManager;
@@ -70,7 +71,6 @@ import app.l2nx.highfive.managers.DimensionalRiftManager;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.managers.FortSiegeManager;
 import app.l2nx.highfive.managers.InstanceManager;
-import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PetitionManager;
 import app.l2nx.highfive.managers.PunishmentManager;
@@ -99,7 +99,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.Die;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.EtcStatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBasicActionList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExGetBookMarkInfoPacket;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.ExNoticePostArrived;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExNotifyPremiumItem;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExRotation;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowContactList;
@@ -556,9 +555,7 @@ public final class PlayerWorldEntry {
             player.destroyItem(ItemProcessType.DESTROY, player.getInventory().getItemByItemId(8689), null, true);
         }
 
-        if (GeneralConfig.ALLOW_MAIL && MailManager.getInstance().hasUnreadPost(player)) {
-            player.sendPacket(ExNoticePostArrived.valueOf(false));
-        }
+        WorldMail.getInstance().onWorldEntered(player);
 
         if (ScreenWelcomeMessageConfig.WELCOME_MESSAGE_ENABLED) {
             player.sendPacket(new ExShowScreenMessage(

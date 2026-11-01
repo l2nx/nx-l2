@@ -6,6 +6,7 @@ package app.l2nx.highfive.managers;
 
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
+import app.l2nx.highfive.mail.WorldMail;
 import app.l2nx.highfive.repository.character.CharacterHennaRepository;
 import app.l2nx.highfive.repository.character.CharacterInstanceTimeRepository;
 import app.l2nx.highfive.repository.character.CharacterItemReuseRepository;
@@ -38,15 +39,21 @@ import app.l2nx.highfive.repository.character.model.CharacterSubclass;
 import app.l2nx.highfive.repository.character.model.CharacterTeleportBookmark;
 import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import app.l2nx.highfive.repository.item.ItemRepository;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@Slf4j
 @Component
 public class PlayerPersistenceManager {
     private static volatile PlayerPersistenceManager instance;
@@ -68,9 +75,11 @@ public class PlayerPersistenceManager {
     private final CharacterVariableRepository variableRepository;
     private final CharacterInstanceTimeRepository instanceTimeRepository;
     private final ItemRepository itemRepository;
-    private final MailManager mailManager;
+    private final WorldMail worldMail;
     private final IdManager idManager;
     private final TransactionTemplate transactionTemplate;
+    // World loop only.
+    private final IntSet deleting = new IntOpenHashSet();
 
     public PlayerPersistenceManager(
             CharacterRepository characterRepository,
@@ -90,7 +99,7 @@ public class PlayerPersistenceManager {
             CharacterVariableRepository variableRepository,
             CharacterInstanceTimeRepository instanceTimeRepository,
             ItemRepository itemRepository,
-            MailManager mailManager,
+            WorldMail worldMail,
             IdManager idManager,
             TransactionTemplate transactionTemplate) {
         this.characterRepository = characterRepository;
@@ -110,7 +119,7 @@ public class PlayerPersistenceManager {
         this.variableRepository = variableRepository;
         this.instanceTimeRepository = instanceTimeRepository;
         this.itemRepository = itemRepository;
-        this.mailManager = mailManager;
+        this.worldMail = worldMail;
         this.idManager = idManager;
         this.transactionTemplate = transactionTemplate;
         instance = this;
@@ -175,17 +184,47 @@ public class PlayerPersistenceManager {
     }
 
     /**
-     * The handles of the character and its items are released only after the commit, so a failed deletion keeps them.
+     * Rows are removed only after the mail settlement committed, so a refused one keeps the character for retry. A
+     * deletion already under way answers its first caller only.
+     *
+     * @param deleted on the world loop: whether the character is gone
      */
-    public void deleteCharacter(int objectId) {
-        final List<Integer> itemHandles = transactionTemplate.execute(status -> {
-            mailManager.deleteMailOfCharacter(objectId);
-            final List<Integer> deleted = itemRepository.deleteByOwner(objectId);
-            characterRepository.delete(objectId);
-            return deleted;
+    public void deleteCharacter(int objectId, Consumer<Boolean> deleted) {
+        final Optional<UUID> characterId = idManager.findId(objectId);
+        if (characterId.isEmpty()) {
+            log.warn("Character {} not deleted: it was never stored", objectId);
+            deleted.accept(false);
+            return;
+        }
+        if (!deleting.add(objectId)) {
+            return;
+        }
+        worldMail.onCharacterDeleted(characterId.get(), settled -> {
+            deleting.remove(objectId);
+            if (!settled) {
+                log.warn("Character {} kept for the next deletion attempt: its mail is not settled", objectId);
+                deleted.accept(false);
+                return;
+            }
+            deleted.accept(deleteRows(objectId));
         });
+    }
+
+    private boolean deleteRows(int objectId) {
+        final List<Integer> itemHandles;
+        try {
+            itemHandles = transactionTemplate.execute(status -> {
+                final List<Integer> deletedItems = itemRepository.deleteByOwner(objectId);
+                characterRepository.delete(objectId);
+                return deletedItems;
+            });
+        } catch (DataAccessException e) {
+            log.error("Error deleting character {}.", objectId, e);
+            return false;
+        }
         itemHandles.forEach(idManager::releaseId);
         idManager.releaseId(objectId);
+        return true;
     }
 
     public List<CharacterSubclass> findSubclasses(int objectId) {

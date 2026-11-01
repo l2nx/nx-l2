@@ -5,6 +5,7 @@
 package app.l2nx.highfive.boot.architecture.layout;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.equivalentTo;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -37,8 +38,10 @@ import org.springframework.stereotype.Repository;
 public final class SliceLayoutRules {
     public static final String CHRONICLE_ROOT = "app.l2nx.highfive";
     static final List<String> MIGRATED =
-            List.of("login", "movement", "partition", "message", "action", "character", "chat");
+            List.of("login", "movement", "partition", "message", "action", "character", "chat", "mail");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
+    public static final String ENGINE_ROOT = "app.l2nx.engine";
+    static final SliceLayoutRules ENGINE = new SliceLayoutRules(ENGINE_ROOT, List.of("mail"));
 
     /**
      * Legacy connection classes migrated slices may still use until the network layer has client-connection ports;
@@ -137,6 +140,8 @@ public final class SliceLayoutRules {
                 .resideInAPackage(root + "..")
                 .and()
                 .areAssignableTo(ViewEvent.class)
+                // The marker itself is engine/core API and lies inside the engine root.
+                .and(not(equivalentTo(ViewEvent.class)))
                 .should()
                 .resideInAnyPackage(packages("view"))
                 .as("a view event lives in the view package of a slice")

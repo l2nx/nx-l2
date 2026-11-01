@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.identity.WireHandleAllocator;
@@ -20,17 +21,21 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.item.ItemVariableRepository;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
@@ -58,6 +63,7 @@ class ItemContainerTest {
     private final EtcItem single = new EtcItem(new StatSet(Map.of("item_id", SWORD_ID, "name", "Single")));
     private final EtcItem stackable =
             new EtcItem(new StatSet(Map.of("item_id", ARROW_ID, "name", "Stack", "is_stackable", true)));
+    private final ItemRepository items = mock(ItemRepository.class);
 
     @BeforeEach
     void managers() {
@@ -70,7 +76,7 @@ class ItemContainerTest {
                 .when(transactions)
                 .executeWithoutResult(any());
         new ItemManager(
-                mock(ItemRepository.class),
+                items,
                 mock(ItemAugmentationRepository.class),
                 mock(ItemElementalRepository.class),
                 mock(ItemVariableRepository.class),
@@ -535,8 +541,169 @@ class ItemContainerTest {
         }
     }
 
+    @Nested
+    class Pending {
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("mutations")
+        void mutation_shouldChangeNothing_whenTheItemIsPending(BiFunction<Bag, Item, Item> mutation) {
+            final Bag bag = new Bag();
+            final Item[] result = new Item[1];
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                result[0] = whilePending(arrows, () -> mutation.apply(bag, arrows));
+                return bag.getInventoryItemCount(ARROW_ID, -1);
+            });
+
+            assertThat(result[0]).isNull();
+            assertThat(actual).isEqualTo(10);
+            verifyNoInteractions(items);
+        }
+
+        static Stream<Named<BiFunction<Bag, Item, Item>>> mutations() {
+            return Stream.of(
+                    Named.of("destroyItem", (bag, item) -> bag.destroyItem(ItemProcessType.NONE, item, null, null)),
+                    Named.of(
+                            "destroyItem part",
+                            (bag, item) -> bag.destroyItem(ItemProcessType.NONE, item, 4, null, null)),
+                    Named.of(
+                            "destroyItem by object id",
+                            (bag, item) -> bag.destroyItem(ItemProcessType.NONE, item.getObjectId(), 4, null, null)),
+                    Named.of(
+                            "destroyItemByItemId",
+                            (bag, item) -> bag.destroyItemByItemId(ItemProcessType.NONE, ARROW_ID, 4, null, null)),
+                    Named.of(
+                            "transferItem",
+                            (bag, item) -> bag.transferItem(
+                                    ItemProcessType.NONE, item.getObjectId(), 4, new Bag(), null, null)));
+        }
+
+        @Test
+        void transferItem_shouldMoveNothing_whenTheTargetStackIsPending() {
+            final Bag source = new Bag();
+            final Bag target = new Bag();
+            final Item[] transferred = new Item[1];
+            final long[] actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                final Item held = stack(5);
+                source.put(arrows);
+                target.put(held);
+                transferred[0] = whilePending(
+                        held,
+                        () -> source.transferItem(ItemProcessType.NONE, arrows.getObjectId(), 4, target, null, null));
+                return new long[] {
+                    source.getInventoryItemCount(ARROW_ID, -1), target.getInventoryItemCount(ARROW_ID, -1)
+                };
+            });
+
+            assertThat(transferred[0]).isNull();
+            assertThat(actual).containsExactly(10, 5);
+        }
+
+        @Test
+        void destroyAllItems_shouldKeepThePendingItem() {
+            final Bag bag = new Bag();
+            final Item[] pending = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                pending[0] = item(single);
+                bag.put(pending[0]);
+                bag.put(stack(3));
+                return whilePending(pending[0], () -> {
+                    bag.destroyAllItems(ItemProcessType.NONE, null, null);
+                    return bag.getItems();
+                });
+            });
+
+            assertThat(actual).containsExactly(pending[0]);
+        }
+    }
+
+    @Nested
+    class Committed {
+        @Test
+        void changeCommitted_shouldChangeTheCountWithoutWriting() {
+            final Bag bag = new Bag();
+            final boolean[] changed = new boolean[2];
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                changed[0] = bag.changeCommitted(arrows, -4);
+                changed[1] = bag.changeCommitted(arrows, 7);
+                return bag.getInventoryItemCount(ARROW_ID, -1);
+            });
+
+            assertThat(changed).containsExactly(true, true);
+            assertThat(actual).isEqualTo(13);
+            verifyNoInteractions(items);
+        }
+
+        @ParameterizedTest(name = "delta {0}")
+        @ValueSource(longs = {-10, -11})
+        void changeCommitted_shouldRefuse_whenNothingWouldBeLeft(long delta) {
+            final Bag bag = new Bag();
+            final boolean[] changed = new boolean[1];
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                changed[0] = bag.changeCommitted(arrows, delta);
+                return bag.getInventoryItemCount(ARROW_ID, -1);
+            });
+
+            assertThat(changed[0]).isFalse();
+            assertThat(actual).isEqualTo(10);
+        }
+
+        @Test
+        void removeCommitted_shouldTakeTheItemOutWithoutWriting() {
+            final Bag bag = new Bag();
+            final boolean[] removed = new boolean[1];
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                removed[0] = bag.removeCommitted(arrows);
+                return bag.getSize();
+            });
+
+            assertThat(removed[0]).isTrue();
+            assertThat(actual).isZero();
+            verifyNoInteractions(items);
+        }
+
+        @Test
+        void removeCommitted_shouldRefuse_whenTheContainerDoesNotHoldTheItem() {
+            final Bag bag = new Bag();
+            final boolean actual = WorldLoopExtension.callInPass(() -> bag.removeCommitted(stack(10)));
+
+            assertThat(actual).isFalse();
+        }
+
+        @Test
+        void addCommitted_shouldPutTheItemInWithoutWriting() {
+            final Bag bag = new Bag();
+            final Item[] expected = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                expected[0] = stack(10);
+                bag.addCommitted(expected[0]);
+                return bag.getItems();
+            });
+
+            assertThat(actual).containsExactly(expected[0]);
+            verifyNoInteractions(items);
+        }
+    }
+
     private Item item(EtcItem template) {
         return new Item(registry.allocateTransient(), template);
+    }
+
+    static <T> T whilePending(Item item, Supplier<T> body) {
+        final IntList handle = IntList.of(item.getObjectId());
+        WorldPartition.pendingItems().reserve(handle);
+        try {
+            return body.get();
+        } finally {
+            WorldPartition.pendingItems().release(handle);
+        }
     }
 
     private Item stack(long count) {
@@ -545,7 +712,6 @@ class ItemContainerTest {
         return item;
     }
 
-    // The container's own add and remove, without the database writes of its public add paths.
     static final class Bag extends ItemContainer {
         void put(Item item) {
             addItem(item);

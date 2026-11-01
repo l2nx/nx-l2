@@ -29,6 +29,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 @ExtendWith(ClockBridgeExtension.class)
@@ -87,11 +89,12 @@ class CharacterServiceTest {
                             .build());
         }
 
-        @Test
-        void showCharacterList_shouldDeleteAnExpiredCharacterAndLeaveItOut() {
+        @ParameterizedTest(name = "due {0} min before now -> deleted")
+        @ValueSource(longs = {1440, 0})
+        void showCharacterList_shouldDeleteAnExpiredCharacterAndLeaveItOut(long minutesBeforeNow) {
             final CharacterRow expired = CharacterRow.builder()
                     .objectId(1)
-                    .deleteAt(ClockBridgeExtension.WALL_START.minus(Duration.ofDays(1)))
+                    .deleteAt(ClockBridgeExtension.WALL_START.minus(Duration.ofMinutes(minutesBeforeNow)))
                     .build();
             when(slots.findByAccount(accountId)).thenReturn(List.of(expired));
 

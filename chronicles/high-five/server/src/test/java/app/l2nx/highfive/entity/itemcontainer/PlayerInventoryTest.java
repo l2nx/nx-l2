@@ -25,6 +25,7 @@ import app.l2nx.highfive.repository.item.ItemVariableRepository;
 import app.l2nx.highfive.util.StatSet;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ResourceLock(WorldLoopExtension.LOCK)
 class PlayerInventoryTest {
     private static final int QUEST_ITEM_ID = 20_000_040;
+    private static final int RING_ID = 20_000_041;
 
     private final IdentityRegistry registry =
             new IdentityRegistry(new WireHandleAllocator(Clock.systemUTC(), Duration.ofMinutes(5)));
@@ -49,6 +51,7 @@ class PlayerInventoryTest {
             new EtcItem(new StatSet(Map.of("item_id", QUEST_ITEM_ID, "name", "Quest", "is_questitem", true)));
     private final EtcItem adena =
             new EtcItem(new StatSet(Map.of("item_id", Inventory.ADENA_ID, "name", "Adena", "is_stackable", true)));
+    private final EtcItem ring = new EtcItem(new StatSet(Map.of("item_id", RING_ID, "name", "Ring")));
 
     @BeforeEach
     void managers() {
@@ -121,6 +124,58 @@ class PlayerInventoryTest {
             });
 
             assertThat(actual).isEqualTo(100);
+        }
+    }
+
+    @Nested
+    class DestroyItemByItemId {
+        @Test
+        void destroyItemByItemId_shouldDestroyOnlyItemsNotPending() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] pending = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                pending[0] = item(ring);
+                inventory.addItem(pending[0]);
+                inventory.addItem(item(ring));
+                inventory.addItem(item(ring));
+                return ItemContainerTest.whilePending(pending[0], () -> {
+                    inventory.destroyItemByItemId(ItemProcessType.NONE, RING_ID, 2, null, null);
+                    return inventory.getItems();
+                });
+            });
+
+            assertThat(actual).containsExactly(pending[0]);
+        }
+
+        @Test
+        void destroyItemByItemId_shouldDestroyNothing_whenOnlyPendingItemsCoverTheCount() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] destroyed = new Item[1];
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                final Item pending = item(ring);
+                inventory.addItem(pending);
+                inventory.addItem(item(ring));
+                destroyed[0] = ItemContainerTest.whilePending(
+                        pending, () -> inventory.destroyItemByItemId(ItemProcessType.NONE, RING_ID, 2, null, null));
+                return inventory.getSize();
+            });
+
+            assertThat(destroyed[0]).isNull();
+            assertThat(actual).isEqualTo(2);
+        }
+    }
+
+    @Nested
+    class AddCommitted {
+        @Test
+        void addCommitted_shouldTrackTheAdena() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                inventory.addCommitted(stack(adena, 70));
+                return inventory.getAdena();
+            });
+
+            assertThat(actual).isEqualTo(70);
         }
     }
 

@@ -15,7 +15,8 @@ catches outputs that drifted from their sources.
 | `spaces.svg.tmpl` | under the hood: open world, instances and olympiad, each space on its own thread     |
 | `strings.en.json` | English texts, including `<title>` and `<desc>`                                      |
 | `strings.ru.json` | Russian texts, same keys                                                             |
-| `generate.py`     | timelines, repeated elements, font subsetting, size, font-size and layout checks     |
+| `generate.py`     | timelines, repeated elements and layout checks of these scenes                       |
+| `../svgkit.py`    | shared with the other generators: tokens, font subsetting, chips, output checks, CLI |
 
 ## Regenerate
 
@@ -30,7 +31,7 @@ python -m venv .venv && .venv/bin/pip install -r docs/diagrams/zero-tick/require
 .venv/bin/python -I docs/diagrams/zero-tick/generate.py --fonts ../nx-dev-web/node_modules --palette
 ```
 
-The build fails when an output exceeds 80 KB, when any `font-size` is below 22 (12 px at a 360 px wide render of a
+The build fails when an output is not well-formed XML, when it exceeds 80 KB, when any `font-size` is below 22 (12 px at a 360 px wide render of a
 640 wide viewBox), when a `<text>` has no `font-size` (it would fall back to 16 px), when a tick lane graphic leaves
 its plot area for the counters column, or when a label is too wide for its slot (counters, chips, outcomes, the
 Zero-Tick queues, space labels). The output is byte-for-byte reproducible.

@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.identity.WireHandleAllocator;
@@ -20,14 +21,17 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.item.ItemVariableRepository;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.ints.IntList;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -112,7 +116,10 @@ class ItemTest {
                     Named.of("asPlayer", Item::asPlayer),
                     Named.of("clearEnchantStats", Item::clearEnchantStats),
                     Named.of("setHeading", item -> item.setHeading(0)),
-                    Named.of("restoreFromDb", _ -> Item.restoreFromDb(OWNER_ID, null)));
+                    Named.of("restoreFromDb", _ -> Item.restoreFromDb(OWNER_ID, null)),
+                    Named.of("restoreCommitted", _ -> Item.restoreCommitted(OWNER_ID, null, null, List.of())),
+                    Named.of("isPending", Item::isPending),
+                    Named.of("hasRow", Item::hasRow));
         }
 
         @Test
@@ -234,6 +241,25 @@ class ItemTest {
             verify(items).insert(eq(OWNER_ID), any(ItemRow.class));
             verify(items).update(eq(OWNER_ID), any(ItemRow.class));
             verify(items).delete(objectId);
+        }
+
+        @Test
+        void updateDatabase_shouldWriteNothing_whenTheItemIsPending() {
+            final Item item = item();
+
+            WorldLoopExtension.runInPass(() -> {
+                final IntList handle = IntList.of(item.getObjectId());
+                WorldPartition.pendingItems().reserve(handle);
+                try {
+                    item.setOwnerId(OWNER_ID);
+                    item.setItemLocation(ItemLocation.INVENTORY);
+                    item.updateDatabase(true);
+                } finally {
+                    WorldPartition.pendingItems().release(handle);
+                }
+            });
+
+            verifyNoInteractions(items);
         }
     }
 

@@ -593,7 +593,7 @@ public abstract class Inventory extends ItemContainer {
 
     public Item dropItem(ItemProcessType process, Item item, Player actor, Object reference) {
         WorldPartition.checkOwner();
-        if ((item == null) || (getItemByObjectId(item.getObjectId()) == null)) {
+        if ((item == null) || (getItemByObjectId(item.getObjectId()) == null) || item.isPending()) {
             return null;
         }
 
@@ -610,7 +610,7 @@ public abstract class Inventory extends ItemContainer {
     public Item dropItem(ItemProcessType process, int objectId, long count, Player actor, Object reference) {
         WorldPartition.checkOwner();
         final Item item = getItemByObjectId(objectId);
-        if (item == null) {
+        if ((item == null) || item.isPending()) {
             return null;
         }
 
@@ -896,6 +896,10 @@ public abstract class Inventory extends ItemContainer {
 
     public void equipItem(Item item) {
         WorldPartition.checkOwner();
+        if (item.isPending()) {
+            return;
+        }
+
         if (getOwner().isPlayer()) {
             if (getOwner().asPlayer().isInStoreMode()) {
                 return;

@@ -33,7 +33,6 @@ import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.ChatModerationConfig;
 import app.l2nx.highfive.config.custom.ClassBalanceConfig;
 import app.l2nx.highfive.config.custom.CommunityBoardConfig;
-import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
 import app.l2nx.highfive.config.custom.DelevelManagerConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
@@ -105,7 +104,6 @@ public class ConfigLoader {
         ChatModerationConfig.load();
         ClassBalanceConfig.load();
         CommunityBoardConfig.load();
-        CustomMailManagerConfig.load();
         DelevelManagerConfig.load();
         DualboxCheckConfig.load();
         FactionSystemConfig.load();

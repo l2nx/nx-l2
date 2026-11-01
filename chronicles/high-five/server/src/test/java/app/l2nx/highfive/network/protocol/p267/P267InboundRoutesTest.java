@@ -7,6 +7,17 @@ package app.l2nx.highfive.network.protocol.p267;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.engine.core.session.command.Command;
+import app.l2nx.engine.mail.command.CancelMail;
+import app.l2nx.engine.mail.command.DeleteReceivedMail;
+import app.l2nx.engine.mail.command.DeleteSentMail;
+import app.l2nx.engine.mail.command.ListMailableItems;
+import app.l2nx.engine.mail.command.ListReceivedMail;
+import app.l2nx.engine.mail.command.ListSentMail;
+import app.l2nx.engine.mail.command.OpenReceivedMail;
+import app.l2nx.engine.mail.command.OpenSentMail;
+import app.l2nx.engine.mail.command.ReceiveAttachments;
+import app.l2nx.engine.mail.command.ReturnMail;
+import app.l2nx.engine.mail.command.SendMail;
 import app.l2nx.highfive.chat.command.SendChat;
 import app.l2nx.highfive.login.command.Authenticate;
 import app.l2nx.highfive.network.protocol.OpcodeTable.Route;
@@ -65,7 +76,63 @@ class P267InboundRoutesTest {
                     pinned("NET_PING answer", NET_PING_ANSWER, Route.NO_EX_OPCODE, RouteKind.CONNECTION, null),
                     pinned("REQUEST_MANOR_LIST", P267Inbound.EX_PREFIX, 0x01, RouteKind.LEGACY, null),
                     pinned("REQUEST_SERVER_LOGIN", P267Inbound.EX_PREFIX, 0x1A, RouteKind.IGNORE, null),
-                    pinned("EX_BOOKMARK_PACKET", P267Inbound.EX_PREFIX, 0x51, RouteKind.LEGACY, null));
+                    pinned("EX_BOOKMARK_PACKET", P267Inbound.EX_PREFIX, 0x51, RouteKind.LEGACY, null),
+                    pinned(
+                            "REQUEST_POST_ITEM_LIST",
+                            P267Inbound.EX_PREFIX,
+                            0x65,
+                            RouteKind.COMMAND,
+                            ListMailableItems.class),
+                    pinned("REQUEST_SEND_POST", P267Inbound.EX_PREFIX, 0x66, RouteKind.COMMAND, SendMail.class),
+                    pinned(
+                            "REQUEST_RECEIVED_POST_LIST",
+                            P267Inbound.EX_PREFIX,
+                            0x67,
+                            RouteKind.COMMAND,
+                            ListReceivedMail.class),
+                    pinned(
+                            "REQUEST_DELETE_RECEIVED_POST",
+                            P267Inbound.EX_PREFIX,
+                            0x68,
+                            RouteKind.COMMAND,
+                            DeleteReceivedMail.class),
+                    pinned(
+                            "REQUEST_RECEIVED_POST",
+                            P267Inbound.EX_PREFIX,
+                            0x69,
+                            RouteKind.COMMAND,
+                            OpenReceivedMail.class),
+                    pinned(
+                            "REQUEST_POST_ATTACHMENT",
+                            P267Inbound.EX_PREFIX,
+                            0x6A,
+                            RouteKind.COMMAND,
+                            ReceiveAttachments.class),
+                    pinned(
+                            "REQUEST_REJECT_POST_ATTACHMENT",
+                            P267Inbound.EX_PREFIX,
+                            0x6B,
+                            RouteKind.COMMAND,
+                            ReturnMail.class),
+                    pinned(
+                            "REQUEST_SENT_POST_LIST",
+                            P267Inbound.EX_PREFIX,
+                            0x6C,
+                            RouteKind.COMMAND,
+                            ListSentMail.class),
+                    pinned(
+                            "REQUEST_DELETE_SENT_POST",
+                            P267Inbound.EX_PREFIX,
+                            0x6D,
+                            RouteKind.COMMAND,
+                            DeleteSentMail.class),
+                    pinned("REQUEST_SENT_POST", P267Inbound.EX_PREFIX, 0x6E, RouteKind.COMMAND, OpenSentMail.class),
+                    pinned(
+                            "REQUEST_CANCEL_POST_ATTACHMENT",
+                            P267Inbound.EX_PREFIX,
+                            0x6F,
+                            RouteKind.COMMAND,
+                            CancelMail.class));
         }
 
         @Test

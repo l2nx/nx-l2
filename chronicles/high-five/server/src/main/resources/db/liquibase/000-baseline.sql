@@ -127,29 +127,6 @@ CREATE INDEX characters_apprentice_id_idx ON characters (apprentice_id);
 
 CREATE INDEX characters_sponsor_id_idx ON characters (sponsor_id);
 
-CREATE TABLE mails (
-    id uuid PRIMARY KEY,
-    -- NULL: sent by the system (item auction, custom mail, news).
-    sender_id uuid REFERENCES characters (id) ON DELETE CASCADE,
-    -- No ON DELETE: deleting a character must first bounce its incoming mail (attachments back to the sender),
-    -- a cascade would destroy the sender's items.
-    receiver_id uuid NOT NULL REFERENCES characters (id),
-    subject text CHECK (subject <> ''),
-    content text CHECK (content <> ''),
-    expires_at timestamptz NOT NULL,
-    cod_price bigint CHECK (cod_price > 0),
-    has_attachments boolean NOT NULL,
-    unread boolean NOT NULL,
-    deleted_by_sender boolean NOT NULL,
-    deleted_by_receiver boolean NOT NULL,
-    sender_type text NOT NULL CHECK (sender_type IN ('PLAYER', 'NEWS', 'NONE', 'ALEGRIA')),
-    returned boolean NOT NULL
-);
-
-CREATE INDEX mails_sender_id_idx ON mails (sender_id);
-
-CREATE INDEX mails_receiver_id_idx ON mails (receiver_id);
-
 CREATE TABLE items (
     id uuid PRIMARY KEY,
     -- Character, or clan for CLANWH; no FK because the target table varies. NULL while the item is attached to a
@@ -162,7 +139,8 @@ CREATE TABLE items (
         'INVENTORY', 'PAPERDOLL', 'WAREHOUSE', 'CLANWH', 'PET', 'PET_EQUIP', 'MAIL', 'FREIGHT')),
     -- Paperdoll slot for PAPERDOLL and PET_EQUIP, client sort order for INVENTORY.
     location_slot integer,
-    mail_id uuid REFERENCES mails (id) ON DELETE CASCADE,
+    -- Its foreign key to mails, a table of the mail module, is added after that module's changelog.
+    mail_id uuid,
     -- Sent to the client as is; reused by lottery tickets, race tickets and pet control items.
     custom_type1 integer NOT NULL,
     custom_type2 integer NOT NULL,
@@ -263,19 +241,6 @@ CREATE TABLE character_summon_skill_saves (
     buff_index integer NOT NULL,
     PRIMARY KEY (character_id, class_index, summon_skill_id, skill_id, skill_level)
 );
-
--- Delivery queue filled by outside writers; rows are delivered and deleted when the receiver is online.
-CREATE TABLE custom_mails (
-    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    character_id uuid NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
-    subject text NOT NULL CHECK (subject <> ''),
-    content text NOT NULL CHECK (content <> ''),
-    -- "templateId count [enchant];templateId count;..."; NULL: no attachments.
-    items text CHECK (items <> '')
-);
-
-CREATE INDEX custom_mails_character_id_idx ON custom_mails (character_id);
 
 CREATE TABLE buylist_stocks (
     buylist_id integer NOT NULL,

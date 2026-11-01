@@ -26,25 +26,28 @@
  */
 package app.l2nx.highfive.scripts.events.CharacterBirthday;
 
+import app.l2nx.engine.mail.MailType;
+import app.l2nx.engine.mail.NewItem;
+import app.l2nx.engine.mail.SystemMail;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.mail.WorldMail;
 import app.l2nx.highfive.managers.CharacterBirthdayManager;
-import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
 import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
 import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
 import app.l2nx.highfive.mechanics.events.holders.OnDailyReset;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.network.enums.MessageSenderType;
-import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.highfive.repository.character.model.BirthdayCharacter;
 import app.l2nx.highfive.util.LocationUtil;
+import com.github.f4b6a3.uuid.UuidCreator;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,14 +55,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class CharacterBirthday extends Script {
-    // NPCs
     private static final int ALEGRIA = 32600;
     private static final int[] GATEKEEPERS = {
         30006, 30059, 30080, 30134, 30146, 30177, 30233, 30256, 30320, 30540, 30576, 30836, 30848, 30878, 30899, 31275,
         31320, 31964, 32163
     };
 
-    // Misc
     private static int SPAWNS = 0;
 
     private CharacterBirthday() {
@@ -78,13 +79,11 @@ public class CharacterBirthday extends Script {
 
             htmltext = null;
         } else if (event.equalsIgnoreCase("change")) {
-            // Change Hat
             if (hasQuestItems(player, 10250)) {
                 takeItems(player, 10250, 1); // Adventurer Hat (Event)
                 giveItems(player, 21594, 1); // Birthday Hat
-                htmltext = null; // FIXME: Probably has html
+                htmltext = null;
 
-                // Despawn npc
                 npc.doDie(player);
                 SPAWNS--;
             } else {
@@ -124,18 +123,30 @@ public class CharacterBirthday extends Script {
                 final String text = GeneralConfig.ALT_BIRTHDAY_MAIL_TEXT
                         .replace("$c1", character.name())
                         .replace("$s1", Integer.toString(character.age()));
-                final MailMessage message = new MailMessage(
-                        character.objectId(), GeneralConfig.ALT_BIRTHDAY_MAIL_SUBJECT, text, MessageSenderType.ALEGRIA);
-                message.createAttachments()
-                        .addItem(ItemProcessType.REWARD, GeneralConfig.ALT_BIRTHDAY_GIFT, 1, null, null);
-                MailManager.getInstance().sendMessage(message);
+                WorldMail.getInstance()
+                        .sendSystem(SystemMail.builder()
+                                .receiverId(character.id())
+                                .type(MailType.BIRTHDAY)
+                                .subject(GeneralConfig.ALT_BIRTHDAY_MAIL_SUBJECT)
+                                .body(text.isBlank() ? null : text)
+                                .items(List.of(NewItem.builder()
+                                        .itemTemplateId(GeneralConfig.ALT_BIRTHDAY_GIFT)
+                                        .count(1)
+                                        .build()))
+                                .idempotencyKey(giftKey(character))
+                                .build());
                 birthdayGiftCount++;
             }
         } catch (RuntimeException e) {
             log.warn("Error checking birthdays. {}", e.getMessage());
         }
 
-        log.info("{} gifts sent.", birthdayGiftCount);
+        log.info("{} birthday gifts submitted.", birthdayGiftCount);
+    }
+
+    /** A repeated daily reset sends a character one gift per anniversary. */
+    private static UUID giftKey(BirthdayCharacter character) {
+        return UuidCreator.getNameBasedSha1(character.id(), MailType.BIRTHDAY.name() + " " + character.year());
     }
 
     public static void main(String[] args) {

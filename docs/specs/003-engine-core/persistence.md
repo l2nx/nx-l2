@@ -57,9 +57,40 @@ one save point.
 - **Balance plus ledger:** stackable values (adena, stackable items) keep a balance with `CHECK (amount >= 0)`; every
   movement also writes an append-only ledger row in the same transaction. The balance serves reads; the ledger serves
   audit and lets a duplication be removed precisely instead of rolling the world back.
-- **Idempotency:** every operation has an `operation_id` (UUIDv7) created in the partition before it is sent; a
-  repeated request with the same id is not executed twice.
+- **Idempotency:** every value transaction carries an `idempotency_key` (`idempotencyKey` in code), the platform's
+  name for a business identity stable across retries. The partition creates it (UUIDv7) for a client action; a script
+  or the platform passes its own. A committed transaction is recorded in `value_transactions` (its own `id`, the
+  key under a unique constraint, type, subject); a repeated request with the same key is not executed again and
+  answers `Replayed` with the recorded subject and its ledger rows, so the caller can bring an online character's
+  memory to the committed state. The runner claims the key before executing, so a concurrent request
+  with the same key waits for the first one and replays it instead of finding its items already moved.
+- **Outcomes** return to the partition inbox: `Committed`, `Replayed`, `Refused` (a condition failed inside the
+  transaction, nothing changed), `Failed` (an error before the commit, nothing changed; the partition releases its
+  marks) or `Unknown` (the commit outcome is not known; the partition keeps its marks and resolves it by looking the
+  key up). The lookup claims the key itself under a short lock timeout: the claim waits for a transaction still
+  committing on a lost connection, conflicts when it committed (`Replayed`) and otherwise is rolled back (`Failed`: the
+  original can no longer commit); no answer within the timeout is `Unknown` again.
 - **Durability:** value transactions commit synchronously.
+- **Runner:** `engine/core` `persistence` runs the transaction on Boot's task executor in a `TransactionTemplate` at
+  `READ COMMITTED`, so a conditional `UPDATE` racing a committed one re-reads the row instead of failing to serialize;
+  no own executor or pool. Meter `l2nx.value.transaction` (timer, tags `type`, `outcome`).
+
+### 3.1 Online and offline sides
+
+- **An online character's items are owned by the partition;** the database lags them until the next save. The
+  transaction writes their absolute state taken from memory under an owner condition and the ledger records the
+  delta.
+- **An offline character's items are owned by the database:** the transaction changes them by delta under
+  `CHECK (count >= 0)`, merging into an existing stack or inserting a row.
+- **In-flight registry:** while a transaction is in flight for a character, the partition does not save its reserved
+  items and holds its world entry and logout until the outcome. A save of the pre-commit memory would otherwise undo
+  a committed move, and a login would load rows the commit is about to change.
+- **Pending marks** are checked in the mutating operations of the item containers, so every path that uses, drops,
+  sells, destroys, equips or moves an item is covered, scripts included.
+- **Apply after commit** changes memory without writing the database again, then releases the marks.
+
+The first consumer is mail ([spec 010 §3.5](../010-mail/spec.md#35-value-transaction-runner-enginecore-persistence)); trade, warehouses, stores and
+the other transfers move onto the same runner one by one.
 
 ## 4. Write-behind
 

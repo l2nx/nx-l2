@@ -8,279 +8,36 @@ Run with `python -I generate.py --fonts <node_modules>`; see README.md.
 
 from __future__ import annotations
 
-import argparse
-import base64
-import html
-import io
 import itertools
-import json
 import math
 import re
 import sys
 from pathlib import Path
 
-from fontTools import subset
-from fontTools.ttLib import TTFont
-from fontTools.varLib import instancer
-
 HERE = Path(__file__).resolve().parent
-OUT_DIR = HERE.parents[1] / "public"
-LOCALES = ("en", "ru")
-MAX_BYTES = 80 * 1024
-W = 640
-# 12 px is the smallest text at a 360 px wide render; the viewBox is 640 wide, so 22 units render at 12.4 px.
-MIN_FONT = 22
+# Run with -I, which leaves the script's directory off sys.path.
+sys.path.insert(0, str(HERE.parent))
 
-# @l2nx/ui dark tokens. Hex is derived here so the kit's oklch stays the single source of truth.
-TOKENS = {
-    "bg": (0.168, 0.009, 264.3),
-    "card": (0.23, 0.017, 264.17),
-    "surface": (0.255, 0.013, 258.37),
-    "fg": (0.958, 0.004, 271.37),
-    "muted": (0.82, 0.014, 264.44),
-    "faint": (0.7, 0.012, 262.34),
-    "accent": (0.8, 0.14, 195),
-    "accent-low": (0.3, 0.06, 195),
-    "accent-high": (0.91, 0.12, 192),
-    "success": (0.789, 0.159, 161.84),
-    "warning": (0.765, 0.14, 73.13),
-    "violet": (0.606, 0.219, 292.72),
-}
-ALPHA_TOKENS = {"border": "rgba(255,255,255,.08)", "border-strong": "rgba(255,255,255,.18)"}
+from svgkit import (  # noqa: E402
+    ORIGIN_CENTER,
+    PUBLIC_DIR,
+    SWORD,
+    Animations,
+    Fonts,
+    Svg,
+    build,
+    check_mark,
+    chip,
+    chip_w,
+    fade,
+    main,
+    num,
+    sword,
+    wrap,
+)
 
-
-def _oklch_to_linear(lightness: float, chroma: float, hue: float) -> tuple[float, float, float]:
-    a = chroma * math.cos(math.radians(hue))
-    b = chroma * math.sin(math.radians(hue))
-    l_ = (lightness + 0.3963377774 * a + 0.2158037573 * b) ** 3
-    m_ = (lightness - 0.1055613458 * a - 0.0638541728 * b) ** 3
-    s_ = (lightness - 0.0894841775 * a - 1.2914855480 * b) ** 3
-    return (
-        4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_,
-        -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_,
-        -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_,
-    )
-
-
-def _linear_to_oklab(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
-    r, g, b = rgb
-    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
-    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
-    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
-    return (
-        0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
-        1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
-        0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
-    )
-
-
-def oklch_to_hex(lightness: float, chroma: float, hue: float) -> str:
-    """oklch -> sRGB hex with CSS Color 4 gamut mapping; kit tokens like accent sit just outside sRGB (negative red)."""
-
-    def clip(rgb):
-        return tuple(min(max(c, 0.0), 1.0) for c in rgb)
-
-    def inside(rgb):
-        return all(-1e-6 <= c <= 1 + 1e-6 for c in rgb)
-
-    rgb = _oklch_to_linear(lightness, chroma, hue)
-    if not inside(rgb):
-        lo, hi, jnd = 0.0, chroma, 0.02
-        rgb = clip(_oklch_to_linear(lightness, chroma, hue))
-        if math.dist(_linear_to_oklab(rgb), _linear_to_oklab(_oklch_to_linear(lightness, chroma, hue))) >= jnd:
-            while hi - lo > 1e-4:
-                mid = (lo + hi) / 2
-                cand = _oklch_to_linear(lightness, mid, hue)
-                if inside(cand):
-                    lo = mid
-                    continue
-                rgb = clip(cand)
-                if math.dist(_linear_to_oklab(rgb), _linear_to_oklab(cand)) < jnd:
-                    lo = mid
-                else:
-                    hi = mid
-    out = []
-    for c in clip(rgb):
-        srgb = 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
-        out.append(round(srgb * 255))
-    return "#" + "".join(f"{v:02x}" for v in out)
-
-
-PALETTE = {name: oklch_to_hex(*lch) for name, lch in TOKENS.items()} | ALPHA_TOKENS
-
-
-# --- fonts -------------------------------------------------------------------------------------------------------
-
-# Role -> (CSS family, weight, fontsource packages in fallback order). Space Grotesk has no Cyrillic, so Russian
-# headings fall back to Onest per glyph, the same stack the kit's --font-number uses.
-ROLES = {
-    "h": ("ZT Head", 600, ("space-grotesk", "onest")),
-    "t": ("ZT Text", 500, ("onest",)),
-}
-SUBSET_FILES = ("latin", "cyrillic", "latin-ext", "cyrillic-ext", "symbols", "math")
-
-
-def _store_version(files_dir: Path) -> tuple[int, ...]:
-    # A plain string sort puts 5.2.9 after 5.2.10; the newest version must win so outputs match across machines.
-    version = files_dir.parents[3].name.rsplit("@", 1)[1].split("_", 1)[0]
-    return tuple(int(part) if part.isdigit() else 0 for part in version.split("."))
-
-
-class Fonts:
-    def __init__(self, node_modules: Path):
-        self.root = node_modules
-        self._cache: dict[tuple[str, str, int], TTFont | None] = {}
-
-    def _files_dir(self, package: str) -> Path:
-        direct = self.root / "@fontsource-variable" / package / "files"
-        if direct.is_dir():
-            return direct
-        # pnpm keeps transitive packages only in its virtual store.
-        hits = sorted(
-            self.root.glob(f".pnpm/@fontsource-variable+{package}@*/node_modules/@fontsource-variable/{package}/files"),
-            key=_store_version,
-        )
-        if not hits:
-            sys.exit(f"@fontsource-variable/{package} not found under {self.root}")
-        return hits[-1]
-
-    def static(self, package: str, part: str, weight: int) -> TTFont | None:
-        key = (package, part, weight)
-        if key not in self._cache:
-            path = self._files_dir(package) / f"{package}-{part}-wght-normal.woff2"
-            font = None
-            if path.is_file():
-                font = instancer.instantiateVariableFont(TTFont(path), {"wght": weight})
-                font.recalcTimestamp = False
-            self._cache[key] = font
-        return self._cache[key]
-
-    def source_for(self, role: str, char: str) -> tuple[str, str]:
-        _, weight, packages = ROLES[role]
-        for package in packages:
-            for part in SUBSET_FILES:
-                font = self.static(package, part, weight)
-                if font is not None and ord(char) in font.getBestCmap():
-                    return package, part
-        sys.exit(f"no font covers {char!r} (U+{ord(char):04X}) for role {role}")
-
-    def measure(self, role: str, text: str, size: float) -> float:
-        _, weight, _ = ROLES[role]
-        width = 0
-        for ch in text:
-            font = self.static(*self.source_for(role, ch), weight)
-            glyph = font.getBestCmap()[ord(ch)]
-            width += font["hmtx"][glyph][0] / font["head"].unitsPerEm
-        return width * size
-
-    def face_css(self, role: str, chars: set[str]) -> str:
-        family, weight, _ = ROLES[role]
-        groups: dict[tuple[str, str], set[str]] = {}
-        for ch in chars:
-            groups.setdefault(self.source_for(role, ch), set()).add(ch)
-        css = []
-        for (package, part), group in sorted(groups.items()):
-            font = TTFont(io.BytesIO(_save(self.static(package, part, weight))))
-            font.recalcTimestamp = False
-            options = subset.Options()
-            options.flavor = "woff2"
-            options.layout_features = ["kern"]
-            options.name_IDs = []
-            options.notdef_outline = False
-            options.hinting = False
-            subsetter = subset.Subsetter(options)
-            subsetter.populate(unicodes=[ord(c) for c in group])
-            subsetter.subset(font)
-            font.flavor = "woff2"
-            data = base64.b64encode(_save(font)).decode("ascii")
-            ranges = ",".join(f"U+{ord(c):04X}" for c in sorted(group))
-            css.append(
-                f"@font-face{{font-family:'{family}';font-weight:{weight};"
-                f"src:url(data:font/woff2;base64,{data}) format('woff2');unicode-range:{ranges}}}"
-            )
-        return "\n".join(css)
-
-
-def _save(font: TTFont) -> bytes:
-    buf = io.BytesIO()
-    font.save(buf)
-    return buf.getvalue()
-
-
-# --- rendering ---------------------------------------------------------------------------------------------------
-
-
-class Svg:
-    """One animation in one locale: collects keyframes and the characters each font role must carry."""
-
-    def __init__(self, name: str, dur: float, strings: dict, fonts: Fonts):
-        self.name, self.dur, self.s, self.fonts = name, dur, strings, fonts
-        self.chars = {role: set() for role in ROLES}
-        self.css: list[str] = []
-        self._n = 0
-
-    def text(self, role: str, value: str) -> str:
-        self.chars[role].update(value)
-        return html.escape(value, quote=False)
-
-    def width(self, role: str, value: str, size: float) -> float:
-        return self.fonts.measure(role, value, size)
-
-    def anim(self, stops: list[tuple[float, str]], timing: str = "ease-in-out", extra: str = "") -> str:
-        """Every track runs the full loop with no delay, so all stay in phase and one negative animation-delay pauses the
-        whole picture at a chosen moment."""
-        self._n += 1
-        cls = f"a{self._n}"
-        stops = sorted(stops, key=lambda s: s[0])
-        if stops[0][0] > 0:
-            stops.insert(0, (0.0, stops[0][1]))
-        if stops[-1][0] < self.dur:
-            stops.append((self.dur, stops[-1][1]))
-        frames = "".join(f"{_pct(t, self.dur)}{{{decl}}}" for t, decl in stops)
-        self.css.append(f"@keyframes k{cls}{{{frames}}}")
-        self.css.append(f".{cls}{{animation:k{cls} {_num(self.dur)}s {timing} infinite;{extra}}}")
-        return cls
-
-    def render(self, template: str, ctx: dict, static_at: float) -> str:
-        def sub(m: re.Match) -> str:
-            role, key = m.group(1), m.group(2)
-            if role in ROLES:
-                return self.text(role, self.s[key])
-            if role == "s":
-                return html.escape(self.s[key])
-            if key in ctx:
-                return str(ctx[key])
-            raise KeyError(f"{self.name}: unknown placeholder {m.group(0)}")
-
-        body = re.sub(r"\{\{(?:(h|t|s):)?([\w.-]+)\}\}", sub, template)
-        tokens = ";".join(f"--{k}:{v}" for k, v in PALETTE.items())
-        fonts = "\n".join(self.fonts.face_css(role, chars) for role, chars in self.chars.items() if chars)
-        style = (
-            f"{fonts}\nsvg{{{tokens}}}\n"
-            f".h{{font-family:'ZT Head',sans-serif;font-weight:600}}"
-            f".t{{font-family:'ZT Text',sans-serif;font-weight:500}}\n"
-            + "\n".join(self.css)
-            + f"\n@media (prefers-reduced-motion:reduce){{*{{animation-delay:-{_num(static_at)}s!important;"
-            f"animation-play-state:paused!important}}}}"
-        )
-        return body.replace("/*STYLE*/", style)
-
-
-def _pct(t: float, dur: float) -> str:
-    return f"{_num(round(t / dur * 100, 3))}%"
-
-
-def _num(v: float) -> str:
-    return f"{v:.3f}".rstrip("0").rstrip(".")
-
-
-def fade(on: float, off: float | None, ramp: float = 0.15, hi: float = 1, lo: float = 0) -> list[tuple[float, str]]:
-    """Opacity track: lo, ramps to hi at `on`, back to lo at `off` (None keeps it up to the loop end)."""
-    track = [(max(on - ramp, 0), f"opacity:{lo}"), (on, f"opacity:{hi}")]
-    if off is not None:
-        track += [(off, f"opacity:{hi}"), (off + ramp, f"opacity:{lo}")]
-    return track
-
+# Neutral names: a cut-down copy is never presented as the original font.
+FAMILIES = {"h": "ZT Head", "t": "ZT Text"}
 
 # --- hero: heart-monitor traces ---------------------------------------------------------------------------------
 
@@ -303,8 +60,8 @@ def _trace(base: float, spikes: list[float], shape: list[tuple[float, float]]) -
     for sx in sorted(spikes):
         if sx < x:
             continue
-        d.append(f"H{_num(sx)}")
-        d += [f"L{_num(sx + dx)} {_num(base + dy)}" for dx, dy in shape]
+        d.append(f"H{num(sx)}")
+        d += [f"L{num(sx + dx)} {num(base + dy)}" for dx, dy in shape]
         x = sx + shape[-1][0]
     d.append(f"H{PULSE_NOW + span + BEAT_PX}")
     return "".join(d)
@@ -345,8 +102,8 @@ def build_hero(svg: Svg) -> dict:
             for dx, cls in ((0, drop), (-span, held)):
                 ix = x + dx + 6
                 marks[lane].append(
-                    f'<g class="{cls}"><path class="{icon_cls}" transform="translate({_num(ix)} {base - 62})"'
-                    f' d="{PULSE_ICONS[icon]}"/><text class="t evlabel" x="{_num(ix - 16)}" y="{base - 54}"'
+                    f'<g class="{cls}"><path class="{icon_cls}" transform="translate({num(ix)} {base - 62})"'
+                    f' d="{PULSE_ICONS[icon]}"/><text class="t evlabel" x="{num(ix - 16)}" y="{base - 54}"'
                     f' font-size="22" text-anchor="end">{label}</text></g>'
                 )
 
@@ -362,13 +119,13 @@ def build_hero(svg: Svg) -> dict:
         for dx in (-span, 0, span):
             handled.append(xh + dx)
             waits.append(
-                f'<rect class="wait" x="{_num(xe + dx)}" y="{base - 2}" width="{_num(xh - xe)}" height="4" rx="2"/>'
-                f'<circle class="evdot" cx="{_num(xe + dx)}" cy="{base}" r="4"/>'
+                f'<rect class="wait" x="{num(xe + dx)}" y="{base - 2}" width="{num(xh - xe)}" height="4" rx="2"/>'
+                f'<circle class="evdot" cx="{num(xe + dx)}" cy="{base}" r="4"/>'
             )
     idle = [b for b in beats if all(abs(b - h) > 1 for h in handled)]
     ctx["classic_trace"] = _trace(base, idle, CLASSIC_SPIKE)
     ctx["classic_useful"] = "".join(
-        f"M{_num(h)} {base}" + "".join(f"L{_num(h + dx)} {_num(base + dy)}" for dx, dy in CLASSIC_SPIKE)
+        f"M{num(h)} {base}" + "".join(f"L{num(h + dx)} {num(base + dy)}" for dx, dy in CLASSIC_SPIKE)
         for h in handled
     )
     runs = []
@@ -379,10 +136,10 @@ def build_hero(svg: Svg) -> dict:
         if x2 - x1 < BEAT_PX:
             continue
         y = base + 22
-        runs.append(f'<path class="bracket" d="M{_num(x1)} {y - 6}V{y}H{_num(x2)}V{y - 6}"/>')
+        runs.append(f'<path class="bracket" d="M{num(x1)} {y - 6}V{y}H{num(x2)}V{y - 6}"/>')
         if idle_w + 16 <= x2 - x1:
             runs.append(
-                f'<text class="t idle" x="{_num((x1 + x2) / 2)}" y="{y + 26}" font-size="22" text-anchor="middle">'
+                f'<text class="t idle" x="{num((x1 + x2) / 2)}" y="{y + 26}" font-size="22" text-anchor="middle">'
                 f"{svg.text('t', s['idle'])}</text>"
             )
     ctx["classic_waits"] = "".join(waits) + "".join(runs)
@@ -495,7 +252,7 @@ def build_tick(svg: Svg) -> dict:
                     extra="transform-box:fill-box;transform-origin:center",
                 )
                 parts.append(
-                    f'<rect class="wait {wait}" x="{xa}" y="{axis - 19}" width="{_num(xm - xa)}" height="5" rx="2.5"/>'
+                    f'<rect class="wait {wait}" x="{xa}" y="{axis - 19}" width="{num(xm - xa)}" height="5" rx="2.5"/>'
                 )
                 parts.append(f'<circle class="ev {drop}" cx="{xa}" cy="{axis}" r="6"/>')
                 parts.append(f'<circle class="done {done}" cx="{xm}" cy="{axis}" r="7"/>')
@@ -551,43 +308,15 @@ def _hold_reset(decl: str) -> list[tuple[float, str]]:
 
 def _blip(svg: Svg, x: float, axis: float, t: float, kind: str, reset) -> str:
     cls = svg.anim([(t - 0.02, "opacity:0"), (t + 0.02, "opacity:1"), (t + 0.3, "opacity:.55")] + reset)
-    return f'<rect class="blip {kind} {cls}" x="{_num(x - 5)}" y="{axis + 24}" width="10" height="10" rx="3"/>'
+    return f'<rect class="blip {kind} {cls}" x="{num(x - 5)}" y="{axis + 24}" width="10" height="10" rx="3"/>'
 
 
 # --- race: Sleep and a hit on one monster -----------------------------------------------------------------------
 
 RACE_DUR = 6.0
-ORIGIN_CENTER = "transform-box:fill-box;transform-origin:center"
-CHIP_H, CHIP_PAD, BADGE_R = 34, 14, 13
 END = [(5.6, "opacity:1"), (5.9, "opacity:0")]
 # Classic-build outcome flips: (start, stop, period).
 FLICKER = (2.3, 5.5, 0.4)
-
-
-def _chip_w(svg: Svg, key: str, numbered: bool) -> int:
-    return round(svg.width("t", svg.s[key], 22) + 2 * CHIP_PAD + (2 * BADGE_R + 6 if numbered else 0))
-
-
-def _chip(
-    svg: Svg, key: str, kind: str, cx: float, cy: float, cls: str, number: str | None = None, extra: str = ""
-) -> str:
-    w = _chip_w(svg, key, number is not None)
-    x = cx - w / 2
-    badge, tx = "", x + CHIP_PAD
-    if number is not None:
-        bx = x + 6 + BADGE_R
-        badge = (
-            f'<circle class="num {kind}" cx="{_num(bx)}" cy="{cy}" r="{BADGE_R}"/>'
-            f'<text class="h numtext" x="{_num(bx)}" y="{cy + 7.5}" font-size="22" text-anchor="middle">'
-            f"{svg.text('h', number)}</text>"
-        )
-        tx = bx + BADGE_R + 6
-    rect = f'x="{_num(x)}" y="{cy - CHIP_H / 2}" width="{w}" height="{CHIP_H}" rx="{CHIP_H / 2}"'
-    return (
-        f'<g class="{cls}"><rect class="chip {kind}" {rect}/>{badge}<text class="t chiptext" x="{_num(tx)}"'
-        f' y="{cy + 7.5}" font-size="22">{svg.text("t", svg.s[key])}</text>{extra.replace("RECT", rect)}</g>'
-    )
-
 
 def _converge(svg: Svg, sx: float, y: float, target: tuple[float, float]) -> str:
     """A lane chip that runs to the lane bend at x 180 and shrinks into the target instead of sliding past it."""
@@ -596,8 +325,8 @@ def _converge(svg: Svg, sx: float, y: float, target: tuple[float, float]) -> str
         [
             (0.2, "opacity:0;transform:translate(0,0) scale(1)"),
             (0.4, "opacity:1;transform:translate(0,0) scale(1)"),
-            (1.6, f"opacity:1;transform:translate({_num(180 - sx)}px,0px) scale(1)"),
-            (2.0, f"opacity:0;transform:translate({_num(cx)}px,{_num(cy)}px) scale(.2)"),
+            (1.6, f"opacity:1;transform:translate({num(180 - sx)}px,0px) scale(1)"),
+            (2.0, f"opacity:0;transform:translate({num(cx)}px,{num(cy)}px) scale(.2)"),
             (5.99, "opacity:0;transform:translate(0,0) scale(1)"),
         ],
         extra=ORIGIN_CENTER,
@@ -635,9 +364,9 @@ def _queue_moves(svg: Svg, target: float, head_x: float, first: tuple, second: t
         [
             (0.2, "opacity:0;transform:translateX(0) scale(1)"),
             (0.4, "opacity:1;transform:translateX(0) scale(1)"),
-            (1.4, f"opacity:1;transform:translateX({_num(a_q - a_s)}px) scale(1)"),
-            (2.0, f"opacity:1;transform:translateX({_num(a_q - a_s)}px) scale(1)"),
-            (2.3, f"opacity:0;transform:translateX({_num(target - a_s)}px) scale(.2)"),
+            (1.4, f"opacity:1;transform:translateX({num(a_q - a_s)}px) scale(1)"),
+            (2.0, f"opacity:1;transform:translateX({num(a_q - a_s)}px) scale(1)"),
+            (2.3, f"opacity:0;transform:translateX({num(target - a_s)}px) scale(.2)"),
             (5.99, "opacity:0;transform:translateX(0) scale(1)"),
         ],
         extra=ORIGIN_CENTER,
@@ -646,10 +375,10 @@ def _queue_moves(svg: Svg, target: float, head_x: float, first: tuple, second: t
         [
             (0.6, "opacity:0;transform:translateX(0) scale(1)"),
             (0.8, "opacity:1;transform:translateX(0) scale(1)"),
-            (1.8, f"opacity:1;transform:translateX({_num(b_q - b_s)}px) scale(1)"),
-            (2.3, f"opacity:1;transform:translateX({_num(b_q - b_s)}px) scale(1)"),
-            (2.8, f"opacity:1;transform:translateX({_num(head_x - b_w / 2 - b_s)}px) scale(1)"),
-            (3.1, f"opacity:0;transform:translateX({_num(target - b_s)}px) scale(.2)"),
+            (1.8, f"opacity:1;transform:translateX({num(b_q - b_s)}px) scale(1)"),
+            (2.3, f"opacity:1;transform:translateX({num(b_q - b_s)}px) scale(1)"),
+            (2.8, f"opacity:1;transform:translateX({num(head_x - b_w / 2 - b_s)}px) scale(1)"),
+            (3.1, f"opacity:0;transform:translateX({num(target - b_s)}px) scale(.2)"),
             (5.99, "opacity:0;transform:translateX(0) scale(1)"),
         ],
         extra=ORIGIN_CENTER,
@@ -695,8 +424,8 @@ def build_race(svg: Svg) -> dict:
     chips = []
     for key, kind in (("sleep_chip", "sleep"), ("hit_chip", "hit")):
         y = lane_y[key]
-        sx = 36 + _chip_w(svg, key, False) / 2
-        chips.append(_chip(svg, key, kind, sx, y, _converge(svg, sx, y, LEFT_MOB)))
+        sx = 36 + chip_w(svg, key, False) / 2
+        chips.append(chip(svg, key, kind, sx, y, _converge(svg, sx, y, LEFT_MOB)))
     ctx["left_chips"] = "".join(chips)
 
     # Without a lock deciding the order, the result flips between the two orders from run to run.
@@ -729,7 +458,7 @@ def build_race(svg: Svg) -> dict:
 
     # Zero-Tick: the hit arrived first, so the partition thread applies it, then Sleep; the monster always sleeps.
     lane = RIGHT_MOB[1]
-    hit_w, sleep_w = _chip_w(svg, "hit_chip", True), _chip_w(svg, "sleep_chip", True)
+    hit_w, sleep_w = chip_w(svg, "hit_chip", True), chip_w(svg, "sleep_chip", True)
     head_x, lane_x0 = 550, 324
     hit_q = head_x - hit_w / 2
     sleep_q = head_x - hit_w - 8 - sleep_w / 2
@@ -738,7 +467,7 @@ def build_race(svg: Svg) -> dict:
     hit_s, sleep_s = lane_x0 + hit_w / 2, lane_x0 + sleep_w / 2
     target = RIGHT_MOB[0]
     hit_move, sleep_move = _queue_moves(svg, target, head_x, (hit_s, hit_q), (sleep_s, sleep_q, sleep_w))
-    ctx["right_chips"] = _chip(svg, "hit_chip", "hit", hit_s, lane, hit_move, "1") + _chip(
+    ctx["right_chips"] = chip(svg, "hit_chip", "hit", hit_s, lane, hit_move, "1") + chip(
         svg, "sleep_chip", "sleep", sleep_s, lane, sleep_move, "2"
     )
     ctx["right_mob"] = _mob(
@@ -772,16 +501,7 @@ def build_race(svg: Svg) -> dict:
 
 CLASSIC_TOP, ZERO_TOP = 16, 308
 DUPE_LANE_X0, DUPE_CHECK_X, DUPE_LANE_END = 124, 292, 380
-SWORD = "M-2.6 -15L0 -19L2.6 -15V4H-2.6zM-8.5 4H8.5V7.5H-8.5zM-1.7 7.5H1.7V13H-1.7zM0 12.5a2.8 2.8 0 1 1 0 5.6a2.8 2.8 0 1 1 0-5.6z"
 COINS = "M-9 2a9 4 0 1 0 18 0a9 4 0 1 0-18 0zM-9 2v6a9 4 0 0 0 18 0v-6M-9 -6a9 4 0 1 0 18 0a9 4 0 1 0-18 0z"
-
-
-def _sword(x: float, y: float, cls: str = "") -> str:
-    return f'<path class="sword {cls}" transform="translate({_num(x)} {_num(y)})" d="{SWORD}"/>'
-
-
-def _check(x: float, y: float) -> str:
-    return f'<path class="check" d="M{_num(x)} {_num(y - 6)}l5 5l9-10"/>'
 
 
 def _gain(svg: Svg, x: float, y: float, sword_cls: str = "") -> tuple[str, float]:
@@ -790,10 +510,10 @@ def _gain(svg: Svg, x: float, y: float, sword_cls: str = "") -> tuple[str, float
     npc_w = svg.width("t", s["at_npc"], 22)
     coin_x = x + 24 + npc_w + 26
     return (
-        _sword(x, y, sword_cls)
-        + f'<text class="t text" x="{_num(x + 22)}" y="{y + 8}" font-size="22">{svg.text("t", s["at_npc"])}</text>'
-        + f'<path class="coins" transform="translate({_num(coin_x)} {y})" d="{COINS}"/>'
-        + f'<text class="t text" x="{_num(coin_x + 16)}" y="{y + 8}" font-size="22">{svg.text("t", s["adena"])}</text>'
+        sword(x, y, sword_cls)
+        + f'<text class="t text" x="{num(x + 22)}" y="{y + 8}" font-size="22">{svg.text("t", s["at_npc"])}</text>'
+        + f'<path class="coins" transform="translate({num(coin_x)} {y})" d="{COINS}"/>'
+        + f'<text class="t text" x="{num(coin_x + 16)}" y="{y + 8}" font-size="22">{svg.text("t", s["adena"])}</text>'
     ), coin_x + 16 + svg.width("t", s["adena"], 22)
 
 
@@ -805,27 +525,27 @@ def build_dupe(svg: Svg) -> dict:
     lanes = {"sell": CLASSIC_TOP + 104, "trade": CLASSIC_TOP + 176}
     chips = []
     for key, y in lanes.items():
-        w = _chip_w(svg, key, False)
+        w = chip_w(svg, key, False)
         sx = DUPE_LANE_X0 + 10 + w / 2
         move = svg.anim(
             [
                 (0.2, "opacity:0;transform:translateX(0) scale(1)"),
                 (0.4, "opacity:1;transform:translateX(0) scale(1)"),
-                (1.0, f"opacity:1;transform:translateX({_num(DUPE_CHECK_X - sx)}px) scale(1)"),
-                (1.5, f"opacity:1;transform:translateX({_num(DUPE_CHECK_X - sx)}px) scale(1)"),
-                (2.0, f"opacity:0;transform:translateX({_num(DUPE_LANE_END - sx)}px) scale(.3)"),
+                (1.0, f"opacity:1;transform:translateX({num(DUPE_CHECK_X - sx)}px) scale(1)"),
+                (1.5, f"opacity:1;transform:translateX({num(DUPE_CHECK_X - sx)}px) scale(1)"),
+                (2.0, f"opacity:0;transform:translateX({num(DUPE_LANE_END - sx)}px) scale(.3)"),
                 (5.99, "opacity:0;transform:translateX(0) scale(1)"),
             ],
             extra=ORIGIN_CENTER,
         )
-        chips.append(_chip(svg, key, key, sx, y, move))
+        chips.append(chip(svg, key, key, sx, y, move))
         # Both threads see the sword at the same moment.
         label_y = y - 27 if key == "sell" else y + 46
         tw = svg.width("t", s["check"], 22)
         x0 = DUPE_CHECK_X - (tw + 22) / 2
         chips.append(
-            f'<g class="{svg.anim(fade(1.0, 5.6, 0.12))}"><text class="t ok" x="{_num(x0)}" y="{label_y}" font-size="22">'
-            f"{svg.text('t', s['check'])}</text>{_check(x0 + tw + 6, label_y - 2)}</g>"
+            f'<g class="{svg.anim(fade(1.0, 5.6, 0.12))}"><text class="t ok" x="{num(x0)}" y="{label_y}" font-size="22">'
+            f"{svg.text('t', s['check'])}</text>{check_mark(x0 + tw + 6, label_y - 2)}</g>"
         )
     ctx["left_chips"] = "".join(chips)
     sy = CLASSIC_TOP + 140
@@ -838,7 +558,7 @@ def build_dupe(svg: Svg) -> dict:
 
     rx = DUPE_LANE_END + 30
     gain, gain_end = _gain(svg, rx, lanes["sell"], "dupe")
-    p2 = _sword(rx, lanes["trade"], "dupe") + (
+    p2 = sword(rx, lanes["trade"], "dupe") + (
         f'<text class="t text" x="{rx + 22}" y="{lanes["trade"] + 8}" font-size="22">{svg.text("t", s["at_p2"])}</text>'
     )
     if gain_end > 604:
@@ -859,7 +579,7 @@ def build_dupe(svg: Svg) -> dict:
     # Zero-Tick: both operations queue on the partition thread that owns the inventory; the first takes the
     # sword, the second finds it gone.
     lane = ZERO_TOP + 140
-    sell_w, trade_w = _chip_w(svg, "sell", True), _chip_w(svg, "trade", True)
+    sell_w, trade_w = chip_w(svg, "sell", True), chip_w(svg, "trade", True)
     head = DUPE_LANE_X0 + 16
     sell_q = head + sell_w / 2
     trade_q = head + sell_w + 8 + trade_w / 2
@@ -870,9 +590,9 @@ def build_dupe(svg: Svg) -> dict:
         [
             (0.2, "opacity:0;transform:translateX(0) scale(1)"),
             (0.35, "opacity:1;transform:translateX(0) scale(1)"),
-            (1.2, f"opacity:1;transform:translateX({_num(sell_q - sell_s)}px) scale(1)"),
-            (1.8, f"opacity:1;transform:translateX({_num(sell_q - sell_s)}px) scale(1)"),
-            (2.1, f"opacity:0;transform:translateX({_num(78 - sell_s)}px) scale(.2)"),
+            (1.2, f"opacity:1;transform:translateX({num(sell_q - sell_s)}px) scale(1)"),
+            (1.8, f"opacity:1;transform:translateX({num(sell_q - sell_s)}px) scale(1)"),
+            (2.1, f"opacity:0;transform:translateX({num(78 - sell_s)}px) scale(.2)"),
             (5.99, "opacity:0;transform:translateX(0) scale(1)"),
         ],
         extra=ORIGIN_CENTER,
@@ -881,16 +601,16 @@ def build_dupe(svg: Svg) -> dict:
         [
             (0.5, "opacity:0;transform:translateX(0)"),
             (0.65, "opacity:1;transform:translateX(0)"),
-            (1.6, f"opacity:1;transform:translateX({_num(trade_q - trade_s)}px)"),
-            (2.4, f"opacity:1;transform:translateX({_num(trade_q - trade_s)}px)"),
-            (2.9, f"opacity:1;transform:translateX({_num(head + trade_w / 2 - trade_s)}px)"),
-            (5.6, f"opacity:1;transform:translateX({_num(head + trade_w / 2 - trade_s)}px)"),
-            (5.9, f"opacity:0;transform:translateX({_num(head + trade_w / 2 - trade_s)}px)"),
+            (1.6, f"opacity:1;transform:translateX({num(trade_q - trade_s)}px)"),
+            (2.4, f"opacity:1;transform:translateX({num(trade_q - trade_s)}px)"),
+            (2.9, f"opacity:1;transform:translateX({num(head + trade_w / 2 - trade_s)}px)"),
+            (5.6, f"opacity:1;transform:translateX({num(head + trade_w / 2 - trade_s)}px)"),
+            (5.9, f"opacity:0;transform:translateX({num(head + trade_w / 2 - trade_s)}px)"),
             (5.99, "opacity:0;transform:translateX(0)"),
         ]
     )
     rejected = svg.anim(fade(3.0, 5.6, 0.12))
-    ctx["right_chips"] = _chip(svg, "sell", "sell", sell_s, lane, sell_move, "1") + _chip(
+    ctx["right_chips"] = chip(svg, "sell", "sell", sell_s, lane, sell_move, "1") + chip(
         svg,
         "trade",
         "trade",
@@ -902,7 +622,7 @@ def build_dupe(svg: Svg) -> dict:
     )
     nw = svg.width("t", s["no_item"], 22)
     ctx["no_item"] = (
-        f'<g class="{rejected}"><text class="t label" x="{_num(head + trade_w / 2 - nw / 2)}" y="{lane - 26}"'
+        f'<g class="{rejected}"><text class="t label" x="{num(head + trade_w / 2 - nw / 2)}" y="{lane - 26}"'
         f' font-size="22">{svg.text("t", s["no_item"])}</text></g>'
     )
     row_y = ZERO_TOP + 216
@@ -910,7 +630,7 @@ def build_dupe(svg: Svg) -> dict:
     ctx["right_result"] = (
         f'<g class="{svg.anim([(2.2, "opacity:0"), (2.4, "opacity:1")] + END)}">{gain_r}</g>'
         f'<g class="{_pop(svg, 3.4)}">'
-        f'<circle class="badge-ok" cx="{_num(gain_r_end + 26)}" cy="{row_y}" r="14"/>{_check(gain_r_end + 19, row_y + 1).replace("check", "tick")}</g>'
+        f'<circle class="badge-ok" cx="{num(gain_r_end + 26)}" cy="{row_y}" r="14"/>{check_mark(gain_r_end + 19, row_y + 1).replace("check", "tick")}</g>'
     )
     for key, limit in (("left_caption", 568), ("right_caption", 568), ("owner", 300)):
         if svg.width("t", s[key], 22) > limit:
@@ -931,18 +651,6 @@ SPACES = {
     "inst2": (112, 264, 54, "instance", (6.6, 7.5), "boss"),
     "olymp": (532, 181, 74, "olympiad", (2.4, 4.8), "match"),
 }
-
-
-def wrap(svg: Svg, role: str, text: str, size: float, width: float) -> list[str]:
-    lines, line = [], ""
-    for word in text.split(" "):
-        cand = f"{line} {word}".strip()
-        if line and svg.width(role, cand, size) > width:
-            lines.append(line)
-            line = word
-        else:
-            line = cand
-    return lines + [line]
 
 
 def _running(svg: Svg, on: float, off: float) -> str:
@@ -972,7 +680,7 @@ def build_spaces(svg: Svg) -> dict:
         phase = i * 0.9
         breathe = svg.anim(
             [
-                ((phase + k) % 4 + loop, f"opacity:{_num(0.12 + 0.2 * (0.5 - 0.5 * math.cos(math.pi * k / 2)))}")
+                ((phase + k) % 4 + loop, f"opacity:{num(0.12 + 0.2 * (0.5 - 0.5 * math.cos(math.pi * k / 2)))}")
                 for loop in (0, 4)
                 for k in range(4)
             ]
@@ -981,7 +689,7 @@ def build_spaces(svg: Svg) -> dict:
         out.append(f'<circle class="space" cx="{cx}" cy="{cy}" r="{r}"/>')
         status_y = cy + (44 if key == "world" else 18)
         lane_y = cy + (70 if key == "world" else 34)
-        zzz = f'<text class="t zzz {breathe_zzz}" x="{cx}" y="{_num(status_y)}" font-size="22" text-anchor="middle">{svg.text("t", s["zzz"])}</text>'
+        zzz = f'<text class="t zzz {breathe_zzz}" x="{cx}" y="{num(status_y)}" font-size="22" text-anchor="middle">{svg.text("t", s["zzz"])}</text>'
         dot_track = None
         if wake:
             on, off = wake
@@ -992,7 +700,7 @@ def build_spaces(svg: Svg) -> dict:
             )
             out.append(f'<g class="{svg.anim(fade(on - 0.05, off, 0.15, 0, 1))}">{zzz}</g>')
             out.append(
-                f'<text class="t woke {lit}" x="{cx}" y="{_num(status_y)}" font-size="22" text-anchor="middle">'
+                f'<text class="t woke {lit}" x="{cx}" y="{num(status_y)}" font-size="22" text-anchor="middle">'
                 f"{svg.text('t', s[status_key])}</text>"
             )
             if svg.width("t", s[status_key], 22) > 2 * r - 24:
@@ -1016,13 +724,13 @@ def build_spaces(svg: Svg) -> dict:
             out.append(zzz)
         label_y = cy + (8 if key == "world" else -10)
         out.append(
-            f'<text class="{role} sname" x="{cx}" y="{_num(label_y)}" font-size="{label_size}" text-anchor="middle">'
+            f'<text class="{role} sname" x="{cx}" y="{num(label_y)}" font-size="{label_size}" text-anchor="middle">'
             f"{svg.text(role, s[label_key])}</text>"
         )
         dot_cls = f" {dot_track}" if dot_track else ""
         out.append(
-            f'<line class="thread" x1="{cx - 14}" y1="{_num(lane_y)}" x2="{cx + 18}" y2="{_num(lane_y)}"/>'
-            f'<circle class="tdot{dot_cls}" cx="{cx - 14}" cy="{_num(lane_y)}" r="4"/>'
+            f'<line class="thread" x1="{cx - 14}" y1="{num(lane_y)}" x2="{cx + 18}" y2="{num(lane_y)}"/>'
+            f'<circle class="tdot{dot_cls}" cx="{cx - 14}" cy="{num(lane_y)}" r="4"/>'
         )
     ctx["spaces"] = "".join(out)
     legend, x = [], 32
@@ -1033,9 +741,9 @@ def build_spaces(svg: Svg) -> dict:
     for key, cls in (("legend_sleep", ""), ("legend_work", f" {running}")):
         ly = SPACES_LEGEND_Y - 7
         legend.append(
-            f'<line class="thread" x1="{_num(x)}" y1="{ly}" x2="{_num(x + 32)}" y2="{ly}"/>'
-            f'<circle class="tdot{cls}" cx="{_num(x)}" cy="{ly}" r="4"/>'
-            f'<text class="t note" x="{_num(x + 44)}" y="{SPACES_LEGEND_Y}" font-size="22">{svg.text("t", s[key])}</text>'
+            f'<line class="thread" x1="{num(x)}" y1="{ly}" x2="{num(x + 32)}" y2="{ly}"/>'
+            f'<circle class="tdot{cls}" cx="{num(x)}" cy="{ly}" r="4"/>'
+            f'<text class="t note" x="{num(x + 44)}" y="{SPACES_LEGEND_Y}" font-size="22">{svg.text("t", s[key])}</text>'
         )
         x += 44 + svg.width("t", s[key], 22) + 28
     if x > 640:
@@ -1056,8 +764,7 @@ def build_spaces(svg: Svg) -> dict:
 
 # --- driver ------------------------------------------------------------------------------------------------------
 
-# name -> (loop seconds, builder, moment shown under prefers-reduced-motion)
-ANIMATIONS = {
+ANIMATIONS: Animations = {
     "hero": (PULSE_DUR, build_hero, 6.3),
     "tick": (TICK_DUR, build_tick, 5.5),
     "race": (RACE_DUR, build_race, 4.0),
@@ -1066,54 +773,9 @@ ANIMATIONS = {
 }
 
 
-def build(fonts: Fonts) -> dict[Path, bytes]:
-    out = {}
-    for locale in LOCALES:
-        strings = json.loads((HERE / f"strings.{locale}.json").read_text(encoding="utf-8"))
-        for name, (dur, builder, static_at) in ANIMATIONS.items():
-            svg = Svg(name, dur, strings[name], fonts)
-            template = (HERE / f"{name}.svg.tmpl").read_text(encoding="utf-8")
-            data = svg.render(template, builder(svg), static_at).encode("utf-8")
-            text = data.decode("utf-8")
-            if re.search(r"<text(?![^>]*font-size=)[^>]*>", text):
-                raise ValueError(f"{locale}/{name}: a <text> without font-size falls back to 16 px")
-            for size in map(float, re.findall(r'font-size="([\d.]+)"', text)):
-                if size < MIN_FONT:
-                    raise ValueError(f"{locale}/{name}: font-size {size} is below {MIN_FONT}")
-            if len(data) > MAX_BYTES:
-                raise ValueError(f"{locale}/{name}: {len(data)} bytes exceeds {MAX_BYTES}")
-            out[OUT_DIR / locale / f"zero-tick-{name}.svg"] = data
-    return out
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument(
-        "--fonts", type=Path, required=True, help="node_modules holding @fontsource-variable/onest and space-grotesk"
-    )
-    parser.add_argument(
-        "--check", action="store_true", help="fail when the committed outputs differ from a fresh build"
-    )
-    parser.add_argument("--palette", action="store_true", help="print the token table and exit")
-    args = parser.parse_args()
-    if args.palette:
-        for name, value in PALETTE.items():
-            lch = TOKENS.get(name)
-            print(f"| {name} | {'oklch({} {} {})'.format(*lch) if lch else 'white, alpha'} | `{value}` |")
-        return 0
-    stale = []
-    for path, data in build(Fonts(args.fonts)).items():
-        if args.check:
-            if not path.is_file() or path.read_bytes() != data:
-                stale.append(path)
-            continue
-        path.write_bytes(data)
-        print(f"{path.relative_to(OUT_DIR.parents[1])}  {len(data) / 1024:.1f} KB")
-    if stale:
-        print("stale outputs, run generate.py:", *stale, sep="\n  ")
-        return 1
-    return 0
+def render(fonts: Fonts) -> dict[Path, bytes]:
+    return build(HERE, ANIMATIONS, fonts, lambda locale, name: PUBLIC_DIR / locale / f"zero-tick-{name}.svg")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(__doc__.splitlines()[0], FAMILIES, render))

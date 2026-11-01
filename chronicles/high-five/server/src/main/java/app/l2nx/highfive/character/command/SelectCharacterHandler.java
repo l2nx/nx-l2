@@ -26,6 +26,8 @@
  */
 package app.l2nx.highfive.character.command;
 
+import app.l2nx.engine.core.identity.IdentityRegistry;
+import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.engine.core.session.command.ContextCommandHandler;
 import app.l2nx.engine.core.session.command.ContextResolver;
 import app.l2nx.highfive.character.view.CharacterSelected;
@@ -54,20 +56,26 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.session.GameContexts;
 import app.l2nx.highfive.session.LegacyNotices;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.util.Map;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class SelectCharacterHandler implements ContextCommandHandler<GameClient, SelectCharacter> {
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
     private static final int MINUTES_PER_DAY = 24 * 60;
     private static final String IP_RESTRICTION = "data/html/mods/IPRestriction.htm";
     private static final String FACTION_LIMIT = "data/html/mods/Faction/ExceededOnlineLimit.htm";
+
+    private final IdentityRegistry registry;
 
     @Override
     public ContextResolver<GameClient> context() {
@@ -86,12 +94,28 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
             return;
         }
 
+        final CharacterSummary info = client.getCharSelection(command.slot());
+        if (info == null) {
+            return;
+        }
+
+        // The load reads the rows a value transaction in flight is about to change, so it waits for the outcome.
+        final Runnable selection = () -> selectOnce(client, command.slot());
+        registry.findId(info.objectId())
+                .ifPresentOrElse(id -> WorldPartition.inFlightCharacters().whenIdle(id, selection), selection);
+    }
+
+    private void selectOnce(GameClient client, int slot) {
+        if (client.getConnectionState() != SessionState.AUTHED) {
+            return;
+        }
+
         // A lock that cannot be taken means a repeated packet: nothing to do.
         if (client.getPlayerLock().tryLock()) {
             try {
                 // A player already set means a second select queued behind the first one.
                 if (client.getPlayer() == null) {
-                    select(client, command.slot());
+                    select(client, slot);
                 }
             } finally {
                 client.getPlayerLock().unlock();
@@ -101,7 +125,7 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
         }
     }
 
-    private static void select(GameClient client, int slot) {
+    private void select(GameClient client, int slot) {
         final CharacterSummary info = client.getCharSelection(slot);
         if (info == null) {
             return;
@@ -200,6 +224,7 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
         if (cha == null) {
             return;
         }
+        WorldPartition.loadedCharacters().register(registry.idOf(cha.getObjectId()), cha);
 
         CharInfoTable.getInstance().addName(cha);
 

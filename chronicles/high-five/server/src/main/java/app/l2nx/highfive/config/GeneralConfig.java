@@ -101,8 +101,6 @@ public class GeneralConfig {
     public static int MINIMUM_CHAT_LEVEL;
     public static boolean ALLOW_WAREHOUSE;
     public static boolean ALLOW_REFUND;
-    public static boolean ALLOW_MAIL;
-    public static boolean ALLOW_ATTACHMENTS;
     public static boolean ALLOW_WEAR;
     public static int WEAR_DELAY;
     public static int WEAR_PRICE;
@@ -265,8 +263,6 @@ public class GeneralConfig {
         MINIMUM_CHAT_LEVEL = config.getInt("MinimumChatLevel", 20);
         ALLOW_WAREHOUSE = config.getBoolean("AllowWarehouse", true);
         ALLOW_REFUND = config.getBoolean("AllowRefund", true);
-        ALLOW_MAIL = config.getBoolean("AllowMail", true);
-        ALLOW_ATTACHMENTS = config.getBoolean("AllowAttachments", true);
         ALLOW_WEAR = config.getBoolean("AllowWear", true);
         WEAR_DELAY = config.getInt("WearDelay", 5);
         WEAR_PRICE = config.getInt("WearPrice", 10);

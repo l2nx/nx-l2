@@ -35,6 +35,7 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.variables.ItemVariables;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
@@ -45,9 +46,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
 import it.unimi.dsi.fastutil.objects.ObjectCollections;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
-import java.util.AbstractCollection;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
@@ -64,25 +62,6 @@ public abstract class ItemContainer {
     // An item's object id never changes while it sits in a container: only airships and monsters refresh theirs.
     private final Int2ObjectLinkedOpenHashMap<Item> byObjectId = new Int2ObjectLinkedOpenHashMap<>();
     private final ObjectCollection<Item> liveItems = ObjectCollections.unmodifiable(byObjectId.values());
-
-    // TODO: remove with Mail (#150), the last subclass that walks this field itself; its walks transfer items out of
-    // the container, so the view iterates a copy.
-    protected final Collection<Item> items = new AbstractCollection<>() {
-        @Override
-        public Iterator<Item> iterator() {
-            return List.copyOf(byObjectId.values()).iterator();
-        }
-
-        @Override
-        public int size() {
-            return byObjectId.size();
-        }
-
-        @Override
-        public void clear() {
-            byObjectId.clear();
-        }
-    };
 
     protected ItemContainer() {}
 
@@ -284,7 +263,8 @@ public abstract class ItemContainer {
 
     /**
      * @param countValue Quantity of items to be transfered, capped at the count present
-     * @return the target's item, {@code null} when the count is not positive or the container does not hold the item
+     * @return the target's item, {@code null} when the count is not positive, the container does not hold the item, or
+     *     the item or the target's stack is pending
      */
     public Item transferItem(
             ItemProcessType process,
@@ -299,11 +279,15 @@ public abstract class ItemContainer {
         }
 
         final Item sourceitem = byObjectId.get(objectId);
-        if (sourceitem == null) {
+        if ((sourceitem == null) || sourceitem.isPending()) {
             return null;
         }
 
         Item targetitem = sourceitem.isStackable() ? target.getItemByItemId(sourceitem.getId()) : null;
+        if ((targetitem != null) && targetitem.isPending()) {
+            return null;
+        }
+
         final long count = Math.min(countValue, sourceitem.getCount());
 
         if ((sourceitem.getCount() == count) && (targetitem == null) && !sourceitem.isStackable()) {
@@ -346,12 +330,12 @@ public abstract class ItemContainer {
 
     /**
      * @return {@code null} when the count is not positive, the container holds fewer than {@code count} or no longer
-     *     holds the item
+     *     holds the item, or the item is pending
      */
     public Item destroyItem(ItemProcessType process, Item item, long count, Player actor, Object reference) {
         WorldPartition.checkOwner();
         // Checked before removeItem, whose overrides clean up the owner's state before removing.
-        if ((count <= 0) || !byObjectId.containsKey(item.getObjectId())) {
+        if ((count <= 0) || !byObjectId.containsKey(item.getObjectId()) || item.isPending()) {
             return null;
         }
 
@@ -399,6 +383,58 @@ public abstract class ItemContainer {
         WorldPartition.checkOwner();
         final Item adena = findByItemId(Inventory.ADENA_ID, null);
         return adena == null ? 0 : adena.getCount();
+    }
+
+    /**
+     * Puts in an item built from a row a value transaction committed to this container: the row is stored, so nothing
+     * is written.
+     */
+    public void addCommitted(Item item) {
+        WorldPartition.checkOwner();
+        World.addObject(item);
+        item.setLastChange(Item.ADDED);
+        addItem(item);
+        item.giveSkillsToOwner();
+        refreshWeight();
+    }
+
+    /**
+     * Changes the count of an item as a committed value transaction already changed its row; nothing is written.
+     *
+     * @return {@code false} when the container does not hold the item or nothing of it would be left
+     */
+    public boolean changeCommitted(Item item, long delta) {
+        WorldPartition.checkOwner();
+        if (!byObjectId.containsKey(item.getObjectId()) || ((item.getCount() + delta) <= 0)) {
+            return false;
+        }
+
+        item.changeCount(ItemProcessType.TRANSFER, delta, null, null);
+        item.setLastChange(Item.MODIFIED);
+        refreshWeight();
+        return true;
+    }
+
+    /**
+     * Takes an item out of memory after a committed value transaction moved its row away or deleted it; nothing is
+     * written.
+     *
+     * @return {@code false} when the container does not hold the item
+     */
+    public boolean removeCommitted(Item item) {
+        WorldPartition.checkOwner();
+        if (!byObjectId.containsKey(item.getObjectId())) {
+            return false;
+        }
+
+        removeItem(item);
+        item.removeSkillsFromOwner();
+        item.setLastChange(Item.REMOVED);
+        item.stopAllTasks();
+        World.removeObject(item);
+        IdManager.getInstance().releaseId(item.getObjectId());
+        refreshWeight();
+        return true;
     }
 
     protected void addItem(Item item) {
