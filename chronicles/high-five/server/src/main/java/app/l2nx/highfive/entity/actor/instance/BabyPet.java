@@ -277,10 +277,7 @@ public class BabyPet extends Pet {
                             continue;
                         }
 
-                        if ((owner.getEffectList().getBlockedAbnormalTypes() != null)
-                                && owner.getEffectList()
-                                        .getBlockedAbnormalTypes()
-                                        .contains(skill.getAbnormalType())) {
+                        if (owner.getEffectList().isBlockedAbnormalType(skill.getAbnormalType())) {
                             continue;
                         }
 

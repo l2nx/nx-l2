@@ -31,7 +31,6 @@ import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
-import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.partition.WorldPartition;
@@ -360,11 +359,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
         }
 
         private void castDebuff(Player player) {
-            for (BuffInfo info : player.getEffectList().getDebuffs()) {
-                if (info.getSkill().getId() == DEBUFF_SKILL_ID) {
-                    info.getEffected().getEffectList().stopSkillEffects(SkillFinishType.REMOVED, DEBUFF_SKILL_ID);
-                }
-            }
+            player.getEffectList().stopSkillEffects(SkillFinishType.REMOVED, DEBUFF_SKILL_ID);
 
             altar.broadcastPacket(new MagicSkillUse(altar, player, DEBUFF_SKILL_ID, DEBUFF_SKILL_LEVEL, 1000, 0));
             SkillData.getInstance().getSkill(DEBUFF_SKILL_ID, 1).applyEffects(altar, player);

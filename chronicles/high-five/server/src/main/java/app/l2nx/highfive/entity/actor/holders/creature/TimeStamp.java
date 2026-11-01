@@ -22,10 +22,11 @@
  */
 package app.l2nx.highfive.entity.actor.holders.creature;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Simple class containing all necessary information to maintain<br>
@@ -33,17 +34,15 @@ import lombok.Getter;
  * <b>Filter this carefully as it becomes redundant to store reuse for small delays.</b>
  * @author Yesod, Zoey76, Mobius
  */
+@SingleWriter
 public class TimeStamp {
     private final int id1;
     private final int id2;
 
-    @Getter
     private final long reuse;
 
-    @Getter
-    private volatile long stamp;
+    private long stamp;
 
-    @Getter
     private final int sharedReuseGroup;
 
     public TimeStamp(Skill skill, long reuse, long endsAt) {
@@ -63,22 +62,42 @@ public class TimeStamp {
     }
 
     public int getItemId() {
+        WorldPartition.checkOwner();
         return id1;
     }
 
     public int getItemObjectId() {
+        WorldPartition.checkOwner();
         return id2;
     }
 
     public int getSkillId() {
+        WorldPartition.checkOwner();
         return id1;
     }
 
     public int getSkillLevel() {
+        WorldPartition.checkOwner();
         return id2;
     }
 
+    public long getReuse() {
+        WorldPartition.checkOwner();
+        return reuse;
+    }
+
+    public long getStamp() {
+        WorldPartition.checkOwner();
+        return stamp;
+    }
+
+    public int getSharedReuseGroup() {
+        WorldPartition.checkOwner();
+        return sharedReuseGroup;
+    }
+
     public long getRemaining() {
+        WorldPartition.checkOwner();
         if (stamp == 0) {
             return 0;
         }
@@ -93,6 +112,7 @@ public class TimeStamp {
     }
 
     public boolean hasNotPassed() {
+        WorldPartition.checkOwner();
         if (stamp == 0) {
             return false;
         }

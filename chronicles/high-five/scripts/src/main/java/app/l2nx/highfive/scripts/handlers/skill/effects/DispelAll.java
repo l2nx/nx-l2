@@ -32,7 +32,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.util.StatSet;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -79,7 +78,7 @@ public class DispelAll extends AbstractEffect {
             return;
         }
 
-        final List<BuffInfo> canceled = new ArrayList<>(effected.getEffectList().getEffects());
+        final List<BuffInfo> canceled = effected.getEffectList().getEffects();
         for (BuffInfo info : canceled) {
             effected.getEffectList().stopSkillEffects(SkillFinishType.REMOVED, info.getSkill());
         }

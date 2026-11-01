@@ -23,7 +23,6 @@ import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
 import app.l2nx.highfive.entity.cubic.conditions.ICubicCondition;
-import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
@@ -85,13 +84,7 @@ public class CubicSkill extends SkillHolder implements ICubicConditionHolder {
             return false;
         }
 
-        for (BuffInfo info : target.asCreature().getEffectList().getDebuffs()) {
-            if (info.getSkill().canBeDispeled()) {
-                return true;
-            }
-        }
-
-        return false;
+        return target.asCreature().getEffectList().hasDispellableDebuff();
     }
 
     @Override

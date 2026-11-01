@@ -19,14 +19,16 @@
  */
 package app.l2nx.highfive.entity.actor.holders.creature;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import java.util.concurrent.atomic.AtomicInteger;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author UnAfraid
  */
+@SingleWriter
 public class InvulSkillHolder extends SkillHolder {
-    private final AtomicInteger instances = new AtomicInteger(1);
+    private int instances = 1;
 
     public InvulSkillHolder(int skillId, int skillLevel) {
         super(skillId, skillLevel);
@@ -37,14 +39,17 @@ public class InvulSkillHolder extends SkillHolder {
     }
 
     public int getInstances() {
-        return instances.get();
+        WorldPartition.checkOwner();
+        return instances;
     }
 
     public int increaseInstances() {
-        return instances.incrementAndGet();
+        WorldPartition.checkOwner();
+        return ++instances;
     }
 
     public int decreaseInstances() {
-        return instances.decrementAndGet();
+        WorldPartition.checkOwner();
+        return --instances;
     }
 }

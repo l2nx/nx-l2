@@ -369,19 +369,23 @@ class, each step a change of its own and in this order: `World` and `WorldRegion
 and `Player` share); `WorldObject` with every subclass below the migrated ones (the `instance` package, `Tower`,
 `Vehicle`, the subclasses in scripts), since an override in a class that is not migrated runs unchecked, and with its
 event listener base `ListenersContainer`, which templates, zones, residences, the olympiad and the global event
-containers share, so their listener API is loop-only too;
-`EffectList`; `Item` and the item containers; `Player`; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
+containers share, so their listener API is loop-only too; `EffectList` with its entries `BuffInfo`, `TimeStamp` and
+`InvulSkillHolder`, state of the creature they sit on; `Item` and the item containers; `Player`; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
 world entity is then a single writer. A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
 place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable`, `Summon`, `WorldObject` with
-`ListenersContainer`, `Vehicle`, `Tower` and the `instance` package. Their runs were the tests, client runs on the live
+`ListenersContainer`, `Vehicle`, `Tower`, the `instance` package, and `EffectList` with `BuffInfo`, `TimeStamp` and
+`InvulSkillHolder`. Their runs were the tests, client runs on the live
 world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions,
-skills and reuse, `AttackableBenchmark` for the aggro list, `WorldObjectBenchmark` for positions and distances); the
+skills and reuse, `AttackableBenchmark` for the aggro list, `WorldObjectBenchmark` for positions and distances, `EffectListBenchmark` for adding,
+stacking and stopping effects and their lookups); the
 load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
 A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
-`Creature`: the attacker list, known relations, fake player drops, `getKnownSkill` instead of a scan), so the
+`Creature`: the attacker list, known relations, fake player drops, `getKnownSkill` instead of a scan; for
+`EffectList`: `hasDispellableDebuff`, `isBlockedAbnormalType`, `collectStealable` and `collectDebuffs` instead of a
+copied getter), so the
 snapshot rule below costs no copy on those paths. The `StampedLock` around `Creature.doAttack` was also a re-entry
 guard (`tryWriteLock` fails on the thread that holds it), so an attack ordered from inside an attack is still
 dropped, by a plain flag. The checks cost the stat calculation of `Creature` about 4 ns of its 11 (several checks per
@@ -407,7 +411,9 @@ relies on.
 since ties in hate, the drop owner and seeded random picks over a list follow it, and replay (§9) needs the same
 choice from the same inputs. Keys of game objects compare by `equals` (the object id, as the concurrent maps did),
 never by identity: identity hash order changes on every run. Where order decides an outcome, the map is a linked one
-(`Attackable`'s aggro list is an `Object2ObjectLinkedOpenHashMap` in insertion order). Within one listener container the
+(`Attackable`'s aggro list is an `Object2ObjectLinkedOpenHashMap` in insertion order). Effect lists keep insertion order, which the client shows and stacking relies on (a buff that
+replaces a stacked one goes to the end). A pass that stops effects walks a copy, and an effect's exit may add a new
+buff behind it, which the concurrent queues' iterators reached at their tail: such a pass repeats while exits add buffs. Within one listener container the
 listeners of a type are notified highest priority first and, at equal priority, in registration order; a creature's
 event then goes to its own, its template's and its kind's global container in that order. The `PriorityBlockingQueue`
 these lists replaced iterated in heap order, so priority held only for its head.

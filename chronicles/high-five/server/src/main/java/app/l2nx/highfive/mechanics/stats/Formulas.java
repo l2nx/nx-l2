@@ -32,6 +32,8 @@ import app.l2nx.highfive.config.custom.ClassBalanceConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.xml.HitConditionBonusData;
 import app.l2nx.highfive.data.xml.KarmaLossData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
@@ -1738,16 +1740,12 @@ public class Formulas {
     public static boolean calcBlowSuccess(Creature creature, Creature target, Skill skill) {
         final double dexMod = BaseStat.DEX.calcBonus(creature);
 
-        // Apply DEX Mod.
         final double blowChance = skill.getBlowChance();
 
         // Apply Position Bonus (TODO: values are unconfirmed, possibly custom, remove or update when confirmed).
         final double sideMod = (creature.isInFrontOf(target)) ? 1 : (creature.isBehind(target)) ? 2 : 1.5;
 
-        // Apply all mods.
         final double baseRate = blowChance * dexMod * sideMod;
-
-        // Apply blow rates
         final double rate = creature.calcStat(Stat.BLOW_RATE, baseRate, target, null);
         return ClockBridge.random().nextInt(100) < rate;
     }
@@ -1757,54 +1755,46 @@ public class Formulas {
         final List<BuffInfo> canceled = new ArrayList<>(max);
         switch (slot) {
             case "buff": {
-                // Resist Modifier.
                 final int cancelMagicLvl = skill == null ? creature.getLevel() : skill.getMagicLevel();
                 final double vuln = target.calcStat(Stat.CANCEL_VULN, 0, target, null);
                 final double prof = creature.calcStat(Stat.CANCEL_PROF, 0, target, null);
                 final double resMod = 1 + (((vuln + prof) * -1) / 100);
                 final double finalRate = rate / resMod;
 
-                // Prevent initialization.
-                final List<BuffInfo> buffs = target.getEffectList().hasBuffs()
-                        ? new ArrayList<>(target.getEffectList().getBuffs())
-                        : new ArrayList<>(1);
-                if (target.getEffectList().hasTriggered()) {
-                    buffs.addAll(target.getEffectList().getTriggered());
-                }
+                try (Snapshot<BuffInfo> buffs = ScratchBuffers.empty()) {
+                    target.getEffectList().collectStealable(buffs);
+                    for (int i = buffs.size() - 1; i >= 0; i--) {
+                        final BuffInfo info = buffs.get(i);
+                        if (!info.getSkill().canBeStolen()
+                                || (!calcCancelSuccess(info, cancelMagicLvl, (int) finalRate, skill))) {
+                            continue;
+                        }
 
-                if (target.getEffectList().hasDances()) {
-                    buffs.addAll(target.getEffectList().getDances());
-                }
-
-                for (int i = buffs.size() - 1; i >= 0; i--) // reverse order
-                {
-                    final BuffInfo info = buffs.get(i);
-                    if (!info.getSkill().canBeStolen()
-                            || (!calcCancelSuccess(info, cancelMagicLvl, (int) finalRate, skill))) {
-                        continue;
-                    }
-
-                    canceled.add(info);
-                    if (canceled.size() >= max) {
-                        break;
-                    }
-                }
-                break;
-            }
-            case "debuff": {
-                final List<BuffInfo> debuffs =
-                        new ArrayList<>(target.getEffectList().getDebuffs());
-                for (int i = debuffs.size() - 1; i >= 0; i--) {
-                    final BuffInfo info = debuffs.get(i);
-                    if (info.getSkill().isDebuff()
-                            && info.getSkill().canBeDispeled()
-                            && (ClockBridge.random().nextInt(100) <= rate)) {
                         canceled.add(info);
                         if (canceled.size() >= max) {
                             break;
                         }
                     }
                 }
+
+                break;
+            }
+            case "debuff": {
+                try (Snapshot<BuffInfo> debuffs = ScratchBuffers.empty()) {
+                    target.getEffectList().collectDebuffs(debuffs);
+                    for (int i = debuffs.size() - 1; i >= 0; i--) {
+                        final BuffInfo info = debuffs.get(i);
+                        if (info.getSkill().isDebuff()
+                                && info.getSkill().canBeDispeled()
+                                && (ClockBridge.random().nextInt(100) <= rate)) {
+                            canceled.add(info);
+                            if (canceled.size() >= max) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 break;
             }
         }
@@ -1813,7 +1803,6 @@ public class Formulas {
     }
 
     public static boolean calcCancelSuccess(BuffInfo info, int cancelMagicLvl, int rate, Skill skill) {
-        // Lvl Bonus Modifier.
         final int chance = (int) (rate
                 * (info.getSkill().getMagicLevel() > 0
                         ? 1 + ((cancelMagicLvl - info.getSkill().getMagicLevel()) / 100.)
@@ -1822,12 +1811,7 @@ public class Formulas {
     }
 
     /**
-     * Calculates the abnormal time for an effect.<br>
-     * The abnormal time is taken from the skill definition, and it's global for all effects present in the skills.
-     * @param caster the caster
-     * @param target the target
-     * @param skill the skill
-     * @return the time that the effect will last
+     * The abnormal time comes from the skill definition and is global for all effects of the skill.
      */
     public static int calcEffectAbnormalTime(Creature caster, Creature target, Skill skill) {
         int time = skill.isPassive() || skill.isToggle() ? -1 : skill.getAbnormalTime();

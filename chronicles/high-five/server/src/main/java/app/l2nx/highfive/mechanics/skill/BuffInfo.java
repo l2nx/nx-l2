@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.skill;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -29,48 +30,46 @@ import app.l2nx.highfive.entity.actor.holders.creature.EffectList;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.effects.EffectTaskInfo;
 import app.l2nx.highfive.mechanics.effects.EffectTickTask;
+import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Buff Info.<br>
  * Complex DTO that holds all the information for a given buff (or debuff or dance/song) set of effects issued by an skill.
  * @author Zoey76, Mobius
  */
+@SingleWriter
 public class BuffInfo {
-    @Getter
     private final Creature effector;
 
-    @Getter
     private final Creature effected;
 
-    @Getter
     private final Skill skill;
 
-    @Getter
-    private final List<AbstractEffect> effects = new ArrayList<>(1);
+    // Filled before the buff joins an effect list and never changed after, so its own walks need no copy.
+    private final ObjectArrayList<AbstractEffect> effects = new ObjectArrayList<>(1);
 
-    private final Map<AbstractEffect, EffectTaskInfo> tasks = new ConcurrentHashMap<>();
+    // Effects are shared skill templates, hence identity keys; linked for a stable cancel order.
+    private final Reference2ObjectLinkedOpenHashMap<AbstractEffect, EffectTaskInfo> tasks =
+            new Reference2ObjectLinkedOpenHashMap<>(1);
 
     private final EffectTiming timing;
 
-    @Setter
-    private volatile SkillFinishType finishType = SkillFinishType.NORMAL;
+    private SkillFinishType finishType = SkillFinishType.NORMAL;
 
-    @Getter
-    @Setter
     private boolean inUse = true;
+
+    private boolean finished;
 
     public BuffInfo(Creature effector, Creature effected, Skill skill) {
         this.effector = effector;
@@ -79,47 +78,107 @@ public class BuffInfo {
         timing = new EffectTiming(Formulas.calcEffectAbnormalTime(effector, effected, skill), ClockBridge.gameMillis());
     }
 
+    public Creature getEffector() {
+        WorldPartition.checkOwner();
+        return effector;
+    }
+
+    public Creature getEffected() {
+        WorldPartition.checkOwner();
+        return effected;
+    }
+
+    public Skill getSkill() {
+        WorldPartition.checkOwner();
+        return skill;
+    }
+
+    public List<AbstractEffect> getEffects() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(effects);
+    }
+
+    public boolean hasEffectType(EffectType type) {
+        WorldPartition.checkOwner();
+        for (int i = 0, size = effects.size(); i < size; i++) {
+            if (effects.get(i).getEffectType() == type) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public int getEffectFlags() {
+        WorldPartition.checkOwner();
+        int flags = 0;
+        for (int i = 0, size = effects.size(); i < size; i++) {
+            flags |= effects.get(i).getEffectFlags();
+        }
+
+        return flags;
+    }
+
+    public void setFinishType(SkillFinishType finishType) {
+        WorldPartition.checkOwner();
+        this.finishType = finishType;
+    }
+
+    public boolean isInUse() {
+        WorldPartition.checkOwner();
+        return inUse;
+    }
+
+    public void setInUse(boolean inUse) {
+        WorldPartition.checkOwner();
+        this.inUse = inUse;
+    }
+
     public int getAbnormalTime() {
+        WorldPartition.checkOwner();
         return timing.abnormalTime();
     }
 
     public void setAbnormalTime(int abnormalTime) {
+        WorldPartition.checkOwner();
         timing.setAbnormalTime(abnormalTime);
     }
 
     public void addEffect(AbstractEffect effect) {
+        WorldPartition.checkOwner();
         effects.add(effect);
     }
 
-    private void addTask(AbstractEffect effect, EffectTaskInfo effectTaskInfo) {
-        tasks.put(effect, effectTaskInfo);
-    }
-
-    private EffectTaskInfo getEffectTask(AbstractEffect effect) {
-        return tasks.get(effect);
-    }
-
-    /** @return the remaining time in seconds. */
     public int getTime() {
+        WorldPartition.checkOwner();
         return timing.remainingSeconds(ClockBridge.gameMillis());
     }
 
     public boolean isExpired() {
+        WorldPartition.checkOwner();
         return timing.isExpired(ClockBridge.gameMillis());
     }
 
     /** {@code null} when the effect has already run out and is waiting for removal. */
     public StoredEffect toStoredEffect() {
+        WorldPartition.checkOwner();
         return timing.toStored(ClockBridge.gameMillis());
     }
 
     /** Must be called before the buff is added to the effect list, which schedules its ticks. */
     public void restoreTiming(StoredEffect stored) {
+        WorldPartition.checkOwner();
         timing.restore(stored, ClockBridge.gameMillis());
     }
 
     public boolean isRemoved() {
+        WorldPartition.checkOwner();
         return finishType == SkillFinishType.REMOVED;
+    }
+
+    public boolean isFinished() {
+        WorldPartition.checkOwner();
+        return finished;
     }
 
     /**
@@ -127,18 +186,19 @@ public class BuffInfo {
      * {@link EffectList#stopSkillEffects(SkillFinishType, Skill)} for that.
      */
     public void stopAllEffects(SkillFinishType type, boolean broadcast) {
-        setFinishType(type);
+        WorldPartition.checkOwner();
+        finishType = type;
 
         effected.removeBuffInfoTime(this);
         finishEffects(broadcast);
     }
 
     public void initializeEffects() {
+        WorldPartition.checkOwner();
         if ((effected == null) || (skill == null)) {
             return;
         }
 
-        // When effects are initialized, they have successfully landed.
         if (effected.isPlayer()
                 && (effected.asPlayer().hasEnteredWorld() || PlayerConfig.SHOW_EFFECT_MESSAGES_ON_LOGIN)
                 && !skill.isPassive()) {
@@ -152,15 +212,21 @@ public class BuffInfo {
         }
 
         boolean update = false;
-        for (AbstractEffect effect : effects) {
+        for (int i = 0, size = effects.size(); i < size; i++) {
+            final AbstractEffect effect = effects.get(i);
             if (effect.isInstant() || (effected.isDead() && !skill.isPassive())) {
                 continue;
             }
 
             effect.onStart(effector, effected, skill);
 
-            // Do not add continuous effect if target just died from the initial effect, otherwise they'll be ticked
-            // forever.
+            // A start that stopped this buff already cleared tasks and stats; anything added now would never be
+            // removed.
+            if (finished) {
+                return;
+            }
+
+            // Target died from the initial effect: a continuous effect would tick forever.
             if (effected.isDead() && !skill.isPassive()) {
                 continue;
             }
@@ -168,7 +234,7 @@ public class BuffInfo {
             if (effect.getTicks() > 0) {
                 final long tickPeriod = (long) effect.getTicks() * PlayerConfig.EFFECT_TICK_RATIO;
                 final EffectTickTask effectTask = new EffectTickTask(this, effect);
-                addTask(
+                tasks.put(
                         effect,
                         new EffectTaskInfo(
                                 effectTask,
@@ -195,6 +261,7 @@ public class BuffInfo {
     }
 
     public void onTick(AbstractEffect effect) {
+        WorldPartition.checkOwner();
         boolean continueForever = false;
 
         if (inUse) {
@@ -202,31 +269,23 @@ public class BuffInfo {
         }
 
         if (!continueForever && skill.isToggle()) {
-            final EffectTaskInfo task = getEffectTask(effect);
+            final EffectTaskInfo task = tasks.get(effect);
             if (task != null) {
-                final ScheduledFuture<?> schedule = task.getScheduledFuture();
-                if ((schedule != null) && !schedule.isCancelled() && !schedule.isDone()) {
-                    schedule.cancel(true);
-                }
-
+                cancel(task);
                 effected.getEffectList().stopSkillEffects(SkillFinishType.REMOVED, skill);
             }
         }
     }
 
     public void finishEffects(boolean broadcast) {
-        for (EffectTaskInfo effectTask : tasks.values()) {
-            final ScheduledFuture<?> schedule = effectTask.getScheduledFuture();
-            if ((schedule != null) && !schedule.isCancelled() && !schedule.isDone()) {
-                schedule.cancel(true);
-            }
-        }
+        WorldPartition.checkOwner();
+        finished = true;
+        cancelTasks();
+        removeStatsOfEffects();
 
-        removeStats();
-
-        for (AbstractEffect effect : effects) {
-            // Instant effects shouldn't call onExit(..).
-            if ((effect != null) && !effect.isInstant()) {
+        for (int i = 0, size = effects.size(); i < size; i++) {
+            final AbstractEffect effect = effects.get(i);
+            if (!effect.isInstant()) {
                 effect.onExit(effector, effected, skill);
             }
         }
@@ -256,7 +315,29 @@ public class BuffInfo {
         }
     }
 
+    /** Stops the effect ticks without exiting the effects: a replaced passive must not run its exit, which may clamp HP. */
+    public void stopTicks() {
+        WorldPartition.checkOwner();
+        cancelTasks();
+    }
+
+    private void cancelTasks() {
+        for (EffectTaskInfo task : tasks.values()) {
+            cancel(task);
+        }
+
+        tasks.clear();
+    }
+
+    private static void cancel(EffectTaskInfo task) {
+        final ScheduledFuture<?> schedule = task.getScheduledFuture();
+        if ((schedule != null) && !schedule.isCancelled() && !schedule.isDone()) {
+            schedule.cancel(true);
+        }
+    }
+
     public boolean isAbnormalType(AbnormalType type) {
+        WorldPartition.checkOwner();
         return skill.getAbnormalType() == type;
     }
 
@@ -299,18 +380,29 @@ public class BuffInfo {
     }
 
     public void addStats() {
-        effects.forEach(effect -> effected.addStatFuncs(effect.getStatFuncs(effector, effected, skill)));
+        WorldPartition.checkOwner();
+        for (int i = 0, size = effects.size(); i < size; i++) {
+            effected.addStatFuncs(effects.get(i).getStatFuncs(effector, effected, skill));
+        }
     }
 
     public void removeStats() {
-        effects.forEach(effected::removeStatsOwner);
+        WorldPartition.checkOwner();
+        removeStatsOfEffects();
+    }
+
+    private void removeStatsOfEffects() {
+        for (int i = 0, size = effects.size(); i < size; i++) {
+            effected.removeStatsOwner(effects.get(i));
+        }
+
         effected.removeStatsOwner(skill);
     }
 
     @Override
     public String toString() {
         return "BuffInfo [effector=" + effector + ", effected=" + effected + ", skill=" + skill + ", effects=" + effects
-                + ", tasks=" + tasks + ", abnormalTime=" + timing.abnormalTime() + ", isRemoved=" + isRemoved()
-                + ", isInUse=" + inUse + "]";
+                + ", tasks=" + tasks + ", abnormalTime=" + timing.abnormalTime() + ", isRemoved="
+                + (finishType == SkillFinishType.REMOVED) + ", isInUse=" + inUse + "]";
     }
 }
