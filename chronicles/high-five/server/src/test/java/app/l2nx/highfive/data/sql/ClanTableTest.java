@@ -104,8 +104,10 @@ class ClanTableTest {
         bind(ForumsBBSManager.class, ForumsBBSManager::getInstance, mock(ForumsBBSManager.class));
 
         when(clanRepository.findAllClanIds()).thenReturn(List.of(CLAN_ID));
-        table.load();
-        clan = table.getClan(CLAN_ID);
+        clan = WorldLoopExtension.callInPass(() -> {
+            table.load();
+            return table.getClan(CLAN_ID);
+        });
     }
 
     @AfterEach

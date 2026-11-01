@@ -44,6 +44,8 @@ import app.l2nx.highfive.data.sql.OfflineTraderTable;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.data.xml.EnchantItemGroupsData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
@@ -463,10 +465,8 @@ public final class PlayerWorldEntry {
 
         player.onPlayerEnter();
 
-        // Apply item skills.
         player.getInventory().applyItemSkills();
 
-        // Send Skill list
         player.sendSkillList();
 
         player.sendPacket(new SkillCoolTime(player));
@@ -475,18 +475,22 @@ public final class PlayerWorldEntry {
         }
 
         player.sendPacket(new ExShowContactList(player));
-        for (Item i : player.getInventory().getItems()) {
-            if (i.isTimeLimitedItem()) {
-                i.scheduleLifeTimeTask();
+        try (Snapshot<Item> items = ScratchBuffers.empty()) {
+            player.getInventory()
+                    .collectItems(items, i -> i.isTimeLimitedItem() || (i.isShadowItem() && i.isEquipped()));
+            for (Item i : items) {
+                if (i.isTimeLimitedItem()) {
+                    i.scheduleLifeTimeTask();
+                }
+
+                if (i.isShadowItem() && i.isEquipped()) {
+                    i.decreaseMana(false);
+                }
             }
 
-            if (i.isShadowItem() && i.isEquipped()) {
-                i.decreaseMana(false);
-            }
-        }
-
-        for (Item i : player.getWarehouse().getItems()) {
-            if (i.isTimeLimitedItem()) {
+            items.clear();
+            player.getWarehouse().collectItems(items, Item::isTimeLimitedItem);
+            for (Item i : items) {
                 i.scheduleLifeTimeTask();
             }
         }
@@ -517,31 +521,17 @@ public final class PlayerWorldEntry {
         }
 
         // Attacker or spectator logging in to a siege zone.
-        // Actually should be checked for inside castle only?
         if (!player.isGM()
                 && player.isInsideZone(ZoneId.SIEGE)
                 && (!player.isInSiege() || (player.getSiegeState() < 2))) {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
 
-        // Over-enchant protection.
         if (PlayerConfig.OVER_ENCHANT_PROTECTION && !player.isGM()) {
             boolean punish = false;
-            for (Item item : player.getInventory().getItems()) {
-                if (item.isEquipable() //
-                        && ((item.isWeapon()
-                                        && (item.getEnchantLevel()
-                                                > EnchantItemGroupsData.getInstance()
-                                                        .getMaxWeaponEnchant())) //
-                                || ((item.getTemplate().getType2() == ItemTemplate.TYPE2_ACCESSORY)
-                                        && (item.getEnchantLevel()
-                                                > EnchantItemGroupsData.getInstance()
-                                                        .getMaxAccessoryEnchant())) //
-                                || (item.isArmor()
-                                        && (item.getTemplate().getType2() != ItemTemplate.TYPE2_ACCESSORY)
-                                        && (item.getEnchantLevel()
-                                                > EnchantItemGroupsData.getInstance()
-                                                        .getMaxArmorEnchant())))) {
+            try (Snapshot<Item> overEnchanted = ScratchBuffers.empty()) {
+                player.getInventory().collectItems(overEnchanted, PlayerWorldEntry::isOverEnchanted);
+                for (Item item : overEnchanted) {
                     log.info("Over-enchanted (+{}) {} has been removed from {}", item.getEnchantLevel(), item, player);
                     player.getInventory().destroyItem(ItemProcessType.DESTROY, item, player, null);
                     punish = true;
@@ -757,6 +747,18 @@ public final class PlayerWorldEntry {
                 && PremiumSystemConfig.PC_CAFE_RETAIL_LIKE) {
             PcCafePointsManager.getInstance().run(player);
         }
+    }
+
+    private static boolean isOverEnchanted(Item item) {
+        if (!item.isEquipable()) {
+            return false;
+        }
+
+        final EnchantItemGroupsData limits = EnchantItemGroupsData.getInstance();
+        final boolean accessory = item.getTemplate().getType2() == ItemTemplate.TYPE2_ACCESSORY;
+        return (item.isWeapon() && (item.getEnchantLevel() > limits.getMaxWeaponEnchant()))
+                || (accessory && (item.getEnchantLevel() > limits.getMaxAccessoryEnchant()))
+                || (item.isArmor() && !accessory && (item.getEnchantLevel() > limits.getMaxArmorEnchant()));
     }
 
     private static void notifyClanMembers(Player player) {

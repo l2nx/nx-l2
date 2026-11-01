@@ -88,6 +88,8 @@ import app.l2nx.highfive.data.xml.SendMessageLocalisationData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
@@ -2130,9 +2132,9 @@ public class Player extends Playable {
         int armorPenalty = 0;
         int weaponPenalty = 0;
         int crystaltype;
-        for (Item item : inventory.getItems()) {
+        for (int slot = 0; slot < Inventory.PAPERDOLL_TOTALSLOTS; slot++) {
+            final Item item = inventory.getPaperdollItem(slot);
             if ((item != null)
-                    && item.isEquipped()
                     && (item.getItemType() != EtcItemType.ARROW)
                     && (item.getItemType() != EtcItemType.BOLT)) {
                 crystaltype = item.getTemplate().getCrystalType().getLevel();
@@ -4881,59 +4883,42 @@ public class Player extends Playable {
             if ((dropPercent > 0) && (ClockBridge.random().nextInt(100) < dropPercent)) {
                 int dropCount = 0;
                 int itemDropPercent = 0;
-                for (Item itemDrop : inventory.getItems()) {
-                    // Don't drop
-                    if (itemDrop.isShadowItem()
-                            || // do not drop Shadow Items
-                            itemDrop.isTimeLimitedItem()
-                            || // do not drop Time Limited Items
-                            !itemDrop.isDropable()
-                            || (itemDrop.getId() == Inventory.ADENA_ID)
-                            || // Adena
-                            (itemDrop.getTemplate().getType2() == ItemTemplate.TYPE2_QUEST)
-                            || // Quest Items
-                            (hasSummon() && (summon.getControlObjectId() == itemDrop.getId()))
-                            || // Control Item of active pet
-                            (Arrays.binarySearch(PvpConfig.KARMA_LIST_NONDROPPABLE_ITEMS, itemDrop.getId()) >= 0)
-                            || // Item listed in the non droppable item list
-                            (Arrays.binarySearch(PvpConfig.KARMA_LIST_NONDROPPABLE_PET_ITEMS, itemDrop.getId())
-                                    >= 0 // Item listed in the non droppable pet item list
-                            )) {
-                        continue;
-                    }
-
-                    if (itemDrop.isEquipped()) {
-                        // Set proper chance according to Item type of equipped Item.
-                        itemDropPercent = itemDrop.getTemplate().getType2() == ItemTemplate.TYPE2_WEAPON
-                                ? dropEquipWeapon
-                                : dropEquip;
-                    } else {
-                        itemDropPercent = dropItem; // Item in inventory
-                    }
-
-                    // NOTE: Each time an item is dropped, the chance of another item being dropped gets lesser
-                    // (dropCount * 2)
-                    if (ClockBridge.random().nextInt(100) < itemDropPercent) {
+                try (Snapshot<Item> droppable = ScratchBuffers.empty()) {
+                    inventory.collectItems(droppable, this::isDroppableOnDeath);
+                    for (Item itemDrop : droppable) {
                         if (itemDrop.isEquipped()) {
-                            inventory.unEquipItemInSlot(itemDrop.getLocationSlot());
-                        }
-
-                        dropItem(ItemProcessType.DEATH, itemDrop, killer, true);
-                        sendItemList(false);
-
-                        if (isKarmaDrop) {
-                            log.warn(
-                                    "{} has karma and dropped id = {}, count = {}",
-                                    getName(),
-                                    itemDrop.getId(),
-                                    itemDrop.getCount());
+                            itemDropPercent = itemDrop.getTemplate().getType2() == ItemTemplate.TYPE2_WEAPON
+                                    ? dropEquipWeapon
+                                    : dropEquip;
                         } else {
-                            log.warn(
-                                    "{} dropped id = {}, count = {}", getName(), itemDrop.getId(), itemDrop.getCount());
+                            itemDropPercent = dropItem;
                         }
 
-                        if (++dropCount >= dropLimit) {
-                            break;
+                        if (ClockBridge.random().nextInt(100) < itemDropPercent) {
+                            if (itemDrop.isEquipped()) {
+                                inventory.unEquipItemInSlot(itemDrop.getLocationSlot());
+                            }
+
+                            dropItem(ItemProcessType.DEATH, itemDrop, killer, true);
+                            sendItemList(false);
+
+                            if (isKarmaDrop) {
+                                log.warn(
+                                        "{} has karma and dropped id = {}, count = {}",
+                                        getName(),
+                                        itemDrop.getId(),
+                                        itemDrop.getCount());
+                            } else {
+                                log.warn(
+                                        "{} dropped id = {}, count = {}",
+                                        getName(),
+                                        itemDrop.getId(),
+                                        itemDrop.getCount());
+                            }
+
+                            if (++dropCount >= dropLimit) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -4941,12 +4926,22 @@ public class Player extends Playable {
         }
     }
 
+    private boolean isDroppableOnDeath(Item item) {
+        return !item.isShadowItem()
+                && !item.isTimeLimitedItem()
+                && item.isDropable()
+                && (item.getId() != Inventory.ADENA_ID)
+                && (item.getTemplate().getType2() != ItemTemplate.TYPE2_QUEST)
+                && !(hasSummon() && (summon.getControlObjectId() == item.getObjectId()))
+                && (Arrays.binarySearch(PvpConfig.KARMA_LIST_NONDROPPABLE_ITEMS, item.getId()) < 0)
+                && (Arrays.binarySearch(PvpConfig.KARMA_LIST_NONDROPPABLE_PET_ITEMS, item.getId()) < 0);
+    }
+
     public void onKillUpdatePvPKarma(Creature target) {
         if ((target == null) || !target.isPlayable()) {
             return;
         }
 
-        // Avoid nulls && check if player != killedPlayer.
         final Player killedPlayer = target.asPlayer();
         if ((killedPlayer == null) || (killedPlayer == this)) {
             return;

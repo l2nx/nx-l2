@@ -24,6 +24,8 @@ package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import app.l2nx.highfive.data.xml.RecipeData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 import app.l2nx.highfive.entity.item.ItemTemplate;
@@ -39,108 +41,48 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.enums.WarehouseListType;
 import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SortedWareHouseWithdrawalList extends ServerPacket {
     public static final int PRIVATE = 1;
     public static final int CLAN = 2;
-    public static final int CASTLE = 3; // not sure
-    public static final int FREIGHT = 4; // not sure
+    public static final int CASTLE = 3;
+    public static final int FREIGHT = 4;
 
-    /** sort order A..Z */
     public static final byte A2Z = 1;
-    /** sort order Z..A */
     public static final byte Z2A = -1;
-    /** sort order Grade non..S */
     public static final byte GRADE = 2;
-    /** sort order Recipe Level 1..9 */
     public static final byte LEVEL = 3;
-    /** sort order type */
     public static final byte TYPE = 4;
-    /** sort order body part (wearing) */
     public static final byte WEAR = 5;
-    /** Maximum Items to put into list */
     public static final int MAX_SORT_LIST_ITEMS = 300;
 
     private long playerAdena;
     private List<WarehouseItem> objects = new ArrayList<>();
     private int whType;
 
-    /**
-     * This will instantiate the Warehouselist the Player asked for
-     * @param player who calls for the itemlist
-     * @param type is the Warehouse Type
-     * @param itemtype is the Itemtype to sort for
-     * @param sortorder is the integer Sortorder like 1 for A..Z (use public constant)
-     */
     public SortedWareHouseWithdrawalList(Player player, int type, WarehouseListType itemtype, byte sortorder) {
         whType = type;
         playerAdena = player.getAdena();
         if (player.getActiveWarehouse() == null) {
-            // Something went wrong!
             log.warn("Error while sending withdraw request to: {}", player.getName());
             return;
         }
 
-        switch (itemtype) {
-            case WEAPON: {
-                objects = createWeaponList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case ARMOR: {
-                objects = createArmorList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case ETCITEM: {
-                objects = createEtcItemList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case MATERIAL: {
-                objects = createMatList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case RECIPE: {
-                objects = createRecipeList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case AMULETT: {
-                objects = createAmulettList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case SPELLBOOK: {
-                objects = createSpellbookList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case CONSUMABLE: {
-                objects = createConsumableList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case SHOT: {
-                objects = createShotList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case SCROLL: {
-                objects = createScrollList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case SEED: {
-                objects = createSeedList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case OTHER: {
-                objects = createOtherList(player.getActiveWarehouse().getItems());
-                break;
-            }
-            case ALL:
-            default: {
-                objects = createAllList(player.getActiveWarehouse().getItems());
-                break;
+        try (Snapshot<Item> accepted = ScratchBuffers.empty()) {
+            player.getActiveWarehouse().collectItems(accepted, filterOf(itemtype));
+            for (Item item : accepted) {
+                if (objects.size() == MAX_SORT_LIST_ITEMS) {
+                    break;
+                }
+
+                objects.add(new WarehouseItem(item));
             }
         }
 
@@ -181,15 +123,9 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
                 }
             }
         } catch (Exception e) {
-            // Ignore.
         }
     }
 
-    /**
-     * This public method return the integer of the Sortorder by its name. If you want to have another, add the Comparator and the Constant.
-     * @param order
-     * @return the integer of the sortorder or 1 as default value
-     */
     public static byte getOrder(String order) {
         if (order == null) {
             return A2Z;
@@ -212,9 +148,6 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         }
     }
 
-    /**
-     * This is the common Comparator to sort the items by Name
-     */
     private static class WarehouseItemNameComparator implements Comparator<WarehouseItem> {
         private byte order = 0;
 
@@ -238,9 +171,6 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         }
     }
 
-    /**
-     * This Comparator is used to sort by Recipe Level
-     */
     private static class WarehouseItemRecipeComparator implements Comparator<WarehouseItem> {
         private int order = 0;
         private RecipeData rd = null;
@@ -287,9 +217,6 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         }
     }
 
-    /**
-     * This Comparator is used to sort the Items by BodyPart
-     */
     private static class WarehouseItemBodypartComparator implements Comparator<WarehouseItem> {
         private byte order = 0;
 
@@ -313,9 +240,6 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         }
     }
 
-    /**
-     * This Comparator is used to sort by the Item Grade (e.g. Non..S-Grade)
-     */
     private static class WarehouseItemGradeComparator implements Comparator<WarehouseItem> {
         byte order = 0;
 
@@ -339,9 +263,7 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         }
     }
 
-    /**
-     * This Comparator will sort by Item Type. Unfortunatly this will only have a good result if the Database Table for the ETCITEM.TYPE column is fixed!
-     */
+    /** Only sorts well if the ETCITEM.TYPE column data is fixed. */
     private static class WarehouseItemTypeComparator implements Comparator<WarehouseItem> {
         byte order = 0;
 
@@ -369,136 +291,49 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         }
     }
 
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Weapon</li>
-     * <li>Arrow</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createWeaponList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if ((item.isWeapon()
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_WEAPON)
-                            || (item.isEtcItem() && (item.getItemType() == EtcItemType.ARROW))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
+    private static Predicate<Item> filterOf(WarehouseListType type) {
+        return switch (type) {
+            case WEAPON ->
+                orMoney(item -> item.isWeapon()
+                        || (item.getTemplate().getType2() == ItemTemplate.TYPE2_WEAPON)
+                        || (item.isEtcItem() && (item.getItemType() == EtcItemType.ARROW)));
+            case ARMOR -> orMoney(Item::isArmor);
+            case ETCITEM -> orMoney(Item::isEtcItem);
+            case MATERIAL -> orMoney(item -> isEtcItemOf(item, EtcItemType.MATERIAL));
+            case RECIPE -> orMoney(item -> isEtcItemOf(item, EtcItemType.RECIPE));
+            case AMULETT -> orMoney(item -> item.isEtcItem() && isAmulet(item));
+            case SPELLBOOK -> {
+                final Set<Integer> bookIds = bookIds();
+                yield orMoney(item -> item.isEtcItem() && bookIds.contains(item.getId()) && !isAmulet(item));
             }
-        }
-
-        return list;
+            case CONSUMABLE ->
+                orMoney(item -> isEtcItemOf(item, EtcItemType.SCROLL) || isEtcItemOf(item, EtcItemType.SHOT));
+            case SHOT -> orMoney(item -> isEtcItemOf(item, EtcItemType.SHOT));
+            case SCROLL -> orMoney(item -> isEtcItemOf(item, EtcItemType.SCROLL));
+            case SEED -> orMoney(item -> isEtcItemOf(item, EtcItemType.SEED));
+            case OTHER ->
+                orMoney(item -> item.isEtcItem()
+                        && (item.getEtcItem().getItemType() != EtcItemType.MATERIAL)
+                        && (item.getEtcItem().getItemType() != EtcItemType.RECIPE)
+                        && (item.getEtcItem().getItemType() != EtcItemType.SCROLL)
+                        && (item.getEtcItem().getItemType() != EtcItemType.SHOT));
+            default -> _ -> true;
+        };
     }
 
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Armor</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createArmorList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if ((item.isArmor() || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
+    private static Predicate<Item> orMoney(Predicate<Item> kind) {
+        return item -> (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY) || kind.test(item);
     }
 
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Everything which is no Weapon/Armor</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createEtcItemList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if ((item.isEtcItem() || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
+    private static boolean isEtcItemOf(Item item, EtcItemType type) {
+        return item.isEtcItem() && (item.getEtcItem().getItemType() == type);
     }
 
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Materials</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createMatList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem() && (item.getEtcItem().getItemType() == EtcItemType.MATERIAL))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
+    private static boolean isAmulet(Item item) {
+        return item.getItemName().toUpperCase().startsWith("AMULET");
     }
 
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Recipes</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createRecipeList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem() && (item.getEtcItem().getItemType() == EtcItemType.RECIPE))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Amulett</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createAmulettList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem() && (item.getItemName().toUpperCase().startsWith("AMULET")))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Spellbook & Dwarven Drafts</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createSpellbookList(Collection<Item> items) {
-        // Books are the items required to learn class skills.
+    private static Set<Integer> bookIds() {
         final Set<Integer> bookIds = new HashSet<>();
         for (PlayerClass playerClass : PlayerClass.values()) {
             for (SkillLearn skillLearn : SkillTreeData.getInstance()
@@ -510,149 +345,12 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
             }
         }
 
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem()
-                                    && bookIds.contains(item.getId())
-                                    && (!item.getItemName().toUpperCase().startsWith("AMULET")))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Consumables (Potions, Shots, ...)</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createConsumableList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem()
-                                    && ((item.getEtcItem().getItemType() == EtcItemType.SCROLL)
-                                            || (item.getEtcItem().getItemType() == EtcItemType.SHOT)))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Shots</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createShotList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem() && (item.getEtcItem().getItemType() == EtcItemType.SHOT))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Scrolls/Potions</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createScrollList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem() && (item.getEtcItem().getItemType() == EtcItemType.SCROLL))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Seeds</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createSeedList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem() && (item.getEtcItem().getItemType() == EtcItemType.SEED))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>Everything which is no Weapon/Armor, Material, Recipe, Spellbook, Scroll or Shot</li>
-     * <li>Money</li><br>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createOtherList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (((item.isEtcItem()
-                                    && ((item.getEtcItem().getItemType() != EtcItemType.MATERIAL)
-                                            && (item.getEtcItem().getItemType() != EtcItemType.RECIPE)
-                                            && (item.getEtcItem().getItemType() != EtcItemType.SCROLL)
-                                            && (item.getEtcItem().getItemType() != EtcItemType.SHOT)))
-                            || (item.getTemplate().getType2() == ItemTemplate.TYPE2_MONEY))
-                    && (list.size() < MAX_SORT_LIST_ITEMS)) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * This method is used to limit the given Warehouse List to:
-     * <li>no limit</li> This may sound strange but we return the given Array as a List<L2WarehouseItem>
-     * @param items complete Warehouse List
-     * @return limited Item List
-     */
-    private List<WarehouseItem> createAllList(Collection<Item> items) {
-        final List<WarehouseItem> list = new ArrayList<>();
-        for (Item item : items) {
-            if (list.size() < MAX_SORT_LIST_ITEMS) {
-                list.add(new WarehouseItem(item));
-            }
-        }
-
-        return list;
+        return bookIds;
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.WAREHOUSE_WITHDRAW_LIST.writeId(this, buffer);
-        /*
-         * 0x01-Private Warehouse 0x02-Clan Warehouse 0x03-Castle Warehouse 0x04-Warehouse
-         */
         buffer.writeShort(whType);
         buffer.writeLong(playerAdena);
         buffer.writeShort(objects.size());
@@ -681,7 +379,6 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
                 buffer.writeShort(item.getElementDefAttr(i));
             }
 
-            // Enchant Effects
             for (int op : item.getEnchantOptions()) {
                 buffer.writeShort(op);
             }

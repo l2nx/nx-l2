@@ -22,16 +22,20 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
+import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PetInventory extends Inventory {
-    @Getter
     private final Pet owner;
 
     public PetInventory(Pet owner) {
@@ -39,21 +43,19 @@ public class PetInventory extends Inventory {
     }
 
     @Override
-    public int getOwnerId() {
-        // gets the Player-owner's ID
-        int id;
-        try {
-            id = owner.getOwner().getObjectId();
-        } catch (NullPointerException e) {
-            return 0;
-        }
-
-        return id;
+    public Pet getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
     }
 
-    /**
-     * Refresh the weight of equipment loaded
-     */
+    /** The items belong to the pet's master, so they are stored under the master's id. */
+    @Override
+    public int getOwnerId() {
+        WorldPartition.checkOwner();
+        final Player master = owner.getOwner();
+        return master == null ? 0 : master.getObjectId();
+    }
+
     @Override
     protected void refreshWeight() {
         super.refreshWeight();
@@ -61,6 +63,7 @@ public class PetInventory extends Inventory {
     }
 
     public boolean validateCapacity(Item item) {
+        WorldPartition.checkOwner();
         int slots = 0;
         if ((!item.isStackable() || (getItemByItemId(item.getId()) == null))
                 && !item.getTemplate().hasExImmediateEffect()) {
@@ -72,10 +75,12 @@ public class PetInventory extends Inventory {
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (items.size() + slots) <= owner.getInventoryLimit();
+        WorldPartition.checkOwner();
+        return (liveItems().size() + slots) <= owner.getInventoryLimit();
     }
 
     public boolean validateWeight(Item item, long count) {
+        WorldPartition.checkOwner();
         int weight = 0;
         final ItemTemplate template = ItemData.getInstance().getTemplate(item.getId());
         if (template == null) {
@@ -88,6 +93,7 @@ public class PetInventory extends Inventory {
 
     @Override
     public boolean validateWeight(long weight) {
+        WorldPartition.checkOwner();
         return (totalWeight + weight) <= owner.getMaxLoad();
     }
 
@@ -103,26 +109,31 @@ public class PetInventory extends Inventory {
 
     @Override
     public void restore() {
+        WorldPartition.checkOwner();
         super.restore();
 
-        // check for equipped items from other pets
-        for (Item item : items) {
-            if (item.isEquipped() && !item.getTemplate().checkCondition(owner, owner, false)) {
-                unEquipItemInSlot(item.getLocationSlot());
+        try (Snapshot<Item> items = ScratchBuffers.snapshot(liveItems())) {
+            for (Item item : items) {
+                if (item.isEquipped() && !item.getTemplate().checkCondition(owner, owner, false)) {
+                    unEquipItemInSlot(item.getLocationSlot());
+                }
             }
         }
     }
 
     public void transferItemsToOwner() {
-        for (Item item : items) {
-            getOwner()
-                    .transferItem(
-                            ItemProcessType.TRANSFER,
-                            item.getObjectId(),
-                            item.getCount(),
-                            getOwner().getOwner().getInventory(),
-                            getOwner().getOwner(),
-                            getOwner());
+        WorldPartition.checkOwner();
+        final Player master = owner.getOwner();
+        try (Snapshot<Item> items = ScratchBuffers.snapshot(liveItems())) {
+            for (Item item : items) {
+                owner.transferItem(
+                        ItemProcessType.TRANSFER,
+                        item.getObjectId(),
+                        item.getCount(),
+                        master.getInventory(),
+                        master,
+                        owner);
+            }
         }
     }
 }

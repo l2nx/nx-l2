@@ -236,68 +236,65 @@ public class ItemManager {
      * @param reference an object referencing the action, such as an NPC or another item
      */
     public static void destroyItem(ItemProcessType process, Item item, Player actor, Object reference) {
-        synchronized (item) {
-            final long old = item.getCount();
-            item.setCount(0);
-            item.setOwnerId(0);
-            item.setItemLocation(ItemLocation.VOID);
-            item.setLastChange(Item.REMOVED);
+        final long old = item.getCount();
+        item.setCount(0);
+        item.setOwnerId(0);
+        item.setItemLocation(ItemLocation.VOID);
+        item.setLastChange(Item.REMOVED);
 
-            World.removeObject(item);
-            // The rows are deleted while the handle still resolves to the item's id.
-            item.updateDatabase(true);
-            IdManager.getInstance().releaseId(item.getObjectId());
+        World.removeObject(item);
+        // The rows are deleted while the handle still resolves to the item's id.
+        item.updateDatabase(true);
+        IdManager.getInstance().releaseId(item.getObjectId());
 
-            if ((process != null) && (process != ItemProcessType.NONE)) {
-                if ((GeneralConfig.LOG_ITEMS
-                                && ((!GeneralConfig.LOG_ITEMS_SMALL_LOG) && (!GeneralConfig.LOG_ITEMS_IDS_ONLY)))
-                        || (GeneralConfig.LOG_ITEMS_SMALL_LOG
-                                && (item.isEquipable() || (item.getId() == Inventory.ADENA_ID)))
-                        || (GeneralConfig.LOG_ITEMS_IDS_ONLY
-                                && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(item.getId()))) {
-                    if (item.isEnchanted()) {
-                        ITEM_LOG.info(
-                                "DELETE:{}, item {}:+{} {}({}), PrevCount({}), {}, {}",
-                                process,
-                                item.getObjectId(),
-                                item.getEnchantLevel(),
-                                item.getTemplate().getName(),
-                                item.getCount(),
-                                old,
-                                actor,
-                                reference);
-                    } else {
-                        ITEM_LOG.info(
-                                "DELETE:{}, item {}:{}({}), PrevCount({}), {}, {}",
-                                process,
-                                item.getObjectId(),
-                                item.getTemplate().getName(),
-                                item.getCount(),
-                                old,
-                                actor,
-                                reference);
-                    }
+        if ((process != null) && (process != ItemProcessType.NONE)) {
+            if ((GeneralConfig.LOG_ITEMS
+                            && ((!GeneralConfig.LOG_ITEMS_SMALL_LOG) && (!GeneralConfig.LOG_ITEMS_IDS_ONLY)))
+                    || (GeneralConfig.LOG_ITEMS_SMALL_LOG
+                            && (item.isEquipable() || (item.getId() == Inventory.ADENA_ID)))
+                    || (GeneralConfig.LOG_ITEMS_IDS_ONLY && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(item.getId()))) {
+                if (item.isEnchanted()) {
+                    ITEM_LOG.info(
+                            "DELETE:{}, item {}:+{} {}({}), PrevCount({}), {}, {}",
+                            process,
+                            item.getObjectId(),
+                            item.getEnchantLevel(),
+                            item.getTemplate().getName(),
+                            item.getCount(),
+                            old,
+                            actor,
+                            reference);
+                } else {
+                    ITEM_LOG.info(
+                            "DELETE:{}, item {}:{}({}), PrevCount({}), {}, {}",
+                            process,
+                            item.getObjectId(),
+                            item.getTemplate().getName(),
+                            item.getCount(),
+                            old,
+                            actor,
+                            reference);
+                }
+            }
+
+            if ((actor != null) && actor.isGM() && GeneralConfig.GMAUDIT) {
+                String referenceName = "no-reference";
+                if (reference instanceof WorldObject) {
+                    referenceName = (((WorldObject) reference).getName() != null
+                            ? ((WorldObject) reference).getName()
+                            : "no-name");
+                } else if (reference instanceof String) {
+                    referenceName = (String) reference;
                 }
 
-                if ((actor != null) && actor.isGM() && GeneralConfig.GMAUDIT) {
-                    String referenceName = "no-reference";
-                    if (reference instanceof WorldObject) {
-                        referenceName = (((WorldObject) reference).getName() != null
-                                ? ((WorldObject) reference).getName()
-                                : "no-name");
-                    } else if (reference instanceof String) {
-                        referenceName = (String) reference;
-                    }
-
-                    final String targetName =
-                            (actor.getTarget() != null ? actor.getTarget().getName() : "no-target");
-                    GMAudit.logAction(
-                            String.valueOf(actor),
-                            process + "(id: " + item.getId() + " count: " + item.getCount() + " itemObjId: "
-                                    + item.getObjectId() + ")",
-                            targetName,
-                            "Object referencing this action is: " + referenceName);
-                }
+                final String targetName =
+                        (actor.getTarget() != null ? actor.getTarget().getName() : "no-target");
+                GMAudit.logAction(
+                        String.valueOf(actor),
+                        process + "(id: " + item.getId() + " count: " + item.getCount() + " itemObjId: "
+                                + item.getObjectId() + ")",
+                        targetName,
+                        "Object referencing this action is: " + referenceName);
             }
         }
     }

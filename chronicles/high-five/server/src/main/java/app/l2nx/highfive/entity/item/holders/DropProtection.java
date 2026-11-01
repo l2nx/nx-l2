@@ -19,21 +19,21 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 
 /**
  * @author DrHouse
  */
+@SingleWriter
 public class DropProtection implements Runnable {
-    private volatile boolean protectedDrop = false;
+    private boolean protectedDrop = false;
 
-    @Getter
     private Creature owner = null;
 
     private ScheduledFuture<?> task = null;
@@ -41,27 +41,37 @@ public class DropProtection implements Runnable {
     private static final long PROTECTED_MILLIS_TIME = 15000;
 
     @Override
-    public synchronized void run() {
+    public void run() {
+        WorldPartition.checkOwner();
         protectedDrop = false;
         owner = null;
         task = null;
     }
 
+    public Creature getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
     public boolean isProtected() {
+        WorldPartition.checkOwner();
         return protectedDrop;
     }
 
-    public synchronized boolean tryPickUp(Player actor) {
+    public boolean tryPickUp(Player actor) {
+        WorldPartition.checkOwner();
         return !protectedDrop
                 || (owner == actor)
                 || ((owner.getParty() != null) && (owner.getParty() == actor.getParty()));
     }
 
     public boolean tryPickUp(Pet pet) {
+        WorldPartition.checkOwner();
         return tryPickUp(pet.getOwner());
     }
 
-    public synchronized void unprotect() {
+    public void unprotect() {
+        WorldPartition.checkOwner();
         if (task != null) {
             task.cancel(false);
         }
@@ -71,7 +81,8 @@ public class DropProtection implements Runnable {
         task = null;
     }
 
-    public synchronized void protect(Creature creature) {
+    public void protect(Creature creature) {
+        WorldPartition.checkOwner();
         unprotect();
 
         protectedDrop = true;

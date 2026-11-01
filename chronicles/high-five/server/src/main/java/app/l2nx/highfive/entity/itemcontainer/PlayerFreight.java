@@ -22,17 +22,17 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.mechanics.stats.Stat;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PlayerFreight extends ItemContainer {
-    @Getter
     private final Player owner;
 
-    @Getter
     private final int ownerId;
 
     public PlayerFreight(int objectId) {
@@ -47,18 +47,33 @@ public class PlayerFreight extends ItemContainer {
     }
 
     @Override
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    @Override
+    public int getOwnerId() {
+        WorldPartition.checkOwner();
+        return ownerId;
+    }
+
+    @Override
     public ItemLocation getBaseLocation() {
+        WorldPartition.checkOwner();
         return ItemLocation.FREIGHT;
     }
 
     @Override
     public String getName() {
+        WorldPartition.checkOwner();
         return "Freight";
     }
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (getSize() + slots)
+        WorldPartition.checkOwner();
+        return (liveItems().size() + slots)
                 <= (owner == null
                         ? PlayerConfig.ALT_FREIGHT_SLOTS
                         : PlayerConfig.ALT_FREIGHT_SLOTS
@@ -66,5 +81,7 @@ public class PlayerFreight extends ItemContainer {
     }
 
     @Override
-    public void refreshWeight() {}
+    public void refreshWeight() {
+        WorldPartition.checkOwner();
+    }
 }

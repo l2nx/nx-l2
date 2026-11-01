@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
-/**
- * @version $Revision: 1.3.2.1.2.12 $ $Date: 2005/04/06 16:13:42 $
- */
+import app.l2nx.engine.core.loop.SingleWriter;
+
+@SingleWriter
 public abstract class Warehouse extends ItemContainer {}

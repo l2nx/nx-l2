@@ -370,22 +370,30 @@ and `Player` share); `WorldObject` with every subclass below the migrated ones (
 `Vehicle`, the subclasses in scripts), since an override in a class that is not migrated runs unchecked, and with its
 event listener base `ListenersContainer`, which templates, zones, residences, the olympiad and the global event
 containers share, so their listener API is loop-only too; `EffectList` with its entries `BuffInfo`, `TimeStamp` and
-`InvulSkillHolder`, state of the creature they sit on; `Item` and the item containers; `Player`; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
+`InvulSkillHolder`, state of the creature they sit on; `Item` with its `DropProtection` and the item containers
+(`ItemContainer`, `Inventory`, `PlayerInventory`, `PetInventory`, `Warehouse`, `PlayerWarehouse`, `ClanWarehouse`,
+`PlayerFreight`, `PlayerRefund`; `Mail` stays out until the mail rework removes it,
+[#150](https://github.com/l2nx/nx-l2/issues/150), and runs the checked container methods it inherits); `Player` with
+the variables family (`PlayerVariables`, `AccountVariables`, `ItemVariables`, `GlobalVariablesManager`), which extends
+`StatSet` and so needs composition before its methods can carry the check; `Party`, `CommandChannel`, `Clan` and `ClanMember`. Every
 world entity is then a single writer. A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
 place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable`, `Summon`, `WorldObject` with
-`ListenersContainer`, `Vehicle`, `Tower`, the `instance` package, and `EffectList` with `BuffInfo`, `TimeStamp` and
-`InvulSkillHolder`. Their runs were the tests, client runs on the live
+`ListenersContainer`, `Vehicle`, `Tower`, the `instance` package, `EffectList` with `BuffInfo`, `TimeStamp` and
+`InvulSkillHolder`, and `Item` with `DropProtection` and the item containers except `Mail`. Their runs were the tests, client runs on the live
 world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions,
 skills and reuse, `AttackableBenchmark` for the aggro list, `WorldObjectBenchmark` for positions and distances, `EffectListBenchmark` for adding,
-stacking and stopping effects and their lookups); the
+stacking and stopping effects and their lookups, `ItemContainerBenchmark` for adding and removing items, lookups by
+item and object id, the item snapshot and item counts); the
 load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
 A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
 `Creature`: the attacker list, known relations, fake player drops, `getKnownSkill` instead of a scan; for
 `EffectList`: `hasDispellableDebuff`, `isBlockedAbnormalType`, `collectStealable` and `collectDebuffs` instead of a
-copied getter), so the
+copied getter; for the item containers: `collectItems` with a filter for the item and warehouse list packets, the
+paperdoll lookups for the expertise penalty, the pet weapon and the talisman mana, `getInventoryItemCount` for quest
+item counts, `Item.hasElementals` and `elementalCount` instead of a copied attribute array), so the
 snapshot rule below costs no copy on those paths. The `StampedLock` around `Creature.doAttack` was also a re-entry
 guard (`tryWriteLock` fails on the thread that holds it), so an attack ordered from inside an attack is still
 dropped, by a plain flag. The checks cost the stat calculation of `Creature` about 4 ns of its 11 (several checks per
@@ -413,7 +421,9 @@ choice from the same inputs. Keys of game objects compare by `equals` (the objec
 never by identity: identity hash order changes on every run. Where order decides an outcome, the map is a linked one
 (`Attackable`'s aggro list is an `Object2ObjectLinkedOpenHashMap` in insertion order). Effect lists keep insertion order, which the client shows and stacking relies on (a buff that
 replaces a stacked one goes to the end). A pass that stops effects walks a copy, and an effect's exit may add a new
-buff behind it, which the concurrent queues' iterators reached at their tail: such a pass repeats while exits add buffs. Within one listener container the
+buff behind it, which the concurrent queues' iterators reached at their tail: such a pass repeats while exits add buffs. An item container keeps its items by object id in the order they were added, the order of the
+client's item list; a refund that overflows destroys its oldest item. `Item` saved under a lock of its own, which the
+loop-only saves of §7.1 made redundant. Within one listener container the
 listeners of a type are notified highest priority first and, at equal priority, in registration order; a creature's
 event then goes to its own, its template's and its kind's global container in that order. The `PriorityBlockingQueue`
 these lists replaced iterated in heap order, so priority held only for its head.

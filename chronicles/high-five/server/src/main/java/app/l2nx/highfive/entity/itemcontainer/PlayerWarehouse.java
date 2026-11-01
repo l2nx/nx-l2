@@ -22,13 +22,14 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PlayerWarehouse extends Warehouse {
 
-    @Getter
     private final Player owner;
 
     public PlayerWarehouse(Player owner) {
@@ -36,17 +37,26 @@ public class PlayerWarehouse extends Warehouse {
     }
 
     @Override
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    @Override
     public String getName() {
+        WorldPartition.checkOwner();
         return "Warehouse";
     }
 
     @Override
     public ItemLocation getBaseLocation() {
+        WorldPartition.checkOwner();
         return ItemLocation.WAREHOUSE;
     }
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (items.size() + slots) <= owner.getWareHouseLimit();
+        WorldPartition.checkOwner();
+        return (liveItems().size() + slots) <= owner.getWareHouseLimit();
     }
 }

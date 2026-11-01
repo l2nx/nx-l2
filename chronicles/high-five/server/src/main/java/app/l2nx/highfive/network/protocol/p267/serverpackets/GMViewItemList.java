@@ -27,36 +27,31 @@ import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 public class GMViewItemList extends AbstractItemPacket {
-    private final List<Item> items = new ArrayList<>();
+    private final List<Item> items;
     private final int limit;
     private final String playerName;
 
     public GMViewItemList(Player player) {
         playerName = player.getName();
         limit = player.getInventoryLimit();
-        for (Item item : player.getInventory().getItems()) {
-            items.add(item);
-        }
+        items = player.getInventory().getItems();
     }
 
     public GMViewItemList(Pet cha) {
         playerName = cha.getName();
         limit = cha.getInventoryLimit();
-        for (Item item : cha.getInventory().getItems()) {
-            items.add(item);
-        }
+        items = cha.getInventory().getItems();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.GM_VIEW_ITEM_LIST.writeId(this, buffer);
         buffer.writeString(playerName);
-        buffer.writeInt(limit); // inventory limit
-        buffer.writeShort(1); // show window ??
+        buffer.writeInt(limit);
+        buffer.writeShort(1);
         buffer.writeShort(items.size());
         for (Item item : items) {
             writeItem(item, buffer);

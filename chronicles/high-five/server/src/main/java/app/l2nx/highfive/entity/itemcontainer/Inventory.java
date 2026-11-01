@@ -26,9 +26,12 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.custom.TransmogConfig;
 import app.l2nx.highfive.data.holders.ArmorSet;
 import app.l2nx.highfive.data.xml.ArmorSetData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -46,23 +49,24 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerItemUnequ
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SkillCoolTime;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.ItemRow;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 /**
- * This class manages inventory
+ * This class manages inventory. A paperdoll listener may equip or unequip other slots, so the listeners are walked
+ * over a copy.
  * @version $Revision: 1.13.2.9.2.12 $ $Date: 2005/03/29 23:15:15 $ rewritten 23.2.2006 by Advi
  */
 @Slf4j
+@SingleWriter
 public abstract class Inventory extends ItemContainer {
 
     public interface PaperdollListener {
@@ -71,7 +75,6 @@ public abstract class Inventory extends ItemContainer {
         void notifyUnequiped(int slot, Item inst, Inventory inventory);
     }
 
-    // Common Items
     public static final int ADENA_ID = 57;
     public static final int ANCIENT_ADENA_ID = 5575;
 
@@ -102,56 +105,34 @@ public abstract class Inventory extends ItemContainer {
     public static final int PAPERDOLL_BELT = 24;
     public static final int PAPERDOLL_TOTALSLOTS = 25;
 
-    // Speed percentage mods
     public static final double MAX_ARMOR_WEIGHT = 12000;
 
     private final Item[] paperdoll;
-    private final List<PaperdollListener> paperdollListeners;
+    private final ObjectArrayList<PaperdollListener> paperdollListeners;
 
-    // protected to be accessed from child classes only
-    @Getter
     protected int totalWeight;
 
-    // used to quickly check for using of items of special type
-    @Getter
     private int wearedMask;
 
-    // Recorder of alterations in inventory
     private static class ChangeRecorder implements PaperdollListener {
-        private final Inventory inventory;
+        private final ObjectArrayList<Item> changedItems = new ObjectArrayList<>(1);
 
-        @Getter
-        private final Collection<Item> changedItems = new ArrayDeque<>(1);
-
-        /**
-         * Constructor of the ChangeRecorder
-         * @param inventory
-         */
         ChangeRecorder(Inventory inventory) {
-            this.inventory = inventory;
-            this.inventory.addPaperdollListener(this);
+            inventory.addPaperdollListener(this);
         }
 
-        /**
-         * Add alteration in inventory when item equipped
-         * @param slot
-         * @param item
-         * @param inventory
-         */
         @Override
         public void notifyEquiped(int slot, Item item, Inventory inventory) {
             changedItems.add(item);
         }
 
-        /**
-         * Add alteration in inventory when item unequipped
-         * @param slot
-         * @param item
-         * @param inventory
-         */
         @Override
         public void notifyUnequiped(int slot, Item item, Inventory inventory) {
             changedItems.add(item);
+        }
+
+        List<Item> changedItems() {
+            return ObjectLists.unmodifiable(changedItems);
         }
     }
 
@@ -236,14 +217,12 @@ public abstract class Inventory extends ItemContainer {
             boolean update = false;
             boolean updateTimeStamp = false;
 
-            // Remove augmentation bonuses on unequip.
             if (item.isAugmented()) {
                 item.getAugmentation().removeBonus(player);
             }
 
             item.removeElementAttrBonus(player);
 
-            // Remove skills bestowed from +4 armor.
             if (item.getEnchantLevel() >= 4) {
                 enchant4Skill = it.getEnchant4Skill();
                 if (enchant4Skill != null) {
@@ -272,38 +251,39 @@ public abstract class Inventory extends ItemContainer {
             }
 
             if (item.isArmor()) {
-                for (Item itm : inventory.getItems()) {
-                    if (!itm.isEquipped() || (itm.getTemplate().getSkills() == null) || itm.equals(item)) {
-                        continue;
-                    }
-
-                    for (SkillHolder sk : itm.getTemplate().getSkills()) {
-                        if (player.getSkillLevel(sk.getSkillId()) != 0) {
+                try (Snapshot<Item> items = ScratchBuffers.snapshot(inventory.liveItems())) {
+                    for (Item itm : items) {
+                        if (!itm.isEquipped() || (itm.getTemplate().getSkills() == null) || itm.equals(item)) {
                             continue;
                         }
 
-                        itemSkill = sk.getSkill();
-                        if (itemSkill != null) {
-                            player.addSkill(itemSkill, false);
-                            if (itemSkill.isActive()) {
-                                if (!player.hasSkillReuse(itemSkill.getReuseHashCode())) {
-                                    final int equipDelay = item.getEquipReuseDelay();
-                                    if (equipDelay > 0) {
-                                        player.addTimeStamp(itemSkill, equipDelay);
-                                        player.disableSkill(itemSkill, equipDelay);
-                                    }
-                                }
-
-                                updateTimeStamp = true;
+                        for (SkillHolder sk : itm.getTemplate().getSkills()) {
+                            if (player.getSkillLevel(sk.getSkillId()) != 0) {
+                                continue;
                             }
 
-                            update = true;
+                            itemSkill = sk.getSkill();
+                            if (itemSkill != null) {
+                                player.addSkill(itemSkill, false);
+                                if (itemSkill.isActive()) {
+                                    if (!player.hasSkillReuse(itemSkill.getReuseHashCode())) {
+                                        final int equipDelay = item.getEquipReuseDelay();
+                                        if (equipDelay > 0) {
+                                            player.addTimeStamp(itemSkill, equipDelay);
+                                            player.disableSkill(itemSkill, equipDelay);
+                                        }
+                                    }
+
+                                    updateTimeStamp = true;
+                                }
+
+                                update = true;
+                            }
                         }
                     }
                 }
             }
 
-            // Apply skill, if weapon have "skills on unequip".
             final Skill unequipSkill = it.getUnequipSkill();
             if (unequipSkill != null) {
                 unequipSkill.activateSkill(player, Collections.singletonList(player));
@@ -331,14 +311,12 @@ public abstract class Inventory extends ItemContainer {
             boolean update = false;
             boolean updateTimeStamp = false;
 
-            // Apply augmentation bonuses on equip.
             if (item.isAugmented()) {
                 item.getAugmentation().applyBonus(player);
             }
 
             item.updateElementAttrBonus(player);
 
-            // Add skills bestowed from +4 armor.
             if (item.getEnchantLevel() >= 4) {
                 enchant4Skill = it.getEnchant4Skill();
                 if (enchant4Skill != null) {
@@ -402,13 +380,11 @@ public abstract class Inventory extends ItemContainer {
 
             final Player player = inventory.getOwner().asPlayer();
 
-            // Checks if player is wearing a chest item.
             final Item chestItem = inventory.getPaperdollItem(PAPERDOLL_CHEST);
             if (chestItem == null) {
                 return;
             }
 
-            // Checks for armor set for the equipped chest.
             if (!ArmorSetData.getInstance().isArmorSet(chestItem.getId())) {
                 return;
             }
@@ -417,7 +393,6 @@ public abstract class Inventory extends ItemContainer {
             boolean update = false;
             boolean updateTimeStamp = false;
 
-            // Checks if equipped item is part of set.
             if (armorSet.containItem(slot, item.getId())) {
                 if (armorSet.containAll(player)) {
                     Skill itemSkill;
@@ -446,8 +421,7 @@ public abstract class Inventory extends ItemContainer {
                         }
                     }
 
-                    if (armorSet.containShield(player)) // has shield from set
-                    {
+                    if (armorSet.containShield(player)) {
                         for (SkillHolder holder : armorSet.getShieldSkillId()) {
                             if (holder.getSkill() != null) {
                                 player.addSkill(holder.getSkill(), false);
@@ -458,8 +432,7 @@ public abstract class Inventory extends ItemContainer {
                         }
                     }
 
-                    if (armorSet.isEnchanted6(player)) // has all parts of set enchanted to 6 or more
-                    {
+                    if (armorSet.isEnchanted6(player)) {
                         for (SkillHolder holder : armorSet.getEnchant6skillId()) {
                             if (holder.getSkill() != null) {
                                 player.addSkill(holder.getSkill(), false);
@@ -500,8 +473,8 @@ public abstract class Inventory extends ItemContainer {
             boolean remove = false;
             Skill itemSkill;
             List<SkillHolder> skills = null;
-            List<SkillHolder> shieldSkill = null; // shield skill
-            List<SkillHolder> skillId6 = null; // enchant +6 skill
+            List<SkillHolder> shieldSkill = null;
+            List<SkillHolder> skillId6 = null;
             if (slot == PAPERDOLL_CHEST) {
                 if (!ArmorSetData.getInstance().isArmorSet(item.getId())) {
                     return;
@@ -523,14 +496,12 @@ public abstract class Inventory extends ItemContainer {
                     return;
                 }
 
-                if (armorSet.containItem(slot, item.getId())) // removed part of set
-                {
+                if (armorSet.containItem(slot, item.getId())) {
                     remove = true;
                     skills = armorSet.getSkills();
                     shieldSkill = armorSet.getShieldSkillId();
                     skillId6 = armorSet.getEnchant6skillId();
-                } else if (armorSet.containShield(item.getId())) // removed shield
-                {
+                } else if (armorSet.containShield(item.getId())) {
                     remove = true;
                     shieldSkill = armorSet.getShieldSkillId();
                 }
@@ -597,110 +568,66 @@ public abstract class Inventory extends ItemContainer {
             }
         }
 
-        // Note (April 3, 2009): Currently on equip, talismans do not display properly, do we need checks here to fix
-        // this?
         @Override
         public void notifyEquiped(int slot, Item item, Inventory inventory) {}
     }
 
-    /**
-     * Constructor of the inventory
-     */
     protected Inventory() {
         paperdoll = new Item[PAPERDOLL_TOTALSLOTS];
-        paperdollListeners = new ArrayList<>();
+        paperdollListeners = new ObjectArrayList<>();
         if (this instanceof PlayerInventory) {
-            addPaperdollListener(ArmorSetListener.getInstance());
-            addPaperdollListener(BowCrossRodListener.getInstance());
-            addPaperdollListener(ItemSkillsListener.getInstance());
-            addPaperdollListener(BraceletListener.getInstance());
+            paperdollListeners.add(ArmorSetListener.getInstance());
+            paperdollListeners.add(BowCrossRodListener.getInstance());
+            paperdollListeners.add(ItemSkillsListener.getInstance());
+            paperdollListeners.add(BraceletListener.getInstance());
         }
 
-        // common
-        addPaperdollListener(StatsListener.getInstance());
+        paperdollListeners.add(StatsListener.getInstance());
     }
 
     protected abstract ItemLocation getEquipLocation();
 
-    /**
-     * Returns the instance of new ChangeRecorder
-     * @return ChangeRecorder
-     */
     private ChangeRecorder newRecorder() {
         return new ChangeRecorder(this);
     }
 
-    /**
-     * Drop item from inventory and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be dropped
-     * @param actor : Player Player requesting the item drop
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the destroyed item or the updated item in inventory
-     */
     public Item dropItem(ItemProcessType process, Item item, Player actor, Object reference) {
-        if (item == null) {
+        WorldPartition.checkOwner();
+        if ((item == null) || (getItemByObjectId(item.getObjectId()) == null)) {
             return null;
         }
 
-        synchronized (item) {
-            if (!items.contains(item)) {
-                return null;
-            }
+        removeItem(item);
+        item.setOwnerId(process, 0, actor, reference);
+        item.setItemLocation(ItemLocation.VOID);
+        item.setLastChange(Item.REMOVED);
 
-            removeItem(item);
-            item.setOwnerId(process, 0, actor, reference);
-            item.setItemLocation(ItemLocation.VOID);
-            item.setLastChange(Item.REMOVED);
-
-            item.updateDatabase();
-            refreshWeight();
-        }
-
+        item.updateDatabase();
+        refreshWeight();
         return item;
     }
 
-    /**
-     * Drop item from inventory by using its <b>objectID</b> and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param objectId : int Item Instance identifier of the item to be dropped
-     * @param count : int Quantity of items to be dropped
-     * @param actor : Player Player requesting the item drop
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the destroyed item or the updated item in inventory
-     */
     public Item dropItem(ItemProcessType process, int objectId, long count, Player actor, Object reference) {
-        Item item = getItemByObjectId(objectId);
+        WorldPartition.checkOwner();
+        final Item item = getItemByObjectId(objectId);
         if (item == null) {
             return null;
         }
 
-        synchronized (item) {
-            if (!items.contains(item)) {
-                return null;
-            }
+        if (item.getCount() > count) {
+            item.changeCount(process, -count, actor, reference);
+            item.setLastChange(Item.MODIFIED);
+            item.updateDatabase();
 
-            // Adjust item quantity and create new instance to drop.
-            // Directly drop entire item.
-            if (item.getCount() > count) {
-                item.changeCount(process, -count, actor, reference);
-                item.setLastChange(Item.MODIFIED);
-                item.updateDatabase();
-
-                final Item newItem = ItemManager.createItem(process, item.getId(), count, actor, reference);
-                newItem.updateDatabase();
-                refreshWeight();
-                return newItem;
-            }
+            final Item newItem = ItemManager.createItem(process, item.getId(), count, actor, reference);
+            newItem.updateDatabase();
+            refreshWeight();
+            return newItem;
         }
 
         return dropItem(process, item, actor, reference);
     }
 
-    /**
-     * Adds item to inventory for further adjustments and Equip it if necessary (itemlocation defined)
-     * @param item : Item to be added from inventory
-     */
     @Override
     protected void addItem(Item item) {
         super.addItem(item);
@@ -711,18 +638,13 @@ public abstract class Inventory extends ItemContainer {
         if (item.getTemplate().getSkills() != null) {
             final Player owner = getOwner().asPlayer();
             if (owner != null) {
-                owner.sendSkillList(); // Refresh client skill window.
+                owner.sendSkillList();
             }
         }
     }
 
-    /**
-     * Removes item from inventory for further adjustments.
-     * @param item : Item to be removed from inventory
-     */
     @Override
     protected boolean removeItem(Item item) {
-        // Unequip item if equiped.
         for (int i = 0; i < paperdoll.length; i++) {
             if (paperdoll[i] == item) {
                 unEquipItemInSlot(i);
@@ -732,57 +654,44 @@ public abstract class Inventory extends ItemContainer {
         if (item.getTemplate().getSkills() != null) {
             final Player owner = getOwner().asPlayer();
             if (owner != null) {
-                owner.sendSkillList(); // Refresh client skill window.
+                owner.sendSkillList();
             }
         }
 
         return super.removeItem(item);
     }
 
-    /**
-     * @param slot the slot.
-     * @return the item in the paperdoll slot
-     */
     public Item getPaperdollItem(int slot) {
+        WorldPartition.checkOwner();
         return paperdoll[slot];
     }
 
-    /**
-     * @param slot the slot.
-     * @return {@code true} if specified paperdoll slot is empty, {@code false} otherwise
-     */
     public boolean isPaperdollSlotEmpty(int slot) {
+        WorldPartition.checkOwner();
         return paperdoll[slot] == null;
     }
 
     public static int getPaperdollIndex(BodyPart bodyPart) {
-        if (bodyPart == null) {
-            return -1;
-        }
-
-        return bodyPart.getPaperdollSlot();
+        WorldPartition.checkOwner();
+        return paperdollIndex(bodyPart);
     }
 
-    /**
-     * Gets the paperdoll item in the specified body part slot.
-     * @param bodyPart the body part
-     * @return the paperdoll item, or {@code null} if none is equipped
-     */
+    private static int paperdollIndex(BodyPart bodyPart) {
+        return bodyPart == null ? -1 : bodyPart.getPaperdollSlot();
+    }
+
     public Item getPaperdollItemByBodyPart(BodyPart bodyPart) {
-        final int index = getPaperdollIndex(bodyPart);
-        if (index == -1) {
-            return null;
-        }
-
-        return paperdoll[index];
+        WorldPartition.checkOwner();
+        final int index = paperdollIndex(bodyPart);
+        return index == -1 ? null : paperdoll[index];
     }
 
-    /**
-     * Returns the ID of the item in the paperdoll slot
-     * @param slot : int designating the slot
-     * @return int designating the ID of the item
-     */
     public int getPaperdollItemId(int slot) {
+        WorldPartition.checkOwner();
+        return paperdollItemId(slot);
+    }
+
+    private int paperdollItemId(int slot) {
         final Item item = paperdoll[slot];
         if (item != null) {
             if (TransmogConfig.ENABLE_TRANSMOG) {
@@ -798,14 +707,9 @@ public abstract class Inventory extends ItemContainer {
         return 0;
     }
 
-    /**
-     * Returns the first paperdoll item with the specific id
-     * @param itemId the item id
-     * @return Item
-     */
     public Item getPaperdollItemByItemId(int itemId) {
-        for (int i = 0; i < paperdoll.length; i++) {
-            final Item item = paperdoll[i];
+        WorldPartition.checkOwner();
+        for (Item item : paperdoll) {
             if ((item != null) && (item.getId() == itemId)) {
                 return item;
             }
@@ -814,12 +718,8 @@ public abstract class Inventory extends ItemContainer {
         return null;
     }
 
-    /**
-     * Returns the ID of the item in the paperdoll slot
-     * @param slot : int designating the slot
-     * @return int designating the ID of the item
-     */
     public int getPaperdollItemDisplayId(int slot) {
+        WorldPartition.checkOwner();
         final Item item = paperdoll[slot];
         if (item != null) {
             if (TransmogConfig.ENABLE_TRANSMOG) {
@@ -836,58 +736,45 @@ public abstract class Inventory extends ItemContainer {
     }
 
     public int getPaperdollAugmentationId(int slot) {
+        WorldPartition.checkOwner();
         final Item item = paperdoll[slot];
         return ((item != null) && (item.getAugmentation() != null))
                 ? item.getAugmentation().getAugmentationId()
                 : 0;
     }
 
-    /**
-     * Returns the objectID associated to the item in the paperdoll slot
-     * @param slot : int pointing out the slot
-     * @return int designating the objectID
-     */
     public int getPaperdollObjectId(int slot) {
+        WorldPartition.checkOwner();
         final Item item = paperdoll[slot];
         return (item != null) ? item.getObjectId() : 0;
     }
 
-    /**
-     * Adds new inventory's paperdoll listener.
-     * @param listener the new listener
-     */
-    public synchronized void addPaperdollListener(PaperdollListener listener) {
+    public void addPaperdollListener(PaperdollListener listener) {
+        WorldPartition.checkOwner();
         if (!paperdollListeners.contains(listener)) {
             paperdollListeners.add(listener);
         }
     }
 
-    /**
-     * Removes a paperdoll listener.
-     * @param listener the listener to be deleted
-     */
-    public synchronized void removePaperdollListener(PaperdollListener listener) {
+    public void removePaperdollListener(PaperdollListener listener) {
+        WorldPartition.checkOwner();
         paperdollListeners.remove(listener);
     }
 
     /**
-     * Equips an item in the given slot of the paperdoll.<br>
-     * <u><i>Remark :</i></u> The item <b>must be</b> in the inventory already.
-     * @param slot : int pointing out the slot of the paperdoll
-     * @param item : Item pointing out the item to add in slot
-     * @return Item designating the item placed in the slot before
+     * The item must already be in the inventory.
+     * @return the item previously in the slot
      */
-    public synchronized Item setPaperdollItem(int slot, Item item) {
+    public Item setPaperdollItem(int slot, Item item) {
+        WorldPartition.checkOwner();
         final Item old = paperdoll[slot];
         if (old != item) {
             if (old != null) {
                 paperdoll[slot] = null;
 
-                // Put old item from paperdoll slot to base location.
                 old.setItemLocation(getBaseLocation());
                 old.setLastChange(Item.MODIFIED);
 
-                // Get the mask for paperdoll.
                 int mask = 0;
                 for (int i = 0; i < PAPERDOLL_TOTALSLOTS; i++) {
                     final Item pi = paperdoll[i];
@@ -898,37 +785,30 @@ public abstract class Inventory extends ItemContainer {
 
                 wearedMask = mask;
 
-                // Notify all paperdoll listener in order to unequip old item in slot.
-                for (PaperdollListener listener : paperdollListeners) {
-                    if (listener == null) {
-                        continue;
+                try (Snapshot<PaperdollListener> listeners = ScratchBuffers.snapshot(paperdollListeners)) {
+                    for (PaperdollListener listener : listeners) {
+                        listener.notifyUnequiped(slot, old, this);
                     }
-
-                    listener.notifyUnequiped(slot, old, this);
                 }
 
                 old.updateDatabase();
             }
 
-            // Add new item in slot of paperdoll.
             if (item != null) {
                 paperdoll[slot] = item;
                 item.setItemLocation(getEquipLocation(), slot);
                 item.setLastChange(Item.MODIFIED);
                 wearedMask |= item.getTemplate().getItemMask();
-                for (PaperdollListener listener : paperdollListeners) {
-                    if (listener == null) {
-                        continue;
+                try (Snapshot<PaperdollListener> listeners = ScratchBuffers.snapshot(paperdollListeners)) {
+                    for (PaperdollListener listener : listeners) {
+                        listener.notifyEquiped(slot, item, this);
                     }
-
-                    listener.notifyEquiped(slot, item, this);
                 }
 
                 item.updateDatabase();
             }
         }
 
-        // Notify to scripts
         if (old != null) {
             final Creature owner = getOwner();
             if ((owner != null)
@@ -943,12 +823,10 @@ public abstract class Inventory extends ItemContainer {
     }
 
     /**
-     * Unequips item in body slot and returns alterations.<br>
-     * <b>If you do not need return value use {@link Inventory#unEquipItemInBodySlot(BodyPart)} instead</b>
-     * @param bodyPart : the body part enum
-     * @return List<Item> : List of changes
+     * @return the items equipped or unequipped on the way, read-only
      */
-    public Collection<Item> unEquipItemInBodySlotAndRecord(BodyPart bodyPart) {
+    public List<Item> unEquipItemInBodySlotAndRecord(BodyPart bodyPart) {
+        WorldPartition.checkOwner();
         final ChangeRecorder recorder = newRecorder();
         try {
             unEquipItemInBodySlot(bodyPart);
@@ -956,25 +834,19 @@ public abstract class Inventory extends ItemContainer {
             removePaperdollListener(recorder);
         }
 
-        return recorder.getChangedItems();
+        return recorder.changedItems();
     }
 
-    /**
-     * Sets item in slot of the paperdoll to null value
-     * @param pdollSlot : int designating the slot
-     * @return Item designating the item in slot before change
-     */
     public Item unEquipItemInSlot(int pdollSlot) {
+        WorldPartition.checkOwner();
         return setPaperdollItem(pdollSlot, null);
     }
 
     /**
-     * Unequips item in slot and returns alterations<br>
-     * <b>If you do not need return value use {@link Inventory#unEquipItemInSlot(int)} instead</b>
-     * @param slot : int designating the slot
-     * @return Collection<Item> : Collection of items altered
+     * @return the items equipped or unequipped on the way, read-only
      */
-    public Collection<Item> unEquipItemInSlotAndRecord(int slot) {
+    public List<Item> unEquipItemInSlotAndRecord(int slot) {
+        WorldPartition.checkOwner();
         final ChangeRecorder recorder = newRecorder();
         try {
             unEquipItemInSlot(slot);
@@ -985,16 +857,11 @@ public abstract class Inventory extends ItemContainer {
             removePaperdollListener(recorder);
         }
 
-        return recorder.getChangedItems();
+        return recorder.changedItems();
     }
 
-    /**
-     * Unequips item in body slot
-     * @param bodyPart the body part enum
-     * @return {@link Item} designating the item placed in the slot
-     */
     public Item unEquipItemInBodySlot(BodyPart bodyPart) {
-        // Special handling for HAIRALL.
+        WorldPartition.checkOwner();
         if (bodyPart == BodyPart.HAIRALL) {
             setPaperdollItem(PAPERDOLL_HAIR, null);
         }
@@ -1013,12 +880,10 @@ public abstract class Inventory extends ItemContainer {
     }
 
     /**
-     * Equips item and returns list of alterations<br>
-     * <b>If you don't need return value use {@link Inventory#equipItem(Item)} instead</b>
-     * @param item : Item corresponding to the item
-     * @return Collection<Item> : Collection of alterations
+     * @return the items equipped or unequipped on the way, read-only
      */
-    public Collection<Item> equipItemAndRecord(Item item) {
+    public List<Item> equipItemAndRecord(Item item) {
+        WorldPartition.checkOwner();
         final ChangeRecorder recorder = newRecorder();
         try {
             equipItem(item);
@@ -1026,14 +891,11 @@ public abstract class Inventory extends ItemContainer {
             removePaperdollListener(recorder);
         }
 
-        return recorder.getChangedItems();
+        return recorder.changedItems();
     }
 
-    /**
-     * Equips item in slot of paperdoll.
-     * @param item : Item designating the item and slot used.
-     */
     public void equipItem(Item item) {
+        WorldPartition.checkOwner();
         if (getOwner().isPlayer()) {
             if (getOwner().asPlayer().isInStoreMode()) {
                 return;
@@ -1047,12 +909,10 @@ public abstract class Inventory extends ItemContainer {
 
         final BodyPart bodyPart = item.getTemplate().getBodyPart();
 
-        // Check if player is using Formal Wear and item isn't Wedding Bouquet.
         final Item formal = getPaperdollItem(PAPERDOLL_CHEST);
         if ((item.getId() != 21163 /* Wedding Bouquet */)
                 && (formal != null)
                 && (formal.getTemplate().getBodyPart() == BodyPart.ALLDRESS)) {
-            // Only chest target can pass this.
             switch (bodyPart) {
                 case LR_HAND:
                 case L_HAND:
@@ -1066,7 +926,6 @@ public abstract class Inventory extends ItemContainer {
             }
         }
 
-        // Handle special cases.
         switch (bodyPart) {
             case LR_HAND: {
                 setPaperdollItem(PAPERDOLL_LHAND, null);
@@ -1089,7 +948,7 @@ public abstract class Inventory extends ItemContainer {
                 break;
             }
             case R_HAND: {
-                // Don't care about arrows, listener will unequip them (hopefully).
+                // Arrows are not handled here: the paperdoll listener unequips them.
                 setPaperdollItem(PAPERDOLL_RHAND, item);
                 break;
             }
@@ -1219,14 +1078,11 @@ public abstract class Inventory extends ItemContainer {
         }
     }
 
-    /**
-     * Refresh the weight of equipment loaded
-     */
     @Override
     protected void refreshWeight() {
         long weight = 0;
-        for (Item item : items) {
-            if ((item != null) && (item.getTemplate() != null)) {
+        for (Item item : liveItems()) {
+            if (item.getTemplate() != null) {
                 weight += item.getTemplate().getWeight() * item.getCount();
             }
         }
@@ -1234,55 +1090,31 @@ public abstract class Inventory extends ItemContainer {
         totalWeight = (int) Math.min(weight, Integer.MAX_VALUE);
     }
 
-    /**
-     * Return the Item of the arrows needed for this bow.
-     * @param bow : Item designating the bow
-     * @return Item pointing out arrows for bow
-     */
     public Item findArrowForBow(ItemTemplate bow) {
-        if (bow == null) {
-            return null;
-        }
-
-        Item arrow = null;
-        for (Item item : items) {
-            if (item.isEtcItem()
-                    && (item.getTemplate().getCrystalTypePlus() == bow.getCrystalTypePlus())
-                    && (item.getEtcItem().getItemType() == EtcItemType.ARROW)) {
-                arrow = item;
-                break;
-            }
-        }
-
-        // Get the Item corresponding to the item identifier and return it.
-        return arrow;
+        WorldPartition.checkOwner();
+        return bow == null ? null : findAmmunition(bow, EtcItemType.ARROW);
     }
 
-    /**
-     * Return the Item of the bolts needed for this crossbow.
-     * @param crossbow : Item designating the crossbow
-     * @return Item pointing out bolts for crossbow
-     */
     public Item findBoltForCrossBow(ItemTemplate crossbow) {
-        Item bolt = null;
-        for (Item item : items) {
+        WorldPartition.checkOwner();
+        return findAmmunition(crossbow, EtcItemType.BOLT);
+    }
+
+    private Item findAmmunition(ItemTemplate weapon, EtcItemType type) {
+        for (Item item : liveItems()) {
             if (item.isEtcItem()
-                    && (item.getTemplate().getCrystalTypePlus() == crossbow.getCrystalTypePlus())
-                    && (item.getEtcItem().getItemType() == EtcItemType.BOLT)) {
-                bolt = item;
-                break;
+                    && (item.getTemplate().getCrystalTypePlus() == weapon.getCrystalTypePlus())
+                    && (item.getEtcItem().getItemType() == type)) {
+                return item;
             }
         }
 
-        // Get the Item corresponding to the item identifier and return it.
-        return bolt;
+        return null;
     }
 
-    /**
-     * Get back items in inventory from database
-     */
     @Override
     public void restore() {
+        WorldPartition.checkOwner();
         try {
             for (ItemRow row :
                     ItemManager.getInstance().findItems(getOwnerId(), getBaseLocation(), getEquipLocation())) {
@@ -1300,7 +1132,6 @@ public abstract class Inventory extends ItemContainer {
 
                 World.addObject(item);
 
-                // If stackable item is found in inventory just add to current quantity.
                 if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
                     addItem(ItemProcessType.RESTORE, item, getOwner().asPlayer(), null);
                 } else {
@@ -1315,6 +1146,7 @@ public abstract class Inventory extends ItemContainer {
     }
 
     public int getTalismanSlots() {
+        WorldPartition.checkOwner();
         return getOwner().asPlayer().getStat().getTalismanSlots();
     }
 
@@ -1323,16 +1155,13 @@ public abstract class Inventory extends ItemContainer {
             return;
         }
 
-        // Find same (or incompatible) talisman type.
         for (int i = PAPERDOLL_DECO1; i < (PAPERDOLL_DECO1 + getTalismanSlots()); i++) {
-            if ((paperdoll[i] != null) && (getPaperdollItemId(i) == item.getId())) {
-                // overwrite
+            if ((paperdoll[i] != null) && (paperdollItemId(i) == item.getId())) {
                 setPaperdollItem(i, item);
                 return;
             }
         }
 
-        // no free slot found - put on first free
         for (int i = PAPERDOLL_DECO1; i < (PAPERDOLL_DECO1 + getTalismanSlots()); i++) {
             if (paperdoll[i] == null) {
                 setPaperdollItem(i, item);
@@ -1340,56 +1169,59 @@ public abstract class Inventory extends ItemContainer {
             }
         }
 
-        // no free slots - put on first
         setPaperdollItem(PAPERDOLL_DECO1, item);
     }
 
     public boolean canEquipCloak() {
+        WorldPartition.checkOwner();
         return getOwner().asPlayer().getStat().canEquipCloak();
     }
 
-    /**
-     * Re-notify to paperdoll listeners every equipped item.<br>
-     * Only used by player ClassId set methods.
-     */
     public void reloadEquippedItems() {
-        int slot;
-        for (Item item : paperdoll) {
+        WorldPartition.checkOwner();
+        // Reads each slot live: a listener may empty a later slot (a bow takes its arrows off), which then gets no
+        // notify; the array is fixed-size, so the index walk stays valid.
+        for (int i = 0; i < paperdoll.length; i++) {
+            final Item item = paperdoll[i];
             if (item == null) {
                 continue;
             }
 
-            slot = item.getLocationSlot();
-            for (PaperdollListener listener : paperdollListeners) {
-                if (listener == null) {
-                    continue;
+            final int slot = item.getLocationSlot();
+            try (Snapshot<PaperdollListener> listeners = ScratchBuffers.snapshot(paperdollListeners)) {
+                for (PaperdollListener listener : listeners) {
+                    listener.notifyUnequiped(slot, item, this);
+                    listener.notifyEquiped(slot, item, this);
                 }
-
-                listener.notifyUnequiped(slot, item, this);
-                listener.notifyEquiped(slot, item, this);
             }
         }
     }
 
-    /**
-     * Gets the items in paperdoll slots filtered by filter.
-     * @param filters multiple filters
-     * @return the filtered items in inventory
-     */
     @SafeVarargs
-    public final Collection<Item> getPaperdollItems(Predicate<Item>... filters) {
-        Predicate<Item> filter = Objects::nonNull;
-        for (Predicate<Item> additionalFilter : filters) {
-            filter = filter.and(additionalFilter);
-        }
-
-        final Collection<Item> items = new ArrayDeque<>();
+    public final List<Item> getPaperdollItems(Predicate<Item>... filters) {
+        WorldPartition.checkOwner();
+        final ObjectArrayList<Item> items = new ObjectArrayList<>(PAPERDOLL_TOTALSLOTS);
         for (Item item : paperdoll) {
-            if (filter.test(item)) {
+            if (item != null) {
                 items.add(item);
             }
         }
 
-        return items;
+        // The filters are the caller's code, so they run after the walk.
+        for (Predicate<Item> filter : filters) {
+            items.removeIf(filter.negate());
+        }
+
+        return ObjectLists.unmodifiable(items);
+    }
+
+    public int getTotalWeight() {
+        WorldPartition.checkOwner();
+        return totalWeight;
+    }
+
+    public int getWearedMask() {
+        WorldPartition.checkOwner();
+        return wearedMask;
     }
 }

@@ -135,9 +135,9 @@ public class MultiSellChoose extends ClientPacket {
                     || (player.getInstanceId() != npc.getInstanceId()) //
                     || !player.isInsideRadius3D(npc, Npc.INTERACTION_DISTANCE)) {
                 if (player.isGM()) {
-                    player.sendMessage(
-                            "Multisell " + listId
-                                    + " is restricted. Under current conditions cannot be used. Only GMs are allowed to use it.");
+                    player.sendMessage("Multisell " + listId
+                            + " is restricted. Under current conditions cannot be used. Only GMs are allowed"
+                            + " to use it.");
                 } else {
                     player.setMultiSell(null);
                     return;
@@ -324,7 +324,7 @@ public class MultiSellChoose extends ClientPacket {
                                             augmentation.add(current.getAugmentation());
                                         }
 
-                                        if (current.getElementals() != null) {
+                                        if (current.hasElementals()) {
                                             elemental = current.getElementals();
                                         }
 

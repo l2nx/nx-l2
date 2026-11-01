@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -33,7 +34,9 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemAdd;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemDestroy;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemTransfer;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class ClanWarehouse extends Warehouse {
     private final Clan clan;
 
@@ -43,45 +46,56 @@ public class ClanWarehouse extends Warehouse {
 
     @Override
     public String getName() {
+        WorldPartition.checkOwner();
         return "ClanWarehouse";
     }
 
     @Override
     public int getOwnerId() {
+        WorldPartition.checkOwner();
         return clan.getId();
     }
 
     @Override
     public Player getOwner() {
+        WorldPartition.checkOwner();
         return clan.getLeader().getPlayer();
     }
 
     @Override
     public ItemLocation getBaseLocation() {
+        WorldPartition.checkOwner();
         return ItemLocation.CLANWH;
     }
 
     public String getLocationId() {
+        WorldPartition.checkOwner();
         return "0";
     }
 
     public int getLocationId(boolean dummy) {
+        WorldPartition.checkOwner();
         return 0;
     }
 
-    public void setLocationId(Player dummy) {}
+    public void setLocationId(Player dummy) {
+        WorldPartition.checkOwner();
+    }
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (items.size() + slots) <= PlayerConfig.WAREHOUSE_SLOTS_CLAN;
+        WorldPartition.checkOwner();
+        return (liveItems().size() + slots) <= PlayerConfig.WAREHOUSE_SLOTS_CLAN;
     }
 
     @Override
     public Item addItem(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
+        WorldPartition.checkOwner();
         final Item item = super.addItem(process, itemId, count, actor, reference);
 
-        // Notify to scripts
-        if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_ADD, item.getTemplate())) {
+        if ((item != null)
+                && EventDispatcher.getInstance()
+                        .hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_ADD, item.getTemplate())) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
                             OnPlayerClanWHItemAdd.builder()
@@ -97,57 +111,72 @@ public class ClanWarehouse extends Warehouse {
 
     @Override
     public Item addItem(ItemProcessType process, Item item, Player actor, Object reference) {
-        // Notify to scripts
-        if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_ADD, item.getTemplate())) {
+        WorldPartition.checkOwner();
+        // A stackable item merges into the stack already held, so the event carries the warehouse's item.
+        final Item added = super.addItem(process, item, actor, reference);
+        if ((added != null)
+                && EventDispatcher.getInstance()
+                        .hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_ADD, added.getTemplate())) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
                             OnPlayerClanWHItemAdd.builder()
                                     .player(actor)
-                                    .item(item)
+                                    .item(added)
                                     .container(this)
                                     .build(),
-                            item.getTemplate());
+                            added.getTemplate());
         }
 
-        return super.addItem(process, item, actor, reference);
+        return added;
     }
 
     @Override
     public Item destroyItem(ItemProcessType process, Item item, long count, Player actor, Object reference) {
-        // Notify to scripts
-        if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_DESTROY, item.getTemplate())) {
+        WorldPartition.checkOwner();
+        final Item destroyed = super.destroyItem(process, item, count, actor, reference);
+        if ((destroyed != null)
+                && EventDispatcher.getInstance()
+                        .hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_DESTROY, destroyed.getTemplate())) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
                             OnPlayerClanWHItemDestroy.builder()
                                     .player(actor)
-                                    .item(item)
+                                    .item(destroyed)
                                     .count(count)
                                     .container(this)
                                     .build(),
-                            item.getTemplate());
+                            destroyed.getTemplate());
         }
 
-        return super.destroyItem(process, item, count, actor, reference);
+        return destroyed;
     }
 
     @Override
     public Item transferItem(
             ItemProcessType process, int objectId, long count, ItemContainer target, Player actor, Object reference) {
+        WorldPartition.checkOwner();
         final Item item = getItemByObjectId(objectId);
+        if (item == null) {
+            return null;
+        }
 
-        // Notify to scripts
-        if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_TRANSFER, item.getTemplate())) {
+        // Read before the transfer: it caps the count at what the item holds and may destroy the item.
+        final long moved = Math.min(count, item.getCount());
+        final Item transferred = super.transferItem(process, objectId, count, target, actor, reference);
+        if ((transferred != null)
+                && EventDispatcher.getInstance()
+                        .hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_TRANSFER, item.getTemplate())) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(
                             OnPlayerClanWHItemTransfer.builder()
                                     .player(actor)
                                     .item(item)
-                                    .count(count)
+                                    .count(moved)
                                     .container(target)
                                     .build(),
                             item.getTemplate());
         }
 
-        return super.transferItem(process, objectId, count, target, actor, reference);
+        return transferred;
     }
 }

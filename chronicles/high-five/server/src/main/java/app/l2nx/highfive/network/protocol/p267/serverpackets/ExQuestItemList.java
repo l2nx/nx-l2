@@ -26,20 +26,13 @@ import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author JIV
- */
 public class ExQuestItemList extends AbstractItemPacket {
     private final Player player;
     private final List<Item> items = new ArrayList<>();
 
     public ExQuestItemList(Player player) {
         this.player = player;
-        for (Item item : player.getInventory().getItems()) {
-            if (item.isQuestItem()) {
-                items.add(item);
-            }
-        }
+        player.getInventory().collectItems(items, Item::isQuestItem);
     }
 
     @Override

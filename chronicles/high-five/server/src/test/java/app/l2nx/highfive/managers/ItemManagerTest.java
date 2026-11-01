@@ -92,9 +92,9 @@ class ItemManagerTest {
 
             WorldLoopExtension.runInPass(() -> manager.destroyItemsOfTemplate(EVENT_ITEM));
 
-            assertThat(warehouse.getItems()).doesNotContain(token);
-            assertThat(token.getCount()).isZero();
-            assertThat(token.getItemLocation()).isEqualTo(ItemLocation.VOID);
+            assertThat(WorldLoopExtension.callInPass(warehouse::getItems)).doesNotContain(token);
+            assertThat(WorldLoopExtension.callInPass(token::getCount)).isZero();
+            assertThat(WorldLoopExtension.callInPass(token::getItemLocation)).isEqualTo(ItemLocation.VOID);
             assertThat(findObject(objectIdOf(token))).isNull();
             verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
         }
@@ -151,7 +151,7 @@ class ItemManagerTest {
                 mock(CastleStateRepository.class),
                 mock(CharacterRepository.class),
                 mock(TransactionTemplate.class));
-        table.load();
+        WorldLoopExtension.runInPass(table::load);
         return table.getClan(clanId).getWarehouse();
     }
 

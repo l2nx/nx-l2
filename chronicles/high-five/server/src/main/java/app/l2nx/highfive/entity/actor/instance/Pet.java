@@ -49,7 +49,6 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.groups.PartyDistributionType;
 import app.l2nx.highfive.entity.item.Weapon;
 import app.l2nx.highfive.entity.item.enums.BodyPart;
-import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
@@ -320,14 +319,9 @@ public class Pet extends Summon {
     @Override
     public Item getActiveWeaponInstance() {
         WorldPartition.checkOwner();
-        for (Item item : inventory.getItems()) {
-            if ((item.getItemLocation() == ItemLocation.PET_EQUIP)
-                    && (item.getTemplate().getBodyPart() == BodyPart.R_HAND)) {
-                return item;
-            }
-        }
-
-        return null;
+        // Equipping puts an R_HAND item into the right hand slot, so the slot holds the only candidate.
+        final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
+        return (weapon != null) && (weapon.getTemplate().getBodyPart() == BodyPart.R_HAND) ? weapon : null;
     }
 
     @Override

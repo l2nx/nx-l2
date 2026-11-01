@@ -23,8 +23,11 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -35,21 +38,51 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.variables.ItemVariables;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.ItemRow;
-import java.util.ArrayDeque;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectCollection;
+import it.unimi.dsi.fastutil.objects.ObjectCollections;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import java.util.AbstractCollection;
 import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 /**
+ * Items keyed by object id in insertion order, the order the client lists them in and replay relies on. Every walk
+ * that calls out (destroys, saves, packets) runs over a copy, since the call may add or remove an item.
  * @author Advi
  */
 @Slf4j
+@SingleWriter
 public abstract class ItemContainer {
+    // An item's object id never changes while it sits in a container: only airships and monsters refresh theirs.
+    private final Int2ObjectLinkedOpenHashMap<Item> byObjectId = new Int2ObjectLinkedOpenHashMap<>();
+    private final ObjectCollection<Item> liveItems = ObjectCollections.unmodifiable(byObjectId.values());
 
-    protected final Set<Item> items = ConcurrentHashMap.newKeySet(1);
+    // TODO: remove with Mail (#150), the last subclass that walks this field itself; its walks transfer items out of
+    // the container, so the view iterates a copy.
+    protected final Collection<Item> items = new AbstractCollection<>() {
+        @Override
+        public Iterator<Item> iterator() {
+            return List.copyOf(byObjectId.values()).iterator();
+        }
+
+        @Override
+        public int size() {
+            return byObjectId.size();
+        }
+
+        @Override
+        public void clear() {
+            byObjectId.clear();
+        }
+    };
 
     protected ItemContainer() {}
 
@@ -57,52 +90,55 @@ public abstract class ItemContainer {
 
     protected abstract ItemLocation getBaseLocation();
 
+    /** For walks that call nothing able to add or remove an item; any other walk leases a snapshot of it. */
+    protected final ObjectCollection<Item> liveItems() {
+        return liveItems;
+    }
+
     public String getName() {
+        WorldPartition.checkOwner();
         return "ItemContainer";
     }
 
-    /**
-     * @return int the owner object Id
-     */
     public int getOwnerId() {
-        return getOwner() == null ? 0 : getOwner().getObjectId();
+        WorldPartition.checkOwner();
+        final Creature owner = getOwner();
+        return owner == null ? 0 : owner.getObjectId();
     }
 
-    /**
-     * @return the quantity of items in the inventory
-     */
     public int getSize() {
-        return items.size();
+        WorldPartition.checkOwner();
+        return byObjectId.size();
     }
 
-    /**
-     * Gets the items in inventory.
-     * @return the items in inventory.
-     */
-    public Collection<Item> getItems() {
-        return items;
+    public List<Item> getItems() {
+        WorldPartition.checkOwner();
+        return byObjectId.isEmpty()
+                ? ObjectLists.emptyList()
+                : ObjectLists.unmodifiable(new ObjectArrayList<>(byObjectId.values()));
     }
 
-    /**
-     * @param itemId the item Id
-     * @return the item from inventory by itemId
-     */
-    public Item getItemByItemId(int itemId) {
-        for (Item item : items) {
-            if (item.getId() == itemId) {
-                return item;
+    public void collectItems(List<? super Item> into, Predicate<Item> filter) {
+        WorldPartition.checkOwner();
+        // The filter is the caller's code and may add or remove an item, so it runs over a copy.
+        try (Snapshot<Item> snapshot = ScratchBuffers.snapshot(byObjectId.values())) {
+            for (Item item : snapshot) {
+                if (filter.test(item)) {
+                    into.add(item);
+                }
             }
         }
-
-        return null;
     }
 
-    /**
-     * @return true if player got item for self resurrection
-     */
+    public Item getItemByItemId(int itemId) {
+        WorldPartition.checkOwner();
+        return findByItemId(itemId, null);
+    }
+
     public boolean haveItemForSelfResurrection() {
-        for (Item item : items) {
-            if ((item != null) && item.getTemplate().isAllowSelfResurrection()) {
+        WorldPartition.checkOwner();
+        for (Item item : byObjectId.values()) {
+            if (item.getTemplate().isAllowSelfResurrection()) {
                 return true;
             }
         }
@@ -110,28 +146,25 @@ public abstract class ItemContainer {
         return false;
     }
 
-    /**
-     * @param itemId the item Id
-     * @return the items list from inventory by using its itemId
-     */
-    public Collection<Item> getAllItemsByItemId(int itemId) {
-        final Collection<Item> result = new ArrayDeque<>();
-        for (Item item : items) {
+    public List<Item> getAllItemsByItemId(int itemId) {
+        WorldPartition.checkOwner();
+        final ObjectArrayList<Item> result = new ObjectArrayList<>();
+        for (Item item : byObjectId.values()) {
             if (itemId == item.getId()) {
                 result.add(item);
             }
         }
 
-        return result;
+        return ObjectLists.unmodifiable(result);
     }
 
-    /**
-     * @param itemId the item Id
-     * @param itemToIgnore used during the loop, to avoid returning the same item
-     * @return the item from inventory by itemId
-     */
     public Item getItemByItemId(int itemId, Item itemToIgnore) {
-        for (Item item : items) {
+        WorldPartition.checkOwner();
+        return findByItemId(itemId, itemToIgnore);
+    }
+
+    private Item findByItemId(int itemId, Item itemToIgnore) {
+        for (Item item : byObjectId.values()) {
             if ((item.getId() == itemId) && !item.equals(itemToIgnore)) {
                 return item;
             }
@@ -140,40 +173,30 @@ public abstract class ItemContainer {
         return null;
     }
 
-    /**
-     * @param objectId the item object Id
-     * @return item from inventory by objectId
-     */
     public Item getItemByObjectId(int objectId) {
-        for (Item item : items) {
-            if (objectId == item.getObjectId()) {
-                return item;
-            }
-        }
-
-        return null;
+        WorldPartition.checkOwner();
+        return byObjectId.get(objectId);
     }
 
     /**
-     * Gets the inventory item count by item Id and enchant level including equipped items.
-     * @param itemId the item Id
      * @param enchantLevel the item enchant level, use -1 to match any enchant level
-     * @return the inventory item count
      */
     public long getInventoryItemCount(int itemId, int enchantLevel) {
-        return getInventoryItemCount(itemId, enchantLevel, true);
+        WorldPartition.checkOwner();
+        return countItems(itemId, enchantLevel, true);
     }
 
     /**
-     * Gets the inventory item count by item Id and enchant level, may include equipped items.
-     * @param itemId the item Id
      * @param enchantLevel the item enchant level, use -1 to match any enchant level
-     * @param includeEquipped if {@code true} includes equipped items in the result
-     * @return the inventory item count
      */
     public long getInventoryItemCount(int itemId, int enchantLevel, boolean includeEquipped) {
+        WorldPartition.checkOwner();
+        return countItems(itemId, enchantLevel, includeEquipped);
+    }
+
+    private long countItems(int itemId, int enchantLevel, boolean includeEquipped) {
         long count = 0;
-        for (Item item : items) {
+        for (Item item : byObjectId.values()) {
             if ((item.getId() == itemId)
                     && ((item.getEnchantLevel() == enchantLevel) || (enchantLevel < 0))
                     && (includeEquipped || !item.isEquipped())) {
@@ -188,35 +211,24 @@ public abstract class ItemContainer {
         return count;
     }
 
-    /**
-     * Adds item to inventory
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be added
-     * @param actor : Player Player requesting the item add
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the new item or the updated item in inventory
-     */
     public Item addItem(ItemProcessType process, Item item, Player actor, Object reference) {
+        WorldPartition.checkOwner();
         Item newItem = item;
-        final Item olditem = getItemByItemId(newItem.getId());
+        final Item olditem = findByItemId(newItem.getId(), null);
 
-        // If stackable item is found in inventory just add to current quantity.
         if ((olditem != null) && olditem.isStackable()) {
             final long count = newItem.getCount();
             olditem.changeCount(process, count, actor, reference);
             olditem.setLastChange(Item.MODIFIED);
 
-            // And destroys the item
             ItemManager.destroyItem(process, newItem, actor, reference);
             newItem.updateDatabase();
             newItem = olditem;
-        } else // If item hasn't be found in inventory, create new one.
-        {
+        } else {
             newItem.setOwnerId(process, getOwnerId(), actor, reference);
             newItem.setItemLocation(getBaseLocation());
             newItem.setLastChange((Item.ADDED));
 
-            // Add item in inventory.
             addItem(newItem);
         }
 
@@ -224,24 +236,14 @@ public abstract class ItemContainer {
         return newItem;
     }
 
-    /**
-     * Adds item to inventory
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param itemId : int Item Identifier of the item to be added
-     * @param count : int Quantity of items to be added
-     * @param actor : Player Player requesting the item add
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the new item or the updated item in inventory
-     */
     public Item addItem(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
-        Item item = getItemByItemId(itemId);
+        WorldPartition.checkOwner();
+        Item item = findByItemId(itemId, null);
 
-        // If stackable item is found in inventory just add to current quantity.
         if ((item != null) && item.isStackable()) {
             item.changeCount(process, count, actor, reference);
             item.setLastChange(Item.MODIFIED);
-        } else // If item hasn't be found in inventory, create new one.
-        {
+        } else {
             final InventoryUpdate iu = new InventoryUpdate();
             for (int i = 0; i < count; i++) {
                 final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
@@ -256,21 +258,18 @@ public abstract class ItemContainer {
                 item.setLastChange(Item.ADDED);
                 item.setEnchantLevel(template.getDefaultEnchantLevel());
 
-                // Add item in inventory.
                 addItem(item);
 
-                // Add additional items to InventoryUpdate.
                 if ((count > 1) && (i < (count - 1))) {
                     iu.addNewItem(item);
                 }
 
-                // If stackable, end loop as entire count is included in 1 instance of item.
+                // A stackable item holds the whole count in one instance.
                 if (template.isStackable() || !GeneralConfig.MULTIPLE_ITEM_DROP) {
                     break;
                 }
             }
 
-            // If additional items where created send InventoryUpdate.
             if ((count > 1)
                     && (item != null)
                     && !item.isStackable()
@@ -284,14 +283,8 @@ public abstract class ItemContainer {
     }
 
     /**
-     * Transfers item to another inventory
-     * @param process ItemProcessType identifier of process triggering this action
-     * @param objectId Item Identifier of the item to be transfered
-     * @param countValue Quantity of items to be transfered
-     * @param target the item container where the item will be moved.
-     * @param actor Player requesting the item transfer
-     * @param reference Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the new item or the updated item in inventory
+     * @param countValue Quantity of items to be transfered, capped at the count present
+     * @return the target's item, {@code null} when the count is not positive or the container does not hold the item
      */
     public Item transferItem(
             ItemProcessType process,
@@ -300,231 +293,168 @@ public abstract class ItemContainer {
             ItemContainer target,
             Player actor,
             Object reference) {
-        if (target == null) {
+        WorldPartition.checkOwner();
+        if ((target == null) || (countValue <= 0)) {
             return null;
         }
 
-        final Item sourceitem = getItemByObjectId(objectId);
+        final Item sourceitem = byObjectId.get(objectId);
         if (sourceitem == null) {
             return null;
         }
 
         Item targetitem = sourceitem.isStackable() ? target.getItemByItemId(sourceitem.getId()) : null;
-        synchronized (sourceitem) {
-            // Check if this item still present in this container.
-            if (getItemByObjectId(objectId) != sourceitem) {
-                return null;
-            }
+        final long count = Math.min(countValue, sourceitem.getCount());
 
-            // Check if requested quantity is available.
-            long count = countValue;
-            if (count > sourceitem.getCount()) {
-                count = sourceitem.getCount();
-            }
-
-            // If possible, move entire item object.
-            if ((sourceitem.getCount() == count) && (targetitem == null) && !sourceitem.isStackable()) {
-                removeItem(sourceitem);
-                target.addItem(process, sourceitem, actor, reference);
-                targetitem = sourceitem;
+        if ((sourceitem.getCount() == count) && (targetitem == null) && !sourceitem.isStackable()) {
+            removeItem(sourceitem);
+            target.addItem(process, sourceitem, actor, reference);
+            targetitem = sourceitem;
+        } else {
+            if (sourceitem.getCount() > count) {
+                sourceitem.changeCount(process, -count, actor, reference);
             } else {
-                if (sourceitem.getCount() > count) // If possible, only update counts.
-                {
-                    sourceitem.changeCount(process, -count, actor, reference);
-                } else // Otherwise destroy old item.
-                {
-                    removeItem(sourceitem);
-                    ItemManager.destroyItem(process, sourceitem, actor, reference);
-                }
-
-                if (targetitem != null) // If possible, only update counts.
-                {
-                    targetitem.changeCount(process, count, actor, reference);
-                } else // Otherwise add new item.
-                {
-                    targetitem = target.addItem(process, sourceitem.getId(), count, actor, reference);
-                }
+                removeItem(sourceitem);
+                ItemManager.destroyItem(process, sourceitem, actor, reference);
             }
 
-            // Updates database
-            sourceitem.updateDatabase(true);
-            if ((targetitem != sourceitem) && (targetitem != null)) {
-                targetitem.updateDatabase();
+            if (targetitem != null) {
+                targetitem.changeCount(process, count, actor, reference);
+            } else {
+                targetitem = target.addItem(process, sourceitem.getId(), count, actor, reference);
             }
-
-            if (sourceitem.isAugmented()) {
-                sourceitem.getAugmentation().removeBonus(actor);
-            }
-
-            refreshWeight();
-            target.refreshWeight();
         }
 
+        sourceitem.updateDatabase(true);
+        if ((targetitem != sourceitem) && (targetitem != null)) {
+            targetitem.updateDatabase();
+        }
+
+        if (sourceitem.isAugmented()) {
+            sourceitem.getAugmentation().removeBonus(actor);
+        }
+
+        refreshWeight();
+        target.refreshWeight();
         return targetitem;
     }
 
-    /**
-     * Destroy item from inventory and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be destroyed
-     * @param actor : Player requesting the item destroy
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the destroyed item or the updated item in inventory
-     */
     public Item destroyItem(ItemProcessType process, Item item, Player actor, Object reference) {
+        WorldPartition.checkOwner();
         return destroyItem(process, item, item.getCount(), actor, reference);
     }
 
     /**
-     * Destroy item from inventory and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param item : Item to be destroyed
-     * @param count
-     * @param actor : Player requesting the item destroy
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the destroyed item or the updated item in inventory
+     * @return {@code null} when the count is not positive, the container holds fewer than {@code count} or no longer
+     *     holds the item
      */
     public Item destroyItem(ItemProcessType process, Item item, long count, Player actor, Object reference) {
-        synchronized (item) {
-            // Adjust item quantity
-            if (item.getCount() > count) {
-                item.changeCount(process, -count, actor, reference);
-                item.setLastChange(Item.MODIFIED);
-                refreshWeight();
-            } else {
-                if (item.getCount() < count) {
-                    return null;
-                }
-
-                final boolean removed = removeItem(item);
-                if (!removed) {
-                    return null;
-                }
-
-                ItemManager.destroyItem(process, item, actor, reference);
-                item.updateDatabase();
-                refreshWeight();
-
-                item.stopAllTasks();
-            }
+        WorldPartition.checkOwner();
+        // Checked before removeItem, whose overrides clean up the owner's state before removing.
+        if ((count <= 0) || !byObjectId.containsKey(item.getObjectId())) {
+            return null;
         }
 
+        if (item.getCount() > count) {
+            item.changeCount(process, -count, actor, reference);
+            item.setLastChange(Item.MODIFIED);
+            refreshWeight();
+            return item;
+        }
+
+        if (item.getCount() < count) {
+            return null;
+        }
+
+        removeItem(item);
+        ItemManager.destroyItem(process, item, actor, reference);
+        item.updateDatabase();
+        refreshWeight();
+        item.stopAllTasks();
         return item;
     }
 
-    /**
-     * Destroy item from inventory by using its <b>objectID</b> and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param objectId : int Item Instance identifier of the item to be destroyed
-     * @param count : int Quantity of items to be destroyed
-     * @param actor : Player requesting the item destroy
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the destroyed item or the updated item in inventory
-     */
     public Item destroyItem(ItemProcessType process, int objectId, long count, Player actor, Object reference) {
-        final Item item = getItemByObjectId(objectId);
+        WorldPartition.checkOwner();
+        final Item item = byObjectId.get(objectId);
         return item == null ? null : destroyItem(process, item, count, actor, reference);
     }
 
-    /**
-     * Destroy item from inventory by using its <b>itemId</b> and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param itemId : int Item identifier of the item to be destroyed
-     * @param count : int Quantity of items to be destroyed
-     * @param actor : Player requesting the item destroy
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     * @return Item corresponding to the destroyed item or the updated item in inventory
-     */
     public Item destroyItemByItemId(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
-        final Item item = getItemByItemId(itemId);
+        WorldPartition.checkOwner();
+        final Item item = findByItemId(itemId, null);
         return item == null ? null : destroyItem(process, item, count, actor, reference);
     }
 
-    /**
-     * Destroy all items from inventory and updates database
-     * @param process : ItemProcessType identifier of process triggering this action
-     * @param actor : Player requesting the item destroy
-     * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
-     */
     public void destroyAllItems(ItemProcessType process, Player actor, Object reference) {
-        for (Item item : items) {
-            destroyItem(process, item, actor, reference);
+        WorldPartition.checkOwner();
+        try (Snapshot<Item> snapshot = ScratchBuffers.snapshot(byObjectId.values())) {
+            for (Item item : snapshot) {
+                destroyItem(process, item, actor, reference);
+            }
         }
     }
 
-    /**
-     * @return warehouse Adena.
-     */
     public long getAdena() {
-        for (Item item : items) {
-            if (item.getId() == Inventory.ADENA_ID) {
-                return item.getCount();
+        WorldPartition.checkOwner();
+        final Item adena = findByItemId(Inventory.ADENA_ID, null);
+        return adena == null ? 0 : adena.getCount();
+    }
+
+    protected void addItem(Item item) {
+        byObjectId.put(item.getObjectId(), item);
+    }
+
+    protected boolean removeItem(Item item) {
+        return byObjectId.remove(item.getObjectId()) != null;
+    }
+
+    protected final boolean holds(Item item) {
+        return byObjectId.containsKey(item.getObjectId());
+    }
+
+    protected void clearItems() {
+        byObjectId.clear();
+    }
+
+    protected void refreshWeight() {}
+
+    public void deleteMe() {
+        WorldPartition.checkOwner();
+        try (Snapshot<Item> snapshot = ScratchBuffers.snapshot(byObjectId.values())) {
+            if ((this instanceof PlayerInventory) || (this instanceof PlayerWarehouse) || (getOwner() != null)) {
+                for (Item item : snapshot) {
+                    item.updateDatabase(true);
+                    item.stopAllTasks();
+
+                    final ItemVariables vars = item.getScript(ItemVariables.class);
+                    if (vars != null) {
+                        vars.saveNow();
+                    }
+                }
+            }
+
+            for (Item item : snapshot) {
+                World.removeObject(item);
             }
         }
 
-        return 0;
+        clearItems();
     }
 
-    /**
-     * Adds item to inventory for further adjustments.
-     * @param item : Item to be added from inventory
-     */
-    protected void addItem(Item item) {
-        items.add(item);
-    }
-
-    /**
-     * Removes item from inventory for further adjustments.
-     * @param item : Item to be removed from inventory
-     * @return
-     */
-    protected boolean removeItem(Item item) {
-        return items.remove(item);
-    }
-
-    /**
-     * Refresh the weight of equipment loaded
-     */
-    protected void refreshWeight() {}
-
-    /**
-     * Delete item object from world
-     */
-    public void deleteMe() {
-        if ((this instanceof PlayerInventory) || (this instanceof PlayerWarehouse) || (getOwner() != null)) {
-            for (Item item : items) {
-                item.updateDatabase(true);
-                item.stopAllTasks();
-
-                final ItemVariables vars = item.getScript(ItemVariables.class);
-                if (vars != null) {
-                    vars.saveNow();
+    public void updateDatabase() {
+        WorldPartition.checkOwner();
+        if (getOwner() != null) {
+            try (Snapshot<Item> snapshot = ScratchBuffers.snapshot(byObjectId.values())) {
+                for (Item item : snapshot) {
+                    item.updateDatabase(true);
                 }
             }
         }
-
-        for (Item item : items) {
-            World.removeObject(item);
-        }
-
-        items.clear();
     }
 
-    /**
-     * Update database with items in inventory
-     */
-    public void updateDatabase() {
-        if (getOwner() != null) {
-            for (Item item : items) {
-                item.updateDatabase(true);
-            }
-        }
-    }
-
-    /**
-     * Get back items in container from database
-     */
     public void restore() {
+        WorldPartition.checkOwner();
         try {
             for (ItemRow row : ItemManager.getInstance().findItems(getOwnerId(), getBaseLocation())) {
                 final Item item = Item.restoreFromDb(getOwnerId(), row);
@@ -536,8 +466,7 @@ public abstract class ItemContainer {
 
                 final Player owner = getOwner() != null ? getOwner().asPlayer() : null;
 
-                // If stackable item is found in inventory just add to current quantity.
-                if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
+                if (item.isStackable() && (findByItemId(item.getId(), null) != null)) {
                     addItem(ItemProcessType.RESTORE, item, owner, null);
                 } else {
                     addItem(item);
@@ -551,30 +480,23 @@ public abstract class ItemContainer {
     }
 
     public boolean validateCapacity(long slots) {
+        WorldPartition.checkOwner();
         return true;
     }
 
     public boolean validateWeight(long weight) {
+        WorldPartition.checkOwner();
         return true;
     }
 
-    /**
-     * If the item is stackable validates 1 slot, if the item isn't stackable validates the item count.
-     * @param itemId the item Id to verify
-     * @param count amount of item's weight to validate
-     * @return {@code true} if the item doesn't exist or it validates its slot count
-     */
     public boolean validateCapacityByItemId(int itemId, long count) {
+        WorldPartition.checkOwner();
         final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
         return (template == null) || (template.isStackable() ? validateCapacity(1) : validateCapacity(count));
     }
 
-    /**
-     * @param itemId the item Id to verify
-     * @param count amount of item's weight to validate
-     * @return {@code true} if the item doesn't exist or it validates its weight
-     */
     public boolean validateWeightByItemId(int itemId, long count) {
+        WorldPartition.checkOwner();
         final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
         return (template == null) || validateWeight(template.getWeight() * count);
     }

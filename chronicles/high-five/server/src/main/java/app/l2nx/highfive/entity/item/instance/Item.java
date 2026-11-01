@@ -29,6 +29,7 @@ package app.l2nx.highfive.entity.item.instance;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
@@ -38,6 +39,7 @@ import app.l2nx.highfive.data.xml.EnchantItemOptionsData;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.OptionData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.WorldRegion;
@@ -83,6 +85,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SpawnItem;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.ItemElemental;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
@@ -91,77 +94,55 @@ import app.l2nx.highfive.util.GMAudit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.locks.ReentrantLock;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 @Slf4j
+@SingleWriter
 public class Item extends WorldObject {
 
     private static final Logger ITEM_LOG = LoggerFactory.getLogger("item");
 
-    @Getter
     private int ownerId;
 
     private Player owner;
 
-    @Setter
     private int dropperObjectId = 0;
 
-    @Getter
     private long count;
 
-    @Getter
     private long initCount;
     /** Remaining time in milliseconds */
-    @Getter
     private long time;
 
-    @Setter
     private boolean countDecrease = false;
 
-    @Getter
     private final int id;
 
-    @Getter
     private final ItemTemplate template;
 
-    @Getter
     private ItemLocation itemLocation;
 
-    @Getter
     private int locationSlot;
 
-    @Getter
     private int enchantLevel;
 
     private boolean wear;
 
-    @Getter
     private Augmentation augmentation = null;
 
-    @Getter
     private int mana = -1;
 
     private boolean consumingMana = false;
 
-    @Getter
-    @Setter
     private int customType1;
 
-    @Getter
-    @Setter
     private int customType2;
 
-    @Getter
-    @Setter
     private long dropTime;
 
-    @Getter
     private boolean published = false;
 
     private boolean protectedItem;
@@ -175,23 +156,15 @@ public class Item extends WorldObject {
     public static final int[] DEFAULT_ENCHANT_OPTIONS = {0, 0, 0};
     // @formatter:on
 
-    @Getter
-    @Setter
-    private int lastChange = 2; // 2 modified, 3 removed
+    private int lastChange = 2;
 
     private boolean existsInDb;
     private boolean storedInDb;
 
-    private final ReentrantLock dbLock = new ReentrantLock();
-
-    @Getter
     private Elementals[] elementals = null;
 
-    @Getter
-    @Setter
     private ScheduledFuture<?> itemLootShedule = null;
 
-    @Getter
     private final DropProtection dropProtection = new DropProtection();
 
     private int shotsMask = 0;
@@ -240,22 +213,165 @@ public class Item extends WorldObject {
         this(IdManager.getInstance().getNextId(), itemId);
     }
 
+    public int getOwnerId() {
+        WorldPartition.checkOwner();
+        return ownerId;
+    }
+
+    public void setDropperObjectId(int dropperObjectId) {
+        WorldPartition.checkOwner();
+        this.dropperObjectId = dropperObjectId;
+    }
+
+    public long getCount() {
+        WorldPartition.checkOwner();
+        return count;
+    }
+
+    public long getInitCount() {
+        WorldPartition.checkOwner();
+        return initCount;
+    }
+
+    public long getTime() {
+        WorldPartition.checkOwner();
+        return time;
+    }
+
+    public void setCountDecrease(boolean countDecrease) {
+        WorldPartition.checkOwner();
+        this.countDecrease = countDecrease;
+    }
+
+    @Override
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public ItemTemplate getTemplate() {
+        WorldPartition.checkOwner();
+        return template;
+    }
+
+    public ItemLocation getItemLocation() {
+        WorldPartition.checkOwner();
+        return itemLocation;
+    }
+
+    public int getLocationSlot() {
+        WorldPartition.checkOwner();
+        return locationSlot;
+    }
+
+    public int getEnchantLevel() {
+        WorldPartition.checkOwner();
+        return enchantLevel;
+    }
+
+    public Augmentation getAugmentation() {
+        WorldPartition.checkOwner();
+        return augmentation;
+    }
+
+    public int getMana() {
+        WorldPartition.checkOwner();
+        return mana;
+    }
+
+    public int getCustomType1() {
+        WorldPartition.checkOwner();
+        return customType1;
+    }
+
+    public void setCustomType1(int customType1) {
+        WorldPartition.checkOwner();
+        this.customType1 = customType1;
+    }
+
+    public int getCustomType2() {
+        WorldPartition.checkOwner();
+        return customType2;
+    }
+
+    public void setCustomType2(int customType2) {
+        WorldPartition.checkOwner();
+        this.customType2 = customType2;
+    }
+
+    public long getDropTime() {
+        WorldPartition.checkOwner();
+        return dropTime;
+    }
+
+    public void setDropTime(long dropTime) {
+        WorldPartition.checkOwner();
+        this.dropTime = dropTime;
+    }
+
+    public boolean isPublished() {
+        WorldPartition.checkOwner();
+        return published;
+    }
+
+    public int getLastChange() {
+        WorldPartition.checkOwner();
+        return lastChange;
+    }
+
+    public void setLastChange(int lastChange) {
+        WorldPartition.checkOwner();
+        this.lastChange = lastChange;
+    }
+
+    /**
+     * A copy of the array, so a caller cannot add or drop an attribute; the {@link Elementals} in it are the item's own
+     * state, shared, and a value change on one writes into the item.
+     */
+    public Elementals[] getElementals() {
+        WorldPartition.checkOwner();
+        return elementals == null ? null : elementals.clone();
+    }
+
+    public int elementalCount() {
+        WorldPartition.checkOwner();
+        return elementals == null ? 0 : elementals.length;
+    }
+
+    public boolean hasElementals() {
+        WorldPartition.checkOwner();
+        return elementals != null;
+    }
+
+    public ScheduledFuture<?> getItemLootShedule() {
+        WorldPartition.checkOwner();
+        return itemLootShedule;
+    }
+
+    public void setItemLootShedule(ScheduledFuture<?> itemLootShedule) {
+        WorldPartition.checkOwner();
+        this.itemLootShedule = itemLootShedule;
+    }
+
+    public DropProtection getDropProtection() {
+        WorldPartition.checkOwner();
+        return dropProtection;
+    }
+
     // Does not remove the item from the World all-objects registry.
     public void pickupMe(Creature creature) {
+        WorldPartition.checkOwner();
         final WorldRegion oldregion = getWorldRegion();
 
         creature.broadcastPacket(new GetItem(this, creature.getObjectId()));
 
-        synchronized (this) {
-            setSpawned(false);
-        }
+        setSpawned(false);
 
         if (MercTicketManager.getInstance().getTicketCastleId(id) > 0) {
             MercTicketManager.getInstance().removeTicket(this);
             ItemsOnGroundManager.getInstance().removeObject(this);
         }
 
-        // Outside of synchronized to avoid deadlocks.
         World.removeVisibleObject(this, oldregion);
         setWorldRegion(null);
 
@@ -272,6 +388,7 @@ public class Item extends WorldObject {
     }
 
     public void setOwnerId(ItemProcessType process, int ownerId, Player creator, Object reference) {
+        WorldPartition.checkOwner();
         setOwnerId(ownerId);
 
         if ((GeneralConfig.LOG_ITEMS && ((!GeneralConfig.LOG_ITEMS_SMALL_LOG) && (!GeneralConfig.LOG_ITEMS_IDS_ONLY)))
@@ -319,6 +436,7 @@ public class Item extends WorldObject {
     }
 
     public void setOwnerId(int ownerId) {
+        WorldPartition.checkOwner();
         if (ownerId == this.ownerId) {
             return;
         }
@@ -333,14 +451,17 @@ public class Item extends WorldObject {
     }
 
     public void setItemLocation(ItemLocation loc) {
+        WorldPartition.checkOwner();
         setItemLocation(loc, 0, true);
     }
 
     public void setItemLocation(ItemLocation loc, int locData) {
+        WorldPartition.checkOwner();
         setItemLocation(loc, locData, true);
     }
 
     public void setItemLocation(ItemLocation loc, int locData, boolean checkSkills) {
+        WorldPartition.checkOwner();
         if ((loc == itemLocation) && (locData == locationSlot)) {
             return;
         }
@@ -359,6 +480,7 @@ public class Item extends WorldObject {
     }
 
     public void setCount(long count) {
+        WorldPartition.checkOwner();
         if (this.count == count) {
             return;
         }
@@ -368,6 +490,7 @@ public class Item extends WorldObject {
     }
 
     public void changeCount(ItemProcessType process, long count, Player creator, Object reference) {
+        WorldPartition.checkOwner();
         if (count == 0) {
             return;
         }
@@ -439,6 +562,7 @@ public class Item extends WorldObject {
     }
 
     public boolean isEnchantable() {
+        WorldPartition.checkOwner();
         if ((itemLocation == ItemLocation.INVENTORY) || (itemLocation == ItemLocation.PAPERDOLL)) {
             return template.isEnchantable();
         }
@@ -447,6 +571,7 @@ public class Item extends WorldObject {
     }
 
     public boolean isEquipable() {
+        WorldPartition.checkOwner();
         return (template.getBodyPart() != BodyPart.NONE)
                 && (template.getItemType() != EtcItemType.ARROW)
                 && (template.getItemType() != EtcItemType.BOLT)
@@ -454,30 +579,37 @@ public class Item extends WorldObject {
     }
 
     public boolean isEquipped() {
+        WorldPartition.checkOwner();
         return (itemLocation == ItemLocation.PAPERDOLL) || (itemLocation == ItemLocation.PET_EQUIP);
     }
 
     public ItemType getItemType() {
+        WorldPartition.checkOwner();
         return template.getItemType();
     }
 
     public int getDisplayId() {
+        WorldPartition.checkOwner();
         return template.getDisplayId();
     }
 
     public boolean isEtcItem() {
+        WorldPartition.checkOwner();
         return template instanceof EtcItem;
     }
 
     public boolean isWeapon() {
+        WorldPartition.checkOwner();
         return template instanceof Weapon;
     }
 
     public boolean isArmor() {
+        WorldPartition.checkOwner();
         return template instanceof Armor;
     }
 
     public EtcItem getEtcItem() {
+        WorldPartition.checkOwner();
         if (template instanceof EtcItem) {
             return (EtcItem) template;
         }
@@ -486,6 +618,7 @@ public class Item extends WorldObject {
     }
 
     public Weapon getWeaponItem() {
+        WorldPartition.checkOwner();
         if (template instanceof Weapon) {
             return (Weapon) template;
         }
@@ -494,6 +627,7 @@ public class Item extends WorldObject {
     }
 
     public Armor getArmorItem() {
+        WorldPartition.checkOwner();
         if (template instanceof Armor) {
             return (Armor) template;
         }
@@ -502,30 +636,37 @@ public class Item extends WorldObject {
     }
 
     public int getCrystalCount() {
+        WorldPartition.checkOwner();
         return template.getCrystalCount(enchantLevel);
     }
 
     public int getReferencePrice() {
+        WorldPartition.checkOwner();
         return template.getReferencePrice();
     }
 
     public String getItemName() {
+        WorldPartition.checkOwner();
         return template.getName();
     }
 
     public int getReuseDelay() {
+        WorldPartition.checkOwner();
         return template.getReuseDelay();
     }
 
     public int getSharedReuseGroup() {
+        WorldPartition.checkOwner();
         return template.getSharedReuseGroup();
     }
 
     public boolean isStackable() {
+        WorldPartition.checkOwner();
         return template.isStackable();
     }
 
     public boolean isDropable() {
+        WorldPartition.checkOwner();
         if (!template.isDropable()) {
             return false;
         }
@@ -542,6 +683,7 @@ public class Item extends WorldObject {
     }
 
     public boolean isDestroyable() {
+        WorldPartition.checkOwner();
         if (!template.isDestroyable()) {
             return false;
         }
@@ -554,6 +696,7 @@ public class Item extends WorldObject {
     }
 
     public boolean isTradeable() {
+        WorldPartition.checkOwner();
         if (!template.isTradeable()) {
             return false;
         }
@@ -570,6 +713,7 @@ public class Item extends WorldObject {
     }
 
     public boolean isSellable() {
+        WorldPartition.checkOwner();
         if (!template.isSellable()) {
             return false;
         }
@@ -586,6 +730,7 @@ public class Item extends WorldObject {
     }
 
     public boolean isDepositable(boolean isPrivateWareHouse) {
+        WorldPartition.checkOwner();
         if (!template.isDepositable() || isEquipped()) {
             return false;
         }
@@ -598,34 +743,42 @@ public class Item extends WorldObject {
     }
 
     public boolean isPotion() {
+        WorldPartition.checkOwner();
         return template.isPotion();
     }
 
     public boolean isElixir() {
+        WorldPartition.checkOwner();
         return template.isElixir();
     }
 
     public boolean isScroll() {
+        WorldPartition.checkOwner();
         return template.isScroll();
     }
 
     public boolean isHeroItem() {
+        WorldPartition.checkOwner();
         return template.isHeroItem();
     }
 
     public boolean isCommonItem() {
+        WorldPartition.checkOwner();
         return template.isCommon();
     }
 
     public boolean isPvp() {
+        WorldPartition.checkOwner();
         return template.isPvpItem();
     }
 
     public boolean isOlyRestrictedItem() {
+        WorldPartition.checkOwner();
         return template.isOlyRestrictedItem();
     }
 
     public boolean isAvailable(Player player, boolean allowAdena, boolean allowNonTradeable) {
+        WorldPartition.checkOwner();
         return ((!isEquipped())
                 && (template.getType2() != ItemTemplate.TYPE2_QUEST)
                 && ((template.getType2() != ItemTemplate.TYPE2_MONEY)
@@ -647,10 +800,12 @@ public class Item extends WorldObject {
     }
 
     public boolean isEnchanted() {
+        WorldPartition.checkOwner();
         return enchantLevel > 0;
     }
 
     public void setEnchantLevel(int level) {
+        WorldPartition.checkOwner();
         final int newLevel = Math.max(0, level);
         if (enchantLevel == newLevel) {
             return;
@@ -663,10 +818,12 @@ public class Item extends WorldObject {
     }
 
     public boolean isAugmented() {
+        WorldPartition.checkOwner();
         return augmentation != null;
     }
 
     public boolean setAugmentation(Augmentation augmentation) {
+        WorldPartition.checkOwner();
         if (this.augmentation != null) {
             log.info("Warning: Augment set for ({}) {} owner: {}", getObjectId(), getName(), ownerId);
             return false;
@@ -690,6 +847,7 @@ public class Item extends WorldObject {
     }
 
     public void removeAugmentation() {
+        WorldPartition.checkOwner();
         if (augmentation == null) {
             return;
         }
@@ -712,6 +870,7 @@ public class Item extends WorldObject {
     }
 
     public void restoreAttributes() {
+        WorldPartition.checkOwner();
         try {
             ItemManager.getInstance()
                     .findAugmentation(getObjectId())
@@ -739,6 +898,7 @@ public class Item extends WorldObject {
     }
 
     public Elementals getElemental(byte attribute) {
+        WorldPartition.checkOwner();
         if (elementals == null) {
             return null;
         }
@@ -753,6 +913,7 @@ public class Item extends WorldObject {
     }
 
     public byte getAttackElementType() {
+        WorldPartition.checkOwner();
         if (!isWeapon()) {
             return -2;
         } else if (template.getElementals() != null) {
@@ -765,6 +926,7 @@ public class Item extends WorldObject {
     }
 
     public int getAttackElementPower() {
+        WorldPartition.checkOwner();
         if (!isWeapon()) {
             return 0;
         } else if (template.getElementals() != null) {
@@ -777,6 +939,7 @@ public class Item extends WorldObject {
     }
 
     public int getElementDefAttr(byte element) {
+        WorldPartition.checkOwner();
         if (!isArmor()) {
             return 0;
         } else if (template.getElementals() != null) {
@@ -813,6 +976,7 @@ public class Item extends WorldObject {
     }
 
     public void setElementAttr(byte element, int value) {
+        WorldPartition.checkOwner();
         applyAttribute(element, value);
         if (existsInDb) {
             try {
@@ -824,6 +988,7 @@ public class Item extends WorldObject {
     }
 
     public void clearElementAttr(byte element) {
+        WorldPartition.checkOwner();
         if ((getElemental(element) == null) && (element != -1)) {
             return;
         }
@@ -857,14 +1022,17 @@ public class Item extends WorldObject {
     }
 
     public boolean isShadowItem() {
+        WorldPartition.checkOwner();
         return mana >= 0;
     }
 
     public void decreaseMana(boolean resetConsumingMana) {
+        WorldPartition.checkOwner();
         decreaseMana(resetConsumingMana, 1);
     }
 
     public void decreaseMana(boolean resetConsumingMana, int count) {
+        WorldPartition.checkOwner();
         if (!isShadowItem()) {
             return;
         }
@@ -954,6 +1122,7 @@ public class Item extends WorldObject {
     }
 
     public void scheduleConsumeManaTask() {
+        WorldPartition.checkOwner();
         if (consumingMana) {
             return;
         }
@@ -964,47 +1133,45 @@ public class Item extends WorldObject {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
+        WorldPartition.checkOwner();
         return false;
     }
 
     public List<AbstractFunction> getStatFuncs(Creature creature) {
+        WorldPartition.checkOwner();
         return template.getStatFuncs(this, creature);
     }
 
     public void updateDatabase() {
+        WorldPartition.checkOwner();
         updateDatabase(false);
     }
 
     public void updateDatabase(boolean force) {
+        WorldPartition.checkOwner();
         // An attachment is written with its mail, in the transaction that sends it.
         if ((itemLocation == ItemLocation.MAIL) && !MailManager.getInstance().isSent(locationSlot)) {
             return;
         }
 
-        dbLock.lock();
-
-        try {
-            if (existsInDb) {
-                if ((ownerId == 0)
-                        || (itemLocation == ItemLocation.VOID)
-                        || (itemLocation == ItemLocation.REFUND)
-                        || ((count == 0) && (itemLocation != ItemLocation.LEASE))) {
-                    removeFromDb();
-                } else if (!GeneralConfig.LAZY_ITEMS_UPDATE || force) {
-                    updateInDb();
-                }
-            } else {
-                if ((ownerId == 0)
-                        || (itemLocation == ItemLocation.VOID)
-                        || (itemLocation == ItemLocation.REFUND)
-                        || ((count == 0) && (itemLocation != ItemLocation.LEASE))) {
-                    return;
-                }
-
-                insertIntoDb();
+        if (existsInDb) {
+            if ((ownerId == 0)
+                    || (itemLocation == ItemLocation.VOID)
+                    || (itemLocation == ItemLocation.REFUND)
+                    || ((count == 0) && (itemLocation != ItemLocation.LEASE))) {
+                removeFromDb();
+            } else if (!GeneralConfig.LAZY_ITEMS_UPDATE || force) {
+                updateInDb();
             }
-        } finally {
-            dbLock.unlock();
+        } else {
+            if ((ownerId == 0)
+                    || (itemLocation == ItemLocation.VOID)
+                    || (itemLocation == ItemLocation.REFUND)
+                    || ((count == 0) && (itemLocation != ItemLocation.LEASE))) {
+                return;
+            }
+
+            insertIntoDb();
         }
     }
 
@@ -1012,6 +1179,7 @@ public class Item extends WorldObject {
      * @return the stored item, or {@code null} when its template is unknown
      */
     public static Item restoreFromDb(int ownerId, ItemRow row) {
+        WorldPartition.checkOwner();
         final ItemTemplate item = ItemData.getInstance().getTemplate(row.itemId());
         if (item == null) {
             log.error("Item item_id={} not known, object_id={}", row.itemId(), row.objectId());
@@ -1041,6 +1209,7 @@ public class Item extends WorldObject {
 
     // Does not add the item to the World all-objects registry.
     public void dropMe(Creature dropper, int locX, int locY, int locZ) {
+        WorldPartition.checkOwner();
         int x = locX;
         int y = locY;
         int z = locZ;
@@ -1153,6 +1322,7 @@ public class Item extends WorldObject {
     }
 
     public void resetOwnerTimer() {
+        WorldPartition.checkOwner();
         if (itemLootShedule != null) {
             itemLootShedule.cancel(true);
             itemLootShedule = null;
@@ -1160,40 +1330,49 @@ public class Item extends WorldObject {
     }
 
     public void setProtected(boolean isProtected) {
+        WorldPartition.checkOwner();
         protectedItem = isProtected;
     }
 
     public boolean isProtected() {
+        WorldPartition.checkOwner();
         return protectedItem;
     }
 
     public boolean isNightLure() {
+        WorldPartition.checkOwner();
         return (((id >= 8505) && (id <= 8513)) || (id == 8485));
     }
 
     public boolean getCountDecrease() {
+        WorldPartition.checkOwner();
         return countDecrease;
     }
 
     public void setInitCount(int initCount) {
+        WorldPartition.checkOwner();
         this.initCount = initCount;
     }
 
     public void restoreInitCount() {
+        WorldPartition.checkOwner();
         if (countDecrease) {
             setCount(initCount);
         }
     }
 
     public boolean isTimeLimitedItem() {
+        WorldPartition.checkOwner();
         return time > 0;
     }
 
     public long getRemainingTime() {
+        WorldPartition.checkOwner();
         return time - ClockBridge.wallMillis();
     }
 
     public void endOfLife() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             return;
@@ -1228,6 +1407,7 @@ public class Item extends WorldObject {
     }
 
     public void scheduleLifeTimeTask() {
+        WorldPartition.checkOwner();
         if (!isTimeLimitedItem()) {
             return;
         }
@@ -1239,7 +1419,10 @@ public class Item extends WorldObject {
         }
     }
 
+    // Walks of the attribute array need no copy: a bonus change touches the player's stats, never the item's
+    // attributes.
     public void updateElementAttrBonus(Player player) {
+        WorldPartition.checkOwner();
         if (elementals == null) {
             return;
         }
@@ -1250,6 +1433,7 @@ public class Item extends WorldObject {
     }
 
     public void removeElementAttrBonus(Player player) {
+        WorldPartition.checkOwner();
         if (elementals == null) {
             return;
         }
@@ -1261,6 +1445,7 @@ public class Item extends WorldObject {
 
     @Override
     public void sendInfo(Player player) {
+        WorldPartition.checkOwner();
         if (dropperObjectId != 0) {
             player.sendPacket(new DropItem(this, dropperObjectId));
         } else {
@@ -1269,11 +1454,13 @@ public class Item extends WorldObject {
     }
 
     public void publish() {
+        WorldPartition.checkOwner();
         published = true;
     }
 
     @Override
     public boolean decayMe() {
+        WorldPartition.checkOwner();
         if (GeneralConfig.SAVE_DROPPED_ITEM) {
             ItemsOnGroundManager.getInstance().removeObject(this);
         }
@@ -1282,23 +1469,28 @@ public class Item extends WorldObject {
     }
 
     public boolean isQuestItem() {
+        WorldPartition.checkOwner();
         return template.isQuestItem();
     }
 
     public boolean isElementable() {
+        WorldPartition.checkOwner();
         return ((itemLocation == ItemLocation.INVENTORY) || (itemLocation == ItemLocation.PAPERDOLL))
                 && template.isElementable();
     }
 
     public boolean isFreightable() {
+        WorldPartition.checkOwner();
         return template.isFreightable();
     }
 
     public int useSkillDisTime() {
+        WorldPartition.checkOwner();
         return template.useSkillDisTime();
     }
 
     public int getOlyEnchantLevel() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         int enchant = enchantLevel;
 
@@ -1316,10 +1508,12 @@ public class Item extends WorldObject {
     }
 
     public int getDefaultEnchantLevel() {
+        WorldPartition.checkOwner();
         return template.getDefaultEnchantLevel();
     }
 
     public boolean hasPassiveSkills() {
+        WorldPartition.checkOwner();
         return (template.getItemType() == EtcItemType.RUNE)
                 && (itemLocation == ItemLocation.INVENTORY)
                 && (ownerId > 0)
@@ -1327,6 +1521,7 @@ public class Item extends WorldObject {
     }
 
     public void giveSkillsToOwner() {
+        WorldPartition.checkOwner();
         if (!template.hasSkills()) {
             return;
         }
@@ -1349,6 +1544,7 @@ public class Item extends WorldObject {
     }
 
     public void removeSkillsFromOwner() {
+        WorldPartition.checkOwner();
         if (!hasPassiveSkills()) {
             return;
         }
@@ -1366,11 +1562,13 @@ public class Item extends WorldObject {
 
     @Override
     public boolean isItem() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public Player asPlayer() {
+        WorldPartition.checkOwner();
         if ((owner == null) && (ownerId != 0)) {
             owner = World.getPlayer(ownerId);
         }
@@ -1379,10 +1577,12 @@ public class Item extends WorldObject {
     }
 
     public int getEquipReuseDelay() {
+        WorldPartition.checkOwner();
         return template.getEquipReuseDelay();
     }
 
     public void onBypassFeedback(Player player, String command) {
+        WorldPartition.checkOwner();
         if (!command.startsWith("Script")) {
             return;
         }
@@ -1412,11 +1612,13 @@ public class Item extends WorldObject {
 
     @Override
     public boolean isChargedShot(ShotType type) {
+        WorldPartition.checkOwner();
         return (shotsMask & type.getMask()) == type.getMask();
     }
 
     @Override
     public void setChargedShot(ShotType type, boolean charged) {
+        WorldPartition.checkOwner();
         if (charged) {
             shotsMask |= type.getMask();
         } else {
@@ -1425,10 +1627,12 @@ public class Item extends WorldObject {
     }
 
     public void unChargeAllShots() {
+        WorldPartition.checkOwner();
         shotsMask = 0;
     }
 
     public int[] getEnchantOptions() {
+        WorldPartition.checkOwner();
         final EnchantOptions op = EnchantItemOptionsData.getInstance().getOptions(this);
         if (op != null) {
             return op.getOptions();
@@ -1438,20 +1642,24 @@ public class Item extends WorldObject {
     }
 
     public void clearEnchantStats() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (player == null) {
             enchantOptions.clear();
             return;
         }
 
-        for (Options op : enchantOptions) {
-            op.remove(player);
+        try (ScratchBuffers.Snapshot<Options> applied = ScratchBuffers.snapshot(enchantOptions)) {
+            for (Options op : applied) {
+                op.remove(player);
+            }
         }
 
         enchantOptions.clear();
     }
 
     public void applyEnchantStats() {
+        WorldPartition.checkOwner();
         final Player player = asPlayer();
         if (!isEquipped() || (player == null) || (getEnchantOptions() == DEFAULT_ENCHANT_OPTIONS)) {
             return;
@@ -1469,18 +1677,23 @@ public class Item extends WorldObject {
     }
 
     @Override
-    public void setHeading(int heading) {}
+    public void setHeading(int heading) {
+        WorldPartition.checkOwner();
+    }
 
     public void stopAllTasks() {
+        WorldPartition.checkOwner();
         ItemLifeTimeTaskManager.getInstance().remove(this);
     }
 
     public ItemVariables getVariables() {
+        WorldPartition.checkOwner();
         final ItemVariables vars = getScript(ItemVariables.class);
         return vars != null ? vars : addScript(new ItemVariables(getObjectId()));
     }
 
     public int getTransmogId() {
+        WorldPartition.checkOwner();
         if (!TransmogConfig.ENABLE_TRANSMOG) {
             return 0;
         }
@@ -1489,11 +1702,13 @@ public class Item extends WorldObject {
     }
 
     public void setTransmogId(int transmogId) {
+        WorldPartition.checkOwner();
         getVariables().set(ItemVariables.TRANSMOG_ID, transmogId);
         getVariables().storeMe();
     }
 
     public void removeTransmog() {
+        WorldPartition.checkOwner();
         getVariables().remove(ItemVariables.TRANSMOG_ID);
         getVariables().storeMe();
     }

@@ -19,20 +19,27 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
+import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * The items last sold to a merchant, oldest first; past the limit the oldest one is destroyed.
  * @author DS
  */
 @Slf4j
+@SingleWriter
 public class PlayerRefund extends ItemContainer {
-    @Getter
+    private static final int LIMIT = 12;
+
     private final Player owner;
 
     public PlayerRefund(Player owner) {
@@ -40,12 +47,20 @@ public class PlayerRefund extends ItemContainer {
     }
 
     @Override
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    @Override
     public String getName() {
+        WorldPartition.checkOwner();
         return "Refund";
     }
 
     @Override
     public ItemLocation getBaseLocation() {
+        WorldPartition.checkOwner();
         return ItemLocation.REFUND;
     }
 
@@ -53,12 +68,11 @@ public class PlayerRefund extends ItemContainer {
     protected void addItem(Item item) {
         super.addItem(item);
         try {
-            if (getSize() > 12) {
-                final Item removedItem = items.stream().findFirst().get();
-                if (items.remove(removedItem)) {
-                    ItemManager.destroyItem(ItemProcessType.REFUND, removedItem, getOwner(), null);
-                    removedItem.updateDatabase(true);
-                }
+            if (liveItems().size() > LIMIT) {
+                final Item removedItem = liveItems().iterator().next();
+                removeItem(removedItem);
+                ItemManager.destroyItem(ItemProcessType.REFUND, removedItem, owner, null);
+                removedItem.updateDatabase(true);
             }
         } catch (Exception e) {
             log.error("addItem()", e);
@@ -66,24 +80,33 @@ public class PlayerRefund extends ItemContainer {
     }
 
     @Override
-    public void refreshWeight() {}
-
-    @Override
-    public void deleteMe() {
-        try {
-            for (Item item : items) {
-                if (item != null) {
-                    ItemManager.destroyItem(ItemProcessType.REFUND, item, getOwner(), null);
-                    item.updateDatabase(true);
-                }
-            }
-        } catch (Exception e) {
-            log.error("deleteMe()", e);
-        }
-
-        items.clear();
+    public void refreshWeight() {
+        WorldPartition.checkOwner();
     }
 
     @Override
-    public void restore() {}
+    public void deleteMe() {
+        WorldPartition.checkOwner();
+        try (Snapshot<Item> items = ScratchBuffers.snapshot(liveItems())) {
+            for (Item item : items) {
+                try {
+                    removeItem(item);
+                    ItemManager.destroyItem(ItemProcessType.REFUND, item, owner, null);
+                    item.updateDatabase(true);
+                } catch (RuntimeException e) {
+                    log.error("Could not destroy refund item {}", item.getObjectId(), e);
+                    // A failed destroy may stop before the registry removal; the item must not outlive the refund.
+                    World.removeObject(item);
+                }
+            }
+        }
+
+        // A refund never outlives its owner's session: items a failed destroy left behind go too.
+        clearItems();
+    }
+
+    @Override
+    public void restore() {
+        WorldPartition.checkOwner();
+    }
 }

@@ -123,10 +123,7 @@ public class RequestExEnchantItemAttribute extends ClientPacket {
                         && (oldElement != null)
                         && (oldElement.getElement() != elementToAdd)
                         && (oldElement.getElement() != -2))
-                || (item.isArmor()
-                        && (item.getElemental(elementToAdd) == null)
-                        && (item.getElementals() != null)
-                        && (item.getElementals().length >= 3))) {
+                || (item.isArmor() && (item.getElemental(elementToAdd) == null) && (item.elementalCount() >= 3))) {
             player.sendPacket(
                     SystemMessageId
                             .ANOTHER_ELEMENTAL_POWER_HAS_ALREADY_BEEN_ADDED_THIS_ELEMENTAL_POWER_CANNOT_BE_ADDED);
@@ -139,8 +136,7 @@ public class RequestExEnchantItemAttribute extends ClientPacket {
         final int limit = getLimit(item, stoneId);
         int powerToAdd = getPowerToAdd(stoneId, elementValue, item);
 
-        if (item.isArmor() && (item.getElementals() != null)) {
-            // cannot add opposite element
+        if (item.isArmor() && item.hasElementals()) {
             for (Elementals elm : item.getElementals()) {
                 if (elm.getElement() == opositeElement) {
                     player.setActiveEnchantAttrItemId(Player.ID_NONE);

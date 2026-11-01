@@ -3995,24 +3995,18 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * Get the total amount of all specified items in player's inventory.
      * @param player the player whose inventory to check
      * @param itemIds a list of IDs of items whose amount to get
-     * @return the summary amount of all listed items in player's inventory
+     * @return the summary amount, saturating at {@link Long#MAX_VALUE}
      */
     public long getQuestItemsCount(Player player, int... itemIds) {
+        final PlayerInventory inventory = player.getInventory();
         long count = 0;
-        for (Item item : player.getInventory().getItems()) {
-            if (item == null) {
-                continue;
+        for (int itemId : itemIds) {
+            final long itemCount = inventory.getInventoryItemCount(itemId, -1);
+            if (count > (Long.MAX_VALUE - itemCount)) {
+                return Long.MAX_VALUE;
             }
 
-            for (int itemId : itemIds) {
-                if (item.getId() == itemId) {
-                    if ((count + item.getCount()) > Long.MAX_VALUE) {
-                        return Long.MAX_VALUE;
-                    }
-
-                    count += item.getCount();
-                }
-            }
+            count += itemCount;
         }
 
         return count;

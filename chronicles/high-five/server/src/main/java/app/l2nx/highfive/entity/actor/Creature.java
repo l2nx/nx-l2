@@ -1939,16 +1939,14 @@ public abstract class Creature extends WorldObject {
                                     .getTemplate(skill.getReferenceItemId())
                                     .getBodyPart()
                             == BodyPart.DECO)) {
-                for (Item item : getInventory().getAllItemsByItemId(skill.getReferenceItemId())) {
-                    if (item.isEquipped()) {
-                        if (item.getMana() < item.useSkillDisTime()) {
-                            abortCast();
-                            return;
-                        }
-
-                        item.decreaseMana(false, item.useSkillDisTime());
-                        break;
+                final Item talisman = getInventory().getPaperdollItemByItemId(skill.getReferenceItemId());
+                if (talisman != null) {
+                    if (talisman.getMana() < talisman.useSkillDisTime()) {
+                        abortCast();
+                        return;
                     }
+
+                    talisman.decreaseMana(false, talisman.useSkillDisTime());
                 }
             }
         }

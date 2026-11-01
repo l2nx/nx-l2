@@ -5,6 +5,8 @@ lists what is open.
 
 ## Open
 
+- [#151](https://github.com/l2nx/nx-l2/issues/151) Engine core performance: regressions and improvements left for later
+- [#152](https://github.com/l2nx/nx-l2/issues/152) ItemContainer.getItems copies the container on every call
 - [#1](https://github.com/l2nx/nx-l2/issues/1) Push GPLv3 out of the build
 - [#2](https://github.com/l2nx/nx-l2/issues/2) Essence chronicle and shared core extraction
 - [#3](https://github.com/l2nx/nx-l2/issues/3) Interlude chronicle

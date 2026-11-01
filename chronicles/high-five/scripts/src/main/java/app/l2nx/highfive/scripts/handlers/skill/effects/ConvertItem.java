@@ -80,7 +80,7 @@ public class ConvertItem extends AbstractEffect {
         }
 
         final int enchantLevel = wpn.getEnchantLevel();
-        final Elementals elementals = wpn.getElementals() == null ? null : wpn.getElementals()[0];
+        final Elementals elementals = wpn.hasElementals() ? wpn.getElementals()[0] : null;
         final Collection<Item> unequipped = player.getInventory()
                 .unEquipItemInBodySlotAndRecord(wpn.getTemplate().getBodyPart());
         final InventoryUpdate iu = new InventoryUpdate();

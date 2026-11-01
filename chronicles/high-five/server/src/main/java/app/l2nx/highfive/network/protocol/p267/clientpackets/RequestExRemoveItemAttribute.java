@@ -55,7 +55,7 @@ public class RequestExRemoveItemAttribute extends ClientPacket {
             return;
         }
 
-        if ((targetItem.getElementals() == null) || (targetItem.getElemental(element) == null)) {
+        if (!targetItem.hasElementals() || (targetItem.getElemental(element) == null)) {
             return;
         }
 

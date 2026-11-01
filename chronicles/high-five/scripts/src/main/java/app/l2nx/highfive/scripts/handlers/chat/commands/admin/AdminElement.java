@@ -129,7 +129,7 @@ public class AdminElement implements IAdminCommandHandler {
 
             player.getInventory().equipItem(itemInstance);
 
-            if (itemInstance.getElementals() == null) {
+            if (!itemInstance.hasElementals()) {
                 current = "None";
             } else {
                 current = itemInstance.getElemental(type).toString();
