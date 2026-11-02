@@ -21,9 +21,7 @@ package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
-import app.l2nx.highfive.entity.clan.Clan.RankPrivs;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgePowerGradeList;
-import java.util.Collection;
 
 /**
  * Format: (ch)
@@ -38,8 +36,7 @@ public class RequestPledgePowerGradeList extends ClientPacket {
         final Player player = getPlayer();
         final Clan clan = player.getClan();
         if (clan != null) {
-            final Collection<RankPrivs> privs = clan.getAllRankPrivs();
-            player.sendPacket(new PledgePowerGradeList(privs));
+            player.sendPacket(new PledgePowerGradeList(clan));
         }
     }
 }

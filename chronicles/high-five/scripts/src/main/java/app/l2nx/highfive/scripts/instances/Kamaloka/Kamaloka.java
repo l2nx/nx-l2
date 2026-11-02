@@ -25,6 +25,7 @@ package app.l2nx.highfive.scripts.instances.Kamaloka;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -523,41 +524,45 @@ public class Kamaloka extends InstanceScript {
         Map<Integer, Long> instanceTimes;
 
         // for each party member
-        for (Player partyMember : party.getMembers()) {
-            // player level must be in range
-            if (Math.abs(partyMember.getLevel() - level) > MAX_LEVEL_DIFFERENCE) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                // player level must be in range
+                if (Math.abs(partyMember.getLevel() - level) > MAX_LEVEL_DIFFERENCE) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return false;
+                }
 
-            // player must be near party leader
-            if (!partyMember.isInsideRadius3D(player, 1000)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return false;
-            }
+                // player must be near party leader
+                if (!partyMember.isInsideRadius3D(player, 1000)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return false;
+                }
 
-            // get instances reenter times for player
-            instanceTimes = InstanceManager.getInstance().getAllInstanceTimes(partyMember.getObjectId());
-            if (instanceTimes != null) {
-                for (Entry<Integer, Long> entry : instanceTimes.entrySet()) {
-                    // find instance with same name (kamaloka or labyrinth)
-                    // TODO: Zoey76: Don't use instance name, use other system.
-                    if (!instanceName.equals(InstanceManager.getInstance().getInstanceIdName(entry.getKey()))) {
-                        continue;
-                    }
+                // get instances reenter times for player
+                instanceTimes = InstanceManager.getInstance().getAllInstanceTimes(partyMember.getObjectId());
+                if (instanceTimes != null) {
+                    for (Entry<Integer, Long> entry : instanceTimes.entrySet()) {
+                        // find instance with same name (kamaloka or labyrinth)
+                        // TODO: Zoey76: Don't use instance name, use other system.
+                        if (!instanceName.equals(InstanceManager.getInstance().getInstanceIdName(entry.getKey()))) {
+                            continue;
+                        }
 
-                    // if found instance still can't be reentered - exit
-                    if (ClockBridge.wallMillis() < entry.getValue()) {
-                        final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
-                        sm.addPcName(partyMember);
-                        player.sendPacket(sm);
-                        return false;
+                        // if found instance still can't be reentered - exit
+                        if (ClockBridge.wallMillis() < entry.getValue()) {
+                            final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                            sm.addPcName(partyMember);
+                            player.sendPacket(sm);
+                            return false;
+                        }
                     }
                 }
             }
@@ -665,10 +670,13 @@ public class Kamaloka extends InstanceScript {
 
         // and finally teleport party into instance
         final Party party = player.getParty();
-        for (Player partyMember : party.getMembers()) {
-            world.addAllowed(partyMember);
-            removeBuffs(partyMember);
-            teleportPlayer(partyMember, TELEPORTS[index], world.getInstanceId());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                world.addAllowed(partyMember);
+                removeBuffs(partyMember);
+                teleportPlayer(partyMember, TELEPORTS[index], world.getInstanceId());
+            }
         }
     }
 
@@ -853,9 +861,12 @@ public class Kamaloka extends InstanceScript {
                     final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
 
                     // teleports entire party away
-                    for (Player partyMember : party.getMembers()) {
-                        if ((partyMember != null) && (partyMember.getInstanceId() == world.getInstanceId())) {
-                            teleportPlayer(partyMember, inst.getExitLoc(), 0);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            if ((partyMember != null) && (partyMember.getInstanceId() == world.getInstanceId())) {
+                                teleportPlayer(partyMember, inst.getExitLoc(), 0);
+                            }
                         }
                     }
                 }

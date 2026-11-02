@@ -48,13 +48,13 @@ public class RequestChangePartyLeader extends ClientPacket {
         if (party != null) {
             final Player newLeader = party.getPlayerByName(name);
             if (party.isLeader(player)) {
-                if ((newLeader != null) && party.getMembers().contains(newLeader)) {
+                if ((newLeader != null) && party.containsPlayer(newLeader)) {
                     party.changePartyLeader(name);
                 } else {
                     player.sendPacket(
                             SystemMessageId.YOU_MAY_ONLY_TRANSFER_PARTY_LEADERSHIP_TO_ANOTHER_MEMBER_OF_THE_PARTY);
                 }
-            } else if ((newLeader != null) && party.getMembers().contains(newLeader)) {
+            } else if ((newLeader != null) && party.containsPlayer(newLeader)) {
                 player.sendPacket(
                         SystemMessageId.ONLY_THE_LEADER_OF_THE_PARTY_CAN_TRANSFER_PARTY_LEADERSHIP_TO_ANOTHER_PLAYER);
             }

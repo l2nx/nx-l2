@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q10276_MutatedKaneusGludio;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -87,13 +88,16 @@ public class Q10276_MutatedKaneusGludio extends Quest {
         final int npcId = npc.getId();
         if (killer.getParty() != null) {
             final List<Player> partyMembers = new ArrayList<>();
-            for (Player member : killer.getParty().getMembers()) {
-                qs = getQuestState(member, false);
-                if ((qs != null)
-                        && qs.isStarted()
-                        && (((npcId == TOMLAN_KAMOS) && !hasQuestItems(member, TISSUE_TK))
-                                || ((npcId == OL_ARIOSH) && !hasQuestItems(member, TISSUE_OA)))) {
-                    partyMembers.add(member);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(members);
+                for (Player member : members) {
+                    qs = getQuestState(member, false);
+                    if ((qs != null)
+                            && qs.isStarted()
+                            && (((npcId == TOMLAN_KAMOS) && !hasQuestItems(member, TISSUE_TK))
+                                    || ((npcId == OL_ARIOSH) && !hasQuestItems(member, TISSUE_OA)))) {
+                        partyMembers.add(member);
+                    }
                 }
             }
 

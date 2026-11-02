@@ -85,6 +85,7 @@ public class RequestPartyMatchConfig extends ClientPacket {
             PartyMatchWaitingList.getInstance().addPlayer(player);
 
             // Send Room list
+            PartyMatchRoomList.getInstance().deleteAbandonedRooms();
             player.sendPacket(new ListPartyWating(player, auto, loc, level));
         }
     }

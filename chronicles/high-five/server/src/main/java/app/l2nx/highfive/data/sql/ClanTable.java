@@ -303,8 +303,8 @@ public class ClanTable {
         clans.remove(clanId);
         // The war rows of the clan go with its row; the clans it fought forget the wars too.
         for (Clan other : clans.values()) {
-            other.getWarList().remove(clanId);
-            other.getAttackerList().remove(clanId);
+            other.deleteEnemyClan(clanId);
+            other.deleteAttackerClan(clanId);
         }
 
         clanRepository.delete(clanId);
@@ -439,19 +439,6 @@ public class ClanTable {
         msg = new SystemMessage(SystemMessageId.THE_CLAN_S1_HAS_DECIDED_TO_STOP_THE_WAR);
         msg.addString(clan1.getName());
         clan2.broadcastToOnlineMembers(msg);
-    }
-
-    public void checkSurrender(Clan clan1, Clan clan2) {
-        int count = 0;
-        for (ClanMember member : clan1.getMembers()) {
-            if ((member != null) && (member.getPlayer().getWantsPeace() == 1)) {
-                count++;
-            }
-        }
-
-        if (count == (clan1.getMembers().size() - 1)) {
-            deleteClanWars(clan1.getId(), clan2.getId());
-        }
     }
 
     private void restoreClanWars() {

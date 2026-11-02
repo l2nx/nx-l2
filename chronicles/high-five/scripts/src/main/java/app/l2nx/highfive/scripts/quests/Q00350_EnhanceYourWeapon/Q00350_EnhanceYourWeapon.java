@@ -27,6 +27,7 @@ import app.l2nx.highfive.data.enums.AbsorbCrystalType;
 import app.l2nx.highfive.data.holders.LevelingSoulCrystalInfo;
 import app.l2nx.highfive.data.holders.SoulCrystal;
 import app.l2nx.highfive.data.xml.LevelUpCrystalData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -43,7 +44,6 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -272,23 +272,26 @@ public class Q00350_EnhanceYourWeapon extends Quest {
 
         // Gather eligible players and their Soul Crystals.
         if (isPartyLevelingMonster(mob.getId()) && (killer.getParty() != null)) {
-            for (Player member : killer.getParty().getMembers()) {
-                if ((member == null) || (member.calculateDistance3D(killer) > PlayerConfig.ALT_PARTY_RANGE)) {
-                    continue; // Skip invalid or out-of-range members.
-                }
+            try (ScratchBuffers.Snapshot<Player> groupMembers = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(groupMembers);
+                for (Player member : groupMembers) {
+                    if ((member == null) || (member.calculateDistance3D(killer) > PlayerConfig.ALT_PARTY_RANGE)) {
+                        continue; // Skip invalid or out-of-range members.
+                    }
 
-                final SoulCrystal sc = getSCForPlayer(member);
-                if (sc == null) {
-                    continue; // Skip if no valid Soul Crystal is present.
-                }
+                    final SoulCrystal sc = getSCForPlayer(member);
+                    if (sc == null) {
+                        continue; // Skip if no valid Soul Crystal is present.
+                    }
 
-                players.put(member, sc);
-                if ((sc.level() > maxSCLevel)
-                        && LevelUpCrystalData.getInstance()
-                                .getNpcsSoulInfo()
-                                .get(mob.getId())
-                                .containsKey(sc.level())) {
-                    maxSCLevel = sc.level(); // Track the highest-level Soul Crystal.
+                    players.put(member, sc);
+                    if ((sc.level() > maxSCLevel)
+                            && LevelUpCrystalData.getInstance()
+                                    .getNpcsSoulInfo()
+                                    .get(mob.getId())
+                                    .containsKey(sc.level())) {
+                        maxSCLevel = sc.level(); // Track the highest-level Soul Crystal.
+                    }
                 }
             }
         } else {
@@ -340,8 +343,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
             case PARTY_ONE_RANDOM: {
                 if (killer.getParty() != null) {
                     final Player lucky = killer.getParty()
-                            .getMembers()
-                            .get(getRandom(killer.getParty().getMemberCount()));
+                            .getMember(getRandom(killer.getParty().getMemberCount()));
                     levelCrystal(lucky, players.get(lucky), mob);
                 } else {
                     levelCrystal(killer, players.get(killer), mob);
@@ -350,13 +352,14 @@ public class Q00350_EnhanceYourWeapon extends Quest {
             }
             case PARTY_RANDOM: {
                 if (killer.getParty() != null) {
-                    final List<Player> partyMembers =
-                            new ArrayList<>(killer.getParty().getMembers());
-                    while ((getRandom(100) < 33) && !partyMembers.isEmpty()) {
-                        final Player lucky = partyMembers.remove(getRandom(partyMembers.size()));
-                        final SoulCrystal luckyData = players.get(lucky);
-                        if (luckyData != null) {
-                            levelCrystal(lucky, luckyData, mob);
+                    try (ScratchBuffers.Snapshot<Player> partyMembers = ScratchBuffers.empty()) {
+                        killer.getParty().collectMembers(partyMembers);
+                        while ((getRandom(100) < 33) && !partyMembers.isEmpty()) {
+                            final Player lucky = partyMembers.remove(getRandom(partyMembers.size()));
+                            final SoulCrystal luckyData = players.get(lucky);
+                            if (luckyData != null) {
+                                levelCrystal(lucky, luckyData, mob);
+                            }
                         }
                     }
                 } else if (getRandom(100) < 33) {
@@ -366,8 +369,11 @@ public class Q00350_EnhanceYourWeapon extends Quest {
             }
             case FULL_PARTY: {
                 if (killer.getParty() != null) {
-                    for (Player member : killer.getParty().getMembers()) {
-                        levelCrystal(member, players.get(member), mob);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        killer.getParty().collectMembers(members);
+                        for (Player member : members) {
+                            levelCrystal(member, players.get(member), mob);
+                        }
                     }
                 } else {
                     levelCrystal(killer, players.get(killer), mob);

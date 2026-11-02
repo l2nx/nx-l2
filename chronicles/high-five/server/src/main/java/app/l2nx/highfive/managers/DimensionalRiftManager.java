@@ -30,6 +30,7 @@ import app.l2nx.highfive.data.holders.RiftRoomTemplate;
 import app.l2nx.highfive.data.holders.RiftSpawn;
 import app.l2nx.highfive.data.holders.SpawnPoint;
 import app.l2nx.highfive.data.xml.DimensionalRiftData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -181,10 +182,13 @@ public class DimensionalRiftManager {
             return;
         }
 
-        for (Player p : party.getMembers()) {
-            if (!checkIfInPeaceZone(p.getX(), p.getY(), p.getZ())) {
-                canPass = false;
-                break;
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player p : members) {
+                if (!checkIfInPeaceZone(p.getX(), p.getY(), p.getZ())) {
+                    canPass = false;
+                    break;
+                }
             }
         }
 
@@ -195,21 +199,24 @@ public class DimensionalRiftManager {
 
         Item i;
         final int count = getNeededItems(type);
-        for (Player p : party.getMembers()) {
-            i = p.getInventory().getItemByItemId(DIMENSIONAL_FRAGMENT_ITEM_ID);
-            if (i == null) {
-                canPass = false;
-                break;
-            }
-
-            if (i.getCount() > 0) {
-                if (i.getCount() < getNeededItems(type)) {
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player p : members) {
+                i = p.getInventory().getItemByItemId(DIMENSIONAL_FRAGMENT_ITEM_ID);
+                if (i == null) {
                     canPass = false;
                     break;
                 }
-            } else {
-                canPass = false;
-                break;
+
+                if (i.getCount() > 0) {
+                    if (i.getCount() < getNeededItems(type)) {
+                        canPass = false;
+                        break;
+                    }
+                } else {
+                    canPass = false;
+                    break;
+                }
             }
         }
 
@@ -222,15 +229,18 @@ public class DimensionalRiftManager {
             return;
         }
 
-        for (Player p : party.getMembers()) {
-            i = p.getInventory().getItemByItemId(DIMENSIONAL_FRAGMENT_ITEM_ID);
-            if (!p.destroyItem(ItemProcessType.FEE, i, count, null, false)) {
-                final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-                html.setFile(player, "data/html/seven_signs/rift/NoFragments.htm");
-                html.replace("%npc_name%", npc.getName());
-                html.replace("%count%", Integer.toString(count));
-                player.sendPacket(html);
-                return;
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player p : members) {
+                i = p.getInventory().getItemByItemId(DIMENSIONAL_FRAGMENT_ITEM_ID);
+                if (!p.destroyItem(ItemProcessType.FEE, i, count, null, false)) {
+                    final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+                    html.setFile(player, "data/html/seven_signs/rift/NoFragments.htm");
+                    html.replace("%npc_name%", npc.getName());
+                    html.replace("%count%", Integer.toString(count));
+                    player.sendPacket(html);
+                    return;
+                }
             }
         }
 

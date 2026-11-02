@@ -21,9 +21,11 @@ package app.l2nx.highfive.scripts.instances.CavernOfThePirateCaptain;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.groups.AbstractPlayerGroup;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 import app.l2nx.highfive.managers.InstanceManager;
@@ -162,14 +164,20 @@ public class CavernOfThePirateCaptain extends InstanceScript {
                 playersInside.add(player);
                 managePlayerEnter(player, world);
             } else if (party.isInCommandChannel()) {
-                for (Player member : party.getCommandChannel().getMembers()) {
-                    playersInside.add(member);
-                    managePlayerEnter(member, world);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.getCommandChannel().collectMembers(members);
+                    for (Player member : members) {
+                        playersInside.add(member);
+                        managePlayerEnter(member, world);
+                    }
                 }
             } else {
-                for (Player member : party.getMembers()) {
-                    playersInside.add(member);
-                    managePlayerEnter(member, world);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        playersInside.add(member);
+                        managePlayerEnter(member, world);
+                    }
                 }
             }
 
@@ -207,41 +215,46 @@ public class CavernOfThePirateCaptain extends InstanceScript {
             return false;
         }
 
-        final List<Player> members = (isInCC) ? party.getCommandChannel().getMembers() : party.getMembers();
+        final AbstractPlayerGroup group = isInCC ? party.getCommandChannel() : party;
+        final int memberCount = group.getMemberCount();
 
-        if ((members.size() < (is83 ? PLAYERS_83_MIN : isNight ? PLAYERS_60_NIGHT_MIN : PLAYERS_60_MIN))
-                || (members.size() > (is83 ? PLAYERS_83_MAX : isNight ? PLAYERS_60_NIGHT_MAX : PLAYERS_60_MAX))) {
+        if ((memberCount < (is83 ? PLAYERS_83_MIN : isNight ? PLAYERS_60_NIGHT_MIN : PLAYERS_60_MIN))
+                || (memberCount > (is83 ? PLAYERS_83_MAX : isNight ? PLAYERS_60_NIGHT_MAX : PLAYERS_60_MAX))) {
             broadcastSystemMessage(
                     player, null, SystemMessageId.YOU_CANNOT_ENTER_DUE_TO_THE_PARTY_HAVING_EXCEEDED_THE_LIMIT, false);
             return false;
         }
 
-        for (Player groupMembers : members) {
-            if (groupMembers.getLevel() < (is83 ? MIN_LV_83 : MIN_LV_60)) {
-                broadcastSystemMessage(
-                        player,
-                        groupMembers,
-                        SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY,
-                        true);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            group.collectMembers(members);
+            for (Player groupMembers : members) {
+                if (groupMembers.getLevel() < (is83 ? MIN_LV_83 : MIN_LV_60)) {
+                    broadcastSystemMessage(
+                            player,
+                            groupMembers,
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY,
+                            true);
+                    return false;
+                }
 
-            if (!player.isInsideRadius3D(groupMembers, 1000)) {
-                broadcastSystemMessage(
-                        player,
-                        groupMembers,
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED,
-                        true);
-                return false;
-            }
+                if (!player.isInsideRadius3D(groupMembers, 1000)) {
+                    broadcastSystemMessage(
+                            player,
+                            groupMembers,
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED,
+                            true);
+                    return false;
+                }
 
-            final Long reentertime = InstanceManager.getInstance()
-                    .getInstanceTime(
-                            groupMembers.getObjectId(),
-                            (is83 ? TEMPLATE_ID_83 : isNight ? TEMPLATE_ID_60_NIGHT : TEMPLATE_ID_60));
-            if (ClockBridge.wallMillis() < reentertime) {
-                broadcastSystemMessage(player, groupMembers, SystemMessageId.C1_MAY_NOT_RE_ENTER_YET, true);
-                return false;
+                final Long reentertime = InstanceManager.getInstance()
+                        .getInstanceTime(
+                                groupMembers.getObjectId(),
+                                (is83 ? TEMPLATE_ID_83 : isNight ? TEMPLATE_ID_60_NIGHT : TEMPLATE_ID_60));
+                if (ClockBridge.wallMillis() < reentertime) {
+                    broadcastSystemMessage(player, groupMembers, SystemMessageId.C1_MAY_NOT_RE_ENTER_YET, true);
+                    return false;
+                }
             }
         }
 

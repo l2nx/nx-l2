@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.targets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -54,17 +55,20 @@ public class Party implements ITargetTypeHandler {
 
         if (creature.isInParty()) {
             // Get a list of Party Members
-            for (Player partyMember : creature.getParty().getMembers()) {
-                if ((partyMember == null) || (partyMember == player)) {
-                    continue;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                creature.getParty().collectMembers(members);
+                for (Player partyMember : members) {
+                    if ((partyMember == null) || (partyMember == player)) {
+                        continue;
+                    }
 
-                if (Skill.addCharacter(creature, partyMember, radius, false)) {
-                    targetList.add(partyMember);
-                }
+                    if (Skill.addCharacter(creature, partyMember, radius, false)) {
+                        targetList.add(partyMember);
+                    }
 
-                if (Skill.addSummon(creature, partyMember, radius, false)) {
-                    targetList.add(partyMember.getSummon());
+                    if (Skill.addSummon(creature, partyMember, radius, false)) {
+                        targetList.add(partyMember.getSummon());
+                    }
                 }
             }
         }

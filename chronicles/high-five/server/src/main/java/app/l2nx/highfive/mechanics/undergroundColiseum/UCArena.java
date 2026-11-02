@@ -25,6 +25,7 @@ package app.l2nx.highfive.mechanics.undergroundColiseum;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Team;
@@ -195,9 +196,12 @@ public class UCArena {
         for (UCTeam team : getTeams()) {
             final Party party = team.getParty();
             if (party != null) {
-                for (Player member : party.getMembers()) {
-                    if (member != null) {
-                        member.sendPacket(packet);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        if (member != null) {
+                            member.sendPacket(packet);
+                        }
                     }
                 }
             }
@@ -242,10 +246,13 @@ public class UCArena {
                 continue;
             }
 
-            for (Player pl : team.getParty().getMembers()) {
-                if ((pl != null) && (pl.calculateDistance3D(manager) > PlayerConfig.ALT_PARTY_RANGE)) {
-                    isValid = false;
-                    break;
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                team.getParty().collectMembers(members);
+                for (Player pl : members) {
+                    if ((pl != null) && (pl.calculateDistance3D(manager) > PlayerConfig.ALT_PARTY_RANGE)) {
+                        isValid = false;
+                        break;
+                    }
                 }
             }
         }
@@ -282,13 +289,16 @@ public class UCArena {
             final Party party = team.getParty();
             if (party != null) {
                 int i = 0;
-                for (Player player : party.getMembers()) {
-                    if (player != null) {
-                        player.setUCState(Player.UC_STATE_POINT);
-                        positions[i].teleportPlayer(player);
-                        i++;
-                        if (i >= 3) {
-                            i = 0;
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player player : members) {
+                        if (player != null) {
+                            player.setUCState(Player.UC_STATE_POINT);
+                            positions[i].teleportPlayer(player);
+                            i++;
+                            if (i >= 3) {
+                                i = 0;
+                            }
                         }
                     }
                 }
@@ -304,11 +314,14 @@ public class UCArena {
         for (UCTeam team : getTeams()) {
             final Party party = team.getParty();
             if (party != null) {
-                for (Player member : party.getMembers()) {
-                    if (member != null) {
-                        member.sendPacket(packet);
-                        if (packet2 != null) {
-                            member.sendPacket(packet2);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        if (member != null) {
+                            member.sendPacket(packet);
+                            if (packet2 != null) {
+                                member.sendPacket(packet2);
+                            }
                         }
                     }
                 }
@@ -319,9 +332,12 @@ public class UCArena {
     public void startFight() {
         for (UCTeam team : teams) {
             team.spawnTower();
-            for (Player player : team.getParty().getMembers()) {
-                if (player != null) {
-                    player.setTeam(team.getIndex() == 1 ? Team.BLUE : Team.RED);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                team.getParty().collectMembers(members);
+                for (Player player : members) {
+                    if (player != null) {
+                        player.setTeam(team.getIndex() == 1 ? Team.BLUE : Team.RED);
+                    }
                 }
             }
         }
@@ -330,31 +346,34 @@ public class UCArena {
     public void removeTeams() {
         for (UCTeam team : teams) {
             if (team.getParty() != null) {
-                for (Player player : team.getParty().getMembers()) {
-                    if (player == null) {
-                        continue;
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    team.getParty().collectMembers(members);
+                    for (Player player : members) {
+                        if (player == null) {
+                            continue;
+                        }
 
-                    player.setTeam(Team.NONE);
-                    player.cleanUCStats();
-                    player.setUCState(Player.UC_STATE_NONE);
-                    if (player.isDead()) {
-                        UCTeam.resPlayer(player);
-                    }
+                        player.setTeam(Team.NONE);
+                        player.cleanUCStats();
+                        player.setUCState(Player.UC_STATE_NONE);
+                        if (player.isDead()) {
+                            UCTeam.resPlayer(player);
+                        }
 
-                    final PlayerVariables variables = player.getVariables();
-                    final String restore = variables.getString(PlayerVariables.RESTORE_LOCATION, null);
-                    if (restore != null) {
-                        // Left set, the next character selection would put the player back on this spot.
-                        variables.remove(PlayerVariables.RESTORE_LOCATION);
-                        final String[] split = restore.split(";");
-                        player.teleToLocation(
-                                Integer.parseInt(split[0]),
-                                Integer.parseInt(split[1]),
-                                Integer.parseInt(split[2]),
-                                true);
-                    } else {
-                        player.teleToLocation(TeleportWhereType.TOWN);
+                        final PlayerVariables variables = player.getVariables();
+                        final String restore = variables.getString(PlayerVariables.RESTORE_LOCATION, null);
+                        if (restore != null) {
+                            // Left set, the next character selection would put the player back on this spot.
+                            variables.remove(PlayerVariables.RESTORE_LOCATION);
+                            final String[] split = restore.split(";");
+                            player.teleToLocation(
+                                    Integer.parseInt(split[0]),
+                                    Integer.parseInt(split[1]),
+                                    Integer.parseInt(split[2]),
+                                    true);
+                        } else {
+                            player.teleToLocation(TeleportWhereType.TOWN);
+                        }
                     }
                 }
             }

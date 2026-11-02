@@ -19,35 +19,46 @@
  */
 package app.l2nx.highfive.entity.groups.matching;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import java.util.List;
 
 /**
  * @author Gnacik
  */
+@SingleWriter
 public class PartyMatchWaitingList {
-    @Getter
-    private final Collection<Player> players;
+    // Joining order, the order of the waiting list window.
+    private final ObjectLinkedOpenHashSet<Player> players = new ObjectLinkedOpenHashSet<>();
 
-    protected PartyMatchWaitingList() {
-        players = ConcurrentHashMap.newKeySet();
+    protected PartyMatchWaitingList() {}
+
+    public List<Player> getPlayers() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(players));
+    }
+
+    public boolean contains(Player player) {
+        WorldPartition.checkOwner();
+        return players.contains(player);
     }
 
     public void addPlayer(Player player) {
-        // player.setPartyWait(1);
-        if (!players.contains(player)) {
-            players.add(player);
-        }
+        WorldPartition.checkOwner();
+        players.add(player);
     }
 
     public void removePlayer(Player player) {
-        // player.setPartyWait(0);
+        WorldPartition.checkOwner();
         players.remove(player);
     }
 
     public static PartyMatchWaitingList getInstance() {
+        WorldPartition.checkOwner();
         return SingletonHolder.INSTANCE;
     }
 

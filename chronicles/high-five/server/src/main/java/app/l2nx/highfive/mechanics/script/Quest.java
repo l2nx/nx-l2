@@ -36,6 +36,7 @@ import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -1686,18 +1687,20 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return player;
         }
 
-        final List<Player> members = party.getMembers();
-        if (members.isEmpty()) {
-            return player;
-        }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            if (members.isEmpty()) {
+                return player;
+            }
 
-        final RandomGenerator random = ClockBridge.random();
-        Player member = members.get(random.nextInt(members.size()));
-        while (player.getInstanceId() != member.getInstanceId()) {
-            member = members.get(random.nextInt(members.size()));
-        }
+            final RandomGenerator random = ClockBridge.random();
+            Player member = members.get(random.nextInt(members.size()));
+            while (player.getInstanceId() != member.getInstanceId()) {
+                member = members.get(random.nextInt(members.size()));
+            }
 
-        return member;
+            return member;
+        }
     }
 
     /**
@@ -1737,7 +1740,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         final Party party = player.getParty();
 
         // if this player is not in a party, just check if this player instance matches the conditions itself
-        if ((party == null) || party.getMembers().isEmpty()) {
+        if ((party == null) || (party.getMemberCount() == 0)) {
             temp = player.getQuestState(getName());
             if ((temp != null) && temp.isSet(var) && temp.get(var).equalsIgnoreCase(value)) {
                 return player; // match
@@ -1755,18 +1758,21 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             target = player;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember == null) {
-                continue;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember == null) {
+                    continue;
+                }
 
-            temp = partyMember.getQuestState(getName());
-            if ((temp != null)
-                    && (temp.get(var) != null)
-                    && (temp.get(var)).equalsIgnoreCase(value)
-                    && partyMember.isInsideRadius3D(target, PlayerConfig.ALT_PARTY_RANGE)
-                    && (player.getInstanceId() == partyMember.getInstanceId())) {
-                candidates.add(partyMember);
+                temp = partyMember.getQuestState(getName());
+                if ((temp != null)
+                        && (temp.get(var) != null)
+                        && (temp.get(var)).equalsIgnoreCase(value)
+                        && partyMember.isInsideRadius3D(target, PlayerConfig.ALT_PARTY_RANGE)
+                        && (player.getInstanceId() == partyMember.getInstanceId())) {
+                    candidates.add(partyMember);
+                }
             }
         }
 
@@ -1798,7 +1804,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         final Party party = player.getParty();
 
         // if this player is not in a party, just check if this player instance matches the conditions itself
-        if ((party == null) || party.getMembers().isEmpty()) {
+        if ((party == null) || (party.getMemberCount() == 0)) {
             temp = player.getQuestState(getName());
             if ((temp != null) && (temp.getState() == state)) {
                 return player; // match
@@ -1817,17 +1823,20 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             target = player;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember == null) {
-                continue;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember == null) {
+                    continue;
+                }
 
-            temp = partyMember.getQuestState(getName());
-            if ((temp != null)
-                    && (temp.getState() == state)
-                    && partyMember.isInsideRadius3D(target, PlayerConfig.ALT_PARTY_RANGE)
-                    && (player.getInstanceId() == partyMember.getInstanceId())) {
-                candidates.add(partyMember);
+                temp = partyMember.getQuestState(getName());
+                if ((temp != null)
+                        && (temp.getState() == state)
+                        && partyMember.isInsideRadius3D(target, PlayerConfig.ALT_PARTY_RANGE)
+                        && (player.getInstanceId() == partyMember.getInstanceId())) {
+                    candidates.add(partyMember);
+                }
             }
         }
 
@@ -1862,11 +1871,14 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             }
         } else {
             int highestRoll = 0;
-            for (Player member : party.getMembers()) {
-                final int rnd = getRandom(1000);
-                if ((rnd > highestRoll) && checkPartyMember(member, npc)) {
-                    highestRoll = rnd;
-                    luckyPlayer = member;
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player member : members) {
+                    final int rnd = getRandom(1000);
+                    if ((rnd > highestRoll) && checkPartyMember(member, npc)) {
+                        highestRoll = rnd;
+                        luckyPlayer = member;
+                    }
                 }
             }
         }
@@ -1914,14 +1926,17 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             }
         }
 
-        for (Player member : player.getParty().getMembers()) {
-            if (member == player) {
-                continue;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            player.getParty().collectMembers(members);
+            for (Player member : members) {
+                if (member == player) {
+                    continue;
+                }
 
-            qs = member.getQuestState(getName());
-            if (checkPartyMemberConditions(qs, condition, target)) {
-                candidates.add(qs);
+                qs = member.getQuestState(getName());
+                if (checkPartyMemberConditions(qs, condition, target)) {
+                    candidates.add(qs);
+                }
             }
         }
 

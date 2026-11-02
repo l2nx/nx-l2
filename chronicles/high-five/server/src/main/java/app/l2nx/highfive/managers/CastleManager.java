@@ -30,6 +30,8 @@ import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.data.holders.CastleTemplate;
 import app.l2nx.highfive.data.xml.CastleData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -239,8 +241,11 @@ public class CastleManager {
 
     // Remove this castle's circlets from the clan.
     public void removeCirclet(Clan clan, int castleId) {
-        for (ClanMember member : clan.getMembers()) {
-            removeCirclet(member, castleId);
+        try (Snapshot<ClanMember> members = ScratchBuffers.empty()) {
+            clan.collectMembers(members);
+            for (ClanMember member : members) {
+                removeCirclet(member, castleId);
+            }
         }
     }
 

@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.ai.others.SteelCitadelTeleport;
 
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.CommandChannel;
@@ -74,10 +75,13 @@ public class SteelCitadelTeleport extends Script {
                     continue;
                 }
 
-                for (Player pl : party.getMembers()) {
-                    if (pl.isInsideRadius3D(npc.getX(), npc.getY(), npc.getZ(), 3000)) {
-                        zone.allowPlayerEntry(pl, 30);
-                        pl.teleToLocation(TELEPORT_CITADEL, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player pl : members) {
+                        if (pl.isInsideRadius3D(npc.getX(), npc.getY(), npc.getZ(), 3000)) {
+                            zone.allowPlayerEntry(pl, 30);
+                            pl.teleToLocation(TELEPORT_CITADEL, true);
+                        }
                     }
                 }
             }

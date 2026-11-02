@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.quests.Q00511_AwlUnderFoot;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -173,14 +174,17 @@ public class Q00511_AwlUnderFoot extends Quest {
                     .replace("%leader%", party.getLeader().getName());
         }
 
-        for (Player partyMember : party.getMembers()) {
-            final QuestState qs = getQuestState(partyMember, false);
-            if ((qs == null) || (qs.getCond() < 1)) {
-                return getHtm(player, "FortressWarden-05.htm").replace("%player%", partyMember.getName());
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                final QuestState qs = getQuestState(partyMember, false);
+                if ((qs == null) || (qs.getCond() < 1)) {
+                    return getHtm(player, "FortressWarden-05.htm").replace("%player%", partyMember.getName());
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                return getHtm(player, "FortressWarden-06.htm").replace("%player%", partyMember.getName());
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    return getHtm(player, "FortressWarden-06.htm").replace("%player%", partyMember.getName());
+                }
             }
         }
 
@@ -209,11 +213,14 @@ public class Q00511_AwlUnderFoot extends Quest {
             return "FortressWarden-03.htm";
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if ((partyMember.getClan() == null)
-                    || (partyMember.getClan().getFortId() == 0)
-                    || (partyMember.getClan().getFortId() != fortress.getResidenceId())) {
-                return getHtm(player, "FortressWarden-05.htm").replace("%player%", partyMember.getName());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if ((partyMember.getClan() == null)
+                        || (partyMember.getClan().getFortId() == 0)
+                        || (partyMember.getClan().getFortId() != fortress.getResidenceId())) {
+                    return getHtm(player, "FortressWarden-05.htm").replace("%player%", partyMember.getName());
+                }
             }
         }
 
@@ -267,10 +274,13 @@ public class Q00511_AwlUnderFoot extends Quest {
             teleportPlayer(player, coords, instanceId);
             world.addAllowed(player);
         } else {
-            for (Player partyMember : party.getMembers()) {
-                teleportPlayer(partyMember, coords, instanceId);
-                world.addAllowed(partyMember);
-                getQuestState(partyMember, true);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player partyMember : members) {
+                    teleportPlayer(partyMember, coords, instanceId);
+                    world.addAllowed(partyMember);
+                    getQuestState(partyMember, true);
+                }
             }
         }
 
@@ -309,10 +319,13 @@ public class Q00511_AwlUnderFoot extends Quest {
                 npc.setTarget(attacker);
                 npc.doSimultaneousCast(RAID_CURSE.getSkill());
             } else if (player.getParty() != null) {
-                for (Player pmember : player.getParty().getMembers()) {
-                    if ((pmember.getBuffCount() > 0) || (pmember.getDanceCount() > 0)) {
-                        npc.setTarget(pmember);
-                        npc.doSimultaneousCast(RAID_CURSE.getSkill());
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    player.getParty().collectMembers(members);
+                    for (Player pmember : members) {
+                        if ((pmember.getBuffCount() > 0) || (pmember.getDanceCount() > 0)) {
+                            npc.setTarget(pmember);
+                            npc.doSimultaneousCast(RAID_CURSE.getSkill());
+                        }
                     }
                 }
             }
@@ -327,8 +340,11 @@ public class Q00511_AwlUnderFoot extends Quest {
             if (ArrayUtil.contains(RAIDS3, npc.getId())) {
                 final Party party = player.getParty();
                 if (party != null) {
-                    for (Player pl : party.getMembers()) {
-                        rewardPlayer(pl);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player pl : members) {
+                            rewardPlayer(pl);
+                        }
                     }
                 } else {
                     rewardPlayer(player);

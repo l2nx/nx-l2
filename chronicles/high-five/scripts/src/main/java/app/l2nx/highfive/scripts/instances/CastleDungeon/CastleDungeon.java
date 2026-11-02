@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.instances.CastleDungeon;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -109,9 +110,12 @@ public class CastleDungeon extends InstanceScript {
                 teleportPlayer(player, getRandomEntry(ENTER_LOC), world.getInstanceId());
                 world.addAllowed(player);
             } else {
-                for (Player partyMember : party.getMembers()) {
-                    teleportPlayer(partyMember, getRandomEntry(ENTER_LOC), world.getInstanceId());
-                    world.addAllowed(partyMember);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        teleportPlayer(partyMember, getRandomEntry(ENTER_LOC), world.getInstanceId());
+                        world.addAllowed(partyMember);
+                    }
                 }
             }
 
@@ -165,15 +169,19 @@ public class CastleDungeon extends InstanceScript {
             }
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if ((partyMember.getClan() == null) || (partyMember.getClan().getCastleId() != castle.getResidenceId())) {
-                return "36403-02.html";
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if ((partyMember.getClan() == null)
+                        || (partyMember.getClan().getCastleId() != castle.getResidenceId())) {
+                    return "36403-02.html";
+                }
 
-            if (ClockBridge.wallMillis()
-                    < InstanceManager.getInstance()
-                            .getInstanceTime(partyMember.getObjectId(), CASTLE_DUNGEON.get(npc.getId()))) {
-                return "36403-03.html";
+                if (ClockBridge.wallMillis()
+                        < InstanceManager.getInstance()
+                                .getInstanceTime(partyMember.getObjectId(), CASTLE_DUNGEON.get(npc.getId()))) {
+                    return "36403-03.html";
+                }
             }
         }
 

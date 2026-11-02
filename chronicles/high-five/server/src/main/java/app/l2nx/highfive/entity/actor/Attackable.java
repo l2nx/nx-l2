@@ -558,15 +558,17 @@ public class Attackable extends Npc {
             }
 
             final PartyContainer container = found != null ? found : new PartyContainer(party, 0L);
-            final List<Player> members = party.getMembers();
-            for (Player e : members) {
-                final Long memberDamage = death.damage().get(e);
-                if (memberDamage == null) {
-                    continue;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player e : members) {
+                    final Long memberDamage = death.damage().get(e);
+                    if (memberDamage == null) {
+                        continue;
+                    }
 
-                if (memberDamage > 1) {
-                    totalMemberDamage += memberDamage;
+                    if (memberDamage > 1) {
+                        totalMemberDamage += memberDamage;
+                    }
                 }
             }
 
@@ -663,38 +665,39 @@ public class Attackable extends Npc {
 
             final List<Player> rewardedMembers = new ArrayList<>();
 
-            final List<Player> groupMembers = attackerParty.isInCommandChannel()
-                    ? attackerParty.getCommandChannel().getMembers()
-                    : attackerParty.getMembers();
-            for (Player partyPlayer : groupMembers) {
-                if ((partyPlayer == null) || partyPlayer.isDead()) {
-                    continue;
-                }
+            try (ScratchBuffers.Snapshot<Player> groupMembers = ScratchBuffers.empty()) {
+                (attackerParty.isInCommandChannel() ? attackerParty.getCommandChannel() : attackerParty)
+                        .collectMembers(groupMembers);
+                for (Player partyPlayer : groupMembers) {
+                    if ((partyPlayer == null) || partyPlayer.isDead()) {
+                        continue;
+                    }
 
-                final DamageDoneInfo reward2 = rewards.get(partyPlayer);
+                    final DamageDoneInfo reward2 = rewards.get(partyPlayer);
 
-                if (reward2 != null) {
-                    if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
-                        partyDmg += reward2.getDamage();
+                    if (reward2 != null) {
+                        if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
+                            partyDmg += reward2.getDamage();
+                            rewardedMembers.add(partyPlayer);
+
+                            if (partyPlayer.getLevel() > partyLvl) {
+                                if (attackerParty.isInCommandChannel()) {
+                                    partyLvl = attackerParty.getCommandChannel().getLevel();
+                                } else {
+                                    partyLvl = partyPlayer.getLevel();
+                                }
+                            }
+                        }
+
+                        rewards.remove(partyPlayer);
+                    } else if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
                         rewardedMembers.add(partyPlayer);
-
                         if (partyPlayer.getLevel() > partyLvl) {
                             if (attackerParty.isInCommandChannel()) {
                                 partyLvl = attackerParty.getCommandChannel().getLevel();
                             } else {
                                 partyLvl = partyPlayer.getLevel();
                             }
-                        }
-                    }
-
-                    rewards.remove(partyPlayer);
-                } else if (calculateDistance3D(partyPlayer) < PlayerConfig.ALT_PARTY_RANGE) {
-                    rewardedMembers.add(partyPlayer);
-                    if (partyPlayer.getLevel() > partyLvl) {
-                        if (attackerParty.isInCommandChannel()) {
-                            partyLvl = attackerParty.getCommandChannel().getLevel();
-                        } else {
-                            partyLvl = partyPlayer.getLevel();
                         }
                     }
                 }

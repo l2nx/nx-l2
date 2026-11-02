@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.conditions.Condition;
@@ -46,9 +47,12 @@ public class CallParty extends AbstractEffect {
             return;
         }
 
-        for (Player partyMember : effector.getParty().getMembers()) {
-            if (CallPc.checkSummonTargetStatus(partyMember, effector.asPlayer()) && (effector != partyMember)) {
-                partyMember.teleToLocation(effector.getLocation(), true);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            effector.getParty().collectMembers(members);
+            for (Player partyMember : members) {
+                if (CallPc.checkSummonTargetStatus(partyMember, effector.asPlayer()) && (effector != partyMember)) {
+                    partyMember.teleToLocation(effector.getLocation(), true);
+                }
             }
         }
     }

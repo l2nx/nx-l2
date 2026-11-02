@@ -20,7 +20,6 @@
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.entity.groups.matching.PartyMatchRoom;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
 
 /**
@@ -45,11 +44,6 @@ public class RequestDismissPartyRoom extends ClientPacket {
             return;
         }
 
-        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(roomid);
-        if (room == null) {
-            return;
-        }
-
-        PartyMatchRoomList.getInstance().deleteRoom(roomid);
+        PartyMatchRoomList.getInstance().dismissRoom(player, roomid);
     }
 }

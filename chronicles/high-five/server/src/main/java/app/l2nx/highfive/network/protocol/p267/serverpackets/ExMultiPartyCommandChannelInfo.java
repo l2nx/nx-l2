@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.groups.CommandChannel;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.GameClient;
@@ -44,11 +45,14 @@ public class ExMultiPartyCommandChannelInfo extends ServerPacket {
         buffer.writeString(channel.getLeader().getName());
         buffer.writeInt(0); // Channel loot 0 or 1
         buffer.writeInt(channel.getMemberCount());
-        buffer.writeInt(channel.getParties().size());
-        for (Party p : channel.getParties()) {
-            buffer.writeString(p.getLeader().getName());
-            buffer.writeInt(p.getLeaderObjectId());
-            buffer.writeInt(p.getMemberCount());
+        buffer.writeInt(channel.getPartyCount());
+        try (ScratchBuffers.Snapshot<Party> parties = ScratchBuffers.empty()) {
+            channel.collectParties(parties);
+            for (Party p : parties) {
+                buffer.writeString(p.getLeader().getName());
+                buffer.writeInt(p.getLeaderObjectId());
+                buffer.writeInt(p.getMemberCount());
+            }
         }
     }
 }

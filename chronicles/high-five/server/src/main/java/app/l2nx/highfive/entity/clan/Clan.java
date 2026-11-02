@@ -28,6 +28,7 @@ package app.l2nx.highfive.entity.clan;
 
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatService;
 import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -41,6 +42,8 @@ import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.CrestTable;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
@@ -76,30 +79,27 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeSkillListAdd;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.clan.model.ClanRow;
 import app.l2nx.highfive.repository.clan.model.ClanSkill;
 import app.l2nx.highfive.repository.clan.model.RankPrivilege;
 import app.l2nx.highfive.repository.clan.model.SubPledgeRow;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
+@SingleWriter
 public class Clan {
 
-    // Ally Penalty Types
     /** Clan leaved ally */
     public static final int PENALTY_TYPE_CLAN_LEAVED = 1;
     /** Clan was dismissed from ally */
@@ -109,7 +109,6 @@ public class Clan {
     /** Leader clan dissolve ally */
     public static final int PENALTY_TYPE_DISSOLVE_ALLY = 4;
 
-    // Sub-unit types
     /** Clan subunit type of Academy */
     public static final int SUBUNIT_ACADEMY = -1;
     /** Clan subunit type of Royal Guard A */
@@ -125,123 +124,82 @@ public class Clan {
     /** Clan subunit type of Order of Knights B-2 */
     public static final int SUBUNIT_KNIGHT4 = 2002;
 
-    @Getter
-    @Setter
     private String name;
 
-    @Getter
     private int id;
 
-    @Getter
     private ClanMember leader;
 
-    private final Map<Integer, ClanMember> members = new ConcurrentHashMap<>();
+    /** Members by object id, in the order they were restored or joined. */
+    private final Int2ObjectLinkedOpenHashMap<ClanMember> members = new Int2ObjectLinkedOpenHashMap<>();
 
-    @Getter
-    @Setter
     private String allyName;
 
-    @Getter
-    @Setter
     private int allyId = 0;
 
-    @Getter
     private int level;
 
-    @Getter
-    @Setter
     private int castleId;
 
-    @Getter
-    @Setter
     private int fortId;
 
-    @Getter
-    @Setter
     private int hideoutId;
 
-    @Getter
     private int hiredGuards;
 
-    @Getter
-    @Setter
     private int crestId;
 
-    @Getter
-    @Setter
     private int crestLargeId;
 
-    @Getter
-    @Setter
     private int allyCrestId;
 
-    @Getter
     private int auctionBiddedAt = 0;
 
-    @Getter
     private long allyPenaltyExpiryTime;
 
-    @Getter
     private int allyPenaltyType;
 
-    @Getter
-    @Setter
     private long charPenaltyExpiryTime;
 
-    @Getter
-    @Setter
     private long dissolvingExpiryTime;
 
-    @Getter
     private int bloodAllianceCount;
 
-    @Getter
     private int bloodOathCount;
 
-    @Getter
     private final ItemContainer warehouse = new ClanWarehouse(this);
 
-    @Getter
-    private final Set<Integer> warList = ConcurrentHashMap.newKeySet();
+    /** Ids of the clans this clan declared war on, in declaration order. */
+    private final IntLinkedOpenHashSet warList = new IntLinkedOpenHashSet();
 
-    @Getter
-    private final Set<Integer> attackerList = ConcurrentHashMap.newKeySet();
+    /** Ids of the clans that declared war on this clan, in declaration order. */
+    private final IntLinkedOpenHashSet attackerList = new IntLinkedOpenHashSet();
 
     private Forum forum;
 
-    /** Map(Integer, Skill) containing all skills of the Clan */
-    @Getter
-    private final Map<Integer, Skill> skills = new ConcurrentHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<Skill> skills = new Int2ObjectLinkedOpenHashMap<>();
 
-    private final Map<Integer, RankPrivs> privs = new ConcurrentHashMap<>();
-    private final Map<Integer, SubPledge> subPledges = new ConcurrentHashMap<>();
-    private final Map<Integer, Skill> subPledgeSkills = new ConcurrentHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<RankPrivs> privs = new Int2ObjectLinkedOpenHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<SubPledge> subPledges = new Int2ObjectLinkedOpenHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<Skill> subPledgeSkills = new Int2ObjectLinkedOpenHashMap<>();
 
-    @Getter
     private int reputationScore = 0;
 
-    @Getter
     private int rank = 0;
 
     private String notice;
 
-    @Getter
     private boolean noticeEnabled = false;
 
     private static final int MAX_NOTICE_LENGTH = 8192;
     private static final int MIN_POWER_GRADE = 1;
     private static final int MAX_POWER_GRADE = 9;
 
-    @Getter
     private int newLeaderId;
 
-    private final AtomicInteger siegeKills = new AtomicInteger();
-    private final AtomicInteger siegeDeaths = new AtomicInteger();
+    private int siegeKills;
+    private int siegeDeaths;
 
-    /**
-     * Called if a clan is referenced only by id. In this case all other data needs to be fetched from db
-     * @param clanId A valid clan Id to create and restore
-     */
     public Clan(int clanId) {
         id = clanId;
         initializePrivs();
@@ -249,45 +207,232 @@ public class Clan {
         warehouse.restore();
     }
 
-    /**
-     * Called only if a new clan is created
-     * @param clanId A valid clan Id to create
-     * @param clanName A valid clan name
-     */
     public Clan(int clanId, String clanName) {
         id = clanId;
         name = clanName;
         initializePrivs();
     }
 
-    /**
-     * @param clanId The clanId to set.
-     */
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public void setName(String name) {
+        WorldPartition.checkOwner();
+        this.name = name;
+    }
+
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
     public void setClanId(int clanId) {
+        WorldPartition.checkOwner();
         id = clanId;
     }
 
-    /**
-     * @return Returns the leaderId.
-     */
-    public int getLeaderId() {
-        return leader != null ? leader.getObjectId() : 0;
+    public ClanMember getLeader() {
+        WorldPartition.checkOwner();
+        return leader;
+    }
+
+    public String getAllyName() {
+        WorldPartition.checkOwner();
+        return allyName;
+    }
+
+    public void setAllyName(String allyName) {
+        WorldPartition.checkOwner();
+        this.allyName = allyName;
+    }
+
+    public int getAllyId() {
+        WorldPartition.checkOwner();
+        return allyId;
+    }
+
+    public void setAllyId(int allyId) {
+        WorldPartition.checkOwner();
+        this.allyId = allyId;
+    }
+
+    public int getLevel() {
+        WorldPartition.checkOwner();
+        return level;
+    }
+
+    public int getCastleId() {
+        WorldPartition.checkOwner();
+        return castleId;
+    }
+
+    public void setCastleId(int castleId) {
+        WorldPartition.checkOwner();
+        this.castleId = castleId;
+    }
+
+    public int getFortId() {
+        WorldPartition.checkOwner();
+        return fortId;
+    }
+
+    public void setFortId(int fortId) {
+        WorldPartition.checkOwner();
+        this.fortId = fortId;
+    }
+
+    public int getHideoutId() {
+        WorldPartition.checkOwner();
+        return hideoutId;
+    }
+
+    public void setHideoutId(int hideoutId) {
+        WorldPartition.checkOwner();
+        this.hideoutId = hideoutId;
+    }
+
+    public int getHiredGuards() {
+        WorldPartition.checkOwner();
+        return hiredGuards;
+    }
+
+    public int getCrestId() {
+        WorldPartition.checkOwner();
+        return crestId;
+    }
+
+    public void setCrestId(int crestId) {
+        WorldPartition.checkOwner();
+        this.crestId = crestId;
+    }
+
+    public int getCrestLargeId() {
+        WorldPartition.checkOwner();
+        return crestLargeId;
+    }
+
+    public void setCrestLargeId(int crestLargeId) {
+        WorldPartition.checkOwner();
+        this.crestLargeId = crestLargeId;
+    }
+
+    public int getAllyCrestId() {
+        WorldPartition.checkOwner();
+        return allyCrestId;
+    }
+
+    public void setAllyCrestId(int allyCrestId) {
+        WorldPartition.checkOwner();
+        this.allyCrestId = allyCrestId;
+    }
+
+    public int getAuctionBiddedAt() {
+        WorldPartition.checkOwner();
+        return auctionBiddedAt;
+    }
+
+    public long getAllyPenaltyExpiryTime() {
+        WorldPartition.checkOwner();
+        return allyPenaltyExpiryTime;
+    }
+
+    public int getAllyPenaltyType() {
+        WorldPartition.checkOwner();
+        return allyPenaltyType;
+    }
+
+    public long getCharPenaltyExpiryTime() {
+        WorldPartition.checkOwner();
+        return charPenaltyExpiryTime;
+    }
+
+    public void setCharPenaltyExpiryTime(long charPenaltyExpiryTime) {
+        WorldPartition.checkOwner();
+        this.charPenaltyExpiryTime = charPenaltyExpiryTime;
+    }
+
+    public long getDissolvingExpiryTime() {
+        WorldPartition.checkOwner();
+        return dissolvingExpiryTime;
+    }
+
+    public void setDissolvingExpiryTime(long dissolvingExpiryTime) {
+        WorldPartition.checkOwner();
+        this.dissolvingExpiryTime = dissolvingExpiryTime;
+    }
+
+    public int getBloodAllianceCount() {
+        WorldPartition.checkOwner();
+        return bloodAllianceCount;
+    }
+
+    public int getBloodOathCount() {
+        WorldPartition.checkOwner();
+        return bloodOathCount;
+    }
+
+    public ItemContainer getWarehouse() {
+        WorldPartition.checkOwner();
+        return warehouse;
     }
 
     /**
-     * @param leader the leader to set.
+     * Adds the ids of the clans this clan declared war on to the target, in declaration order. A caller passes a
+     * {@link ScratchBuffers#intEmpty()} lease.
      */
+    public void collectWarList(IntCollection target) {
+        WorldPartition.checkOwner();
+        target.addAll(warList);
+    }
+
+    /**
+     * Adds the ids of the clans that declared war on this clan to the target, in declaration order. A caller passes a
+     * {@link ScratchBuffers#intEmpty()} lease.
+     */
+    public void collectAttackerList(IntCollection target) {
+        WorldPartition.checkOwner();
+        target.addAll(attackerList);
+    }
+
+    public int getReputationScore() {
+        WorldPartition.checkOwner();
+        return reputationScore;
+    }
+
+    public int getRank() {
+        WorldPartition.checkOwner();
+        return rank;
+    }
+
+    public boolean isNoticeEnabled() {
+        WorldPartition.checkOwner();
+        return noticeEnabled;
+    }
+
+    public int getNewLeaderId() {
+        WorldPartition.checkOwner();
+        return newLeaderId;
+    }
+
+    public int getLeaderId() {
+        WorldPartition.checkOwner();
+        return leader != null ? leader.getObjectId() : 0;
+    }
+
     public void setLeader(ClanMember leader) {
+        WorldPartition.checkOwner();
         this.leader = leader;
         members.put(leader.getObjectId(), leader);
     }
 
     public void setNewLeader(ClanMember member) {
+        WorldPartition.checkOwner();
         final Player newLeader = member.getPlayer();
         final ClanMember exMember = leader;
         final Player exLeader = exMember.getPlayer();
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_LEADER_CHANGE)) {
             EventDispatcher.getInstance()
                     .notifyEventAsync(OnPlayerClanLeaderChange.builder()
@@ -346,31 +491,24 @@ public class Clan {
     }
 
     /**
-     * @return the clan leader's name.
+     * @return the clan leader's name, or {@code null} for a clan restored without its leader.
      */
     public String getLeaderName() {
+        WorldPartition.checkOwner();
         if (leader == null) {
-            log.warn("{}: Clan {} without clan leader!", Clan.class.getName(), getName());
-            return "";
+            log.warn("Clan {} has no leader", this);
+            return null;
         }
 
         return leader.getName();
     }
 
-    /**
-     * Adds a clan member to the clan.
-     * @param member the clan member.
-     */
     private void addClanMember(ClanMember member) {
         members.put(member.getObjectId(), member);
     }
 
-    /**
-     * Adds a clan member to the clan.<br>
-     * Using a different constructor, to make it easier to read.
-     * @param player the clan member
-     */
     public void addClanMember(Player player) {
+        WorldPartition.checkOwner();
         final ClanMember member = new ClanMember(this, player);
         member.setPlayer(player);
         addClanMember(member);
@@ -381,17 +519,13 @@ public class Clan {
         player.sendPacket(new PledgeSkillList(this));
         addSkillEffects(player);
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_JOIN)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerClanJoin(member, this));
         }
     }
 
-    /**
-     * Updates player status in clan.
-     * @param player the player to be updated.
-     */
     public void updateClanMember(Player player) {
+        WorldPartition.checkOwner();
         final ClanMember member = new ClanMember(player.getClan(), player);
         if (player.isClanLeader()) {
             setLeader(member);
@@ -400,11 +534,8 @@ public class Clan {
         addClanMember(member);
     }
 
-    /**
-     * @param name the name of the required clan member.
-     * @return the clan member for a given name.
-     */
     public ClanMember getClanMember(String name) {
+        WorldPartition.checkOwner();
         for (ClanMember temp : members.values()) {
             if (temp.getName().equals(name)) {
                 return temp;
@@ -414,19 +545,13 @@ public class Clan {
         return null;
     }
 
-    /**
-     * @param objectId the required clan member object Id.
-     * @return the clan member for a given {@code objectId}.
-     */
     public ClanMember getClanMember(int objectId) {
+        WorldPartition.checkOwner();
         return members.get(objectId);
     }
 
-    /**
-     * @param objectId the object Id of the member that will be removed.
-     * @param clanJoinExpiryTime time penalty to join a clan.
-     */
     public void removeClanMember(int objectId, long clanJoinExpiryTime) {
+        WorldPartition.checkOwner();
         final ClanMember exMember = members.remove(objectId);
         if (exMember == null) {
             log.warn("Member Object ID: {} not found in clan while trying to remove", objectId);
@@ -435,8 +560,6 @@ public class Clan {
 
         final int leadssubpledge = getLeaderSubPledge(objectId);
         if (leadssubpledge != 0) {
-            // Sub-unit leader withdraws, position becomes vacant and leader
-            // should appoint new via NPC.
             getSubPledge(leadssubpledge).setLeaderId(0);
             updateSubPledgeInDB(leadssubpledge);
         }
@@ -487,10 +610,8 @@ public class Clan {
                         ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS));
             }
 
-            // Remove Clan skills from Player.
             removeSkillEffects(player);
 
-            // Remove Residential skills.
             if (getCastleId() > 0) {
                 final Castle castle = CastleManager.getInstance().getCastleByOwner(this);
                 if (castle != null) {
@@ -516,7 +637,6 @@ public class Clan {
             player.setPledgeClass(ClanMember.calculatePledgeClass(player));
             player.broadcastUserInfo();
 
-            // Disable clan tab.
             player.sendPacket(PledgeShowMemberListDeleteAll.STATIC_PACKET);
         } else {
             removeMemberInDatabase(
@@ -527,21 +647,35 @@ public class Clan {
                             : 0);
         }
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_LEFT)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerClanLeft(exMember, this));
         }
     }
 
-    public Collection<ClanMember> getMembers() {
-        return members.values();
+    /** A read-only snapshot in member order; {@link #getClanMember(int)} and the counts copy nothing. */
+    public List<ClanMember> getMembers() {
+        WorldPartition.checkOwner();
+        return members.isEmpty()
+                ? ObjectLists.emptyList()
+                : ObjectLists.unmodifiable(new ObjectArrayList<>(members.values()));
+    }
+
+    /**
+     * Adds the members to the target in member order. A caller that walks the members passes a {@link ScratchBuffers}
+     * lease, which spares the copy {@link #getMembers()} allocates.
+     */
+    public void collectMembers(List<? super ClanMember> target) {
+        WorldPartition.checkOwner();
+        target.addAll(members.values());
     }
 
     public int getMembersCount() {
+        WorldPartition.checkOwner();
         return members.size();
     }
 
     public int getSubPledgeMembersCount(int subpl) {
+        WorldPartition.checkOwner();
         int result = 0;
         for (ClanMember temp : members.values()) {
             if (temp.getPledgeType() == subpl) {
@@ -552,11 +686,8 @@ public class Clan {
         return result;
     }
 
-    /**
-     * @param pledgeType the Id of the pledge type.
-     * @return the maximum number of members allowed for a given {@code pledgeType}.
-     */
     public int getMaxNrOfMembers(int pledgeType) {
+        WorldPartition.checkOwner();
         int limit = 0;
 
         switch (pledgeType) {
@@ -629,41 +760,33 @@ public class Clan {
         return limit;
     }
 
-    /**
-     * @param exclude the object Id to exclude from list.
-     * @return all online members excluding the one with object id {code exclude}.
-     */
     public List<Player> getOnlineMembers(int exclude) {
-        final List<Player> onlineMembers = new ArrayList<>();
-        for (ClanMember temp : members.values()) {
-            if ((temp != null) && temp.isOnline() && (temp.getObjectId() != exclude)) {
-                onlineMembers.add(temp.getPlayer());
-            }
-        }
-
+        WorldPartition.checkOwner();
+        final List<Player> onlineMembers = new ObjectArrayList<>();
+        collectOnlineMembers(onlineMembers, exclude);
         return onlineMembers;
     }
 
-    /**
-     * @return the online clan member count.
-     */
-    public int getOnlineMembersCount() {
-        int count = 0;
-        for (ClanMember temp : members.values()) {
-            if ((temp == null) || !temp.isOnline()) {
-                continue;
+    private void collectOnlineMembers(List<? super Player> into, int exclude) {
+        for (ClanMember member : members.values()) {
+            if (member.isOnline() && (member.getObjectId() != exclude)) {
+                into.add(member.getPlayer());
             }
+        }
+    }
 
-            count++;
+    public int getOnlineMembersCount() {
+        WorldPartition.checkOwner();
+        int count = 0;
+        for (ClanMember member : members.values()) {
+            if (member.isOnline()) {
+                count++;
+            }
         }
 
         return count;
     }
 
-    /**
-     * Sets the clan level and updates the clan forum if it's needed.
-     * @param level the clan level to be set.
-     */
     private void setLevel(int level) {
         this.level = level;
         if ((this.level >= 2) && (this.forum == null) && GeneralConfig.ENABLE_COMMUNITY_BOARD) {
@@ -678,102 +801,55 @@ public class Clan {
         }
     }
 
-    /**
-     * @param id the Id of the player to be verified.
-     * @return {code true} if the player belongs to the clan.
-     */
     public boolean isMember(int id) {
+        WorldPartition.checkOwner();
         return (id != 0) && members.containsKey(id);
     }
 
-    /**
-     * Increase Blood Alliance count by config predefined count and updates the database.
-     */
     public void increaseBloodAllianceCount() {
+        WorldPartition.checkOwner();
         bloodAllianceCount += SiegeManager.getInstance().getBloodAllianceReward();
         updateBloodAllianceCountInDB();
     }
 
-    /**
-     * Reset the Blood Alliance count to zero and updates the database.
-     */
     public void resetBloodAllianceCount() {
+        WorldPartition.checkOwner();
         bloodAllianceCount = 0;
         updateBloodAllianceCountInDB();
     }
 
-    /**
-     * Store current Bloood Alliances count in database.
-     */
     public void updateBloodAllianceCountInDB() {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateBloodAllianceCount(id, bloodAllianceCount);
     }
 
-    /**
-     * Increase Blood Oath count by config predefined count and updates the database.
-     */
     public void increaseBloodOathCount() {
+        WorldPartition.checkOwner();
         bloodOathCount += FeatureConfig.FS_BLOOD_OATH_COUNT;
         updateBloodOathCountInDB();
     }
 
-    /**
-     * Reset the Blood Oath count to zero and updates the database.
-     */
     public void resetBloodOathCount() {
+        WorldPartition.checkOwner();
         bloodOathCount = 0;
         updateBloodOathCountInDB();
     }
 
-    /**
-     * Store current Bloood Alliances count in database.
-     */
     public void updateBloodOathCountInDB() {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateBloodOathCount(id, bloodOathCount);
     }
 
-    /**
-     * Updates in database clan information:
-     * <ul>
-     * <li>Clan leader Id</li>
-     * <li>Alliance Id</li>
-     * <li>Alliance name</li>
-     * <li>Clan's reputation</li>
-     * <li>Alliance's penalty expiration time</li>
-     * <li>Alliance's penalty type</li>
-     * <li>Character's penalty expiration time</li>
-     * <li>Dissolving expiration time</li>
-     * <li>Clan's id</li>
-     * </ul>
-     */
     public void updateClanInDB() {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateClan(this);
     }
 
-    /**
-     * Stores in database clan information:
-     * <ul>
-     * <li>Clan Id</li>
-     * <li>Clan name</li>
-     * <li>Clan level</li>
-     * <li>Alliance Id</li>
-     * <li>Alliance name</li>
-     * <li>Clan leader Id</li>
-     * <li>Clan crest Id</li>
-     * <li>Clan large crest Id</li>
-     * <li>Alliance crest Id</li>
-     * </ul>
-     */
     public void store() {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().insertClan(this);
     }
 
-    /**
-     * Removes a clan member from this clan.
-     * @param playerId the clan member object ID to be removed
-     * @param clanJoinExpiryTime the time penalty for the player to join a new clan
-     * @param clanCreateExpiryTime the time penalty for the player to create a new clan
-     */
     private void removeMemberInDatabase(int playerId, long clanJoinExpiryTime, long clanCreateExpiryTime) {
         ClanTable.getInstance().removeMember(playerId, clanJoinExpiryTime, clanCreateExpiryTime);
     }
@@ -800,9 +876,7 @@ public class Clan {
         }
 
         setCharPenaltyExpiryTime(epochMillisOrZero(clanData.characterPenaltyEndsAt()));
-        if ((charPenaltyExpiryTime + (PlayerConfig.ALT_CLAN_JOIN_DAYS * 86400000))
-                < ClockBridge.wallMillis()) // 24*60*60*1000 = 86400000
-        {
+        if ((charPenaltyExpiryTime + (PlayerConfig.ALT_CLAN_JOIN_DAYS * 86400000)) < ClockBridge.wallMillis()) {
             setCharPenaltyExpiryTime(0);
         }
 
@@ -847,26 +921,31 @@ public class Clan {
     }
 
     public void setNoticeEnabled(boolean enabled) {
+        WorldPartition.checkOwner();
         storeNotice(getNotice(), enabled);
     }
 
     public void setNotice(String notice) {
+        WorldPartition.checkOwner();
         storeNotice(notice, noticeEnabled);
     }
 
+    /**
+     * @return the notice without tags, or {@code null} when the clan has none or it carries a bypass action.
+     */
     public String getNotice() {
+        WorldPartition.checkOwner();
         if (notice == null) {
-            return "";
+            return null;
         }
 
-        // Bypass exploit check.
         final String text = notice.toLowerCase();
         if (text.contains("action") && text.contains("bypass")) {
-            return "";
+            return null;
         }
 
-        // Returns text without tags.
-        return notice.replaceAll("<.*?>", "");
+        final String withoutTags = notice.replaceAll("<.*?>", "");
+        return withoutTags.isEmpty() ? null : withoutTags;
     }
 
     private void restoreSkills() {
@@ -878,7 +957,6 @@ public class Clan {
                 continue;
             }
 
-            // Add the Skill object to the Clan skills.
             final int subType = row.pledgeType();
             if (subType == -2) {
                 skills.put(skill.getId(), skill);
@@ -895,33 +973,34 @@ public class Clan {
         }
     }
 
-    /**
-     * @return all the clan skills.
-     */
-    public Collection<Skill> getAllSkills() {
-        return skills.values();
+    public List<Skill> getAllSkills() {
+        WorldPartition.checkOwner();
+        return skills.isEmpty()
+                ? ObjectLists.emptyList()
+                : ObjectLists.unmodifiable(new ObjectArrayList<>(skills.values()));
     }
 
     /**
-     * Used to add a skill to skill list of this Pledge
-     * @param newSkill
-     * @return
+     * @return the clan skill of the main clan with the given id, or {@code null} if the clan has none.
      */
+    public Skill getSkill(int skillId) {
+        WorldPartition.checkOwner();
+        return skills.get(skillId);
+    }
+
     public Skill addSkill(Skill newSkill) {
+        WorldPartition.checkOwner();
         return newSkill != null ? skills.put(newSkill.getId(), newSkill) : null;
     }
 
     public Skill addNewSkill(Skill newSkill) {
+        WorldPartition.checkOwner();
         return addNewSkill(newSkill, -2);
     }
 
-    /**
-     * Used to add a new skill to the list, send a packet to all online clan members, update their stats and store it in db
-     * @param newSkill
-     * @param subType
-     * @return
-     */
+    /** Persists the skill and sends it to the online members entitled to it; returns the replaced skill, if any. */
     public Skill addNewSkill(Skill newSkill, int subType) {
+        WorldPartition.checkOwner();
         Skill oldSkill = null;
         if (newSkill != null) {
             if (subType == -2) {
@@ -929,13 +1008,13 @@ public class Clan {
             } else if (subType == 0) {
                 oldSkill = subPledgeSkills.put(newSkill.getId(), newSkill);
             } else {
-                final SubPledge subunit = getSubPledge(subType);
+                final SubPledge subunit = subPledges.get(subType);
                 if (subunit == null) {
                     log.warn("Subpledge {} does not exist for clan {}", subType, this);
                     return oldSkill;
                 }
 
-                oldSkill = subunit.addNewSkill(newSkill);
+                oldSkill = subunit.subPledgeSkills.put(newSkill.getId(), newSkill);
             }
 
             ClanTable.getInstance().storeSkill(id, newSkill.getId(), newSkill.getLevel(), subType);
@@ -943,21 +1022,21 @@ public class Clan {
             final SystemMessage sm = new SystemMessage(SystemMessageId.THE_CLAN_SKILL_S1_HAS_BEEN_ADDED);
             sm.addSkillName(newSkill.getId());
 
-            for (ClanMember temp : members.values()) {
-                if ((temp != null) && (temp.getPlayer() != null) && temp.isOnline()) {
+            try (Snapshot<Player> online = ScratchBuffers.empty()) {
+                collectOnlineMembers(online, 0);
+                for (Player member : online) {
                     if (subType == -2) {
-                        if (newSkill.getMinPledgeClass() <= temp.getPlayer().getPledgeClass()) {
-                            temp.getPlayer().addSkill(newSkill, false); // Skill is not saved to player DB.
-                            temp.getPlayer().sendPacket(new PledgeSkillListAdd(newSkill.getId(), newSkill.getLevel()));
-                            temp.getPlayer().sendPacket(sm);
-                            temp.getPlayer().sendSkillList();
+                        if (newSkill.getMinPledgeClass() <= member.getPledgeClass()) {
+                            member.addSkill(newSkill, false); // Skill is not saved to player DB.
+                            member.sendPacket(new PledgeSkillListAdd(newSkill.getId(), newSkill.getLevel()));
+                            member.sendPacket(sm);
+                            member.sendSkillList();
                         }
-                    } else if (temp.getPledgeType() == subType) {
-                        temp.getPlayer().addSkill(newSkill, false); // Skill is not saved to player DB.
-                        temp.getPlayer()
-                                .sendPacket(new ExSubPledgeSkillAdd(subType, newSkill.getId(), newSkill.getLevel()));
-                        temp.getPlayer().sendPacket(sm);
-                        temp.getPlayer().sendSkillList();
+                    } else if (member.getPledgeType() == subType) {
+                        member.addSkill(newSkill, false); // Skill is not saved to player DB.
+                        member.sendPacket(new ExSubPledgeSkillAdd(subType, newSkill.getId(), newSkill.getLevel()));
+                        member.sendPacket(sm);
+                        member.sendSkillList();
                     }
                 }
             }
@@ -967,54 +1046,61 @@ public class Clan {
     }
 
     public void addSkillEffects() {
-        for (Skill skill : skills.values()) {
-            for (ClanMember temp : members.values()) {
-                try {
-                    if ((temp != null)
-                            && temp.isOnline()
-                            && (skill.getMinPledgeClass() <= temp.getPlayer().getPledgeClass())) {
-                        temp.getPlayer().addSkill(skill, false);
+        WorldPartition.checkOwner();
+        try (Snapshot<Skill> clanSkills = ScratchBuffers.snapshot(skills.values());
+                Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Skill skill : clanSkills) {
+                for (Player member : online) {
+                    if (skill.getMinPledgeClass() <= member.getPledgeClass()) {
+                        member.addSkill(skill, false);
                     }
-                } catch (NullPointerException e) {
-                    log.warn(e.getMessage(), e);
                 }
             }
         }
     }
 
     public void addSkillEffects(Player player) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return;
         }
 
         final int playerSocialClass = player.getPledgeClass() + 1;
-        for (Skill skill : skills.values()) {
-            final SkillLearn skillLearn = SkillTreeData.getInstance().getPledgeSkill(skill.getId(), skill.getLevel());
-            if ((skillLearn == null)
-                    || (skillLearn.getSocialClass() == null)
-                    || (playerSocialClass >= skillLearn.getSocialClass().ordinal())) {
-                player.addSkill(skill, false); // Skill is not saved to player DB.
-            }
-        }
-
-        if (player.getPledgeType() == 0) {
-            for (Skill skill : subPledgeSkills.values()) {
+        try (Snapshot<Skill> clanSkills = ScratchBuffers.snapshot(skills.values())) {
+            for (Skill skill : clanSkills) {
                 final SkillLearn skillLearn =
-                        SkillTreeData.getInstance().getSubPledgeSkill(skill.getId(), skill.getLevel());
+                        SkillTreeData.getInstance().getPledgeSkill(skill.getId(), skill.getLevel());
                 if ((skillLearn == null)
                         || (skillLearn.getSocialClass() == null)
                         || (playerSocialClass >= skillLearn.getSocialClass().ordinal())) {
                     player.addSkill(skill, false); // Skill is not saved to player DB.
                 }
             }
+        }
+
+        if (player.getPledgeType() == 0) {
+            try (Snapshot<Skill> unitSkills = ScratchBuffers.snapshot(subPledgeSkills.values())) {
+                for (Skill skill : unitSkills) {
+                    final SkillLearn skillLearn =
+                            SkillTreeData.getInstance().getSubPledgeSkill(skill.getId(), skill.getLevel());
+                    if ((skillLearn == null)
+                            || (skillLearn.getSocialClass() == null)
+                            || (playerSocialClass >= skillLearn.getSocialClass().ordinal())) {
+                        player.addSkill(skill, false); // Skill is not saved to player DB.
+                    }
+                }
+            }
         } else {
-            final SubPledge subunit = getSubPledge(player.getPledgeType());
+            final SubPledge subunit = subPledges.get(player.getPledgeType());
             if (subunit == null) {
                 return;
             }
 
-            for (Skill skill : subunit.getSkills()) {
-                player.addSkill(skill, false); // Skill is not saved to player DB.
+            try (Snapshot<Skill> unitSkills = ScratchBuffers.snapshot(subunit.subPledgeSkills.values())) {
+                for (Skill skill : unitSkills) {
+                    player.addSkill(skill, false); // Skill is not saved to player DB.
+                }
             }
         }
 
@@ -1024,105 +1110,119 @@ public class Clan {
     }
 
     public void removeSkillEffects(Player player) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return;
         }
 
-        for (Skill skill : skills.values()) {
-            player.removeSkill(skill, false); // Skill is not saved to player DB.
-        }
-
-        if (player.getPledgeType() == 0) {
-            for (Skill skill : subPledgeSkills.values()) {
+        try (Snapshot<Skill> clanSkills = ScratchBuffers.snapshot(skills.values())) {
+            for (Skill skill : clanSkills) {
                 player.removeSkill(skill, false); // Skill is not saved to player DB.
             }
-        } else {
-            final SubPledge subunit = getSubPledge(player.getPledgeType());
-            if (subunit == null) {
-                return;
-            }
+        }
 
-            for (Skill skill : subunit.getSkills()) {
+        final Int2ObjectLinkedOpenHashMap<Skill> unitSkills = unitSkillsOf(player.getPledgeType());
+        if (unitSkills == null) {
+            return;
+        }
+
+        try (Snapshot<Skill> removed = ScratchBuffers.snapshot(unitSkills.values())) {
+            for (Skill skill : removed) {
                 player.removeSkill(skill, false); // Skill is not saved to player DB.
             }
         }
     }
 
     public void skillsStatus(Player player, boolean disable) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return;
         }
 
-        for (Skill skill : skills.values()) {
+        try (Snapshot<Skill> clanSkills = ScratchBuffers.snapshot(skills.values())) {
+            switchSkills(player, clanSkills, disable);
+        }
+
+        final Int2ObjectLinkedOpenHashMap<Skill> unitSkills = unitSkillsOf(player.getPledgeType());
+        if (unitSkills != null) {
+            try (Snapshot<Skill> switched = ScratchBuffers.snapshot(unitSkills.values())) {
+                switchSkills(player, switched, disable);
+            }
+        }
+    }
+
+    /** The skills of the main clan's own unit for type 0, else of the sub-unit, or {@code null} for no sub-unit. */
+    private Int2ObjectLinkedOpenHashMap<Skill> unitSkillsOf(int pledgeType) {
+        if (pledgeType == 0) {
+            return subPledgeSkills;
+        }
+
+        final SubPledge subunit = subPledges.get(pledgeType);
+        return subunit == null ? null : subunit.subPledgeSkills;
+    }
+
+    private static void switchSkills(Player player, List<Skill> skills, boolean disable) {
+        for (Skill skill : skills) {
             if (disable) {
                 player.disableSkill(skill, -1);
             } else {
                 player.enableSkill(skill);
             }
         }
-
-        if (player.getPledgeType() == 0) {
-            for (Skill skill : subPledgeSkills.values()) {
-                if (disable) {
-                    player.disableSkill(skill, -1);
-                } else {
-                    player.enableSkill(skill);
-                }
-            }
-        } else {
-            final SubPledge subunit = getSubPledge(player.getPledgeType());
-            if (subunit != null) {
-                for (Skill skill : subunit.getSkills()) {
-                    if (disable) {
-                        player.disableSkill(skill, -1);
-                    } else {
-                        player.enableSkill(skill);
-                    }
-                }
-            }
-        }
     }
 
     public void broadcastToOnlineAllyMembers(ServerPacket packet) {
-        for (Clan clan : ClanTable.getInstance().getClanAllies(getAllyId())) {
+        WorldPartition.checkOwner();
+        for (Clan clan : ClanTable.getInstance().getClanAllies(allyId)) {
             clan.broadcastToOnlineMembers(packet);
         }
     }
 
     public void broadcastToOnlineMembers(ServerPacket packet) {
-        for (ClanMember member : members.values()) {
-            if ((member != null) && member.isOnline()) {
-                member.getPlayer().sendPacket(packet);
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Player member : online) {
+                member.sendPacket(packet);
             }
         }
     }
 
     public void broadcastChatToOnlineMembers(ChatMessage message, Player sender) {
-        ChatService.getInstance().deliverAll(onlineMembersAccepting(sender), message);
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> receivers = ScratchBuffers.empty()) {
+            collectOnlineMembersAccepting(receivers, sender);
+            ChatService.getInstance().deliverAll(receivers, message);
+        }
     }
 
     public void broadcastChatToOnlineAllyMembers(ChatMessage message, Player sender) {
-        final List<Player> receivers = new ArrayList<>();
-        for (Clan clan : ClanTable.getInstance().getClanAllies(getAllyId())) {
-            receivers.addAll(clan.onlineMembersAccepting(sender));
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> receivers = ScratchBuffers.empty()) {
+            for (Clan clan : ClanTable.getInstance().getClanAllies(allyId)) {
+                clan.collectOnlineMembersAccepting(receivers, sender);
+            }
+
+            ChatService.getInstance().deliverAll(receivers, message);
         }
-        ChatService.getInstance().deliverAll(receivers, message);
     }
 
-    private List<Player> onlineMembersAccepting(Player sender) {
-        final List<Player> receivers = new ArrayList<>();
+    private void collectOnlineMembersAccepting(List<? super Player> into, Player sender) {
         for (ClanMember member : members.values()) {
-            if ((member != null) && member.isOnline() && !BlockList.isBlocked(member.getPlayer(), sender)) {
-                receivers.add(member.getPlayer());
+            if (member.isOnline() && !BlockList.isBlocked(member.getPlayer(), sender)) {
+                into.add(member.getPlayer());
             }
         }
-        return receivers;
     }
 
     public void broadcastToOtherOnlineMembers(ServerPacket packet, Player player) {
-        for (ClanMember member : members.values()) {
-            if ((member != null) && member.isOnline() && (member.getPlayer() != player)) {
-                member.getPlayer().sendPacket(packet);
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Player member : online) {
+                if (member != player) {
+                    member.sendPacket(packet);
+                }
             }
         }
     }
@@ -1133,69 +1233,99 @@ public class Clan {
     }
 
     public boolean isAtWarWith(int id) {
+        WorldPartition.checkOwner();
         return warList.contains(id);
     }
 
     public boolean isAtWarWith(Clan clan) {
-        return warList.contains(clan.getId());
+        WorldPartition.checkOwner();
+        return warList.contains(clan.id);
     }
 
     public boolean isAtWarAttacker(int id) {
+        WorldPartition.checkOwner();
         return attackerList.contains(id);
     }
 
     public void setEnemyClan(Clan clan) {
-        warList.add(clan.getId());
+        WorldPartition.checkOwner();
+        warList.add(clan.id);
     }
 
     public void setEnemyClan(int id) {
+        WorldPartition.checkOwner();
         warList.add(id);
     }
 
     public void setAttackerClan(Clan clan) {
-        attackerList.add(clan.getId());
+        WorldPartition.checkOwner();
+        attackerList.add(clan.id);
     }
 
     public void setAttackerClan(int clan) {
+        WorldPartition.checkOwner();
         attackerList.add(clan);
     }
 
     public void deleteEnemyClan(Clan clan) {
-        warList.remove(clan.getId());
+        WorldPartition.checkOwner();
+        warList.remove(clan.id);
+    }
+
+    public void deleteEnemyClan(int clanId) {
+        WorldPartition.checkOwner();
+        warList.remove(clanId);
     }
 
     public void deleteAttackerClan(Clan clan) {
-        attackerList.remove(clan.getId());
+        WorldPartition.checkOwner();
+        attackerList.remove(clan.id);
+    }
+
+    public void deleteAttackerClan(int clanId) {
+        WorldPartition.checkOwner();
+        attackerList.remove(clanId);
     }
 
     public void incrementHiredGuards() {
+        WorldPartition.checkOwner();
         hiredGuards++;
     }
 
     public boolean isAtWar() {
-        return (warList != null) && !warList.isEmpty();
+        WorldPartition.checkOwner();
+        return !warList.isEmpty();
     }
 
     public void broadcastClanStatus() {
-        for (Player member : getOnlineMembers(0)) {
-            member.sendPacket(PledgeShowMemberListDeleteAll.STATIC_PACKET);
-            member.sendPacket(new PledgeShowMemberListAll(this, member));
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Player member : online) {
+                member.sendPacket(PledgeShowMemberListDeleteAll.STATIC_PACKET);
+                member.sendPacket(new PledgeShowMemberListAll(this, member));
+            }
         }
     }
 
+    private void broadcastOnlineMembersInfo() {
+        try (Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Player member : online) {
+                member.broadcastUserInfo();
+            }
+        }
+    }
+
+    @SingleWriter
     public static class SubPledge {
-        @Getter
         private final int id;
 
-        @Getter
-        @Setter
         private String name;
 
-        @Getter
-        @Setter
         private int leaderId;
 
-        private final Map<Integer, Skill> subPledgeSkills = new HashMap<>();
+        private final Int2ObjectLinkedOpenHashMap<Skill> subPledgeSkills = new Int2ObjectLinkedOpenHashMap<>();
 
         public SubPledge(int id, String name, int leaderId) {
             this.id = id;
@@ -1203,27 +1333,56 @@ public class Clan {
             this.leaderId = leaderId;
         }
 
+        public int getId() {
+            WorldPartition.checkOwner();
+            return id;
+        }
+
+        public String getName() {
+            WorldPartition.checkOwner();
+            return name;
+        }
+
+        public void setName(String name) {
+            WorldPartition.checkOwner();
+            this.name = name;
+        }
+
+        public int getLeaderId() {
+            WorldPartition.checkOwner();
+            return leaderId;
+        }
+
+        public void setLeaderId(int leaderId) {
+            WorldPartition.checkOwner();
+            this.leaderId = leaderId;
+        }
+
         public Skill addNewSkill(Skill skill) {
+            WorldPartition.checkOwner();
             return subPledgeSkills.put(skill.getId(), skill);
         }
 
-        public Collection<Skill> getSkills() {
-            return subPledgeSkills.values();
+        /** A read-only snapshot in the order the skills were learned. */
+        public List<Skill> getSkills() {
+            WorldPartition.checkOwner();
+            return subPledgeSkills.isEmpty()
+                    ? ObjectLists.emptyList()
+                    : ObjectLists.unmodifiable(new ObjectArrayList<>(subPledgeSkills.values()));
         }
 
         public Skill getSkill(int id) {
+            WorldPartition.checkOwner();
             return subPledgeSkills.get(id);
         }
     }
 
+    @SingleWriter
     public static class RankPrivs {
-        @Getter
         private final int rank;
 
-        @Getter
         private final int party; // TODO: Find out what this stuff means and implement it.
 
-        @Getter
         private final ClanPrivileges privs;
 
         public RankPrivs(int rank, int party, int privs) {
@@ -1238,7 +1397,23 @@ public class Clan {
             privs = rankPrivs;
         }
 
+        public int getRank() {
+            WorldPartition.checkOwner();
+            return rank;
+        }
+
+        public int getParty() {
+            WorldPartition.checkOwner();
+            return party;
+        }
+
+        public ClanPrivileges getPrivs() {
+            WorldPartition.checkOwner();
+            return privs;
+        }
+
         public void setPrivs(int privs) {
+            WorldPartition.checkOwner();
             this.privs.setMask(privs);
         }
     }
@@ -1249,23 +1424,15 @@ public class Clan {
         }
     }
 
-    /**
-     * used to retrieve subPledge by type
-     * @param pledgeType
-     * @return
-     */
     public SubPledge getSubPledge(int pledgeType) {
+        WorldPartition.checkOwner();
         return subPledges.get(pledgeType);
     }
 
-    /**
-     * Used to retrieve subPledge by type
-     * @param pledgeName
-     * @return
-     */
     public SubPledge getSubPledge(String pledgeName) {
+        WorldPartition.checkOwner();
         for (SubPledge sp : subPledges.values()) {
-            if (sp.getName().equalsIgnoreCase(pledgeName)) {
+            if (sp.name.equalsIgnoreCase(pledgeName)) {
                 return sp;
             }
         }
@@ -1273,15 +1440,16 @@ public class Clan {
         return null;
     }
 
-    /**
-     * Used to retrieve all subPledges
-     * @return
-     */
-    public Collection<SubPledge> getAllSubPledges() {
-        return subPledges.values();
+    /** A read-only snapshot in the order the sub-units were created. */
+    public List<SubPledge> getAllSubPledges() {
+        WorldPartition.checkOwner();
+        return subPledges.isEmpty()
+                ? ObjectLists.emptyList()
+                : ObjectLists.unmodifiable(new ObjectArrayList<>(subPledges.values()));
     }
 
     public SubPledge createSubPledge(Player player, int pledgeTypeValue, int leaderId, String subPledgeName) {
+        WorldPartition.checkOwner();
         final int pledgeType = getAvailablePledgeTypes(pledgeTypeValue);
         if (pledgeType == 0) {
             if (pledgeTypeValue == SUBUNIT_ACADEMY) {
@@ -1298,8 +1466,6 @@ public class Clan {
             return null;
         }
 
-        // Royal Guard 5000 points per each
-        // Order of Knights 10000 points per each
         if ((pledgeType != SUBUNIT_ACADEMY)
                 && (((reputationScore < FeatureConfig.ROYAL_GUARD_COST) && (pledgeType < SUBUNIT_KNIGHT1))
                         || ((reputationScore < FeatureConfig.KNIGHT_UNIT_COST) && (pledgeType > SUBUNIT_ROYAL2)))) {
@@ -1314,8 +1480,6 @@ public class Clan {
         subPledges.put(pledgeType, subPledge);
 
         if (pledgeType != SUBUNIT_ACADEMY) {
-            // Royal Guard 5000 points per each
-            // Order of Knights 10000 points per each
             if (pledgeType < SUBUNIT_KNIGHT1) {
                 setReputationScore(reputationScore - FeatureConfig.ROYAL_GUARD_COST);
             } else {
@@ -1331,8 +1495,8 @@ public class Clan {
     }
 
     public int getAvailablePledgeTypes(int pledgeType) {
+        WorldPartition.checkOwner();
         if (subPledges.get(pledgeType) != null) {
-            // LOGGER.warning("found sub-unit with id: "+pledgeType);
             switch (pledgeType) {
                 case SUBUNIT_ACADEMY: {
                     return 0;
@@ -1362,8 +1526,9 @@ public class Clan {
     }
 
     public void updateSubPledgeInDB(int pledgeType) {
-        final SubPledge subPledge = getSubPledge(pledgeType);
-        ClanTable.getInstance().updateSubPledge(id, pledgeType, subPledge.getName(), subPledge.getLeaderId());
+        WorldPartition.checkOwner();
+        final SubPledge subPledge = subPledges.get(pledgeType);
+        ClanTable.getInstance().updateSubPledge(id, pledgeType, subPledge.name, subPledge.leaderId);
     }
 
     private void restoreRankPrivs() {
@@ -1372,20 +1537,23 @@ public class Clan {
         }
     }
 
-    public void initializePrivs() {
+    private void initializePrivs() {
         for (int i = MIN_POWER_GRADE; i <= MAX_POWER_GRADE; i++) {
             privs.put(i, new RankPrivs(i, 0, new ClanPrivileges()));
         }
     }
 
     public ClanPrivileges getRankPrivs(int rank) {
-        return privs.get(rank) != null ? privs.get(rank).getPrivs() : new ClanPrivileges();
+        WorldPartition.checkOwner();
+        final RankPrivs rankPrivs = privs.get(rank);
+        return rankPrivs != null ? rankPrivs.privs : new ClanPrivileges();
     }
 
     /**
      * @param rank the power grade from the client; any value outside 1 to 9 is ignored
      */
     public void setRankPrivs(int rank, int privs) {
+        WorldPartition.checkOwner();
         if ((rank < MIN_POWER_GRADE) || (rank > MAX_POWER_GRADE)) {
             return;
         }
@@ -1393,10 +1561,13 @@ public class Clan {
         this.privs.get(rank).setPrivs(privs);
         ClanTable.getInstance().storeRankPrivileges(id, rank, privs);
 
-        for (ClanMember cm : getMembers()) {
-            if (cm.isOnline() && (cm.getPowerGrade() == rank) && (cm.getPlayer() != null)) {
-                cm.getPlayer().getClanPrivileges().setMask(privs);
-                cm.getPlayer().updateUserInfo();
+        try (Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Player member : online) {
+                if (member.getPowerGrade() == rank) {
+                    member.getClanPrivileges().setMask(privs);
+                    member.updateUserInfo();
+                }
             }
         }
 
@@ -1404,32 +1575,36 @@ public class Clan {
     }
 
     /**
-     * @return all RankPrivs.
+     * Adds the nine power grades to the target, in grade order. A caller passes a {@link ScratchBuffers} lease.
      */
-    public Collection<RankPrivs> getAllRankPrivs() {
-        return privs.values();
+    public void collectRankPrivs(List<? super RankPrivs> target) {
+        WorldPartition.checkOwner();
+        target.addAll(privs.values());
     }
 
     public int getLeaderSubPledge(int leaderId) {
+        WorldPartition.checkOwner();
         int id = 0;
         for (SubPledge sp : subPledges.values()) {
-            if (sp.getLeaderId() == 0) {
+            if (sp.leaderId == 0) {
                 continue;
             }
 
-            if (sp.getLeaderId() == leaderId) {
-                id = sp.getId();
+            if (sp.leaderId == leaderId) {
+                id = sp.id;
             }
         }
 
         return id;
     }
 
-    public synchronized void addReputationScore(int value) {
+    public void addReputationScore(int value) {
+        WorldPartition.checkOwner();
         setReputationScore(reputationScore + value);
     }
 
-    public synchronized void takeReputationScore(int value) {
+    public void takeReputationScore(int value) {
+        WorldPartition.checkOwner();
         setReputationScore(reputationScore - value);
     }
 
@@ -1439,20 +1614,12 @@ public class Clan {
                     new SystemMessage(
                             SystemMessageId
                                     .SINCE_THE_CLAN_REPUTATION_SCORE_HAS_DROPPED_TO_0_OR_LOWER_YOUR_CLAN_SKILL_S_WILL_BE_DE_ACTIVATED));
-            for (ClanMember member : members.values()) {
-                if (member.isOnline() && (member.getPlayer() != null)) {
-                    skillsStatus(member.getPlayer(), true);
-                }
-            }
+            switchOnlineMemberSkills(true);
         } else if ((reputationScore < 0) && (value >= 0)) {
             broadcastToOnlineMembers(new SystemMessage(
                     SystemMessageId
                             .CLAN_SKILLS_WILL_NOW_BE_ACTIVATED_SINCE_THE_CLAN_S_REPUTATION_SCORE_IS_0_OR_HIGHER));
-            for (ClanMember member : members.values()) {
-                if (member.isOnline() && (member.getPlayer() != null)) {
-                    skillsStatus(member.getPlayer(), false);
-                }
-            }
+            switchOnlineMemberSkills(false);
         }
 
         reputationScore = value;
@@ -1467,24 +1634,30 @@ public class Clan {
         broadcastToOnlineMembers(new PledgeShowInfoUpdate(this));
     }
 
-    public synchronized void setRank(int rank) {
+    private void switchOnlineMemberSkills(boolean disable) {
+        try (Snapshot<Player> online = ScratchBuffers.empty()) {
+            collectOnlineMembers(online, 0);
+            for (Player member : online) {
+                skillsStatus(member, disable);
+            }
+        }
+    }
+
+    public void setRank(int rank) {
+        WorldPartition.checkOwner();
         this.rank = rank;
     }
 
     public void setAuctionBiddedAt(int id, boolean storeInDb) {
+        WorldPartition.checkOwner();
         auctionBiddedAt = id;
         if (storeInDb) {
             ClanTable.getInstance().updateBidClanHall(this.id, id);
         }
     }
 
-    /**
-     * @param player the clan inviting player.
-     * @param target the invited player.
-     * @param pledgeType the pledge type to join.
-     * @return {core true} if player and target meet various conditions to join a clan.
-     */
     public boolean checkClanJoinCondition(Player player, Player target, int pledgeType) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return false;
         }
@@ -1556,12 +1729,8 @@ public class Clan {
         return true;
     }
 
-    /**
-     * @param player the clan inviting player.
-     * @param target the invited player.
-     * @return {core true} if player and target meet various conditions to join a clan.
-     */
     public boolean checkAllyJoinCondition(Player player, Player target) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return false;
         }
@@ -1650,11 +1819,13 @@ public class Clan {
     }
 
     public void setAllyPenaltyExpiryTime(long expiryTime, int penaltyType) {
+        WorldPartition.checkOwner();
         allyPenaltyExpiryTime = expiryTime;
         allyPenaltyType = penaltyType;
     }
 
     public void createAlly(Player player, String allyName) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return;
         }
@@ -1712,6 +1883,7 @@ public class Clan {
     }
 
     public void dissolveAlly(Player player) {
+        WorldPartition.checkOwner();
         if (allyId == 0) {
             player.sendPacket(SystemMessageId.YOU_ARE_NOT_CURRENTLY_ALLIED_WITH_ANY_CLANS);
             return;
@@ -1746,11 +1918,12 @@ public class Clan {
         changeAllyCrest(0, false);
         setAllyPenaltyExpiryTime(
                 currentTime + (PlayerConfig.ALT_CREATE_ALLY_DAYS_WHEN_DISSOLVED * 86400000),
-                PENALTY_TYPE_DISSOLVE_ALLY); // 24*60*60*1000 = 86400000
+                PENALTY_TYPE_DISSOLVE_ALLY);
         updateClanInDB();
     }
 
     public boolean levelUpClan(Player player) {
+        WorldPartition.checkOwner();
         if (!player.isClanLeader()) {
             player.sendPacket(SystemMessageId.YOU_ARE_NOT_AUTHORIZED_TO_DO_THAT);
             return false;
@@ -1767,7 +1940,6 @@ public class Clan {
 
         switch (level) {
             case 0: {
-                // Upgrade to 1
                 if ((player.getSp() >= 20000)
                         && (player.getAdena() >= 650000)
                         && player.reduceAdena(ItemProcessType.FEE, 650000, player.getTarget(), true)) {
@@ -1780,7 +1952,6 @@ public class Clan {
                 break;
             }
             case 1: {
-                // Upgrade to 2
                 if ((player.getSp() >= 100000)
                         && (player.getAdena() >= 2500000)
                         && player.reduceAdena(ItemProcessType.FEE, 2500000, player.getTarget(), true)) {
@@ -1793,7 +1964,6 @@ public class Clan {
                 break;
             }
             case 2: {
-                // Upgrade to 3
                 if ((player.getSp() >= 350000)
                         && (player.getInventory().getItemByItemId(1419) != null)
                         && player.destroyItemByItemId(ItemProcessType.FEE, 1419, 1, player.getTarget(), false)) {
@@ -1809,7 +1979,7 @@ public class Clan {
                 break;
             }
             case 3: {
-                // Upgrade to 4 (itemId 3874 = Alliance Manifesto).
+                // itemId 3874 = Alliance Manifesto.
                 if ((player.getSp() >= 1000000)
                         && (player.getInventory().getItemByItemId(3874) != null)
                         && player.destroyItemByItemId(ItemProcessType.FEE, 3874, 1, player.getTarget(), false)) {
@@ -1825,7 +1995,7 @@ public class Clan {
                 break;
             }
             case 4: {
-                // Upgrade to 5 (itemId 3870 = Seal of Aspiration).
+                // itemId 3870 = Seal of Aspiration.
                 if ((player.getSp() >= 2500000)
                         && (player.getInventory().getItemByItemId(3870) != null)
                         && player.destroyItemByItemId(ItemProcessType.FEE, 3870, 1, player.getTarget(), false)) {
@@ -1841,7 +2011,6 @@ public class Clan {
                 break;
             }
             case 5: {
-                // Upgrade to 6
                 if ((reputationScore >= FeatureConfig.CLAN_LEVEL_6_COST)
                         && (members.size() >= FeatureConfig.CLAN_LEVEL_6_REQUIREMENT)) {
                     setReputationScore(reputationScore - FeatureConfig.CLAN_LEVEL_6_COST);
@@ -1854,7 +2023,6 @@ public class Clan {
                 break;
             }
             case 6: {
-                // Upgrade to 7
                 if ((reputationScore >= FeatureConfig.CLAN_LEVEL_7_COST)
                         && (members.size() >= FeatureConfig.CLAN_LEVEL_7_REQUIREMENT)) {
                     setReputationScore(reputationScore - FeatureConfig.CLAN_LEVEL_7_COST);
@@ -1867,7 +2035,6 @@ public class Clan {
                 break;
             }
             case 7: {
-                // Upgrade to 8
                 if ((reputationScore >= FeatureConfig.CLAN_LEVEL_8_COST)
                         && (members.size() >= FeatureConfig.CLAN_LEVEL_8_REQUIREMENT)) {
                     setReputationScore(reputationScore - FeatureConfig.CLAN_LEVEL_8_COST);
@@ -1880,7 +2047,7 @@ public class Clan {
                 break;
             }
             case 8: {
-                // Upgrade to 9 (itemId 9910 = Blood Oath).
+                // itemId 9910 = Blood Oath.
                 if ((reputationScore >= FeatureConfig.CLAN_LEVEL_9_COST)
                         && (player.getInventory().getItemByItemId(9910) != null)
                         && (members.size() >= FeatureConfig.CLAN_LEVEL_9_REQUIREMENT)
@@ -1899,7 +2066,6 @@ public class Clan {
                 break;
             }
             case 9: {
-                // Upgrade to 10
                 if ((reputationScore >= FeatureConfig.CLAN_LEVEL_10_COST)
                         && (player.getInventory().getItemByItemId(9911) != null)
                         && (members.size() >= FeatureConfig.CLAN_LEVEL_10_REQUIREMENT)) {
@@ -1920,7 +2086,6 @@ public class Clan {
                 break;
             }
             case 10: {
-                // Upgrade to 11
                 boolean hasTerritory = false;
                 for (Territory terr : TerritoryWarManager.getInstance().getAllTerritories()) {
                     if (terr.getOwnerClan().getId() == getId()) {
@@ -1951,7 +2116,6 @@ public class Clan {
             return false;
         }
 
-        // the player should know that he has less sp now :p
         final StatusUpdate su = new StatusUpdate(player);
         su.addAttribute(StatusUpdate.SP, (int) player.getSp());
         player.sendPacket(su);
@@ -1959,7 +2123,6 @@ public class Clan {
         player.sendItemList(false);
         changeLevel(level + 1);
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_LEVELUP)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerClanLvlUp(player, this));
         }
@@ -1968,6 +2131,7 @@ public class Clan {
     }
 
     public void changeLevel(int level) {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateLevel(id, level);
 
         setLevel(level);
@@ -1985,16 +2149,13 @@ public class Clan {
             }
         }
 
-        // Notify all the members about it.
         broadcastToOnlineMembers(new SystemMessage(SystemMessageId.YOUR_CLAN_S_LEVEL_HAS_INCREASED));
         broadcastToOnlineMembers(new PledgeShowInfoUpdate(this));
     }
 
-    /**
-     * Change the clan crest. If crest id is 0, crest is removed. New crest id is saved to database.
-     * @param crestId if 0, crest is removed, else new crest id is set and saved to database
-     */
+    /** A {@code crestId} of 0 removes the crest. */
     public void changeClanCrest(int crestId) {
+        WorldPartition.checkOwner();
         if (this.crestId != 0) {
             CrestTable.getInstance().removeCrest(getCrestId());
         }
@@ -2002,18 +2163,12 @@ public class Clan {
         setCrestId(crestId);
 
         ClanTable.getInstance().updateCrest(id, crestId);
-
-        for (Player member : getOnlineMembers(0)) {
-            member.broadcastUserInfo();
-        }
+        broadcastOnlineMembersInfo();
     }
 
-    /**
-     * Change the ally crest. If crest id is 0, crest is removed. New crest id is saved to database.
-     * @param crestId if 0, crest is removed, else new crest id is set and saved to database
-     * @param onlyThisClan
-     */
+    /** A {@code crestId} of 0 removes the crest. */
     public void changeAllyCrest(int crestId, boolean onlyThisClan) {
+        WorldPartition.checkOwner();
         if (onlyThisClan) {
             ClanTable.getInstance().updateAllyCrest(id, crestId);
         } else {
@@ -2026,24 +2181,18 @@ public class Clan {
 
         if (onlyThisClan) {
             setAllyCrestId(crestId);
-            for (Player member : getOnlineMembers(0)) {
-                member.broadcastUserInfo();
-            }
+            broadcastOnlineMembersInfo();
         } else {
-            for (Clan clan : ClanTable.getInstance().getClanAllies(getAllyId())) {
+            for (Clan clan : ClanTable.getInstance().getClanAllies(allyId)) {
                 clan.setAllyCrestId(crestId);
-                for (Player member : clan.getOnlineMembers(0)) {
-                    member.broadcastUserInfo();
-                }
+                clan.broadcastOnlineMembersInfo();
             }
         }
     }
 
-    /**
-     * Change the large crest. If crest id is 0, crest is removed. New crest id is saved to database.
-     * @param crestId if 0, crest is removed, else new crest id is set and saved to database
-     */
+    /** A {@code crestId} of 0 removes the crest. */
     public void changeLargeCrest(int crestId) {
+        WorldPartition.checkOwner();
         if (crestLargeId != 0) {
             CrestTable.getInstance().removeCrest(getCrestLargeId());
         }
@@ -2051,46 +2200,33 @@ public class Clan {
         setCrestLargeId(crestId);
 
         ClanTable.getInstance().updateLargeCrest(id, crestId);
-
-        for (Player member : getOnlineMembers(0)) {
-            member.broadcastUserInfo();
-        }
+        broadcastOnlineMembersInfo();
     }
 
-    /**
-     * Check if this clan can learn the skill for the given skill ID, level.
-     * @param skillId
-     * @param skillLevel
-     * @return {@code true} if skill can be learned.
-     */
     public boolean isLearnableSubSkill(int skillId, int skillLevel) {
+        WorldPartition.checkOwner();
         Skill current = subPledgeSkills.get(skillId);
 
-        // is next level?
         if ((current != null) && ((current.getLevel() + 1) == skillLevel)) {
             return true;
         }
 
-        // is first level?
         if ((current == null) && (skillLevel == 1)) {
             return true;
         }
 
-        // other sub-pledges
         for (SubPledge subunit : subPledges.values()) {
-            // disable academy
+            // The academy cannot learn sub-unit skills.
             if (subunit.getId() == -1) {
                 continue;
             }
 
-            current = subunit.getSkill(skillId);
+            current = subunit.subPledgeSkills.get(skillId);
 
-            // is next level?
             if ((current != null) && ((current.getLevel() + 1) == skillLevel)) {
                 return true;
             }
 
-            // is first level?
             if ((current == null) && (skillLevel == 1)) {
                 return true;
             }
@@ -2100,7 +2236,7 @@ public class Clan {
     }
 
     public boolean isLearnableSubPledgeSkill(Skill skill, int subType) {
-        // academy
+        WorldPartition.checkOwner();
         if (subType == -1) {
             return false;
         }
@@ -2110,15 +2246,19 @@ public class Clan {
         if (subType == 0) {
             current = subPledgeSkills.get(id);
         } else {
-            current = subPledges.get(subType).getSkill(id);
+            // The sub-unit type comes from the client, so a clan may have no such unit.
+            final SubPledge subunit = subPledges.get(subType);
+            if (subunit == null) {
+                return false;
+            }
+
+            current = subunit.subPledgeSkills.get(id);
         }
 
-        // is next level?
         if ((current != null) && ((current.getLevel() + 1) == skill.getLevel())) {
             return true;
         }
 
-        // is first level?
         if ((current == null) && (skill.getLevel() == 1)) {
             return true;
         }
@@ -2126,22 +2266,24 @@ public class Clan {
         return false;
     }
 
-    public Collection<SubPledgeSkill> getAllSubSkills() {
-        final List<SubPledgeSkill> list = new ArrayList<>();
+    public List<SubPledgeSkill> getAllSubSkills() {
+        WorldPartition.checkOwner();
+        final ObjectArrayList<SubPledgeSkill> list = new ObjectArrayList<>();
         for (Skill skill : subPledgeSkills.values()) {
             list.add(new SubPledgeSkill(0, skill.getId(), skill.getLevel()));
         }
 
         for (SubPledge subunit : subPledges.values()) {
-            for (Skill skill : subunit.getSkills()) {
-                list.add(new SubPledgeSkill(subunit.getId(), skill.getId(), skill.getLevel()));
+            for (Skill skill : subunit.subPledgeSkills.values()) {
+                list.add(new SubPledgeSkill(subunit.id, skill.getId(), skill.getLevel()));
             }
         }
 
-        return list;
+        return ObjectLists.unmodifiable(list);
     }
 
     public void setNewLeaderId(int objectId, boolean storeInDb) {
+        WorldPartition.checkOwner();
         newLeaderId = objectId;
         if (storeInDb) {
             updateClanInDB();
@@ -2149,34 +2291,42 @@ public class Clan {
     }
 
     public Player getNewLeader() {
+        WorldPartition.checkOwner();
         return World.getPlayer(newLeaderId);
     }
 
     public String getNewLeaderName() {
+        WorldPartition.checkOwner();
         return CharInfoTable.getInstance().getNameById(newLeaderId);
     }
 
     public int getSiegeKills() {
-        return siegeKills.get();
+        WorldPartition.checkOwner();
+        return siegeKills;
     }
 
     public int getSiegeDeaths() {
-        return siegeDeaths.get();
+        WorldPartition.checkOwner();
+        return siegeDeaths;
     }
 
     public int addSiegeKill() {
-        return siegeKills.incrementAndGet();
+        WorldPartition.checkOwner();
+        return ++siegeKills;
     }
 
     public int addSiegeDeath() {
-        return siegeDeaths.incrementAndGet();
+        WorldPartition.checkOwner();
+        return ++siegeDeaths;
     }
 
     public void clearSiegeKills() {
-        siegeKills.set(0);
+        WorldPartition.checkOwner();
+        siegeKills = 0;
     }
 
     public void clearSiegeDeaths() {
-        siegeDeaths.set(0);
+        WorldPartition.checkOwner();
+        siegeDeaths = 0;
     }
 }

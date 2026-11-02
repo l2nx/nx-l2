@@ -696,7 +696,7 @@ public class SkillTreeData implements IXmlReader {
         final List<SkillLearn> result = new ArrayList<>();
         for (SkillLearn skill : pledgeSkillTree.values()) {
             if (!skill.isResidencialSkill() && (clan.getLevel() >= skill.getGetLevel())) {
-                final Skill oldSkill = clan.getSkills().get(skill.getSkillId());
+                final Skill oldSkill = clan.getSkill(skill.getSkillId());
                 if (oldSkill != null) {
                     if ((oldSkill.getLevel() + 1) == skill.getSkillLevel()) {
                         result.add(skill);
@@ -720,7 +720,7 @@ public class SkillTreeData implements IXmlReader {
         final Map<Integer, SkillLearn> result = new HashMap<>();
         for (SkillLearn skill : pledgeSkillTree.values()) {
             if (!skill.isResidencialSkill() && (clan.getLevel() >= skill.getGetLevel())) {
-                final Skill oldSkill = clan.getSkills().get(skill.getSkillId());
+                final Skill oldSkill = clan.getSkill(skill.getSkillId());
                 if ((oldSkill == null) || (oldSkill.getLevel() < skill.getSkillLevel())) {
                     result.put(skill.getSkillId(), skill);
                 }
@@ -730,7 +730,7 @@ public class SkillTreeData implements IXmlReader {
         if (includeSquad) {
             for (SkillLearn skill : subPledgeSkillTree.values()) {
                 if ((clan.getLevel() >= skill.getGetLevel())) {
-                    final Skill oldSkill = clan.getSkills().get(skill.getSkillId());
+                    final Skill oldSkill = clan.getSkill(skill.getSkillId());
                     if ((oldSkill == null) || (oldSkill.getLevel() < skill.getSkillLevel())) {
                         result.put(skill.getSkillId(), skill);
                     }

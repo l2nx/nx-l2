@@ -20,6 +20,7 @@
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.GameClient;
@@ -40,12 +41,15 @@ public class PartyMemberPosition extends ServerPacket {
 
     public void reuse(Party party) {
         locations.clear();
-        for (Player member : party.getMembers()) {
-            if (member == null) {
-                continue;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player member : members) {
+                if (member == null) {
+                    continue;
+                }
 
-            locations.put(member.getObjectId(), member.getLocation());
+                locations.put(member.getObjectId(), member.getLocation());
+            }
         }
     }
 

@@ -155,7 +155,7 @@ class UCArenaTest {
             final PlayerVariables variables = member.getVariables();
             when(variables.getString(PlayerVariables.RESTORE_LOCATION, null)).thenReturn("10;20;30");
 
-            arena.removeTeams();
+            WorldLoopExtension.runInPass(arena::removeTeams);
 
             verify(member).teleToLocation(10, 20, 30, true);
             verify(variables).remove(PlayerVariables.RESTORE_LOCATION);
@@ -163,7 +163,7 @@ class UCArenaTest {
 
         @Test
         void removeTeams_shouldSendTheMemberToTown_whenNoRestoreLocationIsSet() {
-            arena.removeTeams();
+            WorldLoopExtension.runInPass(arena::removeTeams);
 
             verify(member).teleToLocation(TeleportWhereType.TOWN);
             verify(member.getVariables(), never()).remove(PlayerVariables.RESTORE_LOCATION);
@@ -179,7 +179,13 @@ class UCArenaTest {
 
     private static Party party(Player player) {
         final Party party = mock(Party.class);
-        when(party.getMembers()).thenReturn(List.of(player));
+        doAnswer(call -> {
+                    final List<Player> target = call.getArgument(0);
+                    target.add(player);
+                    return null;
+                })
+                .when(party)
+                .collectMembers(any());
         return party;
     }
 

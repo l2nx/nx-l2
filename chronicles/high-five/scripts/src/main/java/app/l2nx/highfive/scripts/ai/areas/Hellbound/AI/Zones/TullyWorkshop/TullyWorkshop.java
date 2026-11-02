@@ -24,6 +24,7 @@ import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -433,16 +434,19 @@ public class TullyWorkshop extends Script {
             final boolean[] haveItems = {false, false, false, false, false};
 
             // For teleportation party should have all 5 medals
-            for (Player pl : party.getMembers()) {
-                if (pl == null) {
-                    continue;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player pl : members) {
+                    if (pl == null) {
+                        continue;
+                    }
 
-                for (int i = 0; i < REWARDS.length; i++) {
-                    if ((pl.getInventory().getInventoryItemCount(REWARDS[i], -1, false) > 0)
-                            && LocationUtil.checkIfInRange(300, pl, npc, true)) {
-                        haveItems[i] = true;
-                        break;
+                    for (int i = 0; i < REWARDS.length; i++) {
+                        if ((pl.getInventory().getInventoryItemCount(REWARDS[i], -1, false) > 0)
+                                && LocationUtil.checkIfInRange(300, pl, npc, true)) {
+                            haveItems[i] = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -460,9 +464,12 @@ public class TullyWorkshop extends Script {
                 return "32344-02.htm";
             }
 
-            for (Player pl : party.getMembers()) {
-                if ((pl != null) && LocationUtil.checkIfInRange(6000, pl, npc, false)) {
-                    pl.teleToLocation(26612, 248567, -2856);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player pl : members) {
+                    if ((pl != null) && LocationUtil.checkIfInRange(6000, pl, npc, false)) {
+                        pl.teleToLocation(26612, 248567, -2856);
+                    }
                 }
             }
         }
@@ -548,14 +555,20 @@ public class TullyWorkshop extends Script {
         if (event.equalsIgnoreCase("enter") && (npcId == DORIAN)) {
             final Party party = player.getParty();
             if ((party != null) && (party.getLeaderObjectId() == player.getObjectId())) {
-                for (Player partyMember : party.getMembers()) {
-                    if (!LocationUtil.checkIfInRange(300, partyMember, npc, true)) {
-                        return "32373-02.htm";
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (!LocationUtil.checkIfInRange(300, partyMember, npc, true)) {
+                            return "32373-02.htm";
+                        }
                     }
                 }
 
-                for (Player partyMember : party.getMembers()) {
-                    partyMember.teleToLocation(-13400, 272827, -15300, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        partyMember.teleToLocation(-13400, 272827, -15300, true);
+                    }
                 }
 
                 htmltext = null;
@@ -586,9 +599,12 @@ public class TullyWorkshop extends Script {
                 player.sendPacket(SystemMessageId.YOU_ARE_TOO_FAR_FROM_THE_NPC_FOR_THAT_TO_WORK);
             } else {
                 final Location loc = TELE_COORDS.get(npcId)[direction];
-                for (Player partyMember : party.getMembers()) {
-                    if (LocationUtil.checkIfInRange(4000, partyMember, npc, true)) {
-                        partyMember.teleToLocation(loc, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (LocationUtil.checkIfInRange(4000, partyMember, npc, true)) {
+                            partyMember.teleToLocation(loc, true);
+                        }
                     }
                 }
             }
@@ -650,9 +666,12 @@ public class TullyWorkshop extends Script {
                     if (party.getLeaderObjectId() != player.getObjectId()) {
                         player.sendPacket(SystemMessageId.ONLY_A_PARTY_LEADER_CAN_MAKE_THE_REQUEST_TO_ENTER);
                     } else {
-                        for (Player partyMember : party.getMembers()) {
-                            if (LocationUtil.checkIfInRange(6000, partyMember, npc, true)) {
-                                partyMember.teleToLocation(-12501, 281397, -11936, true);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player partyMember : members) {
+                                if (LocationUtil.checkIfInRange(6000, partyMember, npc, true)) {
+                                    partyMember.teleToLocation(-12501, 281397, -11936, true);
+                                }
                             }
                         }
 
@@ -678,15 +697,21 @@ public class TullyWorkshop extends Script {
 
                     npc.doCast(SkillData.getInstance().getSkill(5526, 1));
                 } else {
-                    for (Player partyMember : party.getMembers()) {
-                        if (!LocationUtil.checkIfInRange(400, partyMember, npc, true)) {
-                            return "32372-01b.htm";
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (!LocationUtil.checkIfInRange(400, partyMember, npc, true)) {
+                                return "32372-01b.htm";
+                            }
                         }
                     }
 
-                    for (Player partyMember : party.getMembers()) {
-                        npc.setTarget(partyMember);
-                        npc.doCast(SkillData.getInstance().getSkill(5526, 1));
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            npc.setTarget(partyMember);
+                            npc.doCast(SkillData.getInstance().getSkill(5526, 1));
+                        }
                     }
 
                     startQuestTimer("despawn_agent_7", 60000, npc, null);
@@ -703,7 +728,7 @@ public class TullyWorkshop extends Script {
 
                         final Player target = player.getParty() == null
                                 ? player
-                                : getRandomEntry(player.getParty().getMembers());
+                                : player.getParty().getRandomPlayer();
                         if ((target != null) && !target.isDead()) {
                             monster.addDamageHate(target, 0, 999);
                             monster.getAI().setIntentionAttack(target);
@@ -729,15 +754,21 @@ public class TullyWorkshop extends Script {
                     return null;
                 }
 
-                for (Player partyMember : party.getMembers()) {
-                    if (!LocationUtil.checkIfInRange(3000, partyMember, npc, true)) {
-                        return "32370-01f.htm";
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (!LocationUtil.checkIfInRange(3000, partyMember, npc, true)) {
+                            return "32370-01f.htm";
+                        }
                     }
                 }
 
-                for (Player partyMember : party.getMembers()) {
-                    if (LocationUtil.checkIfInRange(6000, partyMember, npc, true)) {
-                        partyMember.teleToLocation(-12176, 279696, -13596, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (LocationUtil.checkIfInRange(6000, partyMember, npc, true)) {
+                            partyMember.teleToLocation(-12176, 279696, -13596, true);
+                        }
                     }
                 }
             }
@@ -751,13 +782,16 @@ public class TullyWorkshop extends Script {
                 } else if (!LocationUtil.checkIfInRange(3000, player, npc, true)) {
                     htmltext = "32467-04.htm";
                 } else {
-                    for (Player partyMember : party.getMembers()) {
-                        if (LocationUtil.checkIfInRange(6000, partyMember, npc, true)) {
-                            partyMember.teleToLocation(
-                                    CUBE_68_TELEPORTS[tpId][0],
-                                    CUBE_68_TELEPORTS[tpId][1],
-                                    CUBE_68_TELEPORTS[tpId][2],
-                                    true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (LocationUtil.checkIfInRange(6000, partyMember, npc, true)) {
+                                partyMember.teleToLocation(
+                                        CUBE_68_TELEPORTS[tpId][0],
+                                        CUBE_68_TELEPORTS[tpId][1],
+                                        CUBE_68_TELEPORTS[tpId][2],
+                                        true);
+                            }
                         }
                     }
                 }

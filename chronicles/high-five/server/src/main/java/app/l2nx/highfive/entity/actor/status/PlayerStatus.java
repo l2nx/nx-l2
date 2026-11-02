@@ -28,6 +28,7 @@ import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
 import app.l2nx.highfive.data.xml.NpcNameLocalisationData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
@@ -177,15 +178,18 @@ public class PlayerStatus extends PlayableStatus {
                     && LocationUtil.checkIfInRange(1000, player, caster, true)
                     && !caster.isDead()
                     && (player != caster)
-                    && player.getParty().getMembers().contains(caster)) {
+                    && player.getParty().containsPlayer(caster)) {
                 int transferDmg = Math.min(
                         (int) caster.getCurrentHp() - 1,
                         ((int) amount * (int) player.calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null)) / 100);
                 if (transferDmg > 0) {
                     int membersInRange = 0;
-                    for (Player member : caster.getParty().getMembers()) {
-                        if (LocationUtil.checkIfInRange(1000, member, caster, false) && (member != caster)) {
-                            membersInRange++;
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        caster.getParty().collectMembers(members);
+                        for (Player member : members) {
+                            if (LocationUtil.checkIfInRange(1000, member, caster, false) && (member != caster)) {
+                                membersInRange++;
+                            }
                         }
                     }
 

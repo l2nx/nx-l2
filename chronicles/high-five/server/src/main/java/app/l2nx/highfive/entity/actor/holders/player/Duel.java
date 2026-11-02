@@ -92,12 +92,18 @@ public class Duel {
         this.playerB = playerB;
         this.partyDuel = partyDuel == 1;
         if (this.partyDuel) {
-            for (Player member : this.playerA.getParty().getMembers()) {
-                member.setStartingDuel();
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                this.playerA.getParty().collectMembers(members);
+                for (Player member : members) {
+                    member.setStartingDuel();
+                }
             }
 
-            for (Player member : this.playerB.getParty().getMembers()) {
-                member.setStartingDuel();
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                this.playerB.getParty().collectMembers(members);
+                for (Player member : members) {
+                    member.setStartingDuel();
+                }
             }
         } else {
             this.playerA.setStartingDuel();
@@ -317,33 +323,39 @@ public class Duel {
     private void stopFighting() {
         final ActionFailed af = ActionFailed.STATIC_PACKET;
         if (partyDuel) {
-            for (Player temp : playerA.getParty().getMembers()) {
-                temp.abortCast();
-                temp.getAI().setIntentionActive();
-                temp.setTarget(null);
-                temp.sendPacket(af);
-                if (temp.hasSummon()
-                        && (temp.getSummon() != null)
-                        && !temp.getSummon().isDead()) {
-                    temp.getSummon().abortCast();
-                    temp.getSummon().getAI().setIntentionActive();
-                    temp.getSummon().setTarget(null);
-                    temp.getSummon().sendPacket(af);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerA.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.abortCast();
+                    temp.getAI().setIntentionActive();
+                    temp.setTarget(null);
+                    temp.sendPacket(af);
+                    if (temp.hasSummon()
+                            && (temp.getSummon() != null)
+                            && !temp.getSummon().isDead()) {
+                        temp.getSummon().abortCast();
+                        temp.getSummon().getAI().setIntentionActive();
+                        temp.getSummon().setTarget(null);
+                        temp.getSummon().sendPacket(af);
+                    }
                 }
             }
 
-            for (Player temp : playerB.getParty().getMembers()) {
-                temp.abortCast();
-                temp.getAI().setIntentionActive();
-                temp.setTarget(null);
-                temp.sendPacket(af);
-                if (temp.hasSummon()
-                        && (temp.getSummon() != null)
-                        && !temp.getSummon().isDead()) {
-                    temp.getSummon().abortCast();
-                    temp.getSummon().getAI().setIntentionActive();
-                    temp.getSummon().setTarget(null);
-                    temp.getSummon().sendPacket(af);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerB.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.abortCast();
+                    temp.getAI().setIntentionActive();
+                    temp.setTarget(null);
+                    temp.sendPacket(af);
+                    if (temp.hasSummon()
+                            && (temp.getSummon() != null)
+                            && !temp.getSummon().isDead()) {
+                        temp.getSummon().abortCast();
+                        temp.getSummon().getAI().setIntentionActive();
+                        temp.getSummon().setTarget(null);
+                        temp.getSummon().sendPacket(af);
+                    }
                 }
             }
         } else {
@@ -402,20 +414,26 @@ public class Duel {
         }
 
         if (partyDuel) {
-            for (Player temp : playerA.getParty().getMembers()) {
-                temp.cancelActiveTrade();
-                temp.setInDuel(id);
-                temp.setTeam(Team.BLUE);
-                temp.broadcastUserInfo();
-                broadcastToTeam2(new ExDuelUpdateUserInfo(temp));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerA.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.cancelActiveTrade();
+                    temp.setInDuel(id);
+                    temp.setTeam(Team.BLUE);
+                    temp.broadcastUserInfo();
+                    broadcastToTeam2(new ExDuelUpdateUserInfo(temp));
+                }
             }
 
-            for (Player temp : playerB.getParty().getMembers()) {
-                temp.cancelActiveTrade();
-                temp.setInDuel(id);
-                temp.setTeam(Team.RED);
-                temp.broadcastUserInfo();
-                broadcastToTeam1(new ExDuelUpdateUserInfo(temp));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerB.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.cancelActiveTrade();
+                    temp.setInDuel(id);
+                    temp.setTeam(Team.RED);
+                    temp.broadcastUserInfo();
+                    broadcastToTeam1(new ExDuelUpdateUserInfo(temp));
+                }
             }
 
             broadcastToTeam1(ExDuelReady.PARTY_DUEL);
@@ -456,12 +474,18 @@ public class Duel {
     public void savePlayerConditions() {
         WorldPartition.checkOwner();
         if (partyDuel) {
-            for (Player player : playerA.getParty().getMembers()) {
-                playerConditions.put(player.getObjectId(), new PlayerCondition(player, partyDuel));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerA.getParty().collectMembers(members);
+                for (Player player : members) {
+                    playerConditions.put(player.getObjectId(), new PlayerCondition(player, partyDuel));
+                }
             }
 
-            for (Player player : playerB.getParty().getMembers()) {
-                playerConditions.put(player.getObjectId(), new PlayerCondition(player, partyDuel));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerB.getParty().collectMembers(members);
+                for (Player player : members) {
+                    playerConditions.put(player.getObjectId(), new PlayerCondition(player, partyDuel));
+                }
             }
         } else {
             playerConditions.put(playerA.getObjectId(), new PlayerCondition(playerA, partyDuel));
@@ -472,16 +496,22 @@ public class Duel {
     public void restorePlayerConditions(boolean abnormalDuelEnd) {
         WorldPartition.checkOwner();
         if (partyDuel) {
-            for (Player temp : playerA.getParty().getMembers()) {
-                temp.setInDuel(0);
-                temp.setTeam(Team.NONE);
-                temp.broadcastUserInfo();
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerA.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.setInDuel(0);
+                    temp.setTeam(Team.NONE);
+                    temp.broadcastUserInfo();
+                }
             }
 
-            for (Player temp : playerB.getParty().getMembers()) {
-                temp.setInDuel(0);
-                temp.setTeam(Team.NONE);
-                temp.broadcastUserInfo();
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerB.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.setInDuel(0);
+                    temp.setTeam(Team.NONE);
+                    temp.broadcastUserInfo();
+                }
             }
         } else {
             playerA.setInDuel(0);
@@ -543,13 +573,19 @@ public class Duel {
 
         final RandomGenerator random = ClockBridge.random();
         final Location spawn1 = spawns.get(spawns.size() > 1 ? random.nextInt(spawns.size() / 2) : 0);
-        for (Player temp : playerA.getParty().getMembers()) {
-            temp.teleToLocation(spawn1.getX(), spawn1.getY(), spawn1.getZ(), 0, dueldInstanceId, 0);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            playerA.getParty().collectMembers(members);
+            for (Player temp : members) {
+                temp.teleToLocation(spawn1.getX(), spawn1.getY(), spawn1.getZ(), 0, dueldInstanceId, 0);
+            }
         }
 
         final Location spawn2 = spawns.get(random.nextInt(spawns.size() / 2, spawns.size()));
-        for (Player temp : playerB.getParty().getMembers()) {
-            temp.teleToLocation(spawn2.getX(), spawn2.getY(), spawn2.getZ(), 0, dueldInstanceId, 0);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            playerB.getParty().collectMembers(members);
+            for (Player temp : members) {
+                temp.teleToLocation(spawn2.getX(), spawn2.getY(), spawn2.getZ(), 0, dueldInstanceId, 0);
+            }
         }
     }
 
@@ -560,8 +596,11 @@ public class Duel {
         }
 
         if (partyDuel && (playerA.getParty() != null)) {
-            for (Player temp : playerA.getParty().getMembers()) {
-                temp.sendPacket(packet);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerA.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.sendPacket(packet);
+                }
             }
         } else {
             playerA.sendPacket(packet);
@@ -575,8 +614,11 @@ public class Duel {
         }
 
         if (partyDuel && (playerB.getParty() != null)) {
-            for (Player temp : playerB.getParty().getMembers()) {
-                temp.sendPacket(packet);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerB.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.sendPacket(packet);
+                }
             }
         } else {
             playerB.sendPacket(packet);
@@ -623,8 +665,11 @@ public class Duel {
         }
 
         if (partyDuel && (looser.getParty() != null)) {
-            for (Player temp : looser.getParty().getMembers()) {
-                temp.broadcastPacket(new SocialAction(temp.getObjectId(), 7));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                looser.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    temp.broadcastPacket(new SocialAction(temp.getObjectId(), 7));
+                }
             }
         } else {
             looser.broadcastPacket(new SocialAction(looser.getObjectId(), 7));
@@ -774,23 +819,35 @@ public class Duel {
 
         // TODO: Can every party member cancel a party duel? or only the party leaders?
         if (partyDuel) {
-            if (playerA.getParty().getMembers().contains(player)) {
+            if (playerA.getParty().containsPlayer(player)) {
                 surrenderRequest = 1;
-                for (Player temp : playerA.getParty().getMembers()) {
-                    temp.setDuelState(DUELSTATE_DEAD);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerA.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.setDuelState(DUELSTATE_DEAD);
+                    }
                 }
 
-                for (Player temp : playerB.getParty().getMembers()) {
-                    temp.setDuelState(DUELSTATE_WINNER);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerB.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.setDuelState(DUELSTATE_WINNER);
+                    }
                 }
-            } else if (playerB.getParty().getMembers().contains(player)) {
+            } else if (playerB.getParty().containsPlayer(player)) {
                 surrenderRequest = 2;
-                for (Player temp : playerB.getParty().getMembers()) {
-                    temp.setDuelState(DUELSTATE_DEAD);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerB.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.setDuelState(DUELSTATE_DEAD);
+                    }
                 }
 
-                for (Player temp : playerA.getParty().getMembers()) {
-                    temp.setDuelState(DUELSTATE_WINNER);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerA.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.setDuelState(DUELSTATE_WINNER);
+                    }
                 }
             }
         } else if (player == playerA) {
@@ -810,17 +867,23 @@ public class Duel {
 
         if (partyDuel) {
             boolean teamdefeated = true;
-            for (Player temp : player.getParty().getMembers()) {
-                if (temp.getDuelState() == DUELSTATE_DUELLING) {
-                    teamdefeated = false;
-                    break;
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                player.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    if (temp.getDuelState() == DUELSTATE_DUELLING) {
+                        teamdefeated = false;
+                        break;
+                    }
                 }
             }
 
             if (teamdefeated) {
-                final Player winner = playerA.getParty().getMembers().contains(player) ? playerB : playerA;
-                for (Player temp : winner.getParty().getMembers()) {
-                    temp.setDuelState(DUELSTATE_WINNER);
+                final Player winner = playerA.getParty().containsPlayer(player) ? playerB : playerA;
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    winner.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.setDuelState(DUELSTATE_WINNER);
+                    }
                 }
             }
         } else {

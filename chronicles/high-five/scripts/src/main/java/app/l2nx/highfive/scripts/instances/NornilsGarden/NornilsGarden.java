@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.instances.NornilsGarden;
 
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -257,9 +258,12 @@ public class NornilsGarden extends InstanceScript {
         // and finally teleport party into instance
         final Party party = player.getParty();
         if (party != null) {
-            for (Player partyMember : party.getMembers()) {
-                newWorld.addAllowed(partyMember);
-                teleportPlayer(partyMember, SPAWN_PPL, instanceId);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player partyMember : members) {
+                    newWorld.addAllowed(partyMember);
+                    teleportPlayer(partyMember, SPAWN_PPL, instanceId);
+                }
             }
         }
 
@@ -344,51 +348,56 @@ public class NornilsGarden extends InstanceScript {
         boolean kamael = false;
 
         // for each party member
-        for (Player partyMember : party.getMembers()) {
-            // player level must be in range
-            if (partyMember.getLevel() > INSTANCE_LEVEL_MAX) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return "32330-06.html";
-            }
-
-            if (partyMember.getLevel() < INSTANCE_LEVEL_MIN) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return "32330-07.html";
-            }
-
-            if (partyMember.getPlayerClass().level() != 0) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return "32330-06.html";
-            }
-
-            // player must be near party leader
-            if (!partyMember.isInsideRadius3D(player, 500)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return "32330-08.html";
-            }
-
-            if (partyMember.getRace().ordinal() == 5) {
-                final QuestState checkst = partyMember.getQuestState(Q00179_IntoTheLargeCavern.class.getSimpleName());
-                if ((checkst != null) && (checkst.getState() == State.STARTED)) {
-                    kamael = true;
-                } else {
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                // player level must be in range
+                if (partyMember.getLevel() > INSTANCE_LEVEL_MAX) {
                     final SystemMessage sm = new SystemMessage(
-                            SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return "32330-06.html";
+                }
+
+                if (partyMember.getLevel() < INSTANCE_LEVEL_MIN) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return "32330-07.html";
+                }
+
+                if (partyMember.getPlayerClass().level() != 0) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return "32330-06.html";
+                }
+
+                // player must be near party leader
+                if (!partyMember.isInsideRadius3D(player, 500)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
                     sm.addPcName(partyMember);
                     player.sendPacket(sm);
                     return "32330-08.html";
+                }
+
+                if (partyMember.getRace().ordinal() == 5) {
+                    final QuestState checkst =
+                            partyMember.getQuestState(Q00179_IntoTheLargeCavern.class.getSimpleName());
+                    if ((checkst != null) && (checkst.getState() == State.STARTED)) {
+                        kamael = true;
+                    } else {
+                        final SystemMessage sm = new SystemMessage(
+                                SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                        sm.addPcName(partyMember);
+                        player.sendPacket(sm);
+                        return "32330-08.html";
+                    }
                 }
             }
         }

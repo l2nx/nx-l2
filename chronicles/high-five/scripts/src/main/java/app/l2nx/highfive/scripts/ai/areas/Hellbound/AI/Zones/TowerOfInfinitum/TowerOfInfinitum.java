@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.TowerOfInfinitum;
 
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -83,15 +84,21 @@ public class TowerOfInfinitum extends Script {
             if (HellboundEngine.getInstance().getLevel() >= 11) {
                 final Party party = player.getParty();
                 if ((party != null) && (party.getLeaderObjectId() == player.getObjectId())) {
-                    for (Player partyMember : party.getMembers()) {
-                        if (!LocationUtil.checkIfInRange(300, partyMember, npc, true)
-                                || !partyMember.isAffectedBySkill(PASS_SKILL)) {
-                            return "32302-02.htm";
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (!LocationUtil.checkIfInRange(300, partyMember, npc, true)
+                                    || !partyMember.isAffectedBySkill(PASS_SKILL)) {
+                                return "32302-02.htm";
+                            }
                         }
                     }
 
-                    for (Player partyMember : party.getMembers()) {
-                        partyMember.teleToLocation(ENTER_LOCATION, true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            partyMember.teleToLocation(ENTER_LOCATION, true);
+                        }
                     }
 
                     htmltext = null;
@@ -111,17 +118,23 @@ public class TowerOfInfinitum extends Script {
             } else if (!party.isLeader(player)) {
                 htmltext = "gk-noreq.htm";
             } else {
-                for (Player partyMember : party.getMembers()) {
-                    if (!LocationUtil.checkIfInRange(1000, partyMember, npc, false)
-                            || (Math.abs(partyMember.getZ() - npc.getZ()) > 100)) {
-                        return "gk-noreq.htm";
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (!LocationUtil.checkIfInRange(1000, partyMember, npc, false)
+                                || (Math.abs(partyMember.getZ() - npc.getZ()) > 100)) {
+                            return "gk-noreq.htm";
+                        }
                     }
                 }
 
                 final Location tele = TELE_COORDS.get(npcId)[direction];
                 if (tele != null) {
-                    for (Player partyMember : party.getMembers()) {
-                        partyMember.teleToLocation(tele, true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            partyMember.teleToLocation(tele, true);
+                        }
                     }
                 }
 

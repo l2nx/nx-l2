@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.ai.bosses.Sailren;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -310,9 +311,12 @@ public class Sailren extends Script {
             killCount = 0;
             lastAttackTime = ClockBridge.gameMillis();
 
-            for (Player member : party.getMembers()) {
-                if ((member != null) && member.isInsideRadius3D(npc, TELEPORT_STATUE_RADIUS)) {
-                    member.teleToLocation(LAIR_CENTER);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player member : members) {
+                    if ((member != null) && member.isInsideRadius3D(npc, TELEPORT_STATUE_RADIUS)) {
+                        member.teleToLocation(LAIR_CENTER);
+                    }
                 }
             }
 

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -97,23 +98,29 @@ public class RequestDuelStart extends ClientPacket {
             }
 
             // Check if every player is ready for a duel.
-            for (Player temp : party.getMembers()) {
-                if (!temp.canDuel()) {
-                    player.sendMessage("Not all the members of your party are ready for a duel.");
-                    return;
+            try (ScratchBuffers.Snapshot<Player> groupMembers = ScratchBuffers.empty()) {
+                party.collectMembers(groupMembers);
+                for (Player temp : groupMembers) {
+                    if (!temp.canDuel()) {
+                        player.sendMessage("Not all the members of your party are ready for a duel.");
+                        return;
+                    }
                 }
             }
 
             Player partyLeader = null; // snatch party leader of targetChar's party
-            for (Player temp : targetChar.getParty().getMembers()) {
-                if (partyLeader == null) {
-                    partyLeader = temp;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                targetChar.getParty().collectMembers(members);
+                for (Player temp : members) {
+                    if (partyLeader == null) {
+                        partyLeader = temp;
+                    }
 
-                if (!temp.canDuel()) {
-                    player.sendPacket(
-                            SystemMessageId.THE_OPPOSING_PARTY_IS_CURRENTLY_UNABLE_TO_ACCEPT_A_CHALLENGE_TO_A_DUEL);
-                    return;
+                    if (!temp.canDuel()) {
+                        player.sendPacket(
+                                SystemMessageId.THE_OPPOSING_PARTY_IS_CURRENTLY_UNABLE_TO_ACCEPT_A_CHALLENGE_TO_A_DUEL);
+                        return;
+                    }
                 }
             }
 

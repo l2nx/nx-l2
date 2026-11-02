@@ -26,6 +26,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -820,30 +821,34 @@ public class SeedOfDestruction extends Script {
             return false;
         }
 
-        for (Player channelMember : channel.getMembers()) {
-            if (channelMember.getLevel() < GraciaSeedsConfig.MIN_TIAT_LEVEL) {
-                final SystemMessage sm = (new SystemMessage(
-                        SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY));
-                sm.addPcName(channelMember);
-                channel.broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            channel.collectMembers(members);
+            for (Player channelMember : members) {
+                if (channelMember.getLevel() < GraciaSeedsConfig.MIN_TIAT_LEVEL) {
+                    final SystemMessage sm = (new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY));
+                    sm.addPcName(channelMember);
+                    channel.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, channelMember, true)) {
-                final SystemMessage sm = (new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED));
-                sm.addPcName(channelMember);
-                channel.broadcastPacket(sm);
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, channelMember, true)) {
+                    final SystemMessage sm = (new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED));
+                    sm.addPcName(channelMember);
+                    channel.broadcastPacket(sm);
+                    return false;
+                }
 
-            final Long reentertime =
-                    InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), INSTANCE_ID);
-            if (ClockBridge.wallMillis() < reentertime) {
-                final SystemMessage sm = (new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET));
-                sm.addPcName(channelMember);
-                channel.broadcastPacket(sm);
-                return false;
+                final Long reentertime =
+                        InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), INSTANCE_ID);
+                if (ClockBridge.wallMillis() < reentertime) {
+                    final SystemMessage sm = (new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET));
+                    sm.addPcName(channelMember);
+                    channel.broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -916,28 +921,34 @@ public class SeedOfDestruction extends Script {
 
             world.addAllowed(player);
         } else if (party.getCommandChannel() != null) {
-            for (Player channelMember : party.getCommandChannel().getMembers()) {
-                player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
-                InstanceManager.getInstance()
-                        .setInstanceTime(channelMember.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
-                teleportplayer(channelMember, teleto, (SODWorld) world);
-                if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
-                    removeBuffs(channelMember);
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.getCommandChannel().collectMembers(members);
+                for (Player channelMember : members) {
+                    player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
+                    InstanceManager.getInstance()
+                            .setInstanceTime(channelMember.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
+                    teleportplayer(channelMember, teleto, (SODWorld) world);
+                    if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
+                        removeBuffs(channelMember);
+                    }
 
-                world.addAllowed(channelMember);
+                    world.addAllowed(channelMember);
+                }
             }
         } else {
-            for (Player partyMember : party.getMembers()) {
-                player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
-                InstanceManager.getInstance()
-                        .setInstanceTime(partyMember.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
-                teleportplayer(partyMember, teleto, (SODWorld) world);
-                if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
-                    removeBuffs(partyMember);
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player partyMember : members) {
+                    player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
+                    InstanceManager.getInstance()
+                            .setInstanceTime(partyMember.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
+                    teleportplayer(partyMember, teleto, (SODWorld) world);
+                    if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
+                        removeBuffs(partyMember);
+                    }
 
-                world.addAllowed(partyMember);
+                    world.addAllowed(partyMember);
+                }
             }
         }
 

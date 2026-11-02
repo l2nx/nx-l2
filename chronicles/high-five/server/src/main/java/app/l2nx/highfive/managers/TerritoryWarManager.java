@@ -36,6 +36,7 @@ import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.data.xml.TerritoryData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -536,15 +537,19 @@ public class TerritoryWarManager implements Siegable {
         }
 
         if ((killer.getParty() != null) && (type < 5)) {
-            for (Player pl : killer.getParty().getMembers()) {
-                if ((pl.getSiegeSide() == victimSide)
-                        || (pl.getSiegeSide() == 0)
-                        || !LocationUtil.checkIfInRange(2000, killer, pl, false)) {
-                    continue;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(members);
+                for (Player pl : members) {
+                    if ((pl.getSiegeSide() == victimSide)
+                            || (pl.getSiegeSide() == 0)
+                            || !LocationUtil.checkIfInRange(2000, killer, pl, false)) {
+                        continue;
+                    }
 
-                participantPoints.putIfAbsent(pl.getObjectId(), new Integer[] {pl.getSiegeSide(), 0, 0, 0, 0, 0, 0});
-                participantPoints.get(pl.getObjectId())[type]++;
+                    participantPoints.putIfAbsent(
+                            pl.getObjectId(), new Integer[] {pl.getSiegeSide(), 0, 0, 0, 0, 0, 0});
+                    participantPoints.get(pl.getObjectId())[type]++;
+                }
             }
         } else {
             if ((killer.getSiegeSide() == victimSide) || (killer.getSiegeSide() == 0)) {

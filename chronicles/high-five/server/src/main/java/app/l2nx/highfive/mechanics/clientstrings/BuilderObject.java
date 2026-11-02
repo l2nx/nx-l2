@@ -38,16 +38,16 @@ public class BuilderObject extends Builder {
 
     @Override
     public String toString(Object param) {
-        return param == null ? "null" : param.toString();
+        return param == null ? "" : param.toString();
     }
 
     @Override
     public String toString(Object... params) {
         if ((params == null) || (params.length == 0)) {
-            return "null";
+            return "";
         }
 
-        return params[0].toString();
+        return toString(params[0]);
     }
 
     @Override

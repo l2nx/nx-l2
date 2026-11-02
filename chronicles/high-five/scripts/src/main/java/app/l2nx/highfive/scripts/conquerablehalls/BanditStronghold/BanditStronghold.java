@@ -32,6 +32,8 @@ import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -424,11 +426,14 @@ public class BanditStronghold extends ClanHallSiegeEngine {
         if (hall.getOwnerId() > 0) {
             final Clan owner = ClanTable.getInstance().getClan(hall.getOwnerId());
             final Location loc = hall.getZone().getSpawns().get(0);
-            for (ClanMember member : owner.getMembers()) {
-                if (member != null) {
-                    final Player player = member.getPlayer();
-                    if ((player != null) && player.isOnline()) {
-                        player.teleToLocation(loc, false);
+            try (Snapshot<ClanMember> members = ScratchBuffers.empty()) {
+                owner.collectMembers(members);
+                for (ClanMember member : members) {
+                    if (member != null) {
+                        final Player player = member.getPlayer();
+                        if ((player != null) && player.isOnline()) {
+                            player.teleToLocation(loc, false);
+                        }
                     }
                 }
             }

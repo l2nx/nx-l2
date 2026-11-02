@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -106,7 +107,13 @@ class AttackableDeathTest {
             final Party party = mock(Party.class);
             when(killer.getParty()).thenReturn(party);
             when(killer.getLevel()).thenReturn(70);
-            when(party.getMembers()).thenReturn(List.of(killer));
+            doAnswer(call -> {
+                        final List<Player> target = call.getArgument(0);
+                        target.add(killer);
+                        return null;
+                    })
+                    .when(party)
+                    .collectMembers(any());
             final AtomicReference<RecordingAttackable> dead = new AtomicReference<>();
 
             WorldLoopExtension.runInPass(() -> {

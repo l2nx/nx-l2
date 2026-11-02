@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.DragonValley;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -200,11 +201,14 @@ public class DragonValley extends Script {
         int moraleBoostLv = 0;
         final Party party = player.getParty();
         if ((party != null) && (party.getMemberCount() >= MIN_MEMBERS) && (npc != null)) {
-            for (Player member : party.getMembers()) {
-                if ((member.getLevel() >= MIN_LEVEL)
-                        && (member.getPlayerClass().level() >= CLASS_LEVEL)
-                        && (npc.calculateDistance3D(member) < MIN_DISTANCE)) {
-                    points += CLASS_POINTS.get(member.getPlayerClass());
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player member : members) {
+                    if ((member.getLevel() >= MIN_LEVEL)
+                            && (member.getPlayerClass().level() >= CLASS_LEVEL)
+                            && (npc.calculateDistance3D(member) < MIN_DISTANCE)) {
+                        points += CLASS_POINTS.get(member.getPlayerClass());
+                    }
                 }
             }
 
@@ -216,20 +220,23 @@ public class DragonValley extends Script {
                 moraleBoostLv = 1;
             }
 
-            for (Player member : party.getMembers()) {
-                if (npc.calculateDistance3D(member) < MIN_DISTANCE) {
-                    switch (moraleBoostLv) {
-                        case 1: {
-                            MORALE_BOOST1.getSkill().applyEffects(member, member);
-                            break;
-                        }
-                        case 2: {
-                            MORALE_BOOST2.getSkill().applyEffects(member, member);
-                            break;
-                        }
-                        case 3: {
-                            MORALE_BOOST3.getSkill().applyEffects(member, member);
-                            break;
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player member : members) {
+                    if (npc.calculateDistance3D(member) < MIN_DISTANCE) {
+                        switch (moraleBoostLv) {
+                            case 1: {
+                                MORALE_BOOST1.getSkill().applyEffects(member, member);
+                                break;
+                            }
+                            case 2: {
+                                MORALE_BOOST2.getSkill().applyEffects(member, member);
+                                break;
+                            }
+                            case 3: {
+                                MORALE_BOOST3.getSkill().applyEffects(member, member);
+                                break;
+                            }
                         }
                     }
                 }

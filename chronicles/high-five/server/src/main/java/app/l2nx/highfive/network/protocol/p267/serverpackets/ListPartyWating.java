@@ -46,11 +46,7 @@ public class ListPartyWating extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         for (PartyMatchRoom room : PartyMatchRoomList.getInstance().getRooms()) {
-            if ((room.getMembers() < 1)
-                    || (room.getOwner() == null)
-                    || !room.getOwner().isOnline()
-                    || (room.getOwner().getPartyRoom() != room.getId())) {
-                PartyMatchRoomList.getInstance().deleteRoom(room.getId());
+            if (room.isAbandoned()) {
                 continue;
             }
 

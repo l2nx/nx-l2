@@ -35,6 +35,7 @@ import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -1164,12 +1165,15 @@ public class SevenSignsFestival {
         List<Integer> participants = null;
         if (festivalParty != null) {
             participants = new ArrayList<>(festivalParty.getMemberCount());
-            for (Player player : festivalParty.getMembers()) {
-                if (player == null) {
-                    continue;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                festivalParty.collectMembers(members);
+                for (Player player : members) {
+                    if (player == null) {
+                        continue;
+                    }
 
-                participants.add(player.getObjectId());
+                    participants.add(player.getObjectId());
+                }
             }
         }
 

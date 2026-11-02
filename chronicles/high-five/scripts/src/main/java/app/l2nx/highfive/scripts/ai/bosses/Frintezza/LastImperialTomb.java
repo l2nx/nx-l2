@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.ai.bosses.Frintezza;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -704,28 +705,31 @@ public class LastImperialTomb extends InstanceScript {
             return false;
         }
 
-        for (Player channelMember : channel.getMembers()) {
-            if (channelMember.getLevel() < 80) {
-                party.broadcastPacket(
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY)
-                                .addPcName(channelMember));
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            channel.collectMembers(members);
+            for (Player channelMember : members) {
+                if (channelMember.getLevel() < 80) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY)
+                            .addPcName(channelMember));
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, channelMember, true)) {
-                party.broadcastPacket(new SystemMessage(
-                                SystemMessageId
-                                        .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED)
-                        .addPcName(channelMember));
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, channelMember, true)) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId
+                                            .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED)
+                            .addPcName(channelMember));
+                    return false;
+                }
 
-            final Long reentertime =
-                    InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID);
-            if (ClockBridge.wallMillis() < reentertime) {
-                party.broadcastPacket(
-                        new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET).addPcName(channelMember));
-                return false;
+                final Long reentertime =
+                        InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID);
+                if (ClockBridge.wallMillis() < reentertime) {
+                    party.broadcastPacket(
+                            new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET).addPcName(channelMember));
+                    return false;
+                }
             }
         }
 
@@ -749,18 +753,23 @@ public class LastImperialTomb extends InstanceScript {
                 world.addAllowed(player);
                 teleportPlayer(player, ENTER_TELEPORT, world.getInstanceId(), false);
             } else {
-                for (Player channelMember : party.getCommandChannel().getMembers()) {
-                    if (player.getInventory().getInventoryItemCount(DEWDROP_OF_DESTRUCTION_ITEM_ID, -1) > 0) {
-                        channelMember.destroyItemByItemId(
-                                ItemProcessType.FEE,
-                                DEWDROP_OF_DESTRUCTION_ITEM_ID,
-                                channelMember.getInventory().getInventoryItemCount(DEWDROP_OF_DESTRUCTION_ITEM_ID, -1),
-                                null,
-                                true);
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.getCommandChannel().collectMembers(members);
+                    for (Player channelMember : members) {
+                        if (player.getInventory().getInventoryItemCount(DEWDROP_OF_DESTRUCTION_ITEM_ID, -1) > 0) {
+                            channelMember.destroyItemByItemId(
+                                    ItemProcessType.FEE,
+                                    DEWDROP_OF_DESTRUCTION_ITEM_ID,
+                                    channelMember
+                                            .getInventory()
+                                            .getInventoryItemCount(DEWDROP_OF_DESTRUCTION_ITEM_ID, -1),
+                                    null,
+                                    true);
+                        }
 
-                    world.addAllowed(channelMember);
-                    teleportPlayer(channelMember, ENTER_TELEPORT, world.getInstanceId(), false);
+                        world.addAllowed(channelMember);
+                        teleportPlayer(channelMember, ENTER_TELEPORT, world.getInstanceId(), false);
+                    }
                 }
             }
 

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.GameClient;
@@ -38,10 +39,13 @@ public class ExMPCCShowPartyMemberInfo extends ServerPacket {
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.EX_MPCC_SHOW_PARTY_MEMBER_INFO.writeId(this, buffer);
         buffer.writeInt(party.getMemberCount());
-        for (Player pc : party.getMembers()) {
-            buffer.writeString(pc.getName());
-            buffer.writeInt(pc.getObjectId());
-            buffer.writeInt(pc.getPlayerClass().getId());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player pc : members) {
+                buffer.writeString(pc.getName());
+                buffer.writeInt(pc.getObjectId());
+                buffer.writeInt(pc.getPlayerClass().getId());
+            }
         }
     }
 }

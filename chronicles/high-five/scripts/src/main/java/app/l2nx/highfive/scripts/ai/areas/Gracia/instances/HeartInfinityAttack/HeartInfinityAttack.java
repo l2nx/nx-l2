@@ -26,6 +26,7 @@ import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -242,36 +243,39 @@ public class HeartInfinityAttack extends Script {
             return false;
         }
 
-        if ((party.getCommandChannel().getMembers().size() < GraciaSeedsConfig.HEART_ATTACK_MIN_PLAYERS)
-                || (party.getCommandChannel().getMembers().size() > GraciaSeedsConfig.HEART_ATTACK_MAX_PLAYERS)) {
+        if ((party.getCommandChannel().getMemberCount() < GraciaSeedsConfig.HEART_ATTACK_MIN_PLAYERS)
+                || (party.getCommandChannel().getMemberCount() > GraciaSeedsConfig.HEART_ATTACK_MAX_PLAYERS)) {
             party.getCommandChannel()
                     .broadcastPacket(new SystemMessage(
                             SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY));
             return false;
         }
 
-        for (Player partyMember : party.getCommandChannel().getMembers()) {
-            if ((partyMember.getLevel() < 75) || (partyMember.getLevel() > 85)) {
-                final SystemMessage sm = new SystemMessage(2097);
-                sm.addPcName(partyMember);
-                party.getCommandChannel().broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.getCommandChannel().collectMembers(members);
+            for (Player partyMember : members) {
+                if ((partyMember.getLevel() < 75) || (partyMember.getLevel() > 85)) {
+                    final SystemMessage sm = new SystemMessage(2097);
+                    sm.addPcName(partyMember);
+                    party.getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(2096);
-                sm.addPcName(partyMember);
-                party.getCommandChannel().broadcastPacket(sm);
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(2096);
+                    sm.addPcName(partyMember);
+                    party.getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
 
-            final Long reentertime =
-                    InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (ClockBridge.wallMillis() < reentertime) {
-                final SystemMessage sm = new SystemMessage(2100);
-                sm.addPcName(partyMember);
-                party.getCommandChannel().broadcastPacket(sm);
-                return false;
+                final Long reentertime =
+                        InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
+                if (ClockBridge.wallMillis() < reentertime) {
+                    final SystemMessage sm = new SystemMessage(2100);
+                    sm.addPcName(partyMember);
+                    party.getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -308,11 +312,14 @@ public class HeartInfinityAttack extends Script {
                 teleportPlayer(player, coords, world.getInstanceId());
                 world.addAllowed(player);
             } else {
-                for (Player partyMember : party.getCommandChannel().getMembers()) {
-                    teleportPlayer(partyMember, coords, world.getInstanceId());
-                    world.addAllowed(partyMember);
-                    if (partyMember.getQuestState(qn) == null) {
-                        newQuestState(partyMember);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.getCommandChannel().collectMembers(members);
+                    for (Player partyMember : members) {
+                        teleportPlayer(partyMember, coords, world.getInstanceId());
+                        world.addAllowed(partyMember);
+                        if (partyMember.getQuestState(qn) == null) {
+                            newQuestState(partyMember);
+                        }
                     }
                 }
             }
@@ -412,9 +419,12 @@ public class HeartInfinityAttack extends Script {
                                 NpcStringId.S1_S_PARTY_HAS_MOVED_TO_A_DIFFERENT_LOCATION_THROUGH_THE_CRACK_IN_THE_TUMOR,
                                 2,
                                 8000));
-                for (Player partyMember : player.getParty().getMembers()) {
-                    if (partyMember.isInsideRadius3D(player, 800)) {
-                        partyMember.teleToLocation(-179548, 209584, -15504, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    player.getParty().collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (partyMember.isInsideRadius3D(player, 800)) {
+                            partyMember.teleToLocation(-179548, 209584, -15504, true);
+                        }
                     }
                 }
 
@@ -422,9 +432,12 @@ public class HeartInfinityAttack extends Script {
             } else if (event.startsWith("reenterechmus")) {
                 player.destroyItemByItemId(ItemProcessType.FEE, 13797, 3, player, true);
                 notifyEkimusRoomEntrance(world);
-                for (Player partyMember : player.getParty().getMembers()) {
-                    if (partyMember.isInsideRadius3D(player, 400)) {
-                        partyMember.teleToLocation(-179548, 209584, -15504, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    player.getParty().collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (partyMember.isInsideRadius3D(player, 400)) {
+                            partyMember.teleToLocation(-179548, 209584, -15504, true);
+                        }
                     }
                 }
             } else if (event.startsWith("warp")) {
@@ -445,9 +458,12 @@ public class HeartInfinityAttack extends Script {
                                             .S1_S_PARTY_HAS_MOVED_TO_A_DIFFERENT_LOCATION_THROUGH_THE_CRACK_IN_THE_TUMOR,
                                     2,
                                     8000));
-                    for (Player partyMember : player.getParty().getMembers()) {
-                        if (partyMember.isInsideRadius3D(player, 500)) {
-                            partyMember.teleToLocation(loc, true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        player.getParty().collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (partyMember.isInsideRadius3D(player, 500)) {
+                                partyMember.teleToLocation(loc, true);
+                            }
                         }
                     }
                 }

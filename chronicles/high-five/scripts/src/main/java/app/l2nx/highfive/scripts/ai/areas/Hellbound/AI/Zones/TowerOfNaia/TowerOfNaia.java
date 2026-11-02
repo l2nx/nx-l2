@@ -24,6 +24,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.npc.MinionList;
@@ -380,9 +381,12 @@ public class TowerOfNaia extends Script {
             final Party party = player.getParty();
             if (party != null) {
                 if (LocationUtil.checkIfInRange(3000, party.getLeader(), npc, true)) {
-                    for (Player partyMember : party.getMembers()) {
-                        if (LocationUtil.checkIfInRange(2000, partyMember, npc, true)) {
-                            partyMember.teleToLocation(-47271, 246098, -9120, true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (LocationUtil.checkIfInRange(2000, partyMember, npc, true)) {
+                                partyMember.teleToLocation(-47271, 246098, -9120, true);
+                            }
                         }
                     }
 

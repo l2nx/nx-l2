@@ -26,10 +26,12 @@ import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.QuestGuard;
+import app.l2nx.highfive.entity.groups.AbstractPlayerGroup;
 import app.l2nx.highfive.entity.groups.CommandChannel;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.instancezone.Instance;
@@ -229,8 +231,8 @@ public class HallOfErosionDefence extends Script {
             return false;
         }
 
-        if ((party.getCommandChannel().getMembers().size() < GraciaSeedsConfig.EROSION_DEFENCE_MIN_PLAYERS)
-                || (party.getCommandChannel().getMembers().size()
+        if ((party.getCommandChannel().getMemberCount() < GraciaSeedsConfig.EROSION_DEFENCE_MIN_PLAYERS)
+                || (party.getCommandChannel().getMemberCount()
                         > GraciaSeedsConfig.EROSION_DEFENCE_MAX_PLAYERS)) // 18 27
         {
             party.getCommandChannel()
@@ -239,37 +241,40 @@ public class HallOfErosionDefence extends Script {
             return false;
         }
 
-        for (Player partyMember : party.getCommandChannel().getMembers()) {
-            if ((partyMember.getLevel() < 75) || (partyMember.getLevel() > 85)) {
-                final SystemMessage sm = new SystemMessage(2097);
-                sm.addPcName(partyMember);
-                party.getCommandChannel().broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.getCommandChannel().collectMembers(members);
+            for (Player partyMember : members) {
+                if ((partyMember.getLevel() < 75) || (partyMember.getLevel() > 85)) {
+                    final SystemMessage sm = new SystemMessage(2097);
+                    sm.addPcName(partyMember);
+                    party.getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(2096);
-                sm.addPcName(partyMember);
-                party.getCommandChannel().broadcastPacket(sm);
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(2096);
+                    sm.addPcName(partyMember);
+                    party.getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
 
-            final Long reentertime =
-                    InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (ClockBridge.wallMillis() < reentertime) {
-                final SystemMessage sm = new SystemMessage(2100);
-                sm.addPcName(partyMember);
-                party.getCommandChannel().broadcastPacket(sm);
-                return false;
-            }
+                final Long reentertime =
+                        InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
+                if (ClockBridge.wallMillis() < reentertime) {
+                    final SystemMessage sm = new SystemMessage(2100);
+                    sm.addPcName(partyMember);
+                    party.getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
 
-            final QuestState qs = partyMember.getQuestState(Q00697_DefendTheHallOfErosion.class.getSimpleName());
-            if ((qs == null) || !qs.isCond(1)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
-                sm.addPcName(partyMember);
-                player.getParty().getCommandChannel().broadcastPacket(sm);
-                return false;
+                final QuestState qs = partyMember.getQuestState(Q00697_DefendTheHallOfErosion.class.getSimpleName());
+                if ((qs == null) || !qs.isCond(1)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                    sm.addPcName(partyMember);
+                    player.getParty().getCommandChannel().broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -301,11 +306,14 @@ public class HallOfErosionDefence extends Script {
                     world.getInstanceId(),
                     player.getName());
             if (player.isInParty()) {
-                for (Player partyMember : player.getParty().isInCommandChannel()
-                        ? player.getParty().getCommandChannel().getMembers()
-                        : player.getParty().getMembers()) {
-                    teleportPlayer(partyMember, coords, world.getInstanceId());
-                    world.addAllowed(partyMember);
+                final Party party = player.getParty();
+                final AbstractPlayerGroup group = party.isInCommandChannel() ? party.getCommandChannel() : party;
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    group.collectMembers(members);
+                    for (Player partyMember : members) {
+                        teleportPlayer(partyMember, coords, world.getInstanceId());
+                        world.addAllowed(partyMember);
+                    }
                 }
             } else {
                 teleportPlayer(player, coords, world.getInstanceId());
@@ -435,9 +443,12 @@ public class HallOfErosionDefence extends Script {
                                             .S1_S_PARTY_HAS_MOVED_TO_A_DIFFERENT_LOCATION_THROUGH_THE_CRACK_IN_THE_TUMOR,
                                     2,
                                     8000));
-                    for (Player partyMember : player.getParty().getMembers()) {
-                        if (partyMember.isInsideRadius3D(player, 500)) {
-                            partyMember.teleToLocation(loc, true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        player.getParty().collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (partyMember.isInsideRadius3D(player, 500)) {
+                                partyMember.teleToLocation(loc, true);
+                            }
                         }
                     }
                 }

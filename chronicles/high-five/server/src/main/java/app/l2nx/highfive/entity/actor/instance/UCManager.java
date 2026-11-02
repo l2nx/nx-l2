@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor.instance;
 
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -112,28 +113,32 @@ public class UCManager extends Folk {
                 }
 
                 int realCount = 0;
-                for (Player member : party.getMembers()) {
-                    if (member == null) {
-                        continue;
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        if (member == null) {
+                            continue;
+                        }
 
-                    if (member.getPlayerClass().level() < 2) {
-                        final NpcHtmlMessage packet = new NpcHtmlMessage(getObjectId());
-                        packet.setFile(member, "data/html/undergroundColiseum/wrongLevel.htm");
-                        packet.replace("%name%", member.getName());
-                        player.sendPacket(packet);
-                        return;
-                    }
+                        if (member.getPlayerClass().level() < 2) {
+                            final NpcHtmlMessage packet = new NpcHtmlMessage(getObjectId());
+                            packet.setFile(member, "data/html/undergroundColiseum/wrongLevel.htm");
+                            packet.replace("%name%", member.getName());
+                            player.sendPacket(packet);
+                            return;
+                        }
 
-                    if (!((member.getLevel() >= arena.getMinLevel()) && (member.getLevel() <= arena.getMaxLevel()))) {
-                        final NpcHtmlMessage packet = new NpcHtmlMessage(getObjectId());
-                        packet.setFile(member, "data/html/undergroundColiseum/wrongLevel.htm");
-                        packet.replace("%name%", member.getName());
-                        player.sendPacket(packet);
-                        return;
-                    }
+                        if (!((member.getLevel() >= arena.getMinLevel())
+                                && (member.getLevel() <= arena.getMaxLevel()))) {
+                            final NpcHtmlMessage packet = new NpcHtmlMessage(getObjectId());
+                            packet.setFile(member, "data/html/undergroundColiseum/wrongLevel.htm");
+                            packet.replace("%name%", member.getName());
+                            player.sendPacket(packet);
+                            return;
+                        }
 
-                    realCount++;
+                        realCount++;
+                    }
                 }
 
                 if (realCount < UndergroundColiseumConfig.UC_PARTY_SIZE) {
@@ -216,9 +221,12 @@ public class UCManager extends Folk {
                         list += i + ". (Participating Team: Team)<br>";
                     } else {
                         String teamList = "";
-                        for (Player m : party.getMembers()) {
-                            if (m != null) {
-                                teamList += m.getName() + ";";
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player m : members) {
+                                if (m != null) {
+                                    teamList += m.getName() + ";";
+                                }
                             }
                         }
 

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.GameClient;
@@ -42,34 +43,37 @@ public class PartySmallWindowAll extends ServerPacket {
         buffer.writeInt(party.getLeaderObjectId());
         buffer.writeInt(party.getDistributionType().getId());
         buffer.writeInt(party.getMemberCount() - 1);
-        for (Player member : party.getMembers()) {
-            if ((member != null) && (member != exclude)) {
-                buffer.writeInt(member.getObjectId());
-                buffer.writeString(member.getName());
-                buffer.writeInt((int) member.getCurrentCp()); // c4
-                buffer.writeInt(member.getMaxCp()); // c4
-                buffer.writeInt((int) member.getCurrentHp());
-                buffer.writeInt(member.getMaxHp());
-                buffer.writeInt((int) member.getCurrentMp());
-                buffer.writeInt(member.getMaxMp());
-                buffer.writeInt(member.getLevel());
-                buffer.writeInt(member.getPlayerClass().getId());
-                buffer.writeInt(0); // buffer.writeInt(1); ??
-                buffer.writeInt(member.getRace().ordinal());
-                buffer.writeInt(0); // T2.3
-                buffer.writeInt(0); // T2.3
-                if (member.hasSummon()) {
-                    buffer.writeInt(member.getSummon().getObjectId());
-                    buffer.writeInt(member.getSummon().getId() + 1000000);
-                    buffer.writeInt(member.getSummon().getSummonType());
-                    buffer.writeString(member.getSummon().getName());
-                    buffer.writeInt((int) member.getSummon().getCurrentHp());
-                    buffer.writeInt(member.getSummon().getMaxHp());
-                    buffer.writeInt((int) member.getSummon().getCurrentMp());
-                    buffer.writeInt(member.getSummon().getMaxMp());
-                    buffer.writeInt(member.getSummon().getLevel());
-                } else {
-                    buffer.writeInt(0);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player member : members) {
+                if ((member != null) && (member != exclude)) {
+                    buffer.writeInt(member.getObjectId());
+                    buffer.writeString(member.getName());
+                    buffer.writeInt((int) member.getCurrentCp()); // c4
+                    buffer.writeInt(member.getMaxCp()); // c4
+                    buffer.writeInt((int) member.getCurrentHp());
+                    buffer.writeInt(member.getMaxHp());
+                    buffer.writeInt((int) member.getCurrentMp());
+                    buffer.writeInt(member.getMaxMp());
+                    buffer.writeInt(member.getLevel());
+                    buffer.writeInt(member.getPlayerClass().getId());
+                    buffer.writeInt(0); // buffer.writeInt(1); ??
+                    buffer.writeInt(member.getRace().ordinal());
+                    buffer.writeInt(0); // T2.3
+                    buffer.writeInt(0); // T2.3
+                    if (member.hasSummon()) {
+                        buffer.writeInt(member.getSummon().getObjectId());
+                        buffer.writeInt(member.getSummon().getId() + 1000000);
+                        buffer.writeInt(member.getSummon().getSummonType());
+                        buffer.writeString(member.getSummon().getName());
+                        buffer.writeInt((int) member.getSummon().getCurrentHp());
+                        buffer.writeInt(member.getSummon().getMaxHp());
+                        buffer.writeInt((int) member.getSummon().getCurrentMp());
+                        buffer.writeInt(member.getSummon().getMaxMp());
+                        buffer.writeInt(member.getSummon().getLevel());
+                    } else {
+                        buffer.writeInt(0);
+                    }
                 }
             }
         }

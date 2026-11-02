@@ -22,6 +22,7 @@ package app.l2nx.highfive.scripts.instances.ChambersOfDelusion;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -127,31 +128,35 @@ public abstract class Chamber extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember.getLevel() < 80) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
-
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
-
-            if (isBigChamber()) {
-                final long reentertime =
-                        InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-                if (ClockBridge.wallMillis() < reentertime) {
-                    final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember.getLevel() < 80) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
                     sm.addPcName(partyMember);
                     party.broadcastPacket(sm);
                     return false;
+                }
+
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
+
+                if (isBigChamber()) {
+                    final long reentertime =
+                            InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
+                    if (ClockBridge.wallMillis() < reentertime) {
+                        final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                        sm.addPcName(partyMember);
+                        party.broadcastPacket(sm);
+                        return false;
+                    }
                 }
             }
         }
@@ -214,10 +219,13 @@ public abstract class Chamber extends InstanceScript {
             }
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (world.getInstanceId() == partyMember.getInstanceId()) {
-                partyMember.getAI().setIntentionIdle();
-                teleportPlayer(partyMember, ROOM_ENTER_POINTS[newRoom], world.getInstanceId());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (world.getInstanceId() == partyMember.getInstanceId()) {
+                    partyMember.getAI().setIntentionIdle();
+                    teleportPlayer(partyMember, ROOM_ENTER_POINTS[newRoom], world.getInstanceId());
+                }
             }
         }
 
@@ -247,22 +255,25 @@ public abstract class Chamber extends InstanceScript {
             return;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (hasQuestItems(partyMember, DELUSION_MARK)) {
-                takeItems(partyMember, DELUSION_MARK, -1);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (hasQuestItems(partyMember, DELUSION_MARK)) {
+                    takeItems(partyMember, DELUSION_MARK, -1);
+                }
+
+                if (party.isLeader(partyMember)) {
+                    giveItems(partyMember, DELUSION_MARK, 1);
+                }
+
+                // Save location for teleport back into main hall
+                partyMember
+                        .getVariables()
+                        .set(RETURN, partyMember.getX() + ";" + partyMember.getY() + ";" + partyMember.getZ());
+
+                partyMember.setInstanceId(world.getInstanceId());
+                world.addAllowed(partyMember);
             }
-
-            if (party.isLeader(partyMember)) {
-                giveItems(partyMember, DELUSION_MARK, 1);
-            }
-
-            // Save location for teleport back into main hall
-            partyMember
-                    .getVariables()
-                    .set(RETURN, partyMember.getX() + ";" + partyMember.getY() + ";" + partyMember.getZ());
-
-            partyMember.setInstanceId(world.getInstanceId());
-            world.addAllowed(partyMember);
         }
 
         changeRoom(world);
@@ -274,10 +285,13 @@ public abstract class Chamber extends InstanceScript {
             return;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (world.getInstanceId() == partyMember.getInstanceId()) {
-                partyMember.sendPacket(
-                        new Earthquake(partyMember.getX(), partyMember.getY(), partyMember.getZ(), 20, 10));
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (world.getInstanceId() == partyMember.getInstanceId()) {
+                    partyMember.sendPacket(
+                            new Earthquake(partyMember.getX(), partyMember.getY(), partyMember.getZ(), 20, 10));
+                }
             }
         }
     }
@@ -361,8 +375,11 @@ public abstract class Chamber extends InstanceScript {
                         stopRoomChangeTask(world);
                         stopBanishTask(world);
 
-                        for (Player partyMember : party.getMembers()) {
-                            exitInstance(partyMember);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player partyMember : members) {
+                                exitInstance(partyMember);
+                            }
                         }
 
                         instance.setEmptyDestroyTime(0);

@@ -22,6 +22,7 @@ package app.l2nx.highfive.scripts.instances.IceQueensCastleBattle;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -1127,14 +1128,20 @@ public class IceQueensCastleBattle extends InstanceScript {
                 playersInside.add(player);
                 managePlayerEnter(player, world);
             } else if (party.isInCommandChannel()) {
-                for (Player member : party.getCommandChannel().getMembers()) {
-                    playersInside.add(member);
-                    managePlayerEnter(member, world);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.getCommandChannel().collectMembers(members);
+                    for (Player member : members) {
+                        playersInside.add(member);
+                        managePlayerEnter(member, world);
+                    }
                 }
             } else {
-                for (Player member : party.getMembers()) {
-                    playersInside.add(member);
-                    managePlayerEnter(member, world);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        playersInside.add(member);
+                        managePlayerEnter(member, world);
+                    }
                 }
             }
 
@@ -1188,31 +1195,37 @@ public class IceQueensCastleBattle extends InstanceScript {
             return false;
         }
 
-        for (Player channelMember : channel.getMembers()) {
-            if (channelMember.getLevel() < MIN_LEVEL) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(channelMember);
-                party.broadcastPacket(sm);
-                return false;
-            } else if (!LocationUtil.checkIfInRange(1000, player, channelMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(channelMember);
-                party.broadcastPacket(sm);
-                return false;
-            } else if (ClockBridge.wallMillis()
-                    < InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID_EASY)) {
-                final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
-                sm.addPcName(channelMember);
-                party.broadcastPacket(sm);
-                return false;
-            } else if (ClockBridge.wallMillis()
-                    < InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID_HARD)) {
-                final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
-                sm.addPcName(channelMember);
-                party.broadcastPacket(sm);
-                return false;
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            channel.collectMembers(members);
+            for (Player channelMember : members) {
+                if (channelMember.getLevel() < MIN_LEVEL) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(channelMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                } else if (!LocationUtil.checkIfInRange(1000, player, channelMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(channelMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                } else if (ClockBridge.wallMillis()
+                        < InstanceManager.getInstance()
+                                .getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID_EASY)) {
+                    final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                    sm.addPcName(channelMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                } else if (ClockBridge.wallMillis()
+                        < InstanceManager.getInstance()
+                                .getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID_HARD)) {
+                    final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                    sm.addPcName(channelMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 

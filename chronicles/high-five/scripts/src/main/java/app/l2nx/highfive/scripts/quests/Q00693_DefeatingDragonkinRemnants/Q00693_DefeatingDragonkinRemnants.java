@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.quests.Q00693_DefeatingDragonkinRemnants;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -87,12 +88,15 @@ public class Q00693_DefeatingDragonkinRemnants extends Quest {
                     htmltext = getHtm(talker, "32527-noleader.html");
                     htmltext = htmltext.replace("%leader%", party.getLeader().getName());
                 } else {
-                    for (Player member : party.getMembers()) {
-                        final QuestState questState = getQuestState(member, false);
-                        if ((questState == null) || (!questState.isStarted()) || (!questState.isMemoState(1))) {
-                            htmltext = getHtm(talker, "32527-noquest.html");
-                            htmltext = htmltext.replace("%member%", member.getName());
-                            return htmltext;
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player member : members) {
+                            final QuestState questState = getQuestState(member, false);
+                            if ((questState == null) || (!questState.isStarted()) || (!questState.isMemoState(1))) {
+                                htmltext = getHtm(talker, "32527-noquest.html");
+                                htmltext = htmltext.replace("%member%", member.getName());
+                                return htmltext;
+                            }
                         }
                     }
 

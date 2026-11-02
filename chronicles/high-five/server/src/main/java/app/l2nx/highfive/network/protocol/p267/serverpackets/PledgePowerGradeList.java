@@ -22,25 +22,30 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
+import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.Clan.RankPrivs;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
-import java.util.Collection;
 
 public class PledgePowerGradeList extends ServerPacket {
-    private final Collection<RankPrivs> privs;
+    private final Clan clan;
 
-    public PledgePowerGradeList(Collection<RankPrivs> privs) {
-        this.privs = privs;
+    public PledgePowerGradeList(Clan clan) {
+        this.clan = clan;
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.PLEDGE_POWER_GRADE_LIST.writeId(this, buffer);
-        buffer.writeInt(privs.size());
-        for (RankPrivs temp : privs) {
-            buffer.writeInt(temp.getRank());
-            buffer.writeInt(temp.getParty());
+        try (Snapshot<RankPrivs> privs = ScratchBuffers.empty()) {
+            clan.collectRankPrivs(privs);
+            buffer.writeInt(privs.size());
+            for (RankPrivs temp : privs) {
+                buffer.writeInt(temp.getRank());
+                buffer.writeInt(temp.getParty());
+            }
         }
     }
 }

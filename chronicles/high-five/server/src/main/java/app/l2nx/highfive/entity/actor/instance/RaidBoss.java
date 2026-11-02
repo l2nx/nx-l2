@@ -25,6 +25,7 @@ package app.l2nx.highfive.entity.actor.instance;
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -86,14 +87,17 @@ public class RaidBoss extends Monster {
             final Party party = player.getParty();
             if (party != null) {
                 party.broadcastPacket(msg);
-                for (Player member : party.getMembers()) {
-                    RaidBossPointsManager.getInstance()
-                            .addPoints(
-                                    member,
-                                    getId(),
-                                    (getLevel() / 2) + ClockBridge.random().nextInt(-5, 6));
-                    if (member.isNoble()) {
-                        Hero.getInstance().setRBkilled(member.getObjectId(), getId());
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        RaidBossPointsManager.getInstance()
+                                .addPoints(
+                                        member,
+                                        getId(),
+                                        (getLevel() / 2) + ClockBridge.random().nextInt(-5, 6));
+                        if (member.isNoble()) {
+                            Hero.getInstance().setRBkilled(member.getObjectId(), getId());
+                        }
                     }
                 }
             } else {

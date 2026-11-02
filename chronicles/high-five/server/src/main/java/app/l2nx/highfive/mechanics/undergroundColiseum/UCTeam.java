@@ -30,6 +30,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.instance.UCTower;
@@ -151,9 +152,12 @@ public class UCTeam {
 
         if (tower == null) {
             boolean flag = true;
-            for (Player member : getParty().getMembers()) {
-                if ((member != null) && !member.isDead()) {
-                    flag = false;
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                getParty().collectMembers(members);
+                for (Player member : members) {
+                    if ((member != null) && !member.isDead()) {
+                        flag = false;
+                    }
                 }
             }
 
@@ -278,40 +282,45 @@ public class UCTeam {
                 return;
             }
 
-            for (Player member : getParty().getMembers()) {
-                if (member != null) {
-                    for (UCReward reward : rewards) {
-                        if (reward.id() == -100) {
-                            long amount =
-                                    reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
-                            if ((member.getPcCafePoints() + amount) > PremiumSystemConfig.PC_CAFE_MAX_POINTS) {
-                                amount = PremiumSystemConfig.PC_CAFE_MAX_POINTS - member.getPcCafePoints();
-                            }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                getParty().collectMembers(members);
+                for (Player member : members) {
+                    if (member != null) {
+                        for (UCReward reward : rewards) {
+                            if (reward.id() == -100) {
+                                long amount =
+                                        reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
+                                if ((member.getPcCafePoints() + amount) > PremiumSystemConfig.PC_CAFE_MAX_POINTS) {
+                                    amount = PremiumSystemConfig.PC_CAFE_MAX_POINTS - member.getPcCafePoints();
+                                }
 
-                            final SystemMessage sm =
-                                    new SystemMessage(SystemMessageId.YOU_HAVE_ACQUIRED_S1_PC_CAFE_POINTS);
-                            sm.addInt((int) amount);
-                            member.sendPacket(sm);
-                            member.setPcCafePoints((int) (member.getPcCafePoints() + amount));
-                            member.sendPacket(new ExPCCafePointInfo(member.getPcCafePoints(), (int) amount, 1));
-                        } else if (reward.id() == -200) {
-                            if (member.getClan() != null) {
+                                final SystemMessage sm =
+                                        new SystemMessage(SystemMessageId.YOU_HAVE_ACQUIRED_S1_PC_CAFE_POINTS);
+                                sm.addInt((int) amount);
+                                member.sendPacket(sm);
+                                member.setPcCafePoints((int) (member.getPcCafePoints() + amount));
+                                member.sendPacket(new ExPCCafePointInfo(member.getPcCafePoints(), (int) amount, 1));
+                            } else if (reward.id() == -200) {
+                                if (member.getClan() != null) {
+                                    final long amount = reward.allowMidifier()
+                                            ? (long) (reward.amount() * modifier)
+                                            : reward.amount();
+                                    member.getClan().addReputationScore((int) amount);
+                                }
+                            } else if (reward.id() == -300) {
                                 final long amount =
                                         reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
-                                member.getClan().addReputationScore((int) amount);
+                                member.setFame((int) (member.getFame() + amount));
+                                final SystemMessage sm =
+                                        new SystemMessage(SystemMessageId.YOU_HAVE_ACQUIRED_S1_REPUTATION);
+                                sm.addInt((int) amount);
+                                member.sendPacket(sm);
+                                member.updateUserInfo();
+                            } else if (reward.id() > 0) {
+                                final long amount =
+                                        reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
+                                member.addItem(ItemProcessType.REWARD, reward.id(), amount, null, true);
                             }
-                        } else if (reward.id() == -300) {
-                            final long amount =
-                                    reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
-                            member.setFame((int) (member.getFame() + amount));
-                            final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_ACQUIRED_S1_REPUTATION);
-                            sm.addInt((int) amount);
-                            member.sendPacket(sm);
-                            member.updateUserInfo();
-                        } else if (reward.id() > 0) {
-                            final long amount =
-                                    reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
-                            member.addItem(ItemProcessType.REWARD, reward.id(), amount, null, true);
                         }
                     }
                 }
@@ -350,9 +359,12 @@ public class UCTeam {
     public void broadcastToTeam(ServerPacket packet) {
         final Party party = this.party;
         if (party != null) {
-            for (Player member : party.getMembers()) {
-                if (member != null) {
-                    member.sendPacket(packet);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player member : members) {
+                    if (member != null) {
+                        member.sendPacket(packet);
+                    }
                 }
             }
         }

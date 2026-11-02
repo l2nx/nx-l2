@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.instances.DarkCloudMansion;
 
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -212,21 +213,25 @@ public class DarkCloudMansion extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember.getLevel() < 78) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember.getLevel() < 78) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return false;
+                }
 
-            if (!partyMember.isInsideRadius3D(player, 1000)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                player.sendPacket(sm);
-                return false;
+                if (!partyMember.isInsideRadius3D(player, 1000)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    player.sendPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -239,13 +244,16 @@ public class DarkCloudMansion extends InstanceScript {
             runStartRoom(world);
             final Party party = player.getParty();
             if (party != null) {
-                for (Player partyMember : party.getMembers()) {
-                    if (partyMember.getQuestState(getName()) == null) {
-                        newQuestState(partyMember);
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (partyMember.getQuestState(getName()) == null) {
+                            newQuestState(partyMember);
+                        }
 
-                    world.addAllowed(partyMember);
-                    teleportPlayer(partyMember, new Location(146534, 180464, -6117), world.getInstanceId());
+                        world.addAllowed(partyMember);
+                        teleportPlayer(partyMember, new Location(146534, 180464, -6117), world.getInstanceId());
+                    }
                 }
             }
         } else {

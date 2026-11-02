@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.ai.areas.StakatoNest.StakatoNestTeleporter;
 
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -56,9 +57,12 @@ public class StakatoNestTeleporter extends Script {
             final Location loc = LOCS[index];
             final Party party = player.getParty();
             if (party != null) {
-                for (Player partyMember : party.getMembers()) {
-                    if (partyMember.isInsideRadius3D(player, 1000)) {
-                        partyMember.teleToLocation(loc, true);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if (partyMember.isInsideRadius3D(player, 1000)) {
+                            partyMember.teleToLocation(loc, true);
+                        }
                     }
                 }
             }

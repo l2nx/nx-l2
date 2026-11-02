@@ -20,6 +20,9 @@
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.IntSnapshot;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
@@ -41,19 +44,27 @@ public class PledgeReceiveWarList extends ServerPacket {
         ServerPackets.PLEDGE_RECEIVE_WAR_LIST.writeId(this, buffer);
         buffer.writeInt(tab); // type : 0 = Declared, 1 = Under Attack
         buffer.writeInt(0); // page
-        buffer.writeInt(
-                tab == 0
-                        ? this.clan.getWarList().size()
-                        : this.clan.getAttackerList().size());
-        for (Integer i : tab == 0 ? this.clan.getWarList() : this.clan.getAttackerList()) {
-            final Clan clan = ClanTable.getInstance().getClan(i);
-            if (clan == null) {
-                continue;
+        try (IntSnapshot clanIds = ScratchBuffers.intEmpty();
+                Snapshot<Clan> clans = ScratchBuffers.empty()) {
+            if (tab == 0) {
+                this.clan.collectWarList(clanIds);
+            } else {
+                this.clan.collectAttackerList(clanIds);
             }
 
-            buffer.writeString(clan.getName());
-            buffer.writeInt(tab); // ??
-            buffer.writeInt(tab); // ??
+            for (int i = 0; i < clanIds.size(); i++) {
+                final Clan clan = ClanTable.getInstance().getClan(clanIds.getInt(i));
+                if (clan != null) {
+                    clans.add(clan);
+                }
+            }
+
+            buffer.writeInt(clans.size());
+            for (Clan clan : clans) {
+                buffer.writeString(clan.getName());
+                buffer.writeInt(tab); // ??
+                buffer.writeInt(tab); // ??
+            }
         }
     }
 }

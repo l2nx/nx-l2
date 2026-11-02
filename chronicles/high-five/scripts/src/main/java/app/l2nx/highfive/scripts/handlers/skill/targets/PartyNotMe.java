@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.handlers.skill.targets;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -38,18 +39,21 @@ public class PartyNotMe implements ITargetTypeHandler {
     public List<WorldObject> getTargetList(Skill skill, Creature creature, boolean onlyFirst, Creature target) {
         final List<WorldObject> targetList = new ArrayList<>();
         if (creature.getParty() != null) {
-            final List<Player> partyList = creature.getParty().getMembers();
-            for (Player partyMember : partyList) {
-                if ((partyMember != null)
-                        && !partyMember.isDead()
-                        && (partyMember != creature)
-                        && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, creature, partyMember, true)
-                        && ((skill.getAffectRange() <= 0)
-                                || LocationUtil.checkIfInRange(skill.getAffectRange(), creature, partyMember, true))) {
-                    targetList.add(partyMember);
-                    if ((partyMember.getSummon() != null)
-                            && !partyMember.getSummon().isDead()) {
-                        targetList.add(partyMember.getSummon());
+            try (ScratchBuffers.Snapshot<Player> partyList = ScratchBuffers.empty()) {
+                creature.getParty().collectMembers(partyList);
+                for (Player partyMember : partyList) {
+                    if ((partyMember != null)
+                            && !partyMember.isDead()
+                            && (partyMember != creature)
+                            && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, creature, partyMember, true)
+                            && ((skill.getAffectRange() <= 0)
+                                    || LocationUtil.checkIfInRange(
+                                            skill.getAffectRange(), creature, partyMember, true))) {
+                        targetList.add(partyMember);
+                        if ((partyMember.getSummon() != null)
+                                && !partyMember.getSummon().isDead()) {
+                            targetList.add(partyMember.getSummon());
+                        }
                     }
                 }
             }

@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.quests.Q00454_CompletelyLost;
 
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -224,14 +225,17 @@ public class Q00454_CompletelyLost extends Quest {
                     npc.sendScriptEvent("SCE_A_SEED_ESCORT_QUEST_START", npc, null);
                     final Player leader = npc.getVariables().getObject("leader", Player.class);
                     if ((leader != null) && leader.isInParty()) {
-                        for (Player member : leader.getParty().getMembers()) {
-                            if (member != null) {
-                                final QuestState qsMember = getQuestState(member, false);
-                                if ((qsMember != null)
-                                        && qsMember.isMemoState(1) //
-                                        && (npc.getVariables().getInt("partyId", 0)
-                                                == leader.getParty().getLeaderObjectId())) {
-                                    qsMember.setMemoState(2);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            leader.getParty().collectMembers(members);
+                            for (Player member : members) {
+                                if (member != null) {
+                                    final QuestState qsMember = getQuestState(member, false);
+                                    if ((qsMember != null)
+                                            && qsMember.isMemoState(1) //
+                                            && (npc.getVariables().getInt("partyId", 0)
+                                                    == leader.getParty().getLeaderObjectId())) {
+                                        qsMember.setMemoState(2);
+                                    }
                                 }
                             }
                         }
@@ -270,11 +274,14 @@ public class Q00454_CompletelyLost extends Quest {
                 final Player leader = receiver.getVariables().getObject("leader", Player.class);
                 if (leader != null) {
                     if (leader.isInParty()) {
-                        for (Player member : leader.getParty().getMembers()) {
-                            if (member != null) {
-                                final QuestState qs = getQuestState(member, false);
-                                if ((qs != null) && qs.isMemoState(2)) {
-                                    qs.setMemoState(4);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            leader.getParty().collectMembers(members);
+                            for (Player member : members) {
+                                if (member != null) {
+                                    final QuestState qs = getQuestState(member, false);
+                                    if ((qs != null) && qs.isMemoState(2)) {
+                                        qs.setMemoState(4);
+                                    }
                                 }
                             }
                         }
@@ -299,11 +306,14 @@ public class Q00454_CompletelyLost extends Quest {
                 final Player leader = receiver.getVariables().getObject("leader", Player.class);
                 if (leader != null) {
                     if (leader.isInParty()) {
-                        for (Player member : leader.getParty().getMembers()) {
-                            if (member != null) {
-                                final QuestState qs = getQuestState(member, false);
-                                if ((qs != null) && qs.isMemoState(2)) {
-                                    qs.setMemoState(3);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            leader.getParty().collectMembers(members);
+                            for (Player member : members) {
+                                if (member != null) {
+                                    final QuestState qs = getQuestState(member, false);
+                                    if ((qs != null) && qs.isMemoState(2)) {
+                                        qs.setMemoState(3);
+                                    }
                                 }
                             }
                         }

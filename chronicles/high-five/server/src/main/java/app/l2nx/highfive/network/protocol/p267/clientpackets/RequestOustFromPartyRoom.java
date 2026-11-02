@@ -74,6 +74,7 @@ public class RequestOustFromPartyRoom extends ClientPacket {
 
             // Send Room list
             final int loc = 0; // TODO: Closes town
+            PartyMatchRoomList.getInstance().deleteAbandonedRooms();
             member.sendPacket(new ListPartyWating(member, 0, loc, member.getLevel()));
 
             // Clean player's LFP title

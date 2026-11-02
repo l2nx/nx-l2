@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00254_LegendaryTales;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -205,8 +206,11 @@ public class Q00254_LegendaryTales extends Quest {
     @Override
     public void onKill(Npc npc, Player player, boolean isPet) {
         if (player.isInParty()) {
-            for (Player partyMember : player.getParty().getMembers()) {
-                actionForEachPlayer(partyMember, npc, false);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                player.getParty().collectMembers(members);
+                for (Player partyMember : members) {
+                    actionForEachPlayer(partyMember, npc, false);
+                }
             }
         } else {
             actionForEachPlayer(player, npc, false);

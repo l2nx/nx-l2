@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00336_CoinsOfMagic;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -2401,15 +2402,18 @@ public class Q00336_CoinsOfMagic extends Quest {
         }
 
         if (player.isInParty()) {
-            player.getParty().getMembers().forEach(pm -> {
-                final QuestState qss = getQuestState(pm, false);
-                if ((qss != null)
-                        && qss.isStarted()
-                        && (qss.getMemoState() == memoState)
-                        && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
-                    candidates.add(qss);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                player.getParty().collectMembers(members);
+                for (Player pm : members) {
+                    final QuestState qss = getQuestState(pm, false);
+                    if ((qss != null)
+                            && qss.isStarted()
+                            && (qss.getMemoState() == memoState)
+                            && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
+                        candidates.add(qss);
+                    }
                 }
-            });
+            }
         }
 
         return candidates.isEmpty() ? null : candidates.get(getRandom(candidates.size()));
@@ -2427,16 +2431,19 @@ public class Q00336_CoinsOfMagic extends Quest {
         }
 
         if (player.isInParty()) {
-            player.getParty().getMembers().forEach(pm -> {
-                final QuestState qss = getQuestState(pm, false);
-                if ((qss != null)
-                        && qss.isStarted()
-                        && (qss.getMemoState() == memoState)
-                        && !hasQuestItems(player, Q_KALDIS_GOLD_DRAGON)
-                        && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
-                    candidates.add(qss);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                player.getParty().collectMembers(members);
+                for (Player pm : members) {
+                    final QuestState qss = getQuestState(pm, false);
+                    if ((qss != null)
+                            && qss.isStarted()
+                            && (qss.getMemoState() == memoState)
+                            && !hasQuestItems(pm, Q_KALDIS_GOLD_DRAGON)
+                            && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
+                        candidates.add(qss);
+                    }
                 }
-            });
+            }
         }
 
         return candidates.isEmpty() ? null : candidates.get(getRandom(candidates.size()));

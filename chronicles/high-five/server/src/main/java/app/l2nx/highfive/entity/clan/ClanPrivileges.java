@@ -22,52 +22,53 @@
  */
 package app.l2nx.highfive.entity.clan;
 
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
- * The {@link ClanPrivileges} class manages a set of {@link ClanAccess} for clan members using a mask representation.
+ * A set of {@link ClanAccess} stored as a bitmask, the bit position being the ordinal.
  * @author Mobius
  */
+@SingleWriter
 public class ClanPrivileges {
-    @Getter
-    @Setter
+    private static final int COMPLETE_MASK = completeMask();
+
     private int mask;
 
-    /**
-     * Initializes a new instance of ClanPrivileges with all privileges disabled.
-     */
     public ClanPrivileges() {
         mask = 0;
     }
 
-    /**
-     * Initializes a new instance of ClanPrivileges with the specified {@link ClanAccess} mask.
-     * @param mask The mask representing the privileges to be set.
-     */
     public ClanPrivileges(int mask) {
         this.mask = mask;
     }
 
-    /**
-     * Disables all privileges by setting the mask to 0.
-     */
+    public int getMask() {
+        WorldPartition.checkOwner();
+        return mask;
+    }
+
+    public void setMask(int mask) {
+        WorldPartition.checkOwner();
+        this.mask = mask;
+    }
+
     public void disableAll() {
+        WorldPartition.checkOwner();
         mask = 0;
     }
 
-    /**
-     * Enables all possible privileges by setting the mask to the complete mask.
-     */
     public void enableAll() {
-        mask = getCompleteMask();
+        WorldPartition.checkOwner();
+        mask = COMPLETE_MASK;
     }
 
-    /**
-     * Calculates and returns a mask with all privileges enabled.
-     * @return The integer mask with all bits corresponding to {@link ClanAccess} set to 1.
-     */
     public static int getCompleteMask() {
+        WorldPartition.checkOwner();
+        return COMPLETE_MASK;
+    }
+
+    private static int completeMask() {
         int mask = 0;
         for (ClanAccess access : ClanAccess.values()) {
             mask |= 1 << access.ordinal();
@@ -76,58 +77,38 @@ public class ClanPrivileges {
         return mask;
     }
 
-    /**
-     * Sets the specified privileges, disabling any previously set privileges.
-     * @param privileges The array of {@link ClanAccess} to enable.
-     */
     public void setPrivileges(ClanAccess... privileges) {
-        disableAll();
+        WorldPartition.checkOwner();
+        mask = 0;
         for (ClanAccess access : privileges) {
             mask |= 1 << access.ordinal();
         }
     }
 
-    /**
-     * Sets the specified minimum privilege and additional privileges, disabling any others.
-     * @param minimum The minimum {@link ClanAccess} to enable.
-     * @param privileges Additional {@link ClanAccess} to enable.
-     */
     public void setMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
-        disableAll();
+        WorldPartition.checkOwner();
+        mask = 0;
         addMinimumPrivileges(minimum, privileges);
     }
 
-    /**
-     * Adds the specified minimum privilege and additional privileges to the current mask.
-     * @param minimum The minimum {@link ClanAccess} to add.
-     * @param privileges Additional {@link ClanAccess} to add.
-     */
     public void addMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
+        WorldPartition.checkOwner();
         mask |= 1 << minimum.ordinal();
         for (ClanAccess access : privileges) {
             mask |= 1 << access.ordinal();
         }
     }
 
-    /**
-     * Removes the specified minimum privilege and additional privileges from the current mask.
-     * @param minimum The minimum {@link ClanAccess} to remove.
-     * @param privileges Additional {@link ClanAccess} to remove.
-     */
     public void removeMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
+        WorldPartition.checkOwner();
         mask &= ~(1 << minimum.ordinal());
         for (ClanAccess access : privileges) {
             mask &= ~(1 << access.ordinal());
         }
     }
 
-    /**
-     * Checks if the specified minimum privilege and additional privileges are enabled in the mask.
-     * @param minimum The minimum {@link ClanAccess} to check.
-     * @param privileges Additional {@link ClanAccess} to check.
-     * @return true if all specified privileges are enabled; false otherwise.
-     */
     public boolean hasMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
+        WorldPartition.checkOwner();
         if ((mask & (1 << minimum.ordinal())) == 0) {
             return false;
         }
@@ -141,12 +122,9 @@ public class ClanPrivileges {
         return true;
     }
 
-    /**
-     * Creates a clone of this ClanPrivileges instance, preserving the current mask.
-     * @return A new instance of ClanPrivileges with the same {@link ClanAccess} mask.
-     */
     @Override
     public ClanPrivileges clone() {
+        WorldPartition.checkOwner();
         return new ClanPrivileges(mask);
     }
 }

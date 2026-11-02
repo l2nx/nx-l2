@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q10281_MutatedKaneusRune;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -84,10 +85,13 @@ public class Q10281_MutatedKaneusRune extends Quest {
 
         if (killer.getParty() != null) {
             final List<Player> partyMembers = new ArrayList<>();
-            for (Player member : killer.getParty().getMembers()) {
-                qs = getQuestState(member, false);
-                if ((qs != null) && qs.isStarted() && !hasQuestItems(member, TISSUE_WA)) {
-                    partyMembers.add(member);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(members);
+                for (Player member : members) {
+                    qs = getQuestState(member, false);
+                    if ((qs != null) && qs.isStarted() && !hasQuestItems(member, TISSUE_WA)) {
+                        partyMembers.add(member);
+                    }
                 }
             }
 

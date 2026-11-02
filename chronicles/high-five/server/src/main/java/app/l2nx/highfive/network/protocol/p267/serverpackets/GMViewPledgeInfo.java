@@ -22,12 +22,13 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
-import java.util.Collection;
 
 public class GMViewPledgeInfo extends ServerPacket {
     private final Clan clan;
@@ -61,10 +62,10 @@ public class GMViewPledgeInfo extends ServerPacket {
         buffer.writeInt(clan.isAtWar()); // c3
         buffer.writeInt(0); // T3 Unknown
 
-        final Collection<ClanMember> members = clan.getMembers();
-        buffer.writeInt(members.size());
-        for (ClanMember member : members) {
-            if (member != null) {
+        try (Snapshot<ClanMember> members = ScratchBuffers.empty()) {
+            clan.collectMembers(members);
+            buffer.writeInt(members.size());
+            for (ClanMember member : members) {
                 buffer.writeString(member.getName());
                 buffer.writeInt(member.getLevel());
                 buffer.writeInt(member.getClassId());

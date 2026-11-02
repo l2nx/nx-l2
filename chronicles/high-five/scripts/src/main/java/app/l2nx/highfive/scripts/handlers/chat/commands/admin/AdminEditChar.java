@@ -32,6 +32,7 @@ import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.xml.ClassListData;
 import app.l2nx.highfive.data.xml.TransformData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -405,10 +406,13 @@ public class AdminEditChar implements IAdminCommandHandler {
                 if (party != null) {
                     // Delete party window for other party members.
                     party.broadcastToPartyMembers(player, PartySmallWindowDeleteAll.STATIC_PACKET);
-                    for (Player member : party.getMembers()) {
-                        // And re-add
-                        if (member != player) {
-                            member.sendPacket(new PartySmallWindowAll(member, party));
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player member : members) {
+                            // And re-add
+                            if (member != player) {
+                                member.sendPacket(new PartySmallWindowAll(member, party));
+                            }
                         }
                     }
                 }
@@ -1345,35 +1349,39 @@ public class AdminEditChar implements IAdminCommandHandler {
         Player leader = target.getParty().getLeader();
 
         // Party members.
-        for (Player member : target.getParty().getMembers()) {
-            text.append("<tr><td><table width=290 border=0 " + (color ? "bgcolor=000000 " : "") + "cellpadding=2><tr>");
-
-            // Level.
-            text.append("<td width=30 align=center>" + member.getLevel() + "</td>");
-
-            // Show icon if member is leader.
-            if (member == leader) {
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            target.getParty().collectMembers(members);
+            for (Player member : members) {
                 text.append(
-                        "<td width=20 align=center><img src=\"L2UI_CH3.party_leadericon\" width=12 height=12></td>");
-            } else {
-                text.append("<td width=20></td>");
+                        "<tr><td><table width=290 border=0 " + (color ? "bgcolor=000000 " : "") + "cellpadding=2><tr>");
+
+                // Level.
+                text.append("<td width=30 align=center>" + member.getLevel() + "</td>");
+
+                // Show icon if member is leader.
+                if (member == leader) {
+                    text.append(
+                            "<td width=20 align=center><img src=\"L2UI_CH3.party_leadericon\" width=12 height=12></td>");
+                } else {
+                    text.append("<td width=20></td>");
+                }
+
+                // Name and class.
+                text.append("<td width=110><a action=\"bypass -h admin_character_info ")
+                        .append(member.getName())
+                        .append("\">")
+                        .append(member.getName())
+                        .append("</a></td>");
+
+                text.append("<td width=110 align=center>")
+                        .append(ClassListData.getInstance()
+                                .getClass(member.getPlayerClass())
+                                .className())
+                        .append("</td>");
+                text.append("</tr></table></td></tr>");
+
+                color = !color;
             }
-
-            // Name and class.
-            text.append("<td width=110><a action=\"bypass -h admin_character_info ")
-                    .append(member.getName())
-                    .append("\">")
-                    .append(member.getName())
-                    .append("</a></td>");
-
-            text.append("<td width=110 align=center>")
-                    .append(ClassListData.getInstance()
-                            .getClass(member.getPlayerClass())
-                            .className())
-                    .append("</td>");
-            text.append("</tr></table></td></tr>");
-
-            color = !color;
         }
 
         html.replace("%party_loot%", lootInfo);

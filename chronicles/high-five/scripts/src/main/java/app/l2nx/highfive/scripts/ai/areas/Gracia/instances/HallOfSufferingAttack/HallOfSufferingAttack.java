@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HallOfSufferingAttac
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -155,40 +156,44 @@ public class HallOfSufferingAttack extends Script {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if ((partyMember.getLevel() < 75) || (partyMember.getLevel() > 82)) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if ((partyMember.getLevel() < 75) || (partyMember.getLevel() > 82)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            final Long reentertime =
-                    InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (ClockBridge.wallMillis() < reentertime) {
-                final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+                final Long reentertime =
+                        InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
+                if (ClockBridge.wallMillis() < reentertime) {
+                    final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            final QuestState qs =
-                    partyMember.getQuestState(Q00694_BreakThroughTheHallOfSuffering.class.getSimpleName());
-            if ((qs == null) || !qs.isCond(1)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
+                final QuestState qs =
+                        partyMember.getQuestState(Q00694_BreakThroughTheHallOfSuffering.class.getSimpleName());
+                if ((qs == null) || !qs.isCond(1)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -234,9 +239,12 @@ public class HallOfSufferingAttack extends Script {
                 teleportPlayer(player, coords, world.getInstanceId());
                 world.addAllowed(player);
             } else {
-                for (Player partyMember : party.getMembers()) {
-                    teleportPlayer(partyMember, coords, world.getInstanceId());
-                    world.addAllowed(partyMember);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        teleportPlayer(partyMember, coords, world.getInstanceId());
+                        world.addAllowed(partyMember);
+                    }
                 }
             }
         }

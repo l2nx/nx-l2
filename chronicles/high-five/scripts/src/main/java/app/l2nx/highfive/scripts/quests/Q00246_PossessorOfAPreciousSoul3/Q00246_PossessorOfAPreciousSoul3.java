@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.quests.Q00246_PossessorOfAPreciousSoul3;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -180,16 +181,19 @@ public class Q00246_PossessorOfAPreciousSoul3 extends Quest {
             case BARAKIEL: {
                 QuestState pst;
                 final Party party = player.getParty();
-                if ((party != null) && !party.getMembers().isEmpty()) {
-                    for (Player member : party.getMembers()) {
-                        if (member.calculateDistance3D(npc) > PlayerConfig.ALT_PARTY_RANGE) {
-                            continue;
-                        }
+                if ((party != null) && (party.getMemberCount() > 0)) {
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player member : members) {
+                            if (member.calculateDistance3D(npc) > PlayerConfig.ALT_PARTY_RANGE) {
+                                continue;
+                            }
 
-                        pst = getQuestState(member, false);
-                        if ((pst != null) && pst.isCond(4) && !hasQuestItems(member, RAIN_SONG)) {
-                            giveItems(member, RAIN_SONG, 1);
-                            pst.setCond(5, true);
+                            pst = getQuestState(member, false);
+                            if ((pst != null) && pst.isCond(4) && !hasQuestItems(member, RAIN_SONG)) {
+                                giveItems(member, RAIN_SONG, 1);
+                                pst.setCond(5, true);
+                            }
                         }
                     }
                 } else {

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCArena;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam;
@@ -54,10 +55,13 @@ public class ExPVPMatchRecord extends ServerPacket {
         blueList = new ArrayList<>(9);
 
         if (blueTeam.getParty() != null) {
-            for (Player memberObject : blueTeam.getParty().getMembers()) {
-                if (memberObject != null) {
-                    blueList.add(
-                            new Member(memberObject.getName(), memberObject.getUCKills(), memberObject.getUCDeaths()));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                blueTeam.getParty().collectMembers(members);
+                for (Player memberObject : members) {
+                    if (memberObject != null) {
+                        blueList.add(new Member(
+                                memberObject.getName(), memberObject.getUCKills(), memberObject.getUCDeaths()));
+                    }
                 }
             }
         }
@@ -65,10 +69,13 @@ public class ExPVPMatchRecord extends ServerPacket {
         redList = new ArrayList<>(9);
 
         if (redTeam.getParty() != null) {
-            for (Player memberObject : redTeam.getParty().getMembers()) {
-                if (memberObject != null) {
-                    redList.add(
-                            new Member(memberObject.getName(), memberObject.getUCKills(), memberObject.getUCDeaths()));
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                redTeam.getParty().collectMembers(members);
+                for (Player memberObject : members) {
+                    if (memberObject != null) {
+                        redList.add(new Member(
+                                memberObject.getName(), memberObject.getUCKills(), memberObject.getUCDeaths()));
+                    }
                 }
             }
         }

@@ -22,49 +22,53 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.Clan.SubPledge;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
-import java.util.Collection;
+import java.util.List;
 
 public class PledgeShowMemberListAll extends ServerPacket {
     private final Clan clan;
     private final Player player;
-    private final Collection<ClanMember> members;
     private int pledgeType;
 
     public PledgeShowMemberListAll(Clan clan, Player player) {
         this.clan = clan;
         this.player = player;
-        members = this.clan.getMembers();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         pledgeType = 0;
 
-        // FIXME: That's wrong on retail sends this whole packet few times (depending how much sub pledges it has)
-        writePledge(0, buffer);
-        for (SubPledge subPledge : clan.getAllSubPledges()) {
-            player.sendPacket(new PledgeReceiveSubPledgeCreated(subPledge, clan));
-        }
+        try (Snapshot<ClanMember> members = ScratchBuffers.empty()) {
+            clan.collectMembers(members);
 
-        for (ClanMember m : members) {
-            if (m.getPledgeType() == 0) {
-                continue;
+            // FIXME: That's wrong on retail sends this whole packet few times (depending how much sub pledges it has)
+            writePledge(0, members, buffer);
+            for (SubPledge subPledge : clan.getAllSubPledges()) {
+                player.sendPacket(new PledgeReceiveSubPledgeCreated(subPledge, clan));
             }
 
-            player.sendPacket(new PledgeShowMemberListAdd(m));
+            for (ClanMember m : members) {
+                if (m.getPledgeType() == 0) {
+                    continue;
+                }
+
+                player.sendPacket(new PledgeShowMemberListAdd(m));
+            }
         }
 
         // unless this is sent sometimes, the client doesn't recognise the player as the leader
         player.updateUserInfo();
     }
 
-    private void writePledge(int mainOrSubpledge, PacketWriter buffer) {
+    private void writePledge(int mainOrSubpledge, List<ClanMember> members, PacketWriter buffer) {
         ServerPackets.PLEDGE_SHOW_MEMBER_LIST_ALL.writeId(this, buffer);
         buffer.writeInt(mainOrSubpledge);
         buffer.writeInt(clan.getId());

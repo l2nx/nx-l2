@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q10289_FadeToBlack;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -225,10 +226,13 @@ public class Q10289_FadeToBlack extends Quest {
                 final Party party = qs.getPlayer().getParty();
                 final int rnd = getRandom(party.getMemberCount());
                 int idx = 0;
-                for (Player member : party.getMembers()) {
-                    // only one lucky player will get the good item, the rest will get the bad one
-                    rewardPlayer(getQuestState(member, false), idx == rnd);
-                    idx++;
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        // only one lucky player will get the good item, the rest will get the bad one
+                        rewardPlayer(getQuestState(member, false), idx == rnd);
+                        idx++;
+                    }
                 }
             } else {
                 // if no party, the winner gets it all

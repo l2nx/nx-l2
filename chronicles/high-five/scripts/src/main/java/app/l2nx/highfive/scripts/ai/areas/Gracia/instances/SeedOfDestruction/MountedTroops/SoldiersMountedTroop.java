@@ -25,6 +25,7 @@ package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.SeedOfDestruction.Mo
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -129,10 +130,13 @@ public final class SoldiersMountedTroop extends InstanceScript {
         switch (event) {
             case "enter": {
                 if ((npc.getId() == EDRIC) && checkConditions(player)) {
-                    for (Player partyMember : player.getParty().getMembers()) {
-                        InstanceManager.getInstance()
-                                .setInstanceTime(partyMember.getObjectId(), TEMPLATE_ID, ClockBridge.wallMillis());
-                        enterInstance(partyMember, TEMPLATE_ID);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        player.getParty().collectMembers(members);
+                        for (Player partyMember : members) {
+                            InstanceManager.getInstance()
+                                    .setInstanceTime(partyMember.getObjectId(), TEMPLATE_ID, ClockBridge.wallMillis());
+                            enterInstance(partyMember, TEMPLATE_ID);
+                        }
                     }
 
                     return "32527-entrance.html";
@@ -167,39 +171,44 @@ public final class SoldiersMountedTroop extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember.getLevel() < MIN_LEVEL) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember.getLevel() < MIN_LEVEL) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (ClockBridge.wallMillis()
-                    < (InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID)
-                            + 86400000 /* 24 hours */)) {
-                final NpcHtmlMessage packet = new NpcHtmlMessage();
-                packet.setHtml(getHtm(player, "32527-instance-lock.html"));
-                player.sendPacket(packet);
+                if (ClockBridge.wallMillis()
+                        < (InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID)
+                                + 86400000 /* 24 hours */)) {
+                    final NpcHtmlMessage packet = new NpcHtmlMessage();
+                    packet.setHtml(getHtm(player, "32527-instance-lock.html"));
+                    player.sendPacket(packet);
 
-                final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+                    final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (partyMember.isFlyingMounted()) {
-                partyMember.sendPacket(SystemMessageId.YOU_CANNOT_ENTER_A_SEED_WHILE_IN_A_FLYING_TRANSFORMATION_STATE);
-                return false;
+                if (partyMember.isFlyingMounted()) {
+                    partyMember.sendPacket(
+                            SystemMessageId.YOU_CANNOT_ENTER_A_SEED_WHILE_IN_A_FLYING_TRANSFORMATION_STATE);
+                    return false;
+                }
             }
         }
 
@@ -250,15 +259,18 @@ public final class SoldiersMountedTroop extends InstanceScript {
             closeDoor(DOORS[1], world.getInstanceId());
 
             if (party != null) {
-                for (Player players : party.getMembers()) {
-                    final QuestState qs =
-                            players.getQuestState(Q00693_DefeatingDragonkinRemnants.class.getSimpleName());
-                    if (qs != null) {
-                        qs.set("difficulty", 2);
-                        qs.setMemoState(2);
-                        qs.set("members", party.getMemberCount());
-                        world.addAllowed(players);
-                        teleportPlayer(players, ENTER_TELEPORT_LOC, world.getInstanceId(), true);
+                try (ScratchBuffers.Snapshot<Player> groupMembers = ScratchBuffers.empty()) {
+                    party.collectMembers(groupMembers);
+                    for (Player players : groupMembers) {
+                        final QuestState qs =
+                                players.getQuestState(Q00693_DefeatingDragonkinRemnants.class.getSimpleName());
+                        if (qs != null) {
+                            qs.set("difficulty", 2);
+                            qs.setMemoState(2);
+                            qs.set("members", party.getMemberCount());
+                            world.addAllowed(players);
+                            teleportPlayer(players, ENTER_TELEPORT_LOC, world.getInstanceId(), true);
+                        }
                     }
                 }
             }
@@ -284,10 +296,14 @@ public final class SoldiersMountedTroop extends InstanceScript {
 
             final Party party = killer.getParty();
             if (party != null) {
-                for (Player member : party.getMembers()) {
-                    final QuestState qs = member.getQuestState(Q00693_DefeatingDragonkinRemnants.class.getSimpleName());
-                    if ((qs != null) && (member.getInstanceId() == world.getInstanceId())) {
-                        qs.setMemoState(3);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player member : members) {
+                        final QuestState qs =
+                                member.getQuestState(Q00693_DefeatingDragonkinRemnants.class.getSimpleName());
+                        if ((qs != null) && (member.getInstanceId() == world.getInstanceId())) {
+                            qs.setMemoState(3);
+                        }
                     }
                 }
             }

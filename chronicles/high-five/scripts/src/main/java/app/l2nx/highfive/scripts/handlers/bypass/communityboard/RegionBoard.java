@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -116,7 +117,7 @@ public class RegionBoard implements IWriteBoardHandler {
             String html = HtmCache.getInstance().getHtm(player, "data/html/CommunityBoard/region_show.html");
             html = html.replace("%regionName%", castle.getName())
                     .replace("%tax%", (castle.getTaxRate() * 100) + "%")
-                    .replace("%lord%", clan != null ? clan.getLeaderName() : "NPC")
+                    .replace("%lord%", clan != null ? Objects.toString(clan.getLeaderName(), "") : "NPC")
                     .replace(
                             "%clanName%",
                             (clan != null
@@ -154,7 +155,7 @@ public class RegionBoard implements IWriteBoardHandler {
                                                     + hallOwner.getName() + "</a>"
                                             : "None")
                             .append("</td><td width=200>")
-                            .append(hallOwner != null ? hallOwner.getLeaderName() : "None")
+                            .append(hallOwner != null ? Objects.toString(hallOwner.getLeaderName(), "") : "None")
                             .append("</td><td width=5></td></tr></table><br1><img src=\"L2UI.Squaregray\" width=605"
                                     + " height=1><br1>");
                 }

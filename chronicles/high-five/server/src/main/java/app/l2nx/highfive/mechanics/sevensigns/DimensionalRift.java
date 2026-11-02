@@ -25,6 +25,7 @@ package app.l2nx.highfive.mechanics.sevensigns;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -78,20 +79,23 @@ public class DimensionalRift {
 
         final Location coords = getRoomCoord(room);
         party.setDimensionalRift(this);
-        for (Player p : party.getMembers()) {
-            final Quest riftQuest = ScriptManager.getInstance().getQuest(635);
-            if (riftQuest != null) {
-                QuestState qs = p.getQuestState(riftQuest.getName());
-                if (qs == null) {
-                    qs = riftQuest.newQuestState(p);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player p : members) {
+                final Quest riftQuest = ScriptManager.getInstance().getQuest(635);
+                if (riftQuest != null) {
+                    QuestState qs = p.getQuestState(riftQuest.getName());
+                    if (qs == null) {
+                        qs = riftQuest.newQuestState(p);
+                    }
+
+                    if (!qs.isStarted()) {
+                        qs.startQuest();
+                    }
                 }
 
-                if (!qs.isStarted()) {
-                    qs.startQuest();
-                }
+                p.teleToLocation(coords);
             }
-
-            p.teleToLocation(coords);
         }
 
         createSpawnTimer(currentRoom);
@@ -121,18 +125,24 @@ public class DimensionalRift {
                 completedRooms.add(currentRoom);
                 currentRoom = -1;
 
-                for (Player p : party.getMembers()) {
-                    if (!revivedAtWaitingRoom.contains(p)) {
-                        teleportToNextRoom(p);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player p : members) {
+                        if (!revivedAtWaitingRoom.contains(p)) {
+                            teleportToNextRoom(p);
+                        }
                     }
                 }
 
                 createTeleporterTimer(true);
                 createSpawnTimer(currentRoom);
             } else {
-                for (Player p : party.getMembers()) {
-                    if (!revivedAtWaitingRoom.contains(p)) {
-                        teleportToWaitingRoom(p);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player p : members) {
+                        if (!revivedAtWaitingRoom.contains(p)) {
+                            teleportToWaitingRoom(p);
+                        }
                     }
                 }
 
@@ -148,9 +158,12 @@ public class DimensionalRift {
             earthQuakeTask = WorldPartition.loop()
                     .schedule(
                             () -> {
-                                for (Player p : party.getMembers()) {
-                                    if (!revivedAtWaitingRoom.contains(p)) {
-                                        p.sendPacket(new Earthquake(p.getX(), p.getY(), p.getZ(), 65, 9));
+                                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                    party.collectMembers(members);
+                                    for (Player p : members) {
+                                        if (!revivedAtWaitingRoom.contains(p)) {
+                                            p.sendPacket(new Earthquake(p.getX(), p.getY(), p.getZ(), 65, 9));
+                                        }
                                     }
                                 }
                             },
@@ -201,8 +214,11 @@ public class DimensionalRift {
         revivedAtWaitingRoom.remove(player);
 
         if ((party.getMemberCount() < GeneralConfig.RIFT_MIN_PARTY_SIZE) || (party.getMemberCount() == 1)) {
-            for (Player p : party.getMembers()) {
-                teleportToWaitingRoom(p);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player p : members) {
+                    teleportToWaitingRoom(p);
+                }
             }
 
             killRift();
@@ -238,8 +254,11 @@ public class DimensionalRift {
         completedRooms.add(currentRoom);
         currentRoom = -1;
 
-        for (Player p : this.party.getMembers()) {
-            teleportToNextRoom(p);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            this.party.collectMembers(members);
+            for (Player p : members) {
+                teleportToNextRoom(p);
+            }
         }
 
         DimensionalRiftManager.getInstance().getRoom(type, currentRoom).setPartyInside(true);
@@ -260,8 +279,11 @@ public class DimensionalRift {
             return;
         }
 
-        for (Player p : party.getMembers()) {
-            teleportToWaitingRoom(p);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player p : members) {
+                teleportToWaitingRoom(p);
+            }
         }
 
         killRift();
@@ -359,9 +381,12 @@ public class DimensionalRift {
             // int rev = revivedInWaitingRoom.size();
             // int min = Config.RIFT_MIN_PARTY_SIZE;
 
-            for (Player p : party.getMembers()) {
-                if ((p != null) && !revivedAtWaitingRoom.contains(p)) {
-                    teleportToWaitingRoom(p);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player p : members) {
+                    if ((p != null) && !revivedAtWaitingRoom.contains(p)) {
+                        teleportToWaitingRoom(p);
+                    }
                 }
             }
 

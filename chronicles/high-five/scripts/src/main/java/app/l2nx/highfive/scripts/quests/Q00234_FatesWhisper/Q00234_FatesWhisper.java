@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.quests.Q00234_FatesWhisper;
 
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -1204,16 +1205,19 @@ public class Q00234_FatesWhisper extends Quest {
         }
 
         if (player.isInParty()) {
-            player.getParty().getMembers().forEach(pm -> {
-                final QuestState qs2 = getQuestState(pm, false);
-                if ((qs2 != null)
-                        && qs2.isStarted()
-                        && (qs2.getMemoState() == memoState)
-                        && hasQuestItems(player, Q_WHITE_FABRIC_Q0234)
-                        && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
-                    candidates.add(qs2);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                player.getParty().collectMembers(members);
+                for (Player pm : members) {
+                    final QuestState qs2 = getQuestState(pm, false);
+                    if ((qs2 != null)
+                            && qs2.isStarted()
+                            && (qs2.getMemoState() == memoState)
+                            && hasQuestItems(pm, Q_WHITE_FABRIC_Q0234)
+                            && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
+                        candidates.add(qs2);
+                    }
                 }
-            });
+            }
         }
 
         return getRandomEntry(candidates);

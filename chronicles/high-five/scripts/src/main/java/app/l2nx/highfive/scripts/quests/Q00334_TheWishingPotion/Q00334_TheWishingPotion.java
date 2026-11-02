@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.quests.Q00334_TheWishingPotion;
 
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -1072,14 +1073,17 @@ public class Q00334_TheWishingPotion extends Quest {
         }
 
         if (player.isInParty()) {
-            player.getParty().getMembers().forEach(pm -> {
-                final QuestState qss = pm.getQuestState(getName());
-                if ((qss != null)
-                        && qss.isStarted()
-                        && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
-                    candidates.add(qss);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                player.getParty().collectMembers(members);
+                for (Player pm : members) {
+                    final QuestState qss = pm.getQuestState(getName());
+                    if ((qss != null)
+                            && qss.isStarted()
+                            && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, pm, true)) {
+                        candidates.add(qss);
+                    }
                 }
-            });
+            }
         }
 
         return candidates.isEmpty() ? null : candidates.get(getRandom(candidates.size()));

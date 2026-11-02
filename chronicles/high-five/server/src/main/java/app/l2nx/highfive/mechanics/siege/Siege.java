@@ -30,6 +30,8 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.SiegeScheduleData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -289,11 +291,14 @@ public class Siege implements Siegable {
                     clan.increaseBloodAllianceCount();
                 } else {
                     castle.setTicketBuyCount(0);
-                    for (ClanMember member : clan.getMembers()) {
-                        if (member != null) {
-                            final Player player = member.getPlayer();
-                            if ((player != null) && player.isNoble()) {
-                                Hero.getInstance().setCastleTaken(player.getObjectId(), castle.getResidenceId());
+                    try (Snapshot<ClanMember> members = ScratchBuffers.empty()) {
+                        clan.collectMembers(members);
+                        for (ClanMember member : members) {
+                            if (member != null) {
+                                final Player player = member.getPlayer();
+                                if ((player != null) && player.isNoble()) {
+                                    Hero.getInstance().setCastleTaken(player.getObjectId(), castle.getResidenceId());
+                                }
                             }
                         }
                     }

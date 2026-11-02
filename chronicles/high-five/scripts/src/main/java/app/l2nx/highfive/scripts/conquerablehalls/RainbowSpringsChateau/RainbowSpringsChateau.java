@@ -33,6 +33,7 @@ import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -351,10 +352,13 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
                         } else {
                             final int clanId = player.getId();
                             boolean nonClanMemberInParty = false;
-                            for (Player member : party.getMembers()) {
-                                if (member.getId() != clanId) {
-                                    nonClanMemberInParty = true;
-                                    break;
+                            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                party.collectMembers(members);
+                                for (Player member : members) {
+                                    if (member.getId() != clanId) {
+                                        nonClanMemberInParty = true;
+                                        break;
+                                    }
                                 }
                             }
 
@@ -787,15 +791,18 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
             return;
         }
 
-        for (Player pc : leader.getParty().getMembers()) {
-            if (pc != null) {
-                pc.stopAllEffects();
-                if (pc.hasSummon()) {
-                    pc.getSummon().unSummon(pc);
-                }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            leader.getParty().collectMembers(members);
+            for (Player pc : members) {
+                if (pc != null) {
+                    pc.stopAllEffects();
+                    if (pc.hasSummon()) {
+                        pc.getSummon().unSummon(pc);
+                    }
 
-                playersOnArena.add(pc.getObjectId());
-                pc.teleToLocation(ARENAS[arena][0], ARENAS[arena][1], ARENAS[arena][2], true);
+                    playersOnArena.add(pc.getObjectId());
+                    pc.teleToLocation(ARENAS[arena][0], ARENAS[arena][1], ARENAS[arena][2], true);
+                }
             }
         }
     }
@@ -916,14 +923,17 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
         if (acceptedClans.contains(clan)) {
             final int index = acceptedClans.indexOf(clan);
             if (playersOnArena.contains(player.getObjectId())) {
-                for (Player pl : player.getParty().getMembers()) {
-                    if (index != myArena) {
-                        continue;
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    player.getParty().collectMembers(members);
+                    for (Player pl : members) {
+                        if (index != myArena) {
+                            continue;
+                        }
 
-                    if (pl != null) {
-                        for (Skill sk : DEBUFFS) {
-                            sk.applyEffects(pl, pl);
+                        if (pl != null) {
+                            for (Skill sk : DEBUFFS) {
+                                sk.applyEffects(pl, pl);
+                            }
                         }
                     }
                 }

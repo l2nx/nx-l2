@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.others.NpcBuffers;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -63,10 +64,13 @@ public class NpcBufferAI implements Runnable {
         switch (skillData.getAffectScope()) {
             case PARTY: {
                 if (player.isInParty()) {
-                    for (Player member : player.getParty().getMembers()) {
-                        if (LocationUtil.checkIfInRange(skill.getAffectRange(), npc, member, true)
-                                && !member.isDead()) {
-                            skill.applyEffects(player, member);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        player.getParty().collectMembers(members);
+                        for (Player member : members) {
+                            if (LocationUtil.checkIfInRange(skill.getAffectRange(), npc, member, true)
+                                    && !member.isDead()) {
+                                skill.applyEffects(player, member);
+                            }
                         }
                     }
                 } else {

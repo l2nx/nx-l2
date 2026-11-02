@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.quests.Q00694_BreakThroughTheHallOfSuffering;
 
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.Instance;
@@ -93,131 +94,134 @@ public class Q00694_BreakThroughTheHallOfSuffering extends Quest {
                                 htmltext = "32530-11.html";
                             } else if ((player.getParty() != null)
                                     && (player.getParty().getLeaderObjectId() == player.getObjectId())) {
-                                for (Player member : player.getParty().getMembers()) {
-                                    final QuestState qs1 = member.getQuestState(getName());
-                                    if (qs1 != null) {
-                                        if (tag == 13777) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                    player.getParty().collectMembers(members);
+                                    for (Player member : members) {
+                                        final QuestState qs1 = member.getQuestState(getName());
+                                        if (qs1 != null) {
+                                            if (tag == 13777) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13777, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-00.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13778) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13777, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-00.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13778) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13778, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-01.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13779) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13778, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-01.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13779) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13779, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-02.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13780) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13779, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-02.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13780) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13780, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-03.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13781) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13780, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-03.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13781) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13781, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-04.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13782) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13781, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-04.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13782) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13782, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-05.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13783) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13782, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-05.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13783) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13783, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-06.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13784) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13783, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-06.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13784) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13784, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-07.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13785) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13784, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-07.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13785) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13785, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-08.html";
-                                            finishInstance(player);
-                                        } else if (tag == 13786) {
-                                            if (getQuestItemsCount(member, MARK) == 0) {
-                                                giveItems(member, MARK, 1);
-                                            }
+                                                giveItems(member, 13785, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-08.html";
+                                                finishInstance(player);
+                                            } else if (tag == 13786) {
+                                                if (getQuestItemsCount(member, MARK) == 0) {
+                                                    giveItems(member, MARK, 1);
+                                                }
 
-                                            giveItems(member, 13786, 1);
-                                            giveItems(member, SOE, 1);
-                                            qs1.unset("cond");
-                                            qs1.exitQuest(true);
-                                            playSound(member, "ItemSound.quest_finish");
-                                            htmltext = "32530-09.html";
-                                            finishInstance(player);
-                                        } else {
-                                            htmltext = "32530-11.html";
+                                                giveItems(member, 13786, 1);
+                                                giveItems(member, SOE, 1);
+                                                qs1.unset("cond");
+                                                qs1.exitQuest(true);
+                                                playSound(member, "ItemSound.quest_finish");
+                                                htmltext = "32530-09.html";
+                                                finishInstance(player);
+                                            } else {
+                                                htmltext = "32530-11.html";
+                                            }
                                         }
                                     }
                                 }

@@ -62,6 +62,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ResourceLock(WorldLoopExtension.LOCK)
 class ClanTableTest {
     private static final int CLAN_ID = 268_435_456;
+    private static final int OTHER_CLAN_ID = 268_435_460;
     private static final int CASTLE = 3;
     private static final int FORT = 101;
     private static final int HALL = 22;
@@ -103,7 +104,7 @@ class ClanTableTest {
         bind(ItemManager.class, ItemManager::getInstance, mock(ItemManager.class));
         bind(ForumsBBSManager.class, ForumsBBSManager::getInstance, mock(ForumsBBSManager.class));
 
-        when(clanRepository.findAllClanIds()).thenReturn(List.of(CLAN_ID));
+        when(clanRepository.findAllClanIds()).thenReturn(List.of(CLAN_ID, OTHER_CLAN_ID));
         clan = WorldLoopExtension.callInPass(() -> {
             table.load();
             return table.getClan(CLAN_ID);
@@ -132,7 +133,8 @@ class ClanTableTest {
         set.set("paidUntil", ClockBridgeExtension.WALL_START.toEpochMilli() + 86_400_000L);
         set.set("grade", 1);
         set.set("paid", true);
-        final AuctionableHall hall = new AuctionableHall(set);
+        // The hall registers itself as the clan's hideout, which is clan state.
+        final AuctionableHall hall = WorldLoopExtension.callInPass(() -> new AuctionableHall(set));
         halls.getClanHalls().put(HALL, hall);
         return hall;
     }
@@ -140,9 +142,26 @@ class ClanTableTest {
     @Nested
     class DestroyClan {
         @Test
+        void destroyClan_shouldEndWarsOfOtherClans_whenTheyFoughtTheClan() {
+            final Clan other = WorldLoopExtension.callInPass(() -> {
+                final Clan fought = table.getClan(OTHER_CLAN_ID);
+                fought.setEnemyClan(CLAN_ID);
+                fought.setAttackerClan(CLAN_ID);
+                return fought;
+            });
+
+            final List<Boolean> actual = WorldLoopExtension.callInPass(() -> {
+                table.destroyClan(CLAN_ID);
+                return List.of(other.isAtWarWith(CLAN_ID), other.isAtWarAttacker(CLAN_ID), other.isAtWar());
+            });
+
+            assertThat(actual).containsExactly(false, false, false);
+        }
+
+        @Test
         void destroyClan_shouldRemoveCastleOwnerAndTax_whenClanOwnsCastle() {
             final Castle castle = mock(Castle.class);
-            clan.setCastleId(CASTLE);
+            WorldLoopExtension.runInPass(() -> clan.setCastleId(CASTLE));
             when(castles.getCastleByOwner(clan)).thenReturn(castle);
 
             WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
@@ -183,7 +202,7 @@ class ClanTableTest {
         @Test
         void destroyClan_shouldRemoveFortOwner_whenClanOwnsFort() {
             final Fort fort = mock(Fort.class);
-            clan.setFortId(FORT);
+            WorldLoopExtension.runInPass(() -> clan.setFortId(FORT));
             when(forts.getFortByOwner(clan)).thenReturn(fort);
 
             WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
@@ -198,7 +217,7 @@ class ClanTableTest {
             final SiegableHall hall = mock(SiegableHall.class);
             when(hall.getOwnerId()).thenReturn(CLAN_ID);
             when(hall.isSiegableHall()).thenReturn(true);
-            clan.setHideoutId(HALL);
+            WorldLoopExtension.runInPass(() -> clan.setHideoutId(HALL));
             when(siegableHalls.getConquerableHalls()).thenReturn(Map.of(HALL, hall));
 
             WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
@@ -212,7 +231,7 @@ class ClanTableTest {
         void destroyClan_shouldDropOwnerFromCastleSiege_afterCastleIsReleased() {
             final Castle castle = mock(Castle.class);
             final Siege siege = mock(Siege.class);
-            clan.setCastleId(CASTLE);
+            WorldLoopExtension.runInPass(() -> clan.setCastleId(CASTLE));
             when(castles.getCastleByOwner(clan)).thenReturn(castle);
             when(castleSieges.getSieges()).thenReturn(List.of(siege));
 
@@ -227,7 +246,7 @@ class ClanTableTest {
         void destroyClan_shouldRemoveFormerOwnerFromFortSieges_afterFortIsReleased() {
             final Fort fort = mock(Fort.class);
             final FortSiege siege = mock(FortSiege.class);
-            clan.setFortId(FORT);
+            WorldLoopExtension.runInPass(() -> clan.setFortId(FORT));
             when(forts.getFortByOwner(clan)).thenReturn(fort);
             when(fortSieges.getSieges()).thenReturn(List.of(siege));
 
@@ -243,7 +262,7 @@ class ClanTableTest {
             final SiegableHall hall = mock(SiegableHall.class);
             when(hall.getOwnerId()).thenReturn(CLAN_ID);
             when(hall.isSiegableHall()).thenReturn(true);
-            clan.setHideoutId(HALL);
+            WorldLoopExtension.runInPass(() -> clan.setHideoutId(HALL));
             when(siegableHalls.getConquerableHalls()).thenReturn(Map.of(HALL, hall));
 
             WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));

@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.ai.areas.Hellbound.Instances.UrbanArea;
 
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.QuestGuard;
@@ -125,9 +126,12 @@ public class UrbanArea extends InstanceScript {
                 } else if (npc.isBusy()) {
                     htmltext = "32343-02c.htm";
                 } else if (player.getInventory().getInventoryItemCount(KEY, -1, false) >= 1) {
-                    for (Player partyMember : party.getMembers()) {
-                        if (!LocationUtil.checkIfInRange(300, npc, partyMember, true)) {
-                            return "32343-02b.htm";
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            if (!LocationUtil.checkIfInRange(300, npc, partyMember, true)) {
+                                return "32343-02b.htm";
+                            }
                         }
                     }
 
@@ -303,28 +307,31 @@ public class UrbanArea extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember.getLevel() < MIN_LV) {
-                party.broadcastPacket(
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY)
-                                .addPcName(partyMember));
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember.getLevel() < MIN_LV) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY)
+                            .addPcName(partyMember));
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                party.broadcastPacket(new SystemMessage(
-                                SystemMessageId
-                                        .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED)
-                        .addPcName(partyMember));
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId
+                                            .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED)
+                            .addPcName(partyMember));
+                    return false;
+                }
 
-            if (InstanceManager.getInstance().getPlayerWorld(player) != null) {
-                party.broadcastPacket(new SystemMessage(
-                                SystemMessageId
-                                        .YOU_HAVE_ENTERED_ANOTHER_INSTANCE_ZONE_THEREFORE_YOU_CANNOT_ENTER_CORRESPONDING_DUNGEON)
-                        .addPcName(partyMember));
-                return false;
+                if (InstanceManager.getInstance().getPlayerWorld(player) != null) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId
+                                            .YOU_HAVE_ENTERED_ANOTHER_INSTANCE_ZONE_THEREFORE_YOU_CANNOT_ENTER_CORRESPONDING_DUNGEON)
+                            .addPcName(partyMember));
+                    return false;
+                }
             }
         }
 
@@ -339,9 +346,12 @@ public class UrbanArea extends InstanceScript {
                 teleportPlayer(player, ENTRY_POINT, world.getInstanceId());
                 world.addAllowed(player);
             } else {
-                for (Player partyMember : party.getMembers()) {
-                    teleportPlayer(partyMember, ENTRY_POINT, world.getInstanceId());
-                    world.addAllowed(partyMember);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        teleportPlayer(partyMember, ENTRY_POINT, world.getInstanceId());
+                        world.addAllowed(partyMember);
+                    }
                 }
             }
 
@@ -391,10 +401,13 @@ public class UrbanArea extends InstanceScript {
         @Override
         public void run() {
             if ((party != null) && (world != null)) {
-                for (Player partyMember : party.getMembers()) {
-                    if ((partyMember != null) && !partyMember.isDead()) {
-                        world.removeAllowed(partyMember);
-                        teleportPlayer(partyMember, EXIT_POINT, 0);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        if ((partyMember != null) && !partyMember.isDead()) {
+                            world.removeAllowed(partyMember);
+                            teleportPlayer(partyMember, EXIT_POINT, 0);
+                        }
                     }
                 }
             }

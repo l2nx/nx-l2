@@ -438,7 +438,8 @@ public final class PlayerWorldEntry {
             final NpcHtmlMessage notice = new NpcHtmlMessage();
             notice.setFile(player, "data/html/clanNotice.htm");
             notice.replace("%clan_name%", player.getClan().getName());
-            notice.replace("%notice_text%", player.getClan().getNotice().replaceAll("(\r\n|\n)", "<br>"));
+            final String text = player.getClan().getNotice();
+            notice.replace("%notice_text%", text == null ? null : text.replaceAll("(\r\n|\n)", "<br>"));
             notice.disableValidation();
             player.sendPacket(notice);
         } else if (GeneralConfig.SERVER_NEWS) {

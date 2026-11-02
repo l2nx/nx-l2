@@ -2300,8 +2300,8 @@ public class Player extends Playable {
 
         if ((getParty() != null) && (getParty() == target.getParty())) {
             result |= RelationChanged.RELATION_HAS_PARTY;
-            for (int i = 0; i < party.getMembers().size(); i++) {
-                if (party.getMembers().get(i) != this) {
+            for (int i = 0; i < party.getMemberCount(); i++) {
+                if (party.getMember(i) != this) {
                     continue;
                 }
 
@@ -5681,7 +5681,7 @@ public class Player extends Playable {
 
     public boolean isPartyWaiting() {
         WorldPartition.checkOwner();
-        return PartyMatchWaitingList.getInstance().getPlayers().contains(this);
+        return PartyMatchWaitingList.getInstance().contains(this);
     }
 
     public boolean isInPartyMatchRoom() {
@@ -7526,7 +7526,7 @@ public class Player extends Playable {
         }
 
         // The party check precedes the olympiad check so party members cannot autoattack each other in olympiad.
-        if (isInParty() && party.getMembers().contains(attacker)) {
+        if (isInParty() && attacker.isPlayer() && party.containsPlayer(attacker.asPlayer())) {
             return false;
         }
 
@@ -7986,10 +7986,10 @@ public class Player extends Playable {
         final Player looter = World.getPlayer(looterId);
 
         if (isInParty() && party.isInCommandChannel() && (looter != null)) {
-            return party.getCommandChannel().getMembers().contains(looter);
+            return party.getCommandChannel().containsPlayer(looter);
         }
 
-        return isInParty() && (looter != null) && party.getMembers().contains(looter);
+        return isInParty() && (looter != null) && party.containsPlayer(looter);
     }
 
     public boolean checkPvpSkill(WorldObject target, Skill skill) {

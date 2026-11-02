@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.Duel;
 import app.l2nx.highfive.mechanics.skill.Skill;
@@ -49,15 +50,9 @@ public class DuelManager {
         final String engagedInPvP = "The duel was canceled because a duelist engaged in PvP combat.";
         if (partyDuel == 1) {
             boolean playerInPvP = false;
-            for (Player temp : playerA.getParty().getMembers()) {
-                if (temp.getPvpFlag() != 0) {
-                    playerInPvP = true;
-                    break;
-                }
-            }
-
-            if (!playerInPvP) {
-                for (Player temp : playerB.getParty().getMembers()) {
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                playerA.getParty().collectMembers(members);
+                for (Player temp : members) {
                     if (temp.getPvpFlag() != 0) {
                         playerInPvP = true;
                         break;
@@ -65,14 +60,32 @@ public class DuelManager {
                 }
             }
 
+            if (!playerInPvP) {
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerB.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        if (temp.getPvpFlag() != 0) {
+                            playerInPvP = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
             // A player has PvP flag.
             if (playerInPvP) {
-                for (Player temp : playerA.getParty().getMembers()) {
-                    temp.sendMessage(engagedInPvP);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerA.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.sendMessage(engagedInPvP);
+                    }
                 }
 
-                for (Player temp : playerB.getParty().getMembers()) {
-                    temp.sendMessage(engagedInPvP);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    playerB.getParty().collectMembers(members);
+                    for (Player temp : members) {
+                        temp.sendMessage(engagedInPvP);
+                    }
                 }
                 return;
             }
@@ -172,10 +185,10 @@ public class DuelManager {
             duel.broadcastToTeam1(packet);
         } else if (duel.isPartyDuel()) {
             if ((duel.getPlayerA().getParty() != null)
-                    && duel.getPlayerA().getParty().getMembers().contains(player)) {
+                    && duel.getPlayerA().getParty().containsPlayer(player)) {
                 duel.broadcastToTeam2(packet);
             } else if ((duel.getPlayerB().getParty() != null)
-                    && duel.getPlayerB().getParty().getMembers().contains(player)) {
+                    && duel.getPlayerB().getParty().containsPlayer(player)) {
                 duel.broadcastToTeam1(packet);
             }
         }

@@ -23,6 +23,7 @@
 package app.l2nx.highfive.entity.actor.status;
 
 import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
@@ -56,15 +57,18 @@ public class SummonStatus extends PlayableStatus {
             if ((caster != null)
                     && LocationUtil.checkIfInRange(1000, summon, caster, true)
                     && !caster.isDead()
-                    && summon.getParty().getMembers().contains(caster)) {
+                    && summon.getParty().containsPlayer(caster)) {
                 int transferDmg = Math.min(
                         (int) caster.getCurrentHp() - 1,
                         ((int) value * (int) summon.calcStat(Stat.TRANSFER_DAMAGE_TO_PLAYER, 0, null, null)) / 100);
                 if (transferDmg > 0) {
                     int membersInRange = 0;
-                    for (Player member : caster.getParty().getMembers()) {
-                        if (LocationUtil.checkIfInRange(1000, member, caster, false) && (member != caster)) {
-                            membersInRange++;
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        caster.getParty().collectMembers(members);
+                        for (Player member : members) {
+                            if (LocationUtil.checkIfInRange(1000, member, caster, false) && (member != caster)) {
+                                membersInRange++;
+                            }
                         }
                     }
 

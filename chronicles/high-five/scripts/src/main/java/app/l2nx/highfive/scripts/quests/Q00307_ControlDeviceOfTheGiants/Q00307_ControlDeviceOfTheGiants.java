@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00307_ControlDeviceOfTheGiants;
 
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.GlobalVariablesManager;
@@ -151,10 +152,13 @@ public class Q00307_ControlDeviceOfTheGiants extends Quest {
             }
             case HEKATON_PRIME: {
                 if (player.isInParty()) {
-                    for (Player pl : player.getParty().getMembers()) {
-                        final QuestState qst = getQuestState(pl, false);
-                        if ((qst != null) && qst.isCond(1)) {
-                            qst.setCond(2, true);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        player.getParty().collectMembers(members);
+                        for (Player pl : members) {
+                            final QuestState qst = getQuestState(pl, false);
+                            if ((qst != null) && qst.isCond(1)) {
+                                qst.setCond(2, true);
+                            }
                         }
                     }
 

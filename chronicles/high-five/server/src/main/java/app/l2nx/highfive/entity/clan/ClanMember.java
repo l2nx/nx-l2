@@ -26,19 +26,17 @@
  */
 package app.l2nx.highfive.entity.clan;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.Sex;
 import app.l2nx.highfive.managers.SiegeManager;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
-import lombok.Getter;
 
-/**
- * This class holds the clan members data.
- */
+@SingleWriter
 public class ClanMember {
 
-    @Getter
     private final Clan clan;
 
     private int objectId;
@@ -50,18 +48,12 @@ public class ClanMember {
     private boolean sex;
     private int raceOrdinal;
 
-    @Getter
     private Player player;
 
     private int pledgeType;
     private int apprentice;
     private int sponsor;
 
-    /**
-     * Used to restore a clan member from the database.
-     * @param clan the clan where the clan member belongs.
-     * @param clanMember the stored clan member
-     */
     public ClanMember(Clan clan, CharacterClanMember clanMember) {
         if (clan == null) {
             throw new IllegalArgumentException("Cannot create a Clan Member with a null clan.");
@@ -81,11 +73,6 @@ public class ClanMember {
         raceOrdinal = clanMember.race().ordinal();
     }
 
-    /**
-     * Creates a clan member from a player instance.
-     * @param clan the clan where the player belongs
-     * @param player the player from which the clan member will be created
-     */
     public ClanMember(Clan clan, Player player) {
         if (clan == null) {
             throw new IllegalArgumentException("Cannot create a Clan Member if player has a null clan.");
@@ -106,13 +93,20 @@ public class ClanMember {
         raceOrdinal = player.getRace().ordinal();
     }
 
-    /**
-     * Sets the player instance.
-     * @param player the new player instance
-     */
+    public Clan getClan() {
+        WorldPartition.checkOwner();
+        return clan;
+    }
+
+    public Player getPlayer() {
+        WorldPartition.checkOwner();
+        return player;
+    }
+
     public void setPlayer(Player player) {
+        WorldPartition.checkOwner();
         if ((player == null) && (this.player != null)) {
-            // This is here to keep the data when the player logs off.
+            // Snapshot the data, since the member outlives the player instance.
             name = this.player.getName();
             level = this.player.getLevel();
             classId = this.player.getPlayerClass().getId();
@@ -140,159 +134,108 @@ public class ClanMember {
         this.player = player;
     }
 
-    /**
-     * Verifies if the clan member is online.
-     * @return {@code true} if is online
-     */
     public boolean isOnline() {
+        WorldPartition.checkOwner();
         return (player != null) && player.isOnline() && !player.isInOfflineMode();
     }
 
-    /**
-     * Gets the class id.
-     * @return the classId
-     */
     public int getClassId() {
+        WorldPartition.checkOwner();
         return player != null ? player.getPlayerClass().getId() : classId;
     }
 
-    /**
-     * Gets the level.
-     * @return the level
-     */
     public int getLevel() {
+        WorldPartition.checkOwner();
         return player != null ? player.getLevel() : level;
     }
 
-    /**
-     * Gets the name.
-     * @return the name
-     */
     public String getName() {
+        WorldPartition.checkOwner();
         return player != null ? player.getName() : name;
     }
 
-    /**
-     * Gets the object id.
-     * @return Returns the objectId.
-     */
     public int getObjectId() {
+        WorldPartition.checkOwner();
         return player != null ? player.getObjectId() : objectId;
     }
 
-    /**
-     * Gets the title.
-     * @return the title
-     */
     public String getTitle() {
+        WorldPartition.checkOwner();
         return player != null ? player.getTitle() : title;
     }
 
-    /**
-     * Gets the pledge type.
-     * @return the pledge type
-     */
     public int getPledgeType() {
+        WorldPartition.checkOwner();
         return player != null ? player.getPledgeType() : pledgeType;
     }
 
-    /**
-     * Sets the pledge type.
-     * @param pledgeType the new pledge type
-     */
     public void setPledgeType(int pledgeType) {
+        WorldPartition.checkOwner();
         this.pledgeType = pledgeType;
         if (player != null) {
             player.setPledgeType(pledgeType);
         } else {
-            // Db save if char not logged in.
             updatePledgeType();
         }
     }
 
-    /**
-     * Update pledge type.
-     */
     public void updatePledgeType() {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateMemberPledgeType(getObjectId(), pledgeType);
     }
 
-    /**
-     * Gets the power grade.
-     * @return the power grade
-     */
     public int getPowerGrade() {
+        WorldPartition.checkOwner();
         return player != null ? player.getPowerGrade() : powerGrade;
     }
 
-    /**
-     * Sets the power grade.
-     * @param powerGrade the new power grade
-     */
     public void setPowerGrade(int powerGrade) {
+        WorldPartition.checkOwner();
         this.powerGrade = powerGrade;
         if (player != null) {
             player.setPowerGrade(powerGrade);
         } else {
-            // Db save if char not logged in.
             updatePowerGrade();
         }
     }
 
-    /**
-     * Update the characters table of the database with power grade.
-     */
     public void updatePowerGrade() {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateMemberPowerGrade(getObjectId(), powerGrade);
     }
 
-    /**
-     * Sets the apprentice and sponsor.
-     * @param apprenticeID the apprentice id
-     * @param sponsorID the sponsor id
-     */
     public void setApprenticeAndSponsor(int apprenticeID, int sponsorID) {
+        WorldPartition.checkOwner();
         apprentice = apprenticeID;
         sponsor = sponsorID;
     }
 
-    /**
-     * Gets the player's race ordinal.
-     * @return the race ordinal
-     */
     public int getRaceOrdinal() {
+        WorldPartition.checkOwner();
         return player != null ? player.getRace().ordinal() : raceOrdinal;
     }
 
-    /**
-     * Gets the player's sex.
-     * @return true if female
-     */
     public boolean getSex() {
+        WorldPartition.checkOwner();
         return player != null ? player.getAppearance().isFemale() : sex;
     }
 
-    /**
-     * Gets the sponsor.
-     * @return the sponsor
-     */
     public int getSponsor() {
+        WorldPartition.checkOwner();
         return player != null ? player.getSponsor() : sponsor;
     }
 
-    /**
-     * Gets the apprentice.
-     * @return the apprentice
-     */
     public int getApprentice() {
+        WorldPartition.checkOwner();
         return player != null ? player.getApprentice() : apprentice;
     }
 
     /**
-     * Gets the apprentice or sponsor name.
-     * @return the apprentice or sponsor name
+     * @return the apprentice's or sponsor's name, "Error" when the id names no member of the clan any more (the client
+     *     shows it as the name), or {@code null} when the member has neither.
      */
     public String getApprenticeOrSponsorName() {
+        WorldPartition.checkOwner();
         if (player != null) {
             this.apprentice = player.getApprentice();
             this.sponsor = player.getSponsor();
@@ -316,15 +259,11 @@ public class ClanMember {
             return "Error";
         }
 
-        return "";
+        return null;
     }
 
-    /**
-     * Calculate pledge class.
-     * @param player the player
-     * @return the int
-     */
     public static int calculatePledgeClass(Player player) {
+        WorldPartition.checkOwner();
         int pledgeClass = 0;
         if (player == null) {
             return pledgeClass;
@@ -633,12 +572,8 @@ public class ClanMember {
         return pledgeClass;
     }
 
-    /**
-     * Save apprentice and sponsor.
-     * @param apprentice the apprentice
-     * @param sponsor the sponsor
-     */
     public void saveApprenticeAndSponsor(int apprentice, int sponsor) {
+        WorldPartition.checkOwner();
         ClanTable.getInstance().updateMemberApprenticeAndSponsor(getObjectId(), apprentice, sponsor);
     }
 }

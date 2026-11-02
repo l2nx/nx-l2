@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.targets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -64,46 +66,49 @@ public class Clan implements ITargetTypeHandler {
 
             if (clan != null) {
                 Player obj;
-                for (ClanMember member : clan.getMembers()) {
-                    obj = member.getPlayer();
-                    if ((obj == null) || (obj == player)) {
-                        continue;
-                    }
-
-                    if (player.isInDuel()) {
-                        if (player.getDuelId() != obj.getDuelId()) {
+                try (Snapshot<ClanMember> members = ScratchBuffers.empty()) {
+                    clan.collectMembers(members);
+                    for (ClanMember member : members) {
+                        obj = member.getPlayer();
+                        if ((obj == null) || (obj == player)) {
                             continue;
                         }
 
-                        if (player.isInParty()
-                                && obj.isInParty()
-                                && (player.getParty().getLeaderObjectId()
-                                        != obj.getParty().getLeaderObjectId())) {
+                        if (player.isInDuel()) {
+                            if (player.getDuelId() != obj.getDuelId()) {
+                                continue;
+                            }
+
+                            if (player.isInParty()
+                                    && obj.isInParty()
+                                    && (player.getParty().getLeaderObjectId()
+                                            != obj.getParty().getLeaderObjectId())) {
+                                continue;
+                            }
+                        }
+
+                        // Don't add this target if this is a Pc->Pc pvp casting and pvp condition not met
+                        if (!player.checkPvpSkill(obj, skill)) {
                             continue;
                         }
-                    }
 
-                    // Don't add this target if this is a Pc->Pc pvp casting and pvp condition not met
-                    if (!player.checkPvpSkill(obj, skill)) {
-                        continue;
-                    }
+                        if (player.isOnEvent() && obj.isOnEvent() && (player.getTeam() != obj.getTeam())) {
+                            continue;
+                        }
 
-                    if (player.isOnEvent() && obj.isOnEvent() && (player.getTeam() != obj.getTeam())) {
-                        continue;
-                    }
+                        if (!onlyFirst && Skill.addSummon(creature, obj, radius, false)) {
+                            targetList.add(obj.getSummon());
+                        }
 
-                    if (!onlyFirst && Skill.addSummon(creature, obj, radius, false)) {
-                        targetList.add(obj.getSummon());
-                    }
+                        if (!Skill.addCharacter(creature, obj, radius, false)) {
+                            continue;
+                        }
 
-                    if (!Skill.addCharacter(creature, obj, radius, false)) {
-                        continue;
-                    }
+                        targetList.add(obj);
 
-                    targetList.add(obj);
-
-                    if (onlyFirst) {
-                        return targetList;
+                        if (onlyFirst) {
+                            return targetList;
+                        }
                     }
                 }
             }

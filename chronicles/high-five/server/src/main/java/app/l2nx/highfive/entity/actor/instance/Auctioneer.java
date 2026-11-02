@@ -45,6 +45,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -377,7 +378,8 @@ public class Auctioneer extends Npc {
                         .getAuction(auctionId)
                         .getBidders();
                 for (Bidder b : bidders.values()) {
-                    biders += "<tr><td>" + b.getClanName() + "</td><td>" + b.getName() + "</td><td>"
+                    biders += "<tr><td>" + Objects.toString(b.getClanName(), "") + "</td><td>"
+                            + Objects.toString(b.getName(), "") + "</td><td>"
                             + b.getTimeBid().get(Calendar.YEAR) + "/"
                             + (b.getTimeBid().get(Calendar.MONTH) + 1) + "/"
                             + b.getTimeBid().get(Calendar.DATE) + "</td><td>" + b.getBid() + "</td></tr>";

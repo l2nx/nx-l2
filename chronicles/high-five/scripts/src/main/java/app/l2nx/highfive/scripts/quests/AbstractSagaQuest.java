@@ -25,6 +25,7 @@ package app.l2nx.highfive.scripts.quests;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -500,12 +501,15 @@ public abstract class AbstractSagaQuest extends Quest {
                 final Party party = player.getParty();
                 if (party != null) {
                     final List<QuestState> partyQuestMembers = new ArrayList<>();
-                    for (Player player1 : party.getMembers()) {
-                        final QuestState st1 = findQuest(player1);
-                        if ((st1 != null)
-                                && st1.isCond(15)
-                                && player1.isInsideRadius2D(player, PlayerConfig.ALT_PARTY_RANGE)) {
-                            partyQuestMembers.add(st1);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player player1 : members) {
+                            final QuestState st1 = findQuest(player1);
+                            if ((st1 != null)
+                                    && st1.isCond(15)
+                                    && player1.isInsideRadius2D(player, PlayerConfig.ALT_PARTY_RANGE)) {
+                                partyQuestMembers.add(st1);
+                            }
                         }
                     }
 

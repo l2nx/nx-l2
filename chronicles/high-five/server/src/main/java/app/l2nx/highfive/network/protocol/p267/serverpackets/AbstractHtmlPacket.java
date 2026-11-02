@@ -98,12 +98,14 @@ public abstract class AbstractHtmlPacket extends ServerPacket {
         return true;
     }
 
+    /** A {@code null} value renders as empty text. */
     public void replace(String pattern, String value) {
-        html = html.replaceAll(pattern, value.replaceAll("\\$", "\\\\\\$"));
+        final String text = value == null ? "" : value;
+        html = html.replaceAll(pattern, text.replaceAll("\\$", "\\\\\\$"));
     }
 
     public void replace(String pattern, CharSequence value) {
-        replace(pattern, String.valueOf(value));
+        replace(pattern, value == null ? null : value.toString());
     }
 
     public void replace(String pattern, boolean value) {

@@ -19,56 +19,80 @@
  */
 package app.l2nx.highfive.entity.groups;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatService;
 import app.l2nx.highfive.chat.view.ChatMessage;
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 /**
+ * The public methods check the owner and reach the members through unchecked internals the subclasses implement, so
+ * a command channel walks all its parties under one check.
  * @author Battlecruiser
  */
+@SingleWriter
 public abstract class AbstractPlayerGroup {
-    /**
-     * @return a list of all members of this group
-     */
-    public abstract List<Player> getMembers();
+    /** Adds the members to the target in the order the client shows them, the leader first. */
+    protected abstract void addMembersTo(List<? super Player> target);
+
+    protected abstract boolean hasMember(Player player);
+
+    protected abstract int memberCount();
+
+    /** @return the leader, {@code null} for a group with no members */
+    protected abstract Player leader();
+
+    /** @return a read-only snapshot of the members, the leader first */
+    public final List<Player> getMembers() {
+        WorldPartition.checkOwner();
+        final ObjectArrayList<Player> members = new ObjectArrayList<>(memberCount());
+        addMembersTo(members);
+        return ObjectLists.unmodifiable(members);
+    }
 
     /**
-     * @return a list of object IDs of the members of this group
+     * Adds the members to the target, the leader first. A caller that walks the members passes a
+     * {@link ScratchBuffers} lease, which spares the copy {@link #getMembers()} allocates.
      */
-    public List<Integer> getMembersObjectId() {
-        final List<Integer> ids = new ArrayList<>();
-        forEachMember(m -> {
-            ids.add(m.getObjectId());
-            return true;
-        });
+    public final void collectMembers(List<? super Player> target) {
+        WorldPartition.checkOwner();
+        addMembersTo(target);
+    }
+
+    public final List<Integer> getMembersObjectId() {
+        WorldPartition.checkOwner();
+        final List<Integer> ids = new ArrayList<>(memberCount());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            addMembersTo(members);
+            for (Player member : members) {
+                ids.add(member.getObjectId());
+            }
+        }
 
         return ids;
     }
 
-    /**
-     * @return the leader of this group
-     */
-    public abstract Player getLeader();
+    public final Player getLeader() {
+        WorldPartition.checkOwner();
+        return leader();
+    }
 
-    /**
-     * Change the leader of this group to the specified player.
-     * @param leader the player to set as the new leader of this group
-     */
     public abstract void setLeader(Player leader);
 
-    /**
-     * @return the leader's object ID
-     */
-    public int getLeaderObjectId() {
-        final Player leader = getLeader();
+    public final int getLeaderObjectId() {
+        WorldPartition.checkOwner();
+        final Player leader = leader();
         if (leader == null) {
             return 0;
         }
@@ -76,17 +100,13 @@ public abstract class AbstractPlayerGroup {
         return leader.getObjectId();
     }
 
-    /**
-     * Check if a given player is the leader of this group.
-     * @param player the player to check
-     * @return {@code true} if the specified player is the leader of this group, {@code false} otherwise
-     */
-    public boolean isLeader(Player player) {
+    public final boolean isLeader(Player player) {
+        WorldPartition.checkOwner();
         if (player == null) {
             return false;
         }
 
-        final Player leader = getLeader();
+        final Player leader = leader();
         if (leader == null) {
             return false;
         }
@@ -94,85 +114,72 @@ public abstract class AbstractPlayerGroup {
         return leader.getObjectId() == player.getObjectId();
     }
 
-    /**
-     * @return the count of all players in this group
-     */
-    public int getMemberCount() {
-        return getMembers().size();
+    public final int getMemberCount() {
+        WorldPartition.checkOwner();
+        return memberCount();
     }
 
-    /**
-     * @return the level of this group
-     */
     public abstract int getLevel();
 
-    /**
-     * Broadcast a packet to every member of this group.
-     * @param packet the packet to broadcast
-     */
-    public void broadcastPacket(ServerPacket packet) {
-        forEachMember(m -> {
-            if (m != null) {
-                m.sendPacket(packet);
+    public final void broadcastPacket(ServerPacket packet) {
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            addMembersTo(members);
+            for (Player member : members) {
+                if (member != null) {
+                    member.sendPacket(packet);
+                }
             }
-
-            return true;
-        });
+        }
     }
 
-    /**
-     * Broadcast a system message to this group.
-     * @param message the system message to broadcast
-     */
-    public void broadcastMessage(SystemMessageId message) {
+    public final void broadcastMessage(SystemMessageId message) {
+        WorldPartition.checkOwner();
         broadcastPacket(new SystemMessage(message));
     }
 
-    /**
-     * Broadcast a text message to this group.
-     * @param text to broadcast
-     */
-    public void broadcastString(String text) {
+    public final void broadcastString(String text) {
+        WorldPartition.checkOwner();
         broadcastPacket(new SystemMessage(text));
     }
 
-    public void broadcastChat(ChatMessage message, Player sender) {
-        final List<Player> receivers = new ArrayList<>();
-        forEachMember(member -> {
-            if ((member != null) && !BlockList.isBlocked(member, sender)) {
-                receivers.add(member);
+    public final void broadcastChat(ChatMessage message, Player sender) {
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty();
+                ScratchBuffers.Snapshot<Player> receivers = ScratchBuffers.empty()) {
+            addMembersTo(members);
+            for (Player member : members) {
+                if ((member != null) && !BlockList.isBlocked(member, sender)) {
+                    receivers.add(member);
+                }
             }
-            return true;
-        });
-        ChatService.getInstance().deliverAll(receivers, message);
+
+            ChatService.getInstance().deliverAll(receivers, message);
+        }
     }
 
-    /**
-     * Check if this group contains a given player.
-     * @param player the player to check
-     * @return {@code true} if this group contains the specified player, {@code false} otherwise
-     */
-    public boolean containsPlayer(Player player) {
-        return getMembers().contains(player);
+    public final boolean containsPlayer(Player player) {
+        WorldPartition.checkOwner();
+        return hasMember(player);
     }
 
-    /**
-     * @return a random member of this group
-     */
-    public Player getRandomPlayer() {
-        return getMembers().get(ClockBridge.random().nextInt(getMembers().size()));
+    public final Player getRandomPlayer() {
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            addMembersTo(members);
+            return members.get(ClockBridge.random().nextInt(members.size()));
+        }
     }
 
-    /**
-     * Iterates over the group and executes procedure on each member
-     * @param procedure the prodecure to be executed on each member.<br>
-     *            If executing the procedure on a member returns {@code true}, the loop continues to the next member, otherwise it breaks the loop
-     * @return {@code true} if the procedure executed correctly, {@code false} if the loop was broken prematurely
-     */
-    public boolean forEachMember(Function<Player, Boolean> procedure) {
-        for (Player player : getMembers()) {
-            if (!procedure.apply(player)) {
-                return false;
+    /** The procedure returns {@code false} to stop the walk; the result is {@code false} when it did. */
+    public final boolean forEachMember(Function<Player, Boolean> procedure) {
+        WorldPartition.checkOwner();
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            addMembersTo(members);
+            for (Player member : members) {
+                if (!procedure.apply(member)) {
+                    return false;
+                }
             }
         }
 

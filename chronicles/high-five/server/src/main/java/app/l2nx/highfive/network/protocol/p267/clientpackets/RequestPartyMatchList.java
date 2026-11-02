@@ -22,11 +22,13 @@
  */
 package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoom;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchWaitingList;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPartyRoomMember;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartyMatchDetail;
 
@@ -60,22 +62,22 @@ public class RequestPartyMatchList extends ClientPacket {
 
         if (roomid > 0) {
             final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(roomid);
-            if (room != null) {
-                // PacketLogger.info("PartyMatchRoom #" + room.getId() + " changed by " + player.getName());
-                room.setMaxMembers(membersmax);
-                room.setMinLevel(minLevel);
-                room.setMaxLevel(maxLevel);
-                room.setLootType(loot);
-                room.setTitle(roomtitle);
+            if (room == null) {
+                return;
+            }
 
-                for (Player member : room.getPartyMembers()) {
-                    if (member == null) {
-                        continue;
-                    }
+            if (!room.changeSettings(player, membersmax, minLevel, maxLevel, loot, roomtitle)) {
+                player.sendPacket(ActionFailed.STATIC_PACKET);
+                return;
+            }
 
-                    member.sendPacket(new PartyMatchDetail(room));
-                    member.sendPacket(SystemMessageId.THE_PARTY_ROOM_S_INFORMATION_HAS_BEEN_REVISED);
+            for (Player member : room.getPartyMembers()) {
+                if (member == null) {
+                    continue;
                 }
+
+                member.sendPacket(new PartyMatchDetail(room));
+                member.sendPacket(SystemMessageId.THE_PARTY_ROOM_S_INFORMATION_HAS_BEEN_REVISED);
             }
         } else {
             final int maxid = PartyMatchRoomList.getInstance().getMaxId();
@@ -88,18 +90,21 @@ public class RequestPartyMatchList extends ClientPacket {
 
             PartyMatchRoomList.getInstance().addPartyMatchRoom(maxid, room);
             if (player.isInParty()) {
-                for (Player ptmember : player.getParty().getMembers()) {
-                    if (ptmember == null) {
-                        continue;
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    player.getParty().collectMembers(members);
+                    for (Player ptmember : members) {
+                        if (ptmember == null) {
+                            continue;
+                        }
 
-                    if (ptmember == player) {
-                        continue;
-                    }
+                        if (ptmember == player) {
+                            continue;
+                        }
 
-                    ptmember.setPartyRoom(maxid);
-                    // ptmember.setPartyMatching(1);
-                    room.addMember(ptmember);
+                        ptmember.setPartyRoom(maxid);
+                        // ptmember.setPartyMatching(1);
+                        room.addMember(ptmember);
+                    }
                 }
             }
 

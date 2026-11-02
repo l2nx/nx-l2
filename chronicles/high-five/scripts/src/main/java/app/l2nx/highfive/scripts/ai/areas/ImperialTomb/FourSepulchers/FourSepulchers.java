@@ -27,6 +27,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -510,15 +511,18 @@ public class FourSepulchers extends Script implements IXmlReader {
                 STORED_PROGRESS.put(sepulcherId, currentWave + 1);
 
                 if ((killer.getParty() != null) && (sepulcherId > 0)) {
-                    for (Player mem : killer.getParty().getMembers()) {
-                        if (LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, killer, mem, true)) {
-                            final QuestState qs = mem.getQuestState(Q00620_FourGoblets.class.getSimpleName());
-                            if ((qs != null)
-                                    && qs.isStarted()
-                                    && !hasAtLeastOneQuestItem(mem, ANTIQUE_BROOCH)
-                                    && !hasAtLeastOneQuestItem(mem, 7255 + sepulcherId)) {
-                                giveItems(mem, 7255 + sepulcherId, 1);
-                                mem.sendPacket(QuestSound.ITEMSOUND_QUEST_MIDDLE.getPacket());
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        killer.getParty().collectMembers(members);
+                        for (Player mem : members) {
+                            if (LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, killer, mem, true)) {
+                                final QuestState qs = mem.getQuestState(Q00620_FourGoblets.class.getSimpleName());
+                                if ((qs != null)
+                                        && qs.isStarted()
+                                        && !hasAtLeastOneQuestItem(mem, ANTIQUE_BROOCH)
+                                        && !hasAtLeastOneQuestItem(mem, 7255 + sepulcherId)) {
+                                    giveItems(mem, 7255 + sepulcherId, 1);
+                                    mem.sendPacket(QuestSound.ITEMSOUND_QUEST_MIDDLE.getPacket());
+                                }
                             }
                         }
                     }
@@ -577,23 +581,26 @@ public class FourSepulchers extends Script implements IXmlReader {
         final int timeUntilNextHour = (60 - currentMinute) * 60 * 1000;
         startQuestTimer("SPAWN_MYSTERIOUS_CHEST", timeUntilNextHour, npc, player, false);
 
-        for (Player mem : party.getMembers()) {
-            final QuestState qs = mem.getQuestState(Q00620_FourGoblets.class.getSimpleName());
-            if ((qs == null) || (!qs.isStarted() && !qs.isCompleted())) {
-                showHtmlFile(player, npcId + "-NS.html", npc, mem);
-                return;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player mem : members) {
+                final QuestState qs = mem.getQuestState(Q00620_FourGoblets.class.getSimpleName());
+                if ((qs == null) || (!qs.isStarted() && !qs.isCompleted())) {
+                    showHtmlFile(player, npcId + "-NS.html", npc, mem);
+                    return;
+                }
 
-            if (!hasQuestItems(mem, ENTRANCE_PASS)) {
-                showHtmlFile(player, npcId + "-SE.html", npc, mem);
-                return;
-            }
+                if (!hasQuestItems(mem, ENTRANCE_PASS)) {
+                    showHtmlFile(player, npcId + "-SE.html", npc, mem);
+                    return;
+                }
 
-            if (player.getWeightPenalty() >= 3) {
-                mem.sendPacket(
-                        SystemMessageId
-                                .UNABLE_TO_PROCESS_THIS_REQUEST_UNTIL_YOUR_INVENTORY_S_WEIGHT_AND_SLOT_COUNT_ARE_LESS_THAN_80_PERCENT_OF_CAPACITY);
-                return;
+                if (player.getWeightPenalty() >= 3) {
+                    mem.sendPacket(
+                            SystemMessageId
+                                    .UNABLE_TO_PROCESS_THIS_REQUEST_UNTIL_YOUR_INVENTORY_S_WEIGHT_AND_SLOT_COUNT_ARE_LESS_THAN_80_PERCENT_OF_CAPACITY);
+                    return;
+                }
             }
         }
 
@@ -631,11 +638,13 @@ public class FourSepulchers extends Script implements IXmlReader {
             }
         }
 
-        // Teleport players inside.
         final List<Player> members = new ArrayList<>();
-        for (Player mem : party.getMembers()) {
-            if (LocationUtil.checkIfInRange(700, player, mem, true)) {
-                members.add(mem);
+        try (ScratchBuffers.Snapshot<Player> groupMembers = ScratchBuffers.empty()) {
+            party.collectMembers(groupMembers);
+            for (Player mem : groupMembers) {
+                if (LocationUtil.checkIfInRange(700, player, mem, true)) {
+                    members.add(mem);
+                }
             }
         }
 

@@ -26,6 +26,7 @@ import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -350,10 +351,13 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                     npc.setTarget(attacker);
                     npc.doSimultaneousCast(RAID_CURSE.getSkill());
                 } else if (player.getParty() != null) {
-                    for (Player pmember : player.getParty().getMembers()) {
-                        if ((pmember.getBuffCount() > 0) || (pmember.getDanceCount() > 0)) {
-                            npc.setTarget(pmember);
-                            npc.doSimultaneousCast(RAID_CURSE.getSkill());
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        player.getParty().collectMembers(members);
+                        for (Player pmember : members) {
+                            if ((pmember.getBuffCount() > 0) || (pmember.getDanceCount() > 0)) {
+                                npc.setTarget(pmember);
+                                npc.doSimultaneousCast(RAID_CURSE.getSkill());
+                            }
                         }
                     }
                 }
@@ -480,22 +484,25 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                     .replace("%leader%", party.getLeader().getName());
         }
 
-        for (Player partyMember : party.getMembers()) {
-            qs = partyMember.getQuestState(getName());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                qs = partyMember.getQuestState(getName());
 
-            // Check if each party member has quest
-            if ((qs == null) || qs.isCreated()) {
-                return getHtm(player, "CastleWarden-12.html").replace("%player%", partyMember.getName());
-            }
+                // Check if each party member has quest
+                if ((qs == null) || qs.isCreated()) {
+                    return getHtm(player, "CastleWarden-12.html").replace("%player%", partyMember.getName());
+                }
 
-            final Clan clan = player.getClan();
-            if ((clan == null) || (clan.getCastleId() != castle.getResidenceId())) {
-                return getHtm(player, "CastleWarden-11.html").replace("%player%", partyMember.getName());
-            }
+                final Clan clan = player.getClan();
+                if ((clan == null) || (clan.getCastleId() != castle.getResidenceId())) {
+                    return getHtm(player, "CastleWarden-11.html").replace("%player%", partyMember.getName());
+                }
 
-            // Check if each party member not very far from leader
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                return getHtm(player, "CastleWarden-17.html").replace("%player%", partyMember.getName());
+                // Check if each party member not very far from leader
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    return getHtm(player, "CastleWarden-17.html").replace("%player%", partyMember.getName());
+                }
             }
         }
 
@@ -550,14 +557,17 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
             return "CastleWarden-09.html";
         }
 
-        for (Player partyMember : party.getMembers()) {
-            teleportPlayer(partyMember, coords, instanceId);
-            world.addAllowed(partyMember);
-            if (partyMember.getQuestState(getName()) == null) {
-                newQuestState(partyMember);
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                teleportPlayer(partyMember, coords, instanceId);
+                world.addAllowed(partyMember);
+                if (partyMember.getQuestState(getName()) == null) {
+                    newQuestState(partyMember);
+                }
 
-            partyMember.getQuestState(getName()).setCond(2);
+                partyMember.getQuestState(getName()).setCond(2);
+            }
         }
 
         return getHtm(player, "CastleWarden-13.html")
@@ -663,9 +673,13 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                         if (party == null) {
                             rewardPlayer(player);
                         } else {
-                            for (Player partyMember : party.getMembers()) {
-                                if ((partyMember != null) && (partyMember.getInstanceId() == player.getInstanceId())) {
-                                    rewardPlayer(partyMember);
+                            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                party.collectMembers(members);
+                                for (Player partyMember : members) {
+                                    if ((partyMember != null)
+                                            && (partyMember.getInstanceId() == player.getInstanceId())) {
+                                        rewardPlayer(partyMember);
+                                    }
                                 }
                             }
                         }

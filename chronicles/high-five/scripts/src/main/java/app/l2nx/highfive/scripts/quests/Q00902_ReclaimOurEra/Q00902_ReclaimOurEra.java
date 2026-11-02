@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00902_ReclaimOurEra;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -140,8 +141,11 @@ public class Q00902_ReclaimOurEra extends Quest {
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         if (killer.isInParty()) {
-            for (Player member : killer.getParty().getMembers()) {
-                giveItem(npc, member);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(members);
+                for (Player member : members) {
+                    giveItem(npc, member);
+                }
             }
         } else {
             giveItem(npc, killer);

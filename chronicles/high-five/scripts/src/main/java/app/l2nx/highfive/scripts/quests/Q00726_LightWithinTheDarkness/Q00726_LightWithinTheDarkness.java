@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.quests.Q00726_LightWithinTheDarkness;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -194,22 +195,25 @@ public class Q00726_LightWithinTheDarkness extends Quest {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
         if (tmpworld instanceof PAWORLD) {
             final PAWORLD world = (PAWORLD) tmpworld;
-            for (Player partymember : party.getMembers()) {
-                final QuestState qs = partymember.getQuestState(getName());
-                if ((qs != null)
-                        && qs.isCond(1)
-                        && (npc.getId() == KANADIS_GUIDE3)
-                        && !partymember.isDead()
-                        && partymember.isInsideRadius3D(npc, 1000)) {
-                    if (qs.getInt("kanadis") == 0) {
-                        qs.set("kanadis", "1");
-                    } else {
-                        qs.set("done", "1");
-                        qs.setCond(2, true);
-                        final Instance instanceObj =
-                                InstanceManager.getInstance().getInstance(world.getInstanceId());
-                        instanceObj.setDuration(360000);
-                        instanceObj.removeNpcs();
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player partymember : members) {
+                    final QuestState qs = partymember.getQuestState(getName());
+                    if ((qs != null)
+                            && qs.isCond(1)
+                            && (npc.getId() == KANADIS_GUIDE3)
+                            && !partymember.isDead()
+                            && partymember.isInsideRadius3D(npc, 1000)) {
+                        if (qs.getInt("kanadis") == 0) {
+                            qs.set("kanadis", "1");
+                        } else {
+                            qs.set("done", "1");
+                            qs.setCond(2, true);
+                            final Instance instanceObj =
+                                    InstanceManager.getInstance().getInstance(world.getInstanceId());
+                            instanceObj.setDuration(360000);
+                            instanceObj.removeNpcs();
+                        }
                     }
                 }
             }
@@ -247,11 +251,14 @@ public class Q00726_LightWithinTheDarkness extends Quest {
         dungeon.setReEnterTime(ClockBridge.wallMillis() + 14400000);
         InstanceManager.getInstance().addWorld(world);
         WorldPartition.loop().schedule(new spawnNpcs((PAWORLD) world), 10000, TimeUnit.MILLISECONDS);
-        for (Player partyMember : party.getMembers()) {
-            teleportPlayer(partyMember, coords, world.getInstanceId());
-            world.addAllowed(partyMember);
-            if (partyMember.getQuestState(getName()) == null) {
-                newQuestState(partyMember);
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                teleportPlayer(partyMember, coords, world.getInstanceId());
+                world.addAllowed(partyMember);
+                if (partyMember.getQuestState(getName()) == null) {
+                    newQuestState(partyMember);
+                }
             }
         }
 
@@ -273,21 +280,25 @@ public class Q00726_LightWithinTheDarkness extends Quest {
             return null;
         }
 
-        for (Player partymember : party.getMembers()) {
-            if (!partymember.isInsideRadius3D(player, 1000)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partymember);
-                player.sendPacket(sm);
-                return null;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partymember : members) {
+                if (!partymember.isInsideRadius3D(player, 1000)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partymember);
+                    player.sendPacket(sm);
+                    return null;
+                }
 
-            if (partymember.getLevel() < 70) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partymember);
-                player.sendPacket(sm);
-                return null;
+                if (partymember.getLevel() < 70) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partymember);
+                    player.sendPacket(sm);
+                    return null;
+                }
             }
         }
 
@@ -316,11 +327,14 @@ public class Q00726_LightWithinTheDarkness extends Quest {
             return "FortWarden-10.htm";
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if ((partyMember.getClan() == null)
-                    || (partyMember.getClan().getFortId() == 0)
-                    || (partyMember.getClan().getFortId() != fort.getResidenceId())) {
-                return showHtmlFile(player, "FortWarden-11.htm").replace("%player%", partyMember.getName());
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if ((partyMember.getClan() == null)
+                        || (partyMember.getClan().getFortId() == 0)
+                        || (partyMember.getClan().getFortId() != fort.getResidenceId())) {
+                    return showHtmlFile(player, "FortWarden-11.htm").replace("%player%", partyMember.getName());
+                }
             }
         }
 

@@ -25,6 +25,7 @@ package app.l2nx.highfive.scripts.ai.bosses.Antharas;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,6 +33,7 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.MountType;
 import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.entity.groups.AbstractPlayerGroup;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.zone.type.NoRestartZone;
 import app.l2nx.highfive.managers.GrandBossManager;
@@ -48,7 +50,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SpecialCamera;
 import app.l2nx.highfive.util.MathUtil;
 import app.l2nx.highfive.util.StatSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -279,22 +280,24 @@ public class Antharas extends Script {
                 } else if (player.isInParty()) {
                     final Party party = player.getParty();
                     final boolean isInCC = party.isInCommandChannel();
-                    final List<Player> members =
-                            isInCC ? party.getCommandChannel().getMembers() : party.getMembers();
+                    final AbstractPlayerGroup group = isInCC ? party.getCommandChannel() : party;
                     final boolean isPartyLeader =
                             isInCC ? party.getCommandChannel().isLeader(player) : party.isLeader(player);
                     if (!isPartyLeader) {
                         htmlText = "13001-05.html";
                     } else if (!hasQuestItems(player, ANTHARAS_STONE_ITEM_ID)) {
                         htmlText = "13001-03.html";
-                    } else if (members.size()
+                    } else if (group.getMemberCount()
                             > (MAX_PEOPLE
                                     - ANTHARAS_NEST_ZONE.getPlayersInside().size())) {
                         htmlText = "13001-04.html";
                     } else {
-                        for (Player member : members) {
-                            if (member.isInsideRadius3D(npc, 1000)) {
-                                member.teleToLocation(179700 + getRandom(700), 113800 + getRandom(2100), -7709);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            group.collectMembers(members);
+                            for (Player member : members) {
+                                if (member.isInsideRadius3D(npc, 1000)) {
+                                    member.teleToLocation(179700 + getRandom(700), 113800 + getRandom(2100), -7709);
+                                }
                             }
                         }
 

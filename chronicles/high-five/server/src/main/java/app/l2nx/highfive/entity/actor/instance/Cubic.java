@@ -26,6 +26,7 @@ import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.CubicData;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -327,7 +328,7 @@ public class Cubic {
                     final Party partyB = playerB.getParty();
                     Party partyEnemy = null;
                     if (partyA != null) {
-                        if (partyA.getMembers().contains(owner)) {
+                        if (partyA.containsPlayer(owner)) {
                             if (partyB != null) {
                                 partyEnemy = partyB;
                             } else {
@@ -353,7 +354,7 @@ public class Cubic {
                     }
 
                     if (partyEnemy != null) {
-                        if (partyEnemy.getMembers().contains(ownerTarget)) {
+                        if (ownerTarget.isPlayer() && partyEnemy.containsPlayer(ownerTarget.asPlayer())) {
                             this.target = ownerTarget.asCreature();
                         }
                         return;
@@ -409,13 +410,10 @@ public class Cubic {
                     if (enemy != null) {
                         boolean targetIt = true;
                         if (owner.getParty() != null) {
-                            if (owner.getParty().getMembers().contains(enemy)) {
+                            if (owner.getParty().containsPlayer(enemy)) {
                                 targetIt = false;
                             } else if ((owner.getParty().getCommandChannel() != null)
-                                    && owner.getParty()
-                                            .getCommandChannel()
-                                            .getMembers()
-                                            .contains(enemy)) {
+                                    && owner.getParty().getCommandChannel().containsPlayer(enemy)) {
                                 targetIt = false;
                             }
                         }
@@ -635,31 +633,34 @@ public class Cubic {
         }
 
         if ((party != null) && !owner.isInOlympiadMode()) {
-            for (Creature partyMember : party.getMembers()) {
-                if (!partyMember.isDead()
-                        && isInCubicRange(owner, partyMember)
-                        && (partyMember.getCurrentHp() < partyMember.getMaxHp())
-                        && (percentleft > (partyMember.getCurrentHp() / partyMember.getMaxHp()))) {
-                    percentleft = (partyMember.getCurrentHp() / partyMember.getMaxHp());
-                    target = partyMember;
-                }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Creature partyMember : members) {
+                    if (!partyMember.isDead()
+                            && isInCubicRange(owner, partyMember)
+                            && (partyMember.getCurrentHp() < partyMember.getMaxHp())
+                            && (percentleft > (partyMember.getCurrentHp() / partyMember.getMaxHp()))) {
+                        percentleft = (partyMember.getCurrentHp() / partyMember.getMaxHp());
+                        target = partyMember;
+                    }
 
-                final Player player = partyMember.asPlayer();
-                if (player != null) {
-                    final Summon summon = player.getSummon();
-                    if (summon != null) {
-                        if (summon.isDead()) {
-                            continue;
-                        }
+                    final Player player = partyMember.asPlayer();
+                    if (player != null) {
+                        final Summon summon = player.getSummon();
+                        if (summon != null) {
+                            if (summon.isDead()) {
+                                continue;
+                            }
 
-                        if (!isInCubicRange(owner, summon)) {
-                            continue;
-                        }
+                            if (!isInCubicRange(owner, summon)) {
+                                continue;
+                            }
 
-                        if ((summon.getCurrentHp() < summon.getMaxHp())
-                                && (percentleft > (summon.getCurrentHp() / summon.getMaxHp()))) {
-                            percentleft = (summon.getCurrentHp() / summon.getMaxHp());
-                            target = summon;
+                            if ((summon.getCurrentHp() < summon.getMaxHp())
+                                    && (percentleft > (summon.getCurrentHp() / summon.getMaxHp()))) {
+                                percentleft = (summon.getCurrentHp() / summon.getMaxHp());
+                                target = summon;
+                            }
                         }
                     }
                 }

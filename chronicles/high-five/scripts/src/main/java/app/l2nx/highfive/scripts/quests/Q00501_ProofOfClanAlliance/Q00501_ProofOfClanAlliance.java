@@ -22,6 +22,7 @@ package app.l2nx.highfive.scripts.quests.Q00501_ProofOfClanAlliance;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -477,14 +478,17 @@ public class Q00501_ProofOfClanAlliance extends Quest {
             }
         }
 
-        for (Player member : player.getParty().getMembers()) {
-            if (member == player) {
-                continue;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            player.getParty().collectMembers(members);
+            for (Player member : members) {
+                if (member == player) {
+                    continue;
+                }
 
-            qs = getQuestState(member, false);
-            if (qs != null) {
-                candidates.add(qs);
+                qs = getQuestState(member, false);
+                if (qs != null) {
+                    candidates.add(qs);
+                }
             }
         }
 

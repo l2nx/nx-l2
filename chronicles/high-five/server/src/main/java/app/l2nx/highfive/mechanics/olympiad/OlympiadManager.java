@@ -25,6 +25,7 @@ package app.l2nx.highfive.mechanics.olympiad;
 
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -274,31 +275,37 @@ public class OlympiadManager {
 
                 int teamPoints = 0;
                 final List<Integer> team = new ArrayList<>(party.getMemberCount());
-                for (Player noble : party.getMembers()) {
-                    if (!checkNoble(noble, player)) {
-                        // remove previously registered party members
-                        if (DualboxCheckConfig.DUALBOX_CHECK_MAX_OLYMPIAD_PARTICIPANTS_PER_IP > 0) {
-                            for (Player unreg : party.getMembers()) {
-                                if (unreg == noble) {
-                                    break;
-                                }
+                try (ScratchBuffers.Snapshot<Player> groupMembers = ScratchBuffers.empty()) {
+                    party.collectMembers(groupMembers);
+                    for (Player noble : groupMembers) {
+                        if (!checkNoble(noble, player)) {
+                            // remove previously registered party members
+                            if (DualboxCheckConfig.DUALBOX_CHECK_MAX_OLYMPIAD_PARTICIPANTS_PER_IP > 0) {
+                                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                    party.collectMembers(members);
+                                    for (Player unreg : members) {
+                                        if (unreg == noble) {
+                                            break;
+                                        }
 
-                                AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, unreg);
+                                        AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, unreg);
+                                    }
+                                }
                             }
+
+                            return false;
                         }
 
-                        return false;
-                    }
+                        if (Olympiad.getInstance().getRemainingWeeklyMatchesTeam(noble.getObjectId()) < 1) {
+                            player.sendPacket(
+                                    SystemMessageId
+                                            .THE_TOTAL_NUMBER_OF_MATCHES_THAT_CAN_BE_ENTERED_IN_1_WEEK_IS_60_CLASS_IRRELEVANT_INDIVIDUAL_MATCHES_30_SPECIFIC_MATCHES_AND_10_TEAM_MATCHES);
+                            return false;
+                        }
 
-                    if (Olympiad.getInstance().getRemainingWeeklyMatchesTeam(noble.getObjectId()) < 1) {
-                        player.sendPacket(
-                                SystemMessageId
-                                        .THE_TOTAL_NUMBER_OF_MATCHES_THAT_CAN_BE_ENTERED_IN_1_WEEK_IS_60_CLASS_IRRELEVANT_INDIVIDUAL_MATCHES_30_SPECIFIC_MATCHES_AND_10_TEAM_MATCHES);
-                        return false;
+                        team.add(noble.getObjectId());
+                        teamPoints += Olympiad.getInstance().getNoblePoints(noble.getObjectId());
                     }
-
-                    team.add(noble.getObjectId());
-                    teamPoints += Olympiad.getInstance().getNoblePoints(noble.getObjectId());
                 }
 
                 if (teamPoints < 10) {
@@ -307,8 +314,11 @@ public class OlympiadManager {
 
                     // remove previously registered party members
                     if (DualboxCheckConfig.DUALBOX_CHECK_MAX_OLYMPIAD_PARTICIPANTS_PER_IP > 0) {
-                        for (Player unreg : party.getMembers()) {
-                            AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, unreg);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player unreg : members) {
+                                AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, unreg);
+                            }
                         }
                     }
 

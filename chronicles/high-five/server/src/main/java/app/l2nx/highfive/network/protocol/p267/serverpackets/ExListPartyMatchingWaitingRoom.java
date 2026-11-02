@@ -60,10 +60,7 @@ public class ExListPartyMatchingWaitingRoom extends ServerPacket {
                 continue;
             }
 
-            if (!cha.isPartyWaiting()) {
-                PartyMatchWaitingList.getInstance().removePlayer(cha);
-                continue;
-            } else if ((cha.getLevel() < minLevel) || (cha.getLevel() > maxLevel)) {
+            if ((cha.getLevel() < minLevel) || (cha.getLevel() > maxLevel)) {
                 continue;
             }
 

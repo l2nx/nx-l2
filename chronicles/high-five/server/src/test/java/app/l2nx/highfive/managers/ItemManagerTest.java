@@ -151,8 +151,10 @@ class ItemManagerTest {
                 mock(CastleStateRepository.class),
                 mock(CharacterRepository.class),
                 mock(TransactionTemplate.class));
-        WorldLoopExtension.runInPass(table::load);
-        return table.getClan(clanId).getWarehouse();
+        return WorldLoopExtension.callInPass(() -> {
+            table.load();
+            return table.getClan(clanId).getWarehouse();
+        });
     }
 
     private static WorldObject findObject(int objectId) {

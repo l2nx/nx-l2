@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.TerritoryWarScripts;
 
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -173,19 +174,22 @@ public class TerritoryWarSuperClass extends Quest {
         final Player actingPlayer = killer.asPlayer();
         if ((actingPlayer != null) && (qs.getPlayer() != null)) {
             if (actingPlayer.getParty() != null) {
-                for (Player pl : actingPlayer.getParty().getMembers()) {
-                    if ((pl.getSiegeSide() == qs.getPlayer().getSiegeSide())
-                            || (pl.getSiegeSide() == 0)
-                            || !LocationUtil.checkIfInRange(2000, killer, pl, false)) {
-                        continue;
-                    }
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    actingPlayer.getParty().collectMembers(members);
+                    for (Player pl : members) {
+                        if ((pl.getSiegeSide() == qs.getPlayer().getSiegeSide())
+                                || (pl.getSiegeSide() == 0)
+                                || !LocationUtil.checkIfInRange(2000, killer, pl, false)) {
+                            continue;
+                        }
 
-                    if (pl == actingPlayer) {
-                        handleStepsForHonor(actingPlayer);
-                        handleBecomeMercenaryQuest(actingPlayer, false);
-                    }
+                        if (pl == actingPlayer) {
+                            handleStepsForHonor(actingPlayer);
+                            handleBecomeMercenaryQuest(actingPlayer, false);
+                        }
 
-                    handleKillTheQuest(pl);
+                        handleKillTheQuest(pl);
+                    }
                 }
             } else if ((actingPlayer.getSiegeSide() != qs.getPlayer().getSiegeSide())
                     && (actingPlayer.getSiegeSide() > 0)) {

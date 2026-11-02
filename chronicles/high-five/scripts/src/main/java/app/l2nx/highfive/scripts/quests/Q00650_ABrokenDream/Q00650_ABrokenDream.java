@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00650_ABrokenDream;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -132,10 +133,13 @@ public class Q00650_ABrokenDream extends Quest {
 
         final int monsterChance = MONSTER_DROP_CHANCES.get(npc.getId());
         if (killer.isInParty()) {
-            for (Player member : killer.getParty().getMembers()) {
-                final QuestState qst = getQuestState(member, false);
-                if ((qst != null) && qst.isStarted()) {
-                    randomList.add(member);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(members);
+                for (Player member : members) {
+                    final QuestState qst = getQuestState(member, false);
+                    if ((qst != null) && qst.isStarted()) {
+                        randomList.add(member);
+                    }
                 }
             }
         }

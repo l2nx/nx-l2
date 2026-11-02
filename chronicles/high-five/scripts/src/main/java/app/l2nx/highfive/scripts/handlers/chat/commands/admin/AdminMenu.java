@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -106,9 +107,15 @@ public class AdminMenu implements IAdminCommandHandler {
                     return true;
                 }
 
-                for (Player pm : player.getParty().getMembers()) {
-                    teleportCharacter(
-                            pm, activeChar.getLocation(), activeChar, "Your party is being teleported by an Admin.");
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    player.getParty().collectMembers(members);
+                    for (Player pm : members) {
+                        teleportCharacter(
+                                pm,
+                                activeChar.getLocation(),
+                                activeChar,
+                                "Your party is being teleported by an Admin.");
+                    }
                 }
 
                 activeChar.sendSysMessage("You have teleported the party of "

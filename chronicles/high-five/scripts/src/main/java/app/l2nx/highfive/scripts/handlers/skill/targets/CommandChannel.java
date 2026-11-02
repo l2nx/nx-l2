@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.targets;
 
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -57,16 +58,18 @@ public class CommandChannel implements ITargetTypeHandler {
 
         // Get all visible objects in a spherical area near the Creature
         final int maxTargets = skill.getAffectLimit();
-        final List<Player> members = hasChannel ? party.getCommandChannel().getMembers() : party.getMembers();
-        for (Player member : members) {
-            if (creature == member) {
-                continue;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            (hasChannel ? party.getCommandChannel() : party).collectMembers(members);
+            for (Player member : members) {
+                if (creature == member) {
+                    continue;
+                }
 
-            if (Skill.addCharacter(creature, member, radius, false)) {
-                targetList.add(member);
-                if (targetList.size() >= maxTargets) {
-                    break;
+                if (Skill.addCharacter(creature, member, radius, false)) {
+                    targetList.add(member);
+                    if (targetList.size() >= maxTargets) {
+                        break;
+                    }
                 }
             }
         }

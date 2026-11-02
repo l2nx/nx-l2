@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00453_NotStrongEnoughAlone;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -159,8 +160,11 @@ public class Q00453_NotStrongEnoughAlone extends Quest {
     public void onKill(Npc npc, Player player, boolean isSummon) {
         final Party party = player.getParty();
         if (party != null) {
-            for (Player member : party.getMembers()) {
-                increaseKill(member, npc);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player member : members) {
+                    increaseKill(member, npc);
+                }
             }
         } else {
             increaseKill(player, npc);

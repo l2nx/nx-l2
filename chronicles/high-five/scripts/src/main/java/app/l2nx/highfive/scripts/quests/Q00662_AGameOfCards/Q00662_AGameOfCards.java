@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00662_AGameOfCards;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
@@ -564,9 +565,12 @@ public class Q00662_AGameOfCards extends Quest {
         players.add(killer);
 
         if (killer.isInParty()) {
-            for (Player member : killer.getParty().getMembers()) {
-                if (getQuestState(member, false) != null) {
-                    players.add(member);
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                killer.getParty().collectMembers(members);
+                for (Player member : members) {
+                    if (getQuestState(member, false) != null) {
+                        players.add(member);
+                    }
                 }
             }
         }

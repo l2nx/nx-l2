@@ -28,6 +28,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -466,38 +467,42 @@ public class CrystalCaverns extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember.getLevel() < MIN_LEVEL) {
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember.getLevel() < MIN_LEVEL) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            final Item item = partyMember.getInventory().getItemByItemId(CONTAMINATED_CRYSTAL);
-            if (item == null) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_S_ITEM_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+                final Item item = partyMember.getInventory().getItemByItemId(CONTAMINATED_CRYSTAL);
+                if (item == null) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_ITEM_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (ClockBridge.wallMillis()
-                    < InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID)) {
-                final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
+                if (ClockBridge.wallMillis()
+                        < InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID)) {
+                    final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -520,22 +525,26 @@ public class CrystalCaverns extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            final Item item = partyMember.getInventory().getItemByItemId(RED_CORAL);
-            if (item == null) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_S_ITEM_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                final Item item = partyMember.getInventory().getItemByItemId(RED_CORAL);
+                if (item == null) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_ITEM_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -558,24 +567,28 @@ public class CrystalCaverns extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            final Item item1 = partyMember.getInventory().getItemByItemId(BLUE_CRYSTAL);
-            final Item item2 = partyMember.getInventory().getItemByItemId(RED_CRYSTAL);
-            final Item item3 = partyMember.getInventory().getItemByItemId(CLEAR_CRYSTAL);
-            if ((item1 == null) || (item2 == null) || (item3 == null)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_S_ITEM_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                final Item item1 = partyMember.getInventory().getItemByItemId(BLUE_CRYSTAL);
+                final Item item2 = partyMember.getInventory().getItemByItemId(RED_CRYSTAL);
+                final Item item3 = partyMember.getInventory().getItemByItemId(CLEAR_CRYSTAL);
+                if ((item1 == null) || (item2 == null) || (item3 == null)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId.C1_S_ITEM_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId.C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
-                sm.addPcName(partyMember);
-                party.broadcastPacket(sm);
-                return false;
+                if (!LocationUtil.checkIfInRange(1000, player, partyMember, true)) {
+                    final SystemMessage sm = new SystemMessage(
+                            SystemMessageId
+                                    .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED);
+                    sm.addPcName(partyMember);
+                    party.broadcastPacket(sm);
+                    return false;
+                }
             }
         }
 
@@ -636,10 +649,13 @@ public class CrystalCaverns extends InstanceScript {
                 teleportPlayer(player, START_LOC, world.getInstanceId());
                 world.addAllowed(player);
             } else {
-                for (Player partyMember : party.getMembers()) {
-                    partyMember.sendMessage("Welcome to Crystal Caverns.");
-                    teleportPlayer(partyMember, START_LOC, world.getInstanceId());
-                    world.addAllowed(partyMember);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        partyMember.sendMessage("Welcome to Crystal Caverns.");
+                        teleportPlayer(partyMember, START_LOC, world.getInstanceId());
+                        world.addAllowed(partyMember);
+                    }
                 }
             }
 
@@ -970,8 +986,11 @@ public class CrystalCaverns extends InstanceScript {
             if ((nowHp < (maxHp * 0.4)) && (rand < 5)) {
                 final Party party = attacker.getParty();
                 if (party != null) {
-                    for (Player partyMember : party.getMembers()) {
-                        stopAttack(partyMember);
+                    try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                        party.collectMembers(members);
+                        for (Player partyMember : members) {
+                            stopAttack(partyMember);
+                        }
                     }
                 } else {
                     stopAttack(attacker);
@@ -1309,17 +1328,20 @@ public class CrystalCaverns extends InstanceScript {
         final int num = Math.max((int) RatesConfig.RATE_DEATH_DROP_CHANCE_MULTIPLIER, 1);
         final Party party = player.getParty();
         if (party != null) {
-            for (Player partyMember : party.getMembers()) {
-                if (partyMember.getInstanceId() == instanceId) {
-                    if (!isBaylor && hasQuestItems(partyMember, CONTAMINATED_CRYSTAL)) {
-                        takeItems(partyMember, CONTAMINATED_CRYSTAL, 1);
-                        giveItems(partyMember, bossCry, 1);
-                    }
+            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                party.collectMembers(members);
+                for (Player partyMember : members) {
+                    if (partyMember.getInstanceId() == instanceId) {
+                        if (!isBaylor && hasQuestItems(partyMember, CONTAMINATED_CRYSTAL)) {
+                            takeItems(partyMember, CONTAMINATED_CRYSTAL, 1);
+                            giveItems(partyMember, bossCry, 1);
+                        }
 
-                    if (getRandom(10) < 5) {
-                        giveItems(partyMember, WHITE_SEED_OF_EVIL_SHARD, num);
-                    } else {
-                        giveItems(partyMember, BLACK_SEED_OF_EVIL_SHARD, num);
+                        if (getRandom(10) < 5) {
+                            giveItems(partyMember, WHITE_SEED_OF_EVIL_SHARD, num);
+                        } else {
+                            giveItems(partyMember, BLACK_SEED_OF_EVIL_SHARD, num);
+                        }
                     }
                 }
             }
@@ -1395,10 +1417,13 @@ public class CrystalCaverns extends InstanceScript {
                     runSteamRooms(world, STEAM1_SPAWNS, 22);
                     final Party party = player.getParty();
                     if (party != null) {
-                        for (Player partyMember : party.getMembers()) {
-                            if (partyMember.getInstanceId() == world.getInstanceId()) {
-                                SkillData.getInstance().getSkill(5239, 1).applyEffects(partyMember, partyMember);
-                                startQuestTimer("Timer2", 300000, npc, partyMember);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player partyMember : members) {
+                                if (partyMember.getInstanceId() == world.getInstanceId()) {
+                                    SkillData.getInstance().getSkill(5239, 1).applyEffects(partyMember, partyMember);
+                                    startQuestTimer("Timer2", 300000, npc, partyMember);
+                                }
                             }
                         }
                     } else {
@@ -1495,8 +1520,11 @@ public class CrystalCaverns extends InstanceScript {
                             world.setStatus(26);
                             final Party party = player.getParty();
                             if (party != null) {
-                                for (Player partyMember : party.getMembers()) {
-                                    partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
+                                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                    party.collectMembers(members);
+                                    for (Player partyMember : members) {
+                                        partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
+                                    }
                                 }
                             }
 
@@ -1624,11 +1652,16 @@ public class CrystalCaverns extends InstanceScript {
                         cancelQuestTimers("Timer2");
                         cancelQuestTimers("Timer21");
                         if (party != null) {
-                            for (Player partyMember : party.getMembers()) {
-                                if (partyMember.getInstanceId() == world.getInstanceId()) {
-                                    partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
-                                    SkillData.getInstance().getSkill(5239, 2).applyEffects(partyMember, partyMember);
-                                    startQuestTimer("Timer3", 600000, npc, partyMember);
+                            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                party.collectMembers(members);
+                                for (Player partyMember : members) {
+                                    if (partyMember.getInstanceId() == world.getInstanceId()) {
+                                        partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
+                                        SkillData.getInstance()
+                                                .getSkill(5239, 2)
+                                                .applyEffects(partyMember, partyMember);
+                                        startQuestTimer("Timer3", 600000, npc, partyMember);
+                                    }
                                 }
                             }
                         } else {
@@ -1649,11 +1682,16 @@ public class CrystalCaverns extends InstanceScript {
                         cancelQuestTimers("Timer3");
                         cancelQuestTimers("Timer31");
                         if (party != null) {
-                            for (Player partyMember : party.getMembers()) {
-                                if (partyMember.getInstanceId() == world.getInstanceId()) {
-                                    partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
-                                    SkillData.getInstance().getSkill(5239, 4).applyEffects(partyMember, partyMember);
-                                    startQuestTimer("Timer4", 1200000, npc, partyMember);
+                            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                party.collectMembers(members);
+                                for (Player partyMember : members) {
+                                    if (partyMember.getInstanceId() == world.getInstanceId()) {
+                                        partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
+                                        SkillData.getInstance()
+                                                .getSkill(5239, 4)
+                                                .applyEffects(partyMember, partyMember);
+                                        startQuestTimer("Timer4", 1200000, npc, partyMember);
+                                    }
                                 }
                             }
                         } else {
@@ -1674,11 +1712,16 @@ public class CrystalCaverns extends InstanceScript {
                         cancelQuestTimers("Timer4");
                         cancelQuestTimers("Timer41");
                         if (party != null) {
-                            for (Player partyMember : party.getMembers()) {
-                                if (partyMember.getInstanceId() == world.getInstanceId()) {
-                                    partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
-                                    SkillData.getInstance().getSkill(5239, 3).applyEffects(partyMember, partyMember);
-                                    startQuestTimer("Timer5", 900000, npc, partyMember);
+                            try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                                party.collectMembers(members);
+                                for (Player partyMember : members) {
+                                    if (partyMember.getInstanceId() == world.getInstanceId()) {
+                                        partyMember.stopSkillEffects(SkillFinishType.REMOVED, 5239);
+                                        SkillData.getInstance()
+                                                .getSkill(5239, 3)
+                                                .applyEffects(partyMember, partyMember);
+                                        startQuestTimer("Timer5", 900000, npc, partyMember);
+                                    }
                                 }
                             }
                         } else {
@@ -1700,9 +1743,12 @@ public class CrystalCaverns extends InstanceScript {
                     if (!checkOracleConditions(player)) {
                         return null;
                     } else if (party != null) {
-                        for (Player partyMember : party.getMembers()) {
-                            partyMember.destroyItemByItemId(ItemProcessType.QUEST, RED_CORAL, 1, player, true);
-                            teleportPlayer(partyMember, loc, npc.getInstanceId());
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player partyMember : members) {
+                                partyMember.destroyItemByItemId(ItemProcessType.QUEST, RED_CORAL, 1, player, true);
+                                teleportPlayer(partyMember, loc, npc.getInstanceId());
+                            }
                         }
                     } else {
                         teleportPlayer(player, loc, npc.getInstanceId());
@@ -1715,12 +1761,16 @@ public class CrystalCaverns extends InstanceScript {
                     if (party == null) {
                         world.raiders.add(player);
                     } else {
-                        for (Player partyMember : party.getMembers()) {
-                            // int rnd = getRandom(100);
-                            // partyMember.destroyItemByItemId(ItemProcessType.QUEST, (rnd < 33 ? BLUE_CRYSTAL:(rnd < 67
-                            // ? RED_CRYSTAL:CLEAR_CRYSTAL)), 1, partyMember, true); Crystals are no longer beign
-                            // cunsumed while entering to Baylor Lair.
-                            world.raiders.add(partyMember);
+                        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                            party.collectMembers(members);
+                            for (Player partyMember : members) {
+                                // int rnd = getRandom(100);
+                                // partyMember.destroyItemByItemId(ItemProcessType.QUEST, (rnd < 33 ? BLUE_CRYSTAL:(rnd
+                                // < 67
+                                // ? RED_CRYSTAL:CLEAR_CRYSTAL)), 1, partyMember, true); Crystals are no longer beign
+                                // cunsumed while entering to Baylor Lair.
+                                world.raiders.add(partyMember);
+                            }
                         }
                     }
                 } else {

@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.quests.Q00372_LegacyOfInsolence;
 
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.holders.ItemChanceHolder;
@@ -443,13 +444,16 @@ public class Q00372_LegacyOfInsolence extends Quest {
                 }
             } else {
                 int chance = 0;
-                for (Player partyMember : killer.getParty().getMembers()) {
-                    final QuestState partyMemberQuestState = getQuestState(partyMember, false);
-                    if ((partyMemberQuestState != null) && partyMemberQuestState.isStarted()) {
-                        final int chance2 = getRandom(1000);
-                        if (chance < chance2) {
-                            chance = chance2;
-                            rewardedPlayer = partyMember;
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    killer.getParty().collectMembers(members);
+                    for (Player partyMember : members) {
+                        final QuestState partyMemberQuestState = getQuestState(partyMember, false);
+                        if ((partyMemberQuestState != null) && partyMemberQuestState.isStarted()) {
+                            final int chance2 = getRandom(1000);
+                            if (chance < chance2) {
+                                chance = chance2;
+                                rewardedPlayer = partyMember;
+                            }
                         }
                     }
                 }

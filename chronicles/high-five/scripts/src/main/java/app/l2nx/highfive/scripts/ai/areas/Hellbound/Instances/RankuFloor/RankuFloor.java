@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.ai.areas.Hellbound.Instances.RankuFloor;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
@@ -110,43 +111,46 @@ public class RankuFloor extends InstanceScript {
             return false;
         }
 
-        for (Player partyMember : party.getMembers()) {
-            if (partyMember.getLevel() < MIN_LV) {
-                party.broadcastPacket(
-                        new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY)
-                                .addPcName(partyMember));
-                return false;
-            }
+        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+            party.collectMembers(members);
+            for (Player partyMember : members) {
+                if (partyMember.getLevel() < MIN_LV) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY)
+                            .addPcName(partyMember));
+                    return false;
+                }
 
-            if (!LocationUtil.checkIfInRange(500, player, partyMember, true)) {
-                party.broadcastPacket(new SystemMessage(
-                                SystemMessageId
-                                        .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED)
-                        .addPcName(partyMember));
-                return false;
-            }
+                if (!LocationUtil.checkIfInRange(500, player, partyMember, true)) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId
+                                            .C1_IS_IN_A_LOCATION_WHICH_CANNOT_BE_ENTERED_THEREFORE_IT_CANNOT_BE_PROCESSED)
+                            .addPcName(partyMember));
+                    return false;
+                }
 
-            if (InstanceManager.getInstance().getPlayerWorld(player) != null) {
-                party.broadcastPacket(new SystemMessage(
-                                SystemMessageId
-                                        .YOU_HAVE_ENTERED_ANOTHER_INSTANCE_ZONE_THEREFORE_YOU_CANNOT_ENTER_CORRESPONDING_DUNGEON)
-                        .addPcName(partyMember));
-                return false;
-            }
+                if (InstanceManager.getInstance().getPlayerWorld(player) != null) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId
+                                            .YOU_HAVE_ENTERED_ANOTHER_INSTANCE_ZONE_THEREFORE_YOU_CANNOT_ENTER_CORRESPONDING_DUNGEON)
+                            .addPcName(partyMember));
+                    return false;
+                }
 
-            final Long reenterTime =
-                    InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID);
-            if (ClockBridge.wallMillis() < reenterTime) {
-                party.broadcastPacket(
-                        new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET).addPcName(partyMember));
-                return false;
-            }
+                final Long reenterTime =
+                        InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID);
+                if (ClockBridge.wallMillis() < reenterTime) {
+                    party.broadcastPacket(
+                            new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET).addPcName(partyMember));
+                    return false;
+                }
 
-            if (partyMember.getInventory().getInventoryItemCount(SEAL_BREAKER_10, -1, false) < 1) {
-                party.broadcastPacket(new SystemMessage(
-                                SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED)
-                        .addPcName(partyMember));
-                return false;
+                if (partyMember.getInventory().getInventoryItemCount(SEAL_BREAKER_10, -1, false) < 1) {
+                    party.broadcastPacket(new SystemMessage(
+                                    SystemMessageId.C1_S_QUEST_REQUIREMENT_IS_NOT_SUFFICIENT_AND_CANNOT_BE_ENTERED)
+                            .addPcName(partyMember));
+                    return false;
+                }
             }
         }
 
@@ -162,10 +166,13 @@ public class RankuFloor extends InstanceScript {
                 player.destroyItemByItemId(ItemProcessType.QUEST, SEAL_BREAKER_10, 1, null, true);
                 world.addAllowed(player);
             } else {
-                for (Player partyMember : party.getMembers()) {
-                    teleportPlayer(partyMember, ENTRY_POINT, world.getInstanceId());
-                    partyMember.destroyItemByItemId(ItemProcessType.QUEST, SEAL_BREAKER_10, 1, null, true);
-                    world.addAllowed(partyMember);
+                try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
+                    party.collectMembers(members);
+                    for (Player partyMember : members) {
+                        teleportPlayer(partyMember, ENTRY_POINT, world.getInstanceId());
+                        partyMember.destroyItemByItemId(ItemProcessType.QUEST, SEAL_BREAKER_10, 1, null, true);
+                        world.addAllowed(partyMember);
+                    }
                 }
             }
         } else {
