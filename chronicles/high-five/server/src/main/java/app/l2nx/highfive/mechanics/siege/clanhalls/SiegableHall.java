@@ -25,6 +25,7 @@ package app.l2nx.highfive.mechanics.siege.clanhalls;
 
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Door;
@@ -36,33 +37,27 @@ import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.SiegeClanType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SiegeInfo;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.residence.model.SiegableClanHallState;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Calendar;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author BiggBoss
  */
+@SingleWriter
 public class SiegableHall extends ClanHall {
-    @Getter
     private Calendar siegeDate;
 
-    @Getter
     private final long siegeLength;
 
     // Days, months and years to the next siege, then its hour and minute.
     private final int[] scheduleConfig;
 
-    @Getter
     private SiegeStatus siegeStatus = SiegeStatus.REGISTERING;
 
-    @Getter
-    @Setter
     private SiegeZone siegeZone;
 
-    @Getter
     private ClanHallSiegeEngine siege;
 
     public SiegableHall(StatSet set) {
@@ -84,16 +79,51 @@ public class SiegableHall extends ClanHall {
             siegeDate.setTimeInMillis(nextSiege);
         }
 
-        if (!isFree()) {
+        if (!free) {
             loadFunctions();
         }
     }
 
+    /**
+     * @return a copy of the next siege date; {@link #setNextSiegeDate} changes it
+     */
+    public Calendar getSiegeDate() {
+        WorldPartition.checkOwner();
+        return (Calendar) siegeDate.clone();
+    }
+
+    public long getSiegeLength() {
+        WorldPartition.checkOwner();
+        return siegeLength;
+    }
+
+    public SiegeStatus getSiegeStatus() {
+        WorldPartition.checkOwner();
+        return siegeStatus;
+    }
+
+    public SiegeZone getSiegeZone() {
+        WorldPartition.checkOwner();
+        return siegeZone;
+    }
+
+    public void setSiegeZone(SiegeZone siegeZone) {
+        WorldPartition.checkOwner();
+        this.siegeZone = siegeZone;
+    }
+
+    public ClanHallSiegeEngine getSiege() {
+        WorldPartition.checkOwner();
+        return siege;
+    }
+
     public void spawnDoor() {
+        WorldPartition.checkOwner();
         spawnDoor(false);
     }
 
     public void spawnDoor(boolean isDoorWeak) {
+        WorldPartition.checkOwner();
         for (Door door : getDoors()) {
             if (door.isDead()) {
                 door.doRevive();
@@ -112,6 +142,7 @@ public class SiegableHall extends ClanHall {
 
     @Override
     public void updateDb() {
+        WorldPartition.checkOwner();
         CHSiegeManager.getInstance()
                 .saveState(SiegableClanHallState.builder()
                         .clanHallId(getId())
@@ -121,23 +152,23 @@ public class SiegableHall extends ClanHall {
     }
 
     public void setSiege(ClanHallSiegeEngine siegable) {
+        WorldPartition.checkOwner();
         siege = siegable;
         siegeZone.setSiegeInstance(siegable);
     }
 
     public long getNextSiegeTime() {
+        WorldPartition.checkOwner();
         return siegeDate.getTimeInMillis();
     }
 
     public void setNextSiegeDate(long date) {
+        WorldPartition.checkOwner();
         siegeDate.setTimeInMillis(date);
     }
 
-    public void setNextSiegeDate(Calendar c) {
-        siegeDate = c;
-    }
-
     public void updateNextSiege() {
+        WorldPartition.checkOwner();
         final Calendar callendar = ClockBridge.calendar();
         callendar.add(Calendar.DAY_OF_YEAR, scheduleConfig[0]);
         callendar.add(Calendar.MONTH, scheduleConfig[1]);
@@ -145,57 +176,68 @@ public class SiegableHall extends ClanHall {
         callendar.set(Calendar.HOUR_OF_DAY, scheduleConfig[3]);
         callendar.set(Calendar.MINUTE, scheduleConfig[4]);
         callendar.set(Calendar.SECOND, 0);
-        setNextSiegeDate(callendar);
+        siegeDate.setTimeInMillis(callendar.getTimeInMillis());
         updateDb();
     }
 
     public void addAttacker(Clan clan) {
+        WorldPartition.checkOwner();
         if (siege != null) {
             siege.getAttackers().put(clan.getId(), new SiegeClan(clan.getId(), SiegeClanType.ATTACKER));
         }
     }
 
     public void removeAttacker(Clan clan) {
+        WorldPartition.checkOwner();
         if (siege != null) {
             siege.getAttackers().remove(clan.getId());
         }
     }
 
     public boolean isRegistered(Clan clan) {
+        WorldPartition.checkOwner();
         return (siege != null) && siege.checkIsAttacker(clan);
     }
 
     public boolean isRegistering() {
+        WorldPartition.checkOwner();
         return siegeStatus == SiegeStatus.REGISTERING;
     }
 
     public boolean isInSiege() {
+        WorldPartition.checkOwner();
         return siegeStatus == SiegeStatus.RUNNING;
     }
 
     public boolean isWaitingBattle() {
+        WorldPartition.checkOwner();
         return siegeStatus == SiegeStatus.WAITING_BATTLE;
     }
 
     public void updateSiegeStatus(SiegeStatus status) {
+        WorldPartition.checkOwner();
         siegeStatus = status;
     }
 
     public void updateSiegeZone(boolean active) {
+        WorldPartition.checkOwner();
         siegeZone.setActive(active);
     }
 
     public void showSiegeInfo(Player player) {
+        WorldPartition.checkOwner();
         player.sendPacket(new SiegeInfo(this, player));
     }
 
     @Override
     public boolean isSiegableHall() {
+        WorldPartition.checkOwner();
         return true;
     }
 
     @Override
     public SiegableHallZone getZone() {
+        WorldPartition.checkOwner();
         return (SiegableHallZone) super.getZone();
     }
 }

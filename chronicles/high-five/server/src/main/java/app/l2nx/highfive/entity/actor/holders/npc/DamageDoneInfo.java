@@ -19,34 +19,45 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author xban1x
  */
+@SingleWriter
 public class DamageDoneInfo {
-    @Getter
     private final Player attacker;
-
-    @Getter
     private long damage = 0;
 
     public DamageDoneInfo(Player attacker) {
         this.attacker = attacker;
     }
 
+    public Player getAttacker() {
+        WorldPartition.checkOwner();
+        return attacker;
+    }
+
+    public long getDamage() {
+        WorldPartition.checkOwner();
+        return damage;
+    }
+
     public void addDamage(long damage) {
+        WorldPartition.checkOwner();
         this.damage += damage;
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (this == obj) || ((obj instanceof DamageDoneInfo) && (((DamageDoneInfo) obj).getAttacker() == attacker));
+        return (this == obj) || ((obj instanceof DamageDoneInfo other) && (other.attacker == attacker));
     }
 
     @Override
     public int hashCode() {
-        return attacker.getObjectId();
+        // WorldObject hashes by its object id without the ownership check, which equals and hashCode must not take.
+        return attacker.hashCode();
     }
 }

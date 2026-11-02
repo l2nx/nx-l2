@@ -19,24 +19,32 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import lombok.Getter;
 
 /**
  * Respawn zone implementation.
  * @author Nyaran
  */
+@SingleWriter
 public class RespawnZone extends ZoneType {
-    @Getter
-    private final Map<Race, String> allRespawnPoints = new EnumMap<>(Race.class);
+    private final EnumMap<Race, String> allRespawnPoints = new EnumMap<>(Race.class);
 
     public RespawnZone(int id) {
         super(id);
+    }
+
+    /** Read-only view: the zone loader adds the points, nothing changes them afterwards. */
+    public Map<Race, String> getAllRespawnPoints() {
+        WorldPartition.checkOwner();
+        return Collections.unmodifiableMap(allRespawnPoints);
     }
 
     @Override
@@ -46,10 +54,12 @@ public class RespawnZone extends ZoneType {
     protected void onExit(Creature creature) {}
 
     public void addRaceRespawnPoint(String race, String point) {
+        WorldPartition.checkOwner();
         allRespawnPoints.put(Race.valueOf(race), point);
     }
 
     public String getRespawnPoint(Player player) {
+        WorldPartition.checkOwner();
         return allRespawnPoints.get(player.getRace());
     }
 }

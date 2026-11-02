@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
@@ -27,6 +28,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
  * Zone where store is not allowed.
  * @author fordfrog
  */
+@SingleWriter
 public class NoStoreZone extends ZoneType {
     public NoStoreZone(int id) {
         super(id);

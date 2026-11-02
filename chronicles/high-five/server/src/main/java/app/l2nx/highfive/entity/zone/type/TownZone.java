@@ -19,20 +19,20 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A Town zone
  * @author durgus
  */
+@SingleWriter
 public class TownZone extends ZoneType {
-    @Getter
     private int townId;
 
-    @Getter
     private int taxById;
 
     public TownZone(int id) {
@@ -41,8 +41,19 @@ public class TownZone extends ZoneType {
         taxById = 0;
     }
 
+    public int getTownId() {
+        WorldPartition.checkOwner();
+        return townId;
+    }
+
+    public int getTaxById() {
+        WorldPartition.checkOwner();
+        return taxById;
+    }
+
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("townId")) {
             townId = Integer.parseInt(value);
         } else if (name.equals("taxById")) {

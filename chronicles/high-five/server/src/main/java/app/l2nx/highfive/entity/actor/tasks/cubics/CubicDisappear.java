@@ -19,12 +19,15 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.cubics;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Cubic disappear task.
  * @author Zoey76
  */
+@SingleWriter
 public class CubicDisappear implements Runnable {
     private final Cubic cubic;
 
@@ -34,6 +37,7 @@ public class CubicDisappear implements Runnable {
 
     @Override
     public void run() {
+        WorldPartition.checkOwner();
         if (cubic != null) {
             cubic.getOwner().removeCubic(cubic.getId());
             cubic.getOwner().broadcastUserInfo();

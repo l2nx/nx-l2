@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00726_LightWithinTheDarkness;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.ScratchBuffers;
@@ -49,6 +50,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class Q00726_LightWithinTheDarkness extends Quest {
+    @SingleWriter
     protected class PAWORLD extends InstanceWorld {}
 
     public static class FortDungeon {

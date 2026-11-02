@@ -47,7 +47,6 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -77,20 +76,15 @@ public class SpawnData implements IXmlReader {
         spawnTemplates.put(0, "None");
         if (!DevelopmentConfig.NO_SPAWNS) {
             // Reloading must not accumulate: groups respawn from scratch and pending replacements die with them.
-            // Group slots are swept by iterator, their mutated coordinates make hash based removal unreliable.
             spawnCount = 0;
             parsedFiles.clear();
             for (Set<Spawn> spawns : SpawnTable.getInstance().getSpawnTable().values()) {
-                final Iterator<Spawn> iterator = spawns.iterator();
-                while (iterator.hasNext()) {
-                    if (iterator.next().getGroup() != null) {
-                        iterator.remove();
-                    }
-                }
+                spawns.removeIf(spawn -> spawn.getGroup() != null);
             }
 
             SpawnGroupTable.getInstance().clear();
             SpawnGroupTaskManager.getInstance().clear();
+            ZoneManager.getInstance().clearBannedTerritories();
 
             log.info("Initializing spawns...");
             parseDatapackDirectory("data/spawns", true);
@@ -327,7 +321,8 @@ public class SpawnData implements IXmlReader {
                                                     coords[0][0], coords[1][0], coords[0][1], coords[1][1], minZ, maxZ);
                                         } else {
                                             log.warn(
-                                                    "SpawnTable: Missing cuboid vertex data for territory: {} in file: {}",
+                                                    "SpawnTable: Missing cuboid vertex data for territory: {} in file:"
+                                                            + " {}",
                                                     declaredName,
                                                     file.getName());
                                             continue;
@@ -430,7 +425,8 @@ public class SpawnData implements IXmlReader {
                                                     coords[0][0], coords[1][0], coords[0][1], coords[1][1], minZ, maxZ);
                                         } else {
                                             log.warn(
-                                                    "SpawnTable: Missing cuboid vertex data for banned_territory: {} in file: {}",
+                                                    "SpawnTable: Missing cuboid vertex data for banned_territory: {}"
+                                                            + " in file: {}",
                                                     territoryName,
                                                     file.getName());
                                             continue;
@@ -469,7 +465,8 @@ public class SpawnData implements IXmlReader {
                                         }
                                     } else {
                                         log.warn(
-                                                "SpawnTable: Unknown shape: \"{}\"  for banned_territory: {} in file: {}",
+                                                "SpawnTable: Unknown shape: \"{}\"  for banned_territory: {} in file:"
+                                                        + " {}",
                                                 zoneShape,
                                                 territoryName,
                                                 file.getName());
@@ -515,7 +512,8 @@ public class SpawnData implements IXmlReader {
                                         && (territoryName == null)) // Both coordinates and zone are unspecified.
                                 {
                                     log.warn(
-                                            "XML Spawnlist: Spawn could not be initialized, both coordinates and zone are unspecified for ID {}",
+                                            "XML Spawnlist: Spawn could not be initialized, both coordinates and zone"
+                                                    + " are unspecified for ID {}",
                                             templateId);
                                     continue;
                                 }
@@ -565,7 +563,8 @@ public class SpawnData implements IXmlReader {
                                         // No retail maker mixes rolling with the day night gate and
                                         // DayNightSpawnManager bypasses decreaseCount.
                                         log.warn(
-                                                "PeriodOfDay cannot be combined with an entry selection, skipping NPC {} in {}",
+                                                "PeriodOfDay cannot be combined with an entry selection, skipping NPC"
+                                                        + " {} in {}",
                                                 templateId,
                                                 file.getName());
                                         continue;

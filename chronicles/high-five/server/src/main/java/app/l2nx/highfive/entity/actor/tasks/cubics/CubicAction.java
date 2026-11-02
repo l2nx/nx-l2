@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.cubics;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
@@ -30,9 +31,9 @@ import app.l2nx.highfive.entity.cubic.CubicTargetType;
 import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -41,10 +42,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author UnAfraid, Mobius
  */
 @Slf4j
+@SingleWriter
 public class CubicAction implements Runnable {
 
     private final Cubic cubic;
-    private final AtomicInteger currentCount = new AtomicInteger();
+    private int currentCount;
     private final int chance;
 
     public CubicAction(Cubic cubic, int chance) {
@@ -54,6 +56,7 @@ public class CubicAction implements Runnable {
 
     @Override
     public void run() {
+        WorldPartition.checkOwner();
         if (cubic == null) {
             return;
         }
@@ -78,7 +81,7 @@ public class CubicAction implements Runnable {
                 }
             }
 
-            if ((cubic.getCubicMaxCount() > -1) && (currentCount.get() >= cubic.getCubicMaxCount())) {
+            if ((cubic.getCubicMaxCount() > -1) && (currentCount >= cubic.getCubicMaxCount())) {
                 cubic.stopAction();
                 if ((cubic.getTemplate() != null) && (cubic.getTemplate().getUseUp() > 0)) {
                     cubic.getOwner().removeCubic(cubic.getId());
@@ -88,7 +91,7 @@ public class CubicAction implements Runnable {
             }
 
             if (tryUsePrioritySkill()) {
-                currentCount.incrementAndGet();
+                currentCount++;
                 return;
             }
 
@@ -97,7 +100,7 @@ public class CubicAction implements Runnable {
             }
 
             if (tryUseSkill(cubic.getCubicSkill())) {
-                currentCount.incrementAndGet();
+                currentCount++;
             }
         } catch (Exception e) {
             log.error(

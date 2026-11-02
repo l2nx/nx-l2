@@ -279,7 +279,7 @@ public class AdminSiege implements IAdminCommandHandler {
                                 activeChar.sendSysMessage("Unable to change Siege Date");
                             } else if (calendar.getTimeInMillis()
                                     != castle.getSiegeDate().getTimeInMillis()) {
-                                castle.getSiegeDate().setTimeInMillis(calendar.getTimeInMillis());
+                                castle.setSiegeDate(calendar.getTimeInMillis());
                                 castle.getSiege().saveSiegeDate();
                                 activeChar.sendSysMessage(
                                         "Castle siege time for castle " + castle.getName() + " has been changed.");

@@ -22,8 +22,11 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
@@ -39,7 +42,6 @@ import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.managers.FortSiegeManager;
-import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.FortSiege;
@@ -48,9 +50,7 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -58,36 +58,27 @@ import lombok.extern.slf4j.Slf4j;
  * @author durgus, Skache
  */
 @Slf4j
+@SingleWriter
 public class SiegeZone extends ZoneType {
     private static final int DISMOUNT_DELAY = 5;
 
     public SiegeZone(int id) {
-        super(id);
-        AbstractZoneSettings settings = ZoneManager.getSettings(getName());
-        if (settings == null) {
-            settings = new Settings();
-        }
-
-        setSettings(settings);
+        super(id, new Settings());
     }
 
-    public class Settings extends AbstractZoneSettings {
-        @Getter
-        @Setter(AccessLevel.PROTECTED)
+    @SingleWriter
+    public static final class Settings extends AbstractZoneSettings {
         private int siegeableId = -1;
 
-        @Getter
-        @Setter
         private Siegable siege = null;
 
-        @Getter
-        @Setter
         private boolean activeSiege = false;
 
-        protected Settings() {}
+        Settings() {}
 
         @Override
         public void clear() {
+            WorldPartition.checkOwner();
             siegeableId = -1;
             siege = null;
             activeSiege = false;
@@ -96,32 +87,37 @@ public class SiegeZone extends ZoneType {
 
     @Override
     public Settings getSettings() {
-        return (Settings) super.getSettings();
+        WorldPartition.checkOwner();
+        return settings();
+    }
+
+    private Settings settings() {
+        return (Settings) currentSettings();
     }
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("castleId")) {
-            if (getSettings().getSiegeableId() != -1) {
+            if (settings().siegeableId != -1) {
                 throw new IllegalArgumentException("Siege object already defined!");
             }
 
-            getSettings().setSiegeableId(Integer.parseInt(value));
+            settings().siegeableId = Integer.parseInt(value);
         } else if (name.equals("fortId")) {
-            if (getSettings().getSiegeableId() != -1) {
+            if (settings().siegeableId != -1) {
                 throw new IllegalArgumentException("Siege object already defined!");
             }
 
-            getSettings().setSiegeableId(Integer.parseInt(value));
+            settings().siegeableId = Integer.parseInt(value);
         } else if (name.equals("clanHallId")) {
-            if (getSettings().getSiegeableId() != -1) {
+            if (settings().siegeableId != -1) {
                 throw new IllegalArgumentException("Siege object already defined!");
             }
 
-            getSettings().setSiegeableId(Integer.parseInt(value));
-            final SiegableHall hall = CHSiegeManager.getInstance()
-                    .getConquerableHalls()
-                    .get(getSettings().getSiegeableId());
+            settings().siegeableId = Integer.parseInt(value);
+            final SiegableHall hall =
+                    CHSiegeManager.getInstance().getConquerableHalls().get(settings().siegeableId);
             if (hall != null) {
                 hall.setSiegeZone(this);
             } else {
@@ -134,25 +130,25 @@ public class SiegeZone extends ZoneType {
 
     @Override
     protected void onEnter(Creature creature) {
-        if (!getSettings().isActiveSiege()) {
+        if (!settings().activeSiege) {
             return;
         }
 
         creature.setInsideZone(ZoneId.PVP, true);
         creature.setInsideZone(ZoneId.SIEGE, true);
-        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, true); // FIXME: Custom ?
+        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, true);
 
         if (!creature.isPlayer()) {
             return;
         }
 
         final Player player = creature.asPlayer();
-        if (player.isRegisteredOnThisSiegeField(getSettings().getSiegeableId())) {
-            player.setInSiege(true); // in siege
-            if (getSettings().getSiege().giveFame() && (getSettings().getSiege().getFameFrequency() > 0)) {
+        if (player.isRegisteredOnThisSiegeField(settings().siegeableId)) {
+            player.setInSiege(true);
+            if (settings().siege.giveFame() && (settings().siege.getFameFrequency() > 0)) {
                 player.startFameTask(
-                        getSettings().getSiege().getFameFrequency() * 1000,
-                        getSettings().getSiege().getFameAmount());
+                        settings().siege.getFameFrequency() * 1000,
+                        settings().siege.getFameAmount());
             }
         }
 
@@ -167,31 +163,20 @@ public class SiegeZone extends ZoneType {
             return;
         }
 
-        // Check if wyvern riding is disallowed during siege and player is currently mounted on a wyvern.
-        final Castle castle =
-                CastleManager.getInstance().getCastleById(getSettings().getSiegeableId());
+        final Castle castle = CastleManager.getInstance().getCastleById(settings().siegeableId);
         final boolean isCastleLord =
                 (castle != null) && player.isClanLeader() && (player.getClanId() == castle.getOwnerId());
         if (player.getMountType() == MountType.WYVERN) {
-            // Only allow castle lord to ride wyvern inside siege zone.
             if (!isCastleLord) {
                 player.sendPacket(
                         SystemMessageId
                                 .THIS_AREA_CANNOT_BE_ENTERED_WHILE_MOUNTED_ATOP_OF_A_WYVERN_YOU_WILL_BE_DISMOUNTED_FROM_YOUR_WYVERN_IF_YOU_DO_NOT_LEAVE);
                 player.enteredNoLanding(DISMOUNT_DELAY);
             }
-        }
-        // If normal mounts (excluding wyvern) are disallowed during siege and player is mounted on such a mount.
-        else if (player.isMounted() && (player.getMountType() != MountType.WYVERN)) {
-            // Allow castle lord to be mounted on a strider during siege, disallow others.
-            // This is because, on retail servers, the inside of a castle is a no-fly zone during a siege.
-            // However, to be able to **summon and ride a wyvern**, the castle lord must first be mounted on a strider.
-            // So, the castle lord is permitted to mount a strider during the siege, even when mounts are generally
-            // disallowed.
-            // This enables the castle lord to meet the precondition to summon their wyvern inside the siege zone.
+        } else if (player.isMounted() && (player.getMountType() != MountType.WYVERN)) {
+            // The lord keeps a strider: summoning a wyvern requires being mounted on one first.
             final boolean isCastleLordOnStrider = (player.getMountType() == MountType.STRIDER) && isCastleLord;
             if (!isCastleLordOnStrider) {
-                // Dismount the player if they are not allowed to be mounted in siege zone.
                 player.dismount();
             }
         }
@@ -206,15 +191,14 @@ public class SiegeZone extends ZoneType {
     protected void onExit(Creature creature) {
         creature.setInsideZone(ZoneId.PVP, false);
         creature.setInsideZone(ZoneId.SIEGE, false);
-        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, false); // FIXME: Custom ?
-        if (getSettings().isActiveSiege() && creature.isPlayer()) {
+        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, false);
+        if (settings().activeSiege && creature.isPlayer()) {
             final Player player = creature.asPlayer();
             creature.sendPacket(SystemMessageId.YOU_HAVE_LEFT_A_COMBAT_ZONE);
             if (player.getMountType() == MountType.WYVERN) {
                 player.exitedNoLanding();
             }
 
-            // Set pvp flag.
             if (player.getPvpFlag() == 0) {
                 player.startPvPFlag();
             }
@@ -228,13 +212,11 @@ public class SiegeZone extends ZoneType {
         player.stopFameTask();
         player.setInSiege(false);
 
-        if (!(getSettings().getSiege() instanceof FortSiege)
-                || (player.getInventory().getItemByItemId(9819) == null)) {
+        if (!(settings().siege instanceof FortSiege) || (player.getInventory().getItemByItemId(9819) == null)) {
             return;
         }
 
-        // Drop combat flag.
-        final Fort fort = FortManager.getInstance().getFortById(getSettings().getSiegeableId());
+        final Fort fort = FortManager.getInstance().getFortById(settings().siegeableId);
         if (fort != null) {
             FortSiegeManager.getInstance().dropCombatFlag(player, fort.getResidenceId());
         } else {
@@ -254,10 +236,10 @@ public class SiegeZone extends ZoneType {
 
     @Override
     public void onDieInside(Creature creature) {
-        if (!getSettings().isActiveSiege()
+        WorldPartition.checkOwner();
+        if (!settings().activeSiege
                 || !creature.isPlayer()
-                || !creature.asPlayer()
-                        .isRegisteredOnThisSiegeField(getSettings().getSiegeableId())) {
+                || !creature.asPlayer().isRegisteredOnThisSiegeField(settings().siegeableId)) {
             return;
         }
 
@@ -275,80 +257,81 @@ public class SiegeZone extends ZoneType {
 
     @Override
     public void onPlayerLogoutInside(Player player) {
-        if (player.getClanId() != getSettings().getSiegeableId()) {
+        WorldPartition.checkOwner();
+        if (player.getClanId() != settings().siegeableId) {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
     }
 
     public void updateZoneStatusForCharactersInside() {
-        if (getSettings().isActiveSiege()) {
-            for (Creature creature : getCharactersInside()) {
-                if (creature != null) {
+        WorldPartition.checkOwner();
+        // Entering may dismount or teleport, so the walk runs over a copy.
+        try (Snapshot<Creature> inside = ScratchBuffers.empty()) {
+            collectCharactersInside(inside);
+            if (settings().activeSiege) {
+                for (Creature creature : inside) {
                     onEnter(creature);
                 }
-            }
-        } else {
-            Player player;
-            for (Creature creature : getCharactersInside()) {
-                if (creature == null) {
-                    continue;
-                }
+            } else {
+                for (Creature creature : inside) {
+                    creature.setInsideZone(ZoneId.PVP, false);
+                    creature.setInsideZone(ZoneId.SIEGE, false);
+                    creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, false);
 
-                creature.setInsideZone(ZoneId.PVP, false);
-                creature.setInsideZone(ZoneId.SIEGE, false);
-                creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, false);
-
-                if (creature.isPlayer()) {
-                    player = creature.asPlayer();
-                    creature.sendPacket(SystemMessageId.YOU_HAVE_LEFT_A_COMBAT_ZONE);
-                    player.stopFameTask();
-                    if (player.getMountType() == MountType.WYVERN) {
-                        player.exitedNoLanding();
+                    if (creature.isPlayer()) {
+                        final Player player = creature.asPlayer();
+                        creature.sendPacket(SystemMessageId.YOU_HAVE_LEFT_A_COMBAT_ZONE);
+                        player.stopFameTask();
+                        if (player.getMountType() == MountType.WYVERN) {
+                            player.exitedNoLanding();
+                        }
                     }
                 }
             }
         }
     }
 
-    /**
-     * Sends a message to all players in this zone
-     * @param message
-     */
     public void announceToPlayers(String message) {
-        for (Player player : getPlayersInside()) {
-            if (player != null) {
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player player : players) {
                 player.sendMessage(message);
             }
         }
     }
 
     public int getSiegeObjectId() {
-        return getSettings().getSiegeableId();
+        WorldPartition.checkOwner();
+        return settings().siegeableId;
     }
 
     public boolean isActive() {
-        return getSettings().isActiveSiege();
+        WorldPartition.checkOwner();
+        return settings().activeSiege;
     }
 
     public void setActive(boolean value) {
-        getSettings().setActiveSiege(value);
+        WorldPartition.checkOwner();
+        settings().activeSiege = value;
     }
 
     public void setSiegeInstance(Siegable siege) {
-        getSettings().setSiege(siege);
+        WorldPartition.checkOwner();
+        settings().siege = siege;
     }
 
-    /**
-     * Removes all foreigners from the zone
-     * @param owningClanId
-     */
     public void banishForeigners(int owningClanId) {
-        for (Player temp : getPlayersInside()) {
-            if (temp.getClanId() == owningClanId) {
-                continue;
-            }
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player temp : players) {
+                if (temp.getClanId() == owningClanId) {
+                    continue;
+                }
 
-            temp.teleToLocation(TeleportWhereType.TOWN);
+                temp.teleToLocation(TeleportWhereType.TOWN);
+            }
         }
     }
 }

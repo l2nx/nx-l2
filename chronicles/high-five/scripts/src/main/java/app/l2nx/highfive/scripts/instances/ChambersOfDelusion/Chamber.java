@@ -23,6 +23,7 @@ import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.IntSnapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -538,12 +539,15 @@ public abstract class Chamber extends InstanceScript {
                     banishTask.cancel(true);
                 }
             } else {
-                for (int objId : instance.getPlayers()) {
-                    final Player pl = World.getPlayer(objId);
-                    if ((pl != null) && pl.isOnline()) {
-                        final Party party = world.getParameters().getObject("PartyInside", Party.class);
-                        if ((party == null) || !pl.isInParty() || (party != pl.getParty())) {
-                            exitInstance(pl);
+                try (IntSnapshot inside = ScratchBuffers.intEmpty()) {
+                    instance.collectPlayers(inside);
+                    for (int i = 0; i < inside.size(); i++) {
+                        final Player pl = World.getPlayer(inside.getInt(i));
+                        if ((pl != null) && pl.isOnline()) {
+                            final Party party = world.getParameters().getObject("PartyInside", Party.class);
+                            if ((party == null) || !pl.isInParty() || (party != pl.getParty())) {
+                                exitInstance(pl);
+                            }
                         }
                     }
                 }

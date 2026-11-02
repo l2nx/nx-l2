@@ -557,10 +557,7 @@ public class FourSepulchers extends Script implements IXmlReader {
             return;
         }
 
-        if (!ZoneManager.getInstance()
-                .getZoneById(MANAGER_ZONES.get(npcId))
-                .getPlayersInside()
-                .isEmpty()) {
+        if (ZoneManager.getInstance().getZoneById(MANAGER_ZONES.get(npcId)).hasPlayersInside()) {
             showHtmlFile(player, npcId + "-FULL.html", npc, null);
             return;
         }
@@ -714,28 +711,19 @@ public class FourSepulchers extends Script implements IXmlReader {
     }
 
     private int getSepulcherId(Player player) {
-        if (ZoneManager.getInstance()
-                .getZoneById(CONQUEROR_ZONE)
-                .getPlayersInside()
-                .contains(player)) {
+        if (ZoneManager.getInstance().getZoneById(CONQUEROR_ZONE).isCharacterInZone(player)) {
             return 1;
         }
 
-        if (ZoneManager.getInstance()
-                .getZoneById(EMPEROR_ZONE)
-                .getPlayersInside()
-                .contains(player)) {
+        if (ZoneManager.getInstance().getZoneById(EMPEROR_ZONE).isCharacterInZone(player)) {
             return 2;
         }
 
-        if (ZoneManager.getInstance()
-                .getZoneById(GREAT_SAGES_ZONE)
-                .getPlayersInside()
-                .contains(player)) {
+        if (ZoneManager.getInstance().getZoneById(GREAT_SAGES_ZONE).isCharacterInZone(player)) {
             return 3;
         }
 
-        if (ZoneManager.getInstance().getZoneById(JUDGE_ZONE).getPlayersInside().contains(player)) {
+        if (ZoneManager.getInstance().getZoneById(JUDGE_ZONE).isCharacterInZone(player)) {
             return 4;
         }
 

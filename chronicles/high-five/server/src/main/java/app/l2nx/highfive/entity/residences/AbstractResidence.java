@@ -19,70 +19,81 @@
  */
 package app.l2nx.highfive.entity.residences;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.type.ResidenceZone;
 import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
-import java.util.ArrayList;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author xban1x
  */
+@SingleWriter
 public abstract class AbstractResidence extends ListenersContainer {
-    @Getter
     private final int residenceId;
 
-    @Getter
-    @Setter
     private String name;
 
-    @Getter
-    @Setter(AccessLevel.PROTECTED)
     private ResidenceZone residenceZone = null;
 
-    @Getter
-    private final List<SkillHolder> residentialSkills = new ArrayList<>();
+    // Fixed by the skill tree at construction, so granting walks it without a copy.
+    private final List<SkillHolder> residentialSkills;
 
     public AbstractResidence(int residenceId) {
         this.residenceId = residenceId;
-        initResidentialSkills();
+        residentialSkills = SkillTreeData.getInstance().getAvailableResidentialSkills(residenceId).stream()
+                .map(skill -> new SkillHolder(skill.getSkillId(), skill.getSkillLevel()))
+                .toList();
     }
 
     protected abstract void load();
 
     protected abstract void initResidenceZone();
 
-    protected void initResidentialSkills() {
-        for (SkillLearn s : SkillTreeData.getInstance().getAvailableResidentialSkills(getResidenceId())) {
-            residentialSkills.add(new SkillHolder(s.getSkillId(), s.getSkillLevel()));
-        }
+    public int getResidenceId() {
+        WorldPartition.checkOwner();
+        return residenceId;
+    }
+
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public void setName(String name) {
+        WorldPartition.checkOwner();
+        this.name = name;
+    }
+
+    public ResidenceZone getResidenceZone() {
+        WorldPartition.checkOwner();
+        return residenceZone;
+    }
+
+    protected void setResidenceZone(ResidenceZone residenceZone) {
+        this.residenceZone = residenceZone;
     }
 
     public void giveResidentialSkills(Player player) {
-        if (!residentialSkills.isEmpty()) {
-            for (SkillHolder sh : residentialSkills) {
-                player.addSkill(sh.getSkill(), false);
-            }
+        WorldPartition.checkOwner();
+        for (SkillHolder sh : residentialSkills) {
+            player.addSkill(sh.getSkill(), false);
         }
     }
 
     public void removeResidentialSkills(Player player) {
-        if (!residentialSkills.isEmpty()) {
-            for (SkillHolder sh : residentialSkills) {
-                player.removeSkill(sh.getSkill(), false);
-            }
+        WorldPartition.checkOwner();
+        for (SkillHolder sh : residentialSkills) {
+            player.removeSkill(sh.getSkill(), false);
         }
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof AbstractResidence) && (((AbstractResidence) obj).getResidenceId() == getResidenceId());
+        return (obj instanceof AbstractResidence other) && (other.residenceId == residenceId);
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
@@ -27,6 +28,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
  * A landing zone
  * @author Kerberos
  */
+@SingleWriter
 public class LandingZone extends ZoneType {
     public LandingZone(int id) {
         super(id);

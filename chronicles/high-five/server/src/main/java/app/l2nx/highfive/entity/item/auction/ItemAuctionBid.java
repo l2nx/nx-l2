@@ -19,20 +19,18 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author Forsaiken
  */
+@SingleWriter
 public class ItemAuctionBid {
-    @Getter
     private final int playerObjId;
 
-    @Getter
-    @Setter
     private long lastBid;
 
     public ItemAuctionBid(int playerObjId, long lastBid) {
@@ -40,15 +38,33 @@ public class ItemAuctionBid {
         this.lastBid = lastBid;
     }
 
+    public int getPlayerObjId() {
+        WorldPartition.checkOwner();
+        return playerObjId;
+    }
+
+    public long getLastBid() {
+        WorldPartition.checkOwner();
+        return lastBid;
+    }
+
+    public void setLastBid(long lastBid) {
+        WorldPartition.checkOwner();
+        this.lastBid = lastBid;
+    }
+
     public void cancelBid() {
+        WorldPartition.checkOwner();
         lastBid = -1;
     }
 
     public boolean isCanceled() {
+        WorldPartition.checkOwner();
         return lastBid <= 0;
     }
 
     public Player getPlayer() {
+        WorldPartition.checkOwner();
         return World.getPlayer(playerObjId);
     }
 }

@@ -61,7 +61,7 @@ public class AdminMammon implements IAdminCommandHandler {
             }
 
             if (blackSpawnInst != null) {
-                final Npc blackInst = blackSpawnInst.getNpcList().peek();
+                final Npc blackInst = blackSpawnInst.getFirstNpc();
                 if (blackInst != null) {
                     activeChar.sendSysMessage("Blacksmith of Mammon: " + blackInst.getX() + " " + blackInst.getY() + " "
                             + blackInst.getZ());
@@ -74,7 +74,7 @@ public class AdminMammon implements IAdminCommandHandler {
             }
 
             if (merchSpawnInst != null) {
-                final Npc merchInst = merchSpawnInst.getNpcList().peek();
+                final Npc merchInst = merchSpawnInst.getFirstNpc();
                 if (merchInst != null) {
                     activeChar.sendSysMessage("Merchant of Mammon: " + merchInst.getX() + " " + merchInst.getY() + " "
                             + merchInst.getZ());

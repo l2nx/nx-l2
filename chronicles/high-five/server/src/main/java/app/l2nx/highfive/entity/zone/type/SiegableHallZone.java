@@ -19,28 +19,38 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
-import java.util.ArrayList;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.List;
-import lombok.Getter;
 
 /**
  * @author BiggBoss
  */
+@SingleWriter
 public class SiegableHallZone extends ClanHallZone {
-    @Getter
-    private List<Location> challengerSpawns;
+    private ObjectArrayList<Location> challengerSpawns;
 
     public SiegableHallZone(int id) {
         super(id);
     }
 
+    /** Read-only snapshot of copies; {@code null} without any. */
+    public List<Location> getChallengerSpawns() {
+        WorldPartition.checkOwner();
+        return Location.copiesOf(challengerSpawns);
+    }
+
     @Override
     public void parseLoc(int x, int y, int z, String type) {
+        WorldPartition.checkOwner();
         if ((type != null) && type.equals("challenger")) {
             if (challengerSpawns == null) {
-                challengerSpawns = new ArrayList<>();
+                challengerSpawns = new ObjectArrayList<>();
             }
 
             challengerSpawns.add(new Location(x, y, z));
@@ -50,9 +60,13 @@ public class SiegableHallZone extends ClanHallZone {
     }
 
     public void banishNonSiegeParticipants() {
-        for (Player player : getPlayersInside()) {
-            if ((player != null) && player.isInHideoutSiege()) {
-                player.teleToLocation(getBanishSpawnLoc(), true);
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player player : players) {
+                if (player.isInHideoutSiege()) {
+                    player.teleToLocation(getBanishSpawnLoc(), true);
+                }
             }
         }
     }

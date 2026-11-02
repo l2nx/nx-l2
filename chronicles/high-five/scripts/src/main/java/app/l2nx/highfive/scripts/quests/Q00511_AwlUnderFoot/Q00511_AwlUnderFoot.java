@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00511_AwlUnderFoot;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.ScratchBuffers;
@@ -53,6 +54,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class Q00511_AwlUnderFoot extends Quest {
+    @SingleWriter
     protected class FAUWorld extends InstanceWorld {}
 
     public static class FortDungeon {

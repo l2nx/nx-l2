@@ -19,13 +19,16 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A fishing zone
  * @author durgus
  */
+@SingleWriter
 public class FishingZone extends ZoneType {
     public FishingZone(int id) {
         super(id);
@@ -37,10 +40,9 @@ public class FishingZone extends ZoneType {
     @Override
     protected void onExit(Creature creature) {}
 
-    /*
-     * getWaterZ() this added function returns the Z value for the water surface. In effect this simply returns the upper Z value of the zone. This required some modification of ZoneForm, and zone form extentions.
-     */
+    // The water surface is the zone's upper Z.
     public int getWaterZ() {
+        WorldPartition.checkOwner();
         return getZone().getHighZ();
     }
 }

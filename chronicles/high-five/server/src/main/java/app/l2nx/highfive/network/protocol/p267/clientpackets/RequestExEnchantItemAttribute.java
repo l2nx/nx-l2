@@ -250,10 +250,10 @@ public class RequestExEnchantItemAttribute extends ClientPacket {
         }
 
         if (item.isWeapon()) {
-            return Elementals.WEAPON_VALUES[elementItem.getType().getMaxLevel()];
+            return Elementals.weaponValue(elementItem.getType().getMaxLevel());
         }
 
-        return Elementals.ARMOR_VALUES[elementItem.getType().getMaxLevel()];
+        return Elementals.armorValue(elementItem.getType().getMaxLevel());
     }
 
     public int getPowerToAdd(int stoneId, int oldValue, Item item) {

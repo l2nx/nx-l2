@@ -19,19 +19,16 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
-import lombok.Getter;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  ** @author Gnacik
  */
+@SingleWriter
 public class PremiumItem {
-    @Getter
     private final int itemId;
-
-    @Getter
     private long count;
-
-    @Getter
     private final String sender;
 
     public PremiumItem(int itemid, long count, String sender) {
@@ -40,7 +37,23 @@ public class PremiumItem {
         this.sender = sender;
     }
 
+    public int getItemId() {
+        WorldPartition.checkOwner();
+        return itemId;
+    }
+
+    public long getCount() {
+        WorldPartition.checkOwner();
+        return count;
+    }
+
+    public String getSender() {
+        WorldPartition.checkOwner();
+        return sender;
+    }
+
     public void updateCount(long newcount) {
+        WorldPartition.checkOwner();
         count = newcount;
     }
 }

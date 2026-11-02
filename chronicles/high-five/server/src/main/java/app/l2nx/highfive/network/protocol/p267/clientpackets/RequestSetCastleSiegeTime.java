@@ -70,7 +70,7 @@ public class RequestSetCastleSiegeTime extends ClientPacket {
                     castleId);
         } else if (!castle.isTimeRegistrationOver()) {
             if (isSiegeTimeValid(castle.getSiegeDate().getTimeInMillis(), time)) {
-                castle.getSiegeDate().setTimeInMillis(time);
+                castle.setSiegeDate(time);
                 castle.setTimeRegistrationOver(true);
                 castle.getSiege().saveSiegeDate();
                 final SystemMessage msg =

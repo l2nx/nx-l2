@@ -19,31 +19,45 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneRespawn;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author xban1x
  */
+@SingleWriter
 public abstract class ResidenceZone extends ZoneRespawn {
-    @Getter
-    @Setter(AccessLevel.PROTECTED)
     private int residenceId;
 
     protected ResidenceZone(int id) {
         super(id);
     }
 
-    public void banishForeigners(int owningClanId) {
-        for (Player temp : getPlayersInside()) {
-            if ((owningClanId != 0) && (temp.getClanId() == owningClanId)) {
-                continue;
-            }
+    public int getResidenceId() {
+        WorldPartition.checkOwner();
+        return residenceId;
+    }
 
-            temp.teleToLocation(getBanishSpawnLoc(), true);
+    /** Unchecked: the zone loader sets it from the checked {@code setParameter}. */
+    protected final void setResidenceId(int residenceId) {
+        this.residenceId = residenceId;
+    }
+
+    public void banishForeigners(int owningClanId) {
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player temp : players) {
+                if ((owningClanId != 0) && (temp.getClanId() == owningClanId)) {
+                    continue;
+                }
+
+                temp.teleToLocation(getBanishSpawnLoc(), true);
+            }
         }
     }
 }

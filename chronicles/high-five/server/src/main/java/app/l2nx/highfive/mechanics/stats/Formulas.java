@@ -270,7 +270,7 @@ public class Formulas {
                     if ((castle != null) && (castle.getFunction(Castle.FUNC_RESTORE_HP) != null)) {
                         hpRegenMultiplier *= 1
                                 + ((double) castle.getFunction(Castle.FUNC_RESTORE_HP)
-                                                .getLvl()
+                                                .getLevel()
                                         / 100);
                     }
                 }
@@ -361,7 +361,7 @@ public class Formulas {
                     if ((castle != null) && (castle.getFunction(Castle.FUNC_RESTORE_MP) != null)) {
                         mpRegenMultiplier *= 1
                                 + ((double) castle.getFunction(Castle.FUNC_RESTORE_MP)
-                                                .getLvl()
+                                                .getLevel()
                                         / 100);
                     }
                 }

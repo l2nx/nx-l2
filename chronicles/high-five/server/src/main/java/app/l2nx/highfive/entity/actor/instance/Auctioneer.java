@@ -44,7 +44,6 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -196,9 +195,7 @@ public class Auctioneer extends Npc {
                                 ((a.getEndDate() - ClockBridge.wallMillis()) / 3600000) + " hours "
                                         + (((a.getEndDate() - ClockBridge.wallMillis()) / 60000) % 60) + " minutes");
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
-                        html.replace(
-                                "%AGIT_AUCTION_COUNT%",
-                                String.valueOf(a.getBidders().size()));
+                        html.replace("%AGIT_AUCTION_COUNT%", String.valueOf(a.getBidderCount()));
                         html.replace(
                                 "%AGIT_AUCTION_DESC%",
                                 ClanHallTable.getInstance()
@@ -374,15 +371,17 @@ public class Auctioneer extends Npc {
                 }
 
                 String biders = "";
-                final Map<Integer, Bidder> bidders = ClanHallAuctionManager.getInstance()
+                final List<Bidder> bidders = ClanHallAuctionManager.getInstance()
                         .getAuction(auctionId)
                         .getBidders();
-                for (Bidder b : bidders.values()) {
+                final Calendar timeBid = ClockBridge.calendar();
+                for (Bidder b : bidders) {
+                    timeBid.setTimeInMillis(b.getTimeBid());
                     biders += "<tr><td>" + Objects.toString(b.getClanName(), "") + "</td><td>"
                             + Objects.toString(b.getName(), "") + "</td><td>"
-                            + b.getTimeBid().get(Calendar.YEAR) + "/"
-                            + (b.getTimeBid().get(Calendar.MONTH) + 1) + "/"
-                            + b.getTimeBid().get(Calendar.DATE) + "</td><td>" + b.getBid() + "</td></tr>";
+                            + timeBid.get(Calendar.YEAR) + "/"
+                            + (timeBid.get(Calendar.MONTH) + 1) + "/"
+                            + timeBid.get(Calendar.DATE) + "</td><td>" + b.getBid() + "</td></tr>";
                 }
 
                 final String filename = "data/html/auction/AgitBidderList.htm";
@@ -434,8 +433,7 @@ public class Auctioneer extends Npc {
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
                         html.replace(
                                 "%AGIT_AUCTION_MYBID%",
-                                String.valueOf(
-                                        a.getBidders().get(player.getClanId()).getBid()));
+                                String.valueOf(a.getBidder(player.getClanId()).getBid()));
                         html.replace(
                                 "%AGIT_AUCTION_DESC%",
                                 ClanHallTable.getInstance()
@@ -486,9 +484,7 @@ public class Auctioneer extends Npc {
                                 ((a.getEndDate() - ClockBridge.wallMillis()) / 3600000) + " hours "
                                         + (((a.getEndDate() - ClockBridge.wallMillis()) / 60000) % 60) + " minutes");
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
-                        html.replace(
-                                "%AGIT_AUCTION_BIDCOUNT%",
-                                String.valueOf(a.getBidders().size()));
+                        html.replace("%AGIT_AUCTION_BIDCOUNT%", String.valueOf(a.getBidderCount()));
                         html.replace(
                                 "%AGIT_AUCTION_DESC%",
                                 ClanHallTable.getInstance()
@@ -550,8 +546,7 @@ public class Auctioneer extends Npc {
             } else if (actualCommand.equalsIgnoreCase("cancelBid")) {
                 final long bid = ClanHallAuctionManager.getInstance()
                         .getAuction(clan.getAuctionBiddedAt())
-                        .getBidders()
-                        .get(player.getClanId())
+                        .getBidder(player.getClanId())
                         .getBid();
                 final String filename = "data/html/auction/AgitBidCancel.htm";
                 final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
@@ -657,8 +652,7 @@ public class Auctioneer extends Npc {
                     if (a != null) {
                         html.replace(
                                 "%AGIT_AUCTION_BID%",
-                                String.valueOf(
-                                        a.getBidders().get(player.getClanId()).getBid()));
+                                String.valueOf(a.getBidder(player.getClanId()).getBid()));
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
                         html.replace(
                                 "%AGIT_AUCTION_END%",

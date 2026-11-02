@@ -53,7 +53,7 @@ public class MerchantPriceConfigTable {
 
     public MerchantPriceConfig getMerchantPriceConfig(Merchant npc) {
         for (MerchantPriceConfig mpc : mpcs.values()) {
-            if (ZoneManager.getInstance().getRegion(npc).getZones().containsKey(mpc.getZoneId())) {
+            if (ZoneManager.getInstance().getRegion(npc).containsZone(mpc.getZoneId())) {
                 return mpc;
             }
         }

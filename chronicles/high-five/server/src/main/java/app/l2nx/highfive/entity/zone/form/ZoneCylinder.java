@@ -47,7 +47,6 @@ public class ZoneCylinder extends ZoneForm {
     private final int rad;
     private final int radS;
 
-    @Getter
     private final Location centerPoint;
 
     public ZoneCylinder(int x, int y, int z1, int z2, int rad) {
@@ -69,12 +68,10 @@ public class ZoneCylinder extends ZoneForm {
 
     @Override
     public boolean intersectsRectangle(int ax1, int ax2, int ay1, int ay2) {
-        // Circles point inside the rectangle?
         if ((x > ax1) && (x < ax2) && (y > ay1) && (y < ay2)) {
             return true;
         }
 
-        // Any point of the rectangle intersecting the Circle?
         final double dx1 = ax1 - x;
         final double dy1 = ay1 - y;
         final double dx1Sq = dx1 * dx1;
@@ -99,7 +96,6 @@ public class ZoneCylinder extends ZoneForm {
             return true;
         }
 
-        // Collision on any side of the rectangle?
         if ((x > ax1) && (x < ax2)) {
             if (Math.abs(y - ay2) < rad) {
                 return true;
@@ -142,6 +138,12 @@ public class ZoneCylinder extends ZoneForm {
                     y + (int) (Math.sin(angle * i) * rad),
                     z);
         }
+    }
+
+    // A copy, so a caller that moves the point leaves the center of the zone as it is.
+    @Override
+    public Location getCenterPoint() {
+        return centerPoint.clone();
     }
 
     @Override

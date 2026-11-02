@@ -6,6 +6,7 @@ package app.l2nx.highfive.entity.residences;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -30,6 +31,7 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
+import app.l2nx.highfive.entity.residences.ClanHallAuction.Bidder;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.auction.ClanHallAuctionRepository;
@@ -39,14 +41,19 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.springframework.dao.DataAccessResourceFailureException;
 
@@ -88,6 +95,79 @@ class ClanHallAuctionTest {
     }
 
     @Nested
+    class OwnershipCheck {
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("ownerCheckedCalls")
+        void ownerCheckedCall_shouldThrow_whenCalledOffTheLoop(Consumer<ClanHallAuction> call) {
+            assertThatThrownBy(() -> call.accept(auction))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("touched from thread");
+        }
+
+        static Stream<Named<Consumer<ClanHallAuction>>> ownerCheckedCalls() {
+            return Stream.of(
+                    Named.of("getId (accessor)", ClanHallAuction::getId),
+                    Named.of("getItemId", ClanHallAuction::getItemId),
+                    Named.of("getEndDate", ClanHallAuction::getEndDate),
+                    Named.of("getHighestBidderId", ClanHallAuction::getHighestBidderId),
+                    Named.of("getHighestBidderMaxBid", ClanHallAuction::getHighestBidderMaxBid),
+                    Named.of("getItemName", ClanHallAuction::getItemName),
+                    Named.of("getSellerClanId", ClanHallAuction::getSellerClanId),
+                    Named.of("getCurrentBid", ClanHallAuction::getCurrentBid),
+                    Named.of("getStartingBid", ClanHallAuction::getStartingBid),
+                    Named.of("getSellerName", ClanHallAuction::getSellerName),
+                    Named.of("getSellerClanName", ClanHallAuction::getSellerClanName),
+                    Named.of("getBidders", ClanHallAuction::getBidders),
+                    Named.of("getBidder", a -> a.getBidder(BIDDER_CLAN)),
+                    Named.of("getBidderCount", ClanHallAuction::getBidderCount),
+                    Named.of("setBid (former synchronized)", a -> a.setBid(null, BID)),
+                    Named.of("deleteAuctionFromDB", ClanHallAuction::deleteAuctionFromDB),
+                    Named.of("endAuction (former synchronized)", ClanHallAuction::endAuction),
+                    Named.of("cancelBid (former synchronized)", a -> a.cancelBid(BIDDER_CLAN)),
+                    Named.of("cancelAuction (former synchronized)", ClanHallAuction::cancelAuction),
+                    Named.of("confirmAuction", ClanHallAuction::confirmAuction));
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("bidderCalls")
+        void bidderCall_shouldThrow_whenCalledOffTheLoop(Consumer<Bidder> call) {
+            final Bidder actual = new Bidder(BIDDER_CLAN, BID, ClockBridgeExtension.WALL_START.toEpochMilli());
+
+            assertThatThrownBy(() -> call.accept(actual))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("touched from thread");
+        }
+
+        static Stream<Named<Consumer<Bidder>>> bidderCalls() {
+            return Stream.of(
+                    Named.of("getClanId (accessor)", Bidder::getClanId),
+                    Named.of("getBid", Bidder::getBid),
+                    Named.of("setBid", b -> b.setBid(BID)),
+                    Named.of("getTimeBid", Bidder::getTimeBid),
+                    Named.of("setTimeBid", b -> b.setTimeBid(0)),
+                    Named.of("getName", Bidder::getName),
+                    Named.of("getClanName", Bidder::getClanName));
+        }
+    }
+
+    @Nested
+    class GetTimeBid {
+        @Test
+        void getTimeBid_shouldFollowSetTimeBid() {
+            final long bidAt = ClockBridgeExtension.WALL_START.toEpochMilli();
+
+            final List<Long> actual = WorldLoopExtension.callInPass(() -> {
+                final Bidder bidder = new Bidder(BIDDER_CLAN, BID, bidAt);
+                final long first = bidder.getTimeBid();
+                bidder.setTimeBid(bidAt + 1_000);
+                return List.of(first, bidder.getTimeBid());
+            });
+
+            assertThat(actual).containsExactly(bidAt, bidAt + 1_000);
+        }
+    }
+
+    @Nested
     class SetBid {
         private MockedStatic<ClanTable> clanTable;
 
@@ -104,12 +184,37 @@ class ClanHallAuctionTest {
 
         @Test
         void setBid_shouldTakeAdenaAndFlagClan_whenBidIsStored() {
-            auction.setBid(bidder, BID);
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                auction.setBid(bidder, BID);
+                return auction.getHighestBidderId();
+            });
 
             verify(warehouse).destroyItemByItemId(ItemProcessType.BUY, ADENA_ID, BID, bidder, bidder);
             verify(warehouse, never()).addItem(any(), anyInt(), anyLong(), any(), any());
             verify(bidderClan).setAuctionBiddedAt(HALL, true);
-            assertThat(auction.getHighestBidderId()).isEqualTo(BIDDER_CLAN);
+            assertThat(actual).isEqualTo(BIDDER_CLAN);
+        }
+
+        @Test
+        void setBid_shouldKeepBidOrderAndUpdateTheRepeatedBidder() {
+            final Player other = mock(Player.class);
+            final Clan otherClan = mock(Clan.class);
+            when(other.getClan()).thenReturn(otherClan);
+            when(other.getClanId()).thenReturn(BIDDER_CLAN + 1);
+            when(otherClan.getWarehouse()).thenReturn(warehouse);
+
+            final List<Object> actual = WorldLoopExtension.callInPass(() -> {
+                auction.setBid(bidder, BID);
+                auction.setBid(other, BID + 100);
+                auction.setBid(bidder, BID + 200);
+                return List.of(
+                        auction.getBidders().stream().map(Bidder::getClanId).toList(),
+                        auction.getBidderCount(),
+                        auction.getBidder(BIDDER_CLAN).getBid(),
+                        auction.getHighestBidderId());
+            });
+
+            assertThat(actual).containsExactly(List.of(BIDDER_CLAN, BIDDER_CLAN + 1), 2, BID + 200, BIDDER_CLAN);
         }
 
         @Test
@@ -118,12 +223,14 @@ class ClanHallAuctionTest {
                     .when(repository)
                     .saveBid(eq(HALL), any());
 
-            auction.setBid(bidder, BID);
+            final List<Object> actual = WorldLoopExtension.callInPass(() -> {
+                auction.setBid(bidder, BID);
+                return List.of(auction.getHighestBidderId(), auction.getBidders());
+            });
 
             verify(warehouse).addItem(ItemProcessType.REFUND, ADENA_ID, BID, null, null);
             verify(bidderClan, never()).setAuctionBiddedAt(anyInt(), anyBoolean());
-            assertThat(auction.getHighestBidderId()).isZero();
-            assertThat(auction.getBidders()).isEmpty();
+            assertThat(actual).containsExactly(0, List.of());
         }
     }
 
@@ -193,13 +300,14 @@ class ClanHallAuctionTest {
 
         @Test
         void endAuction_shouldKeepNextAuction_whenCancelledSaleHadNoBids() {
-            final ClanHallAuction sale = storedSale();
             final ClanHallAuction next = mock(ClanHallAuction.class);
             when(next.getId()).thenReturn(HALL);
-            sale.cancelAuction();
-            auctions.add(next);
-
-            sale.endAuction();
+            WorldLoopExtension.runInPass(() -> {
+                final ClanHallAuction sale = storedSale();
+                sale.cancelAuction();
+                auctions.add(next);
+                sale.endAuction();
+            });
 
             assertThat(auctions).containsExactly(next);
         }
@@ -212,13 +320,30 @@ class ClanHallAuctionTest {
                             .bid(BID)
                             .timeBid(ClockBridgeExtension.WALL_START)
                             .build()));
-            final ClanHallAuction sale = storedSale();
-            sale.cancelAuction();
-
-            sale.endAuction();
+            WorldLoopExtension.runInPass(() -> {
+                final ClanHallAuction sale = storedSale();
+                sale.cancelAuction();
+                sale.endAuction();
+            });
 
             verify(halls, never()).setOwner(anyInt(), any());
             verify(manager).deleteAuction(HALL);
+        }
+
+        @Test
+        void endAuction_shouldDeleteTheStoredSale_whenItEndsWithoutBids() {
+            final ClanHallAuction next = mock(ClanHallAuction.class);
+            when(next.getId()).thenReturn(HALL);
+
+            WorldLoopExtension.runInPass(() -> {
+                final ClanHallAuction sale = storedSale();
+                auctions.add(next);
+                sale.endAuction();
+            });
+
+            assertThat(auctions).containsExactly(next);
+            verify(manager).deleteAuction(HALL);
+            verify(halls, never()).setOwner(anyInt(), any());
         }
     }
 }

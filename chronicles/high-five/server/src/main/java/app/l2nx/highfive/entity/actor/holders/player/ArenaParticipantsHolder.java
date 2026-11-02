@@ -19,45 +19,62 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.HandysBlockCheckerManager;
 import app.l2nx.highfive.managers.games.BlockCheckerManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import java.util.ArrayList;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import lombok.Getter;
 
 /**
  * @author xban1x
  */
+@SingleWriter
 public class ArenaParticipantsHolder {
     private final int arena;
-
-    @Getter
-    private final List<Player> redPlayers;
-
-    @Getter
-    private final List<Player> bluePlayers;
-
-    @Getter
+    private final ObjectArrayList<Player> redPlayers = new ObjectArrayList<>(6);
+    private final ObjectArrayList<Player> bluePlayers = new ObjectArrayList<>(6);
     private final BlockCheckerManager event;
 
     public ArenaParticipantsHolder(int arena) {
         this.arena = arena;
-        redPlayers = new ArrayList<>(6);
-        bluePlayers = new ArrayList<>(6);
         event = new BlockCheckerManager(this, this.arena);
     }
 
+    /** @return a read-only snapshot of the red team in join order */
+    public List<Player> getRedPlayers() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(redPlayers));
+    }
+
+    /** @return a read-only snapshot of the blue team in join order */
+    public List<Player> getBluePlayers() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(bluePlayers));
+    }
+
+    public BlockCheckerManager getEvent() {
+        WorldPartition.checkOwner();
+        return event;
+    }
+
+    /** @return a read-only snapshot of both teams, red first */
     public List<Player> getAllPlayers() {
-        final List<Player> all = new ArrayList<>(redPlayers);
+        WorldPartition.checkOwner();
+        final ObjectArrayList<Player> all = new ObjectArrayList<>(redPlayers.size() + bluePlayers.size());
+        all.addAll(redPlayers);
         all.addAll(bluePlayers);
-        return all;
+        return ObjectLists.unmodifiable(all);
     }
 
     public void addPlayer(Player player, int team) {
+        WorldPartition.checkOwner();
         if (team == 0) {
             redPlayers.add(player);
         } else {
@@ -66,6 +83,7 @@ public class ArenaParticipantsHolder {
     }
 
     public void removePlayer(Player player, int team) {
+        WorldPartition.checkOwner();
         if (team == 0) {
             redPlayers.remove(player);
         } else {
@@ -74,6 +92,7 @@ public class ArenaParticipantsHolder {
     }
 
     public int getPlayerTeam(Player player) {
+        WorldPartition.checkOwner();
         if (redPlayers.contains(player)) {
             return 0;
         } else if (bluePlayers.contains(player)) {
@@ -84,56 +103,55 @@ public class ArenaParticipantsHolder {
     }
 
     public int getRedTeamSize() {
+        WorldPartition.checkOwner();
         return redPlayers.size();
     }
 
     public int getBlueTeamSize() {
+        WorldPartition.checkOwner();
         return bluePlayers.size();
     }
 
     public void broadCastPacketToTeam(ServerPacket packet) {
-        for (Player p : redPlayers) {
-            p.sendPacket(packet);
-        }
-
-        for (Player p : bluePlayers) {
-            p.sendPacket(packet);
-        }
+        WorldPartition.checkOwner();
+        broadcast(packet);
     }
 
     public void clearPlayers() {
+        WorldPartition.checkOwner();
         redPlayers.clear();
         bluePlayers.clear();
     }
 
     public void updateEvent() {
+        WorldPartition.checkOwner();
         event.updatePlayersOnStart(this);
     }
 
+    /** Moves players from the bigger team until the sizes differ by one at most. */
     public void checkAndShuffle() {
-        final int redSize = redPlayers.size();
-        final int blueSize = bluePlayers.size();
-        if (redSize > (blueSize + 1)) {
-            broadCastPacketToTeam(
-                    new SystemMessage(SystemMessageId.TEAM_MEMBERS_WERE_MODIFIED_BECAUSE_THE_TEAMS_WERE_UNBALANCED));
-            for (int i = 0; i < ((redSize - (blueSize + 1)) + 1); i++) {
-                final Player plr = redPlayers.get(i);
-                if (plr == null) {
-                    continue;
-                }
+        WorldPartition.checkOwner();
+        final int difference = redPlayers.size() - bluePlayers.size();
+        if (Math.abs(difference) < 2) {
+            return;
+        }
 
-                HandysBlockCheckerManager.getInstance().changePlayerToTeam(plr, arena);
+        broadcast(new SystemMessage(SystemMessageId.TEAM_MEMBERS_WERE_MODIFIED_BECAUSE_THE_TEAMS_WERE_UNBALANCED));
+        // Each move changes both sizes, so half the difference balances the teams; the move edits the team lists.
+        try (ScratchBuffers.Snapshot<Player> bigger =
+                ScratchBuffers.snapshot(difference > 0 ? redPlayers : bluePlayers)) {
+            for (int i = 0; i < (Math.abs(difference) / 2); i++) {
+                HandysBlockCheckerManager.getInstance().changePlayerToTeam(bigger.get(i), arena);
             }
-        } else if (blueSize > (redSize + 1)) {
-            broadCastPacketToTeam(
-                    new SystemMessage(SystemMessageId.TEAM_MEMBERS_WERE_MODIFIED_BECAUSE_THE_TEAMS_WERE_UNBALANCED));
-            for (int i = 0; i < ((blueSize - (redSize + 1)) + 1); i++) {
-                final Player plr = bluePlayers.get(i);
-                if (plr == null) {
-                    continue;
-                }
+        }
+    }
 
-                HandysBlockCheckerManager.getInstance().changePlayerToTeam(plr, arena);
+    private void broadcast(ServerPacket packet) {
+        try (ScratchBuffers.Snapshot<Player> players = ScratchBuffers.empty()) {
+            players.addAll(redPlayers);
+            players.addAll(bluePlayers);
+            for (Player p : players) {
+                p.sendPacket(packet);
             }
         }
     }

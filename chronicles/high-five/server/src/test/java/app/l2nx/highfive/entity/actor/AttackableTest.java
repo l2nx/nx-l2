@@ -101,7 +101,7 @@ class AttackableTest {
                 actual.set(attackable.getAggroInfo(expected.get()));
             });
 
-            assertThat(actual.get().getAttacker()).isSameAs(expected.get());
+            assertThat(WorldLoopExtension.callInPass(actual.get()::getAttacker)).isSameAs(expected.get());
         }
 
         @Test
@@ -359,8 +359,8 @@ class AttackableTest {
             });
 
             assertThat(actual.get()).isNotSameAs(source.get());
-            assertThat(actual.get().getHate()).isEqualTo(25);
-            assertThat(actual.get().getDamage()).isZero();
+            assertThat(WorldLoopExtension.callInPass(actual.get()::getHate)).isEqualTo(25);
+            assertThat(WorldLoopExtension.callInPass(actual.get()::getDamage)).isZero();
         }
 
         @Test
@@ -377,8 +377,8 @@ class AttackableTest {
                 actual.set(master.getAggroInfo(attacker));
             });
 
-            assertThat(actual.get().getDamage()).isEqualTo(10);
-            assertThat(actual.get().getHate()).isEqualTo(25);
+            assertThat(WorldLoopExtension.callInPass(actual.get()::getDamage)).isEqualTo(10);
+            assertThat(WorldLoopExtension.callInPass(actual.get()::getHate)).isEqualTo(25);
         }
     }
 
@@ -445,7 +445,7 @@ class AttackableTest {
                 actual.set(attackable.getAbsorberInfo(absorber.getObjectId()));
             });
 
-            assertThat(actual.get().getObjectId()).isEqualTo(absorber.getObjectId());
+            assertThat(WorldLoopExtension.callInPass(actual.get()::getObjectId)).isEqualTo(absorber.getObjectId());
         }
 
         @Test

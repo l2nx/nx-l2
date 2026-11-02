@@ -19,12 +19,14 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AgitDecoInfo;
+import app.l2nx.highfive.partition.WorldPartition;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author durgus
  */
 @Slf4j
+@SingleWriter
 public class ClanHallZone extends ResidenceZone {
     public ClanHallZone(int id) {
         super(id);
@@ -39,10 +42,10 @@ public class ClanHallZone extends ResidenceZone {
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("clanHallId")) {
             setResidenceId(Integer.parseInt(value));
 
-            // Register self to the correct clan hall.
             final ClanHall hall = ClanHallTable.getInstance().getClanHallById(getResidenceId());
             if (hall != null) {
                 hall.setZone(this);
@@ -60,14 +63,12 @@ public class ClanHallZone extends ResidenceZone {
             return;
         }
 
-        // Set as in clan hall.
         creature.setInsideZone(ZoneId.CLAN_HALL, true);
         final AuctionableHall clanHall = ClanHallTable.getInstance().getAuctionableHallById(getResidenceId());
         if (clanHall == null) {
             return;
         }
 
-        // Send decoration packet
         creature.sendPacket(new AgitDecoInfo(clanHall));
     }
 

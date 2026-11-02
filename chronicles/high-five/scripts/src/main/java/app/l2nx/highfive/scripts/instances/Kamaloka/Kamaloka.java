@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.instances.Kamaloka;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -40,9 +41,11 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -445,13 +448,109 @@ public class Kamaloka extends InstanceScript {
     /** Kamaloka captains (start NPCs) npcIds. */
     private static final int[] CAPTAINS = {30332, 30071, 30916, 30196, 31981, 31340};
 
+    @SingleWriter
     protected class KamaWorld extends InstanceWorld {
-        public int index; // 0-18 index of the kama type in arrays
-        public int shaman = 0; // objectId of the shaman
-        public List<Spawn> firstRoom; // list of the spawns in the first room (excluding shaman)
-        public List<Integer> secondRoom; // list of objectIds mobs in the second room
-        public int miniBoss = 0; // objectId of the miniboss
-        public Npc boss = null; // boss
+        private int index; // 0-18 index of the kama type in arrays
+        private int shaman = 0; // objectId of the shaman
+        private List<Spawn> firstRoom; // list of the spawns in the first room (excluding shaman)
+        private List<Integer> secondRoom; // list of objectIds mobs in the second room
+        private int miniBoss = 0; // objectId of the miniboss
+        private Npc boss = null;
+
+        public int getIndex() {
+            WorldPartition.checkOwner();
+            return index;
+        }
+
+        public void setIndex(int index) {
+            WorldPartition.checkOwner();
+            this.index = index;
+        }
+
+        public int getShaman() {
+            WorldPartition.checkOwner();
+            return shaman;
+        }
+
+        public void setShaman(int shaman) {
+            WorldPartition.checkOwner();
+            this.shaman = shaman;
+        }
+
+        public List<Spawn> getFirstRoom() {
+            WorldPartition.checkOwner();
+            return firstRoom == null ? null : Collections.unmodifiableList(new ArrayList<>(firstRoom));
+        }
+
+        public void setFirstRoom(List<Spawn> firstRoom) {
+            WorldPartition.checkOwner();
+            this.firstRoom = firstRoom;
+        }
+
+        public void addFirstRoom(Spawn element) {
+            WorldPartition.checkOwner();
+            firstRoom.add(element);
+        }
+
+        public void clearFirstRoom() {
+            WorldPartition.checkOwner();
+            firstRoom.clear();
+        }
+
+        public List<Integer> getSecondRoom() {
+            WorldPartition.checkOwner();
+            return secondRoom == null ? null : Collections.unmodifiableList(new ArrayList<>(secondRoom));
+        }
+
+        public void setSecondRoom(List<Integer> secondRoom) {
+            WorldPartition.checkOwner();
+            this.secondRoom = secondRoom;
+        }
+
+        public void addSecondRoom(Integer element) {
+            WorldPartition.checkOwner();
+            secondRoom.add(element);
+        }
+
+        public Integer getSecondRoomAt(int index) {
+            WorldPartition.checkOwner();
+            return secondRoom.get(index);
+        }
+
+        public int getSecondRoomCount() {
+            WorldPartition.checkOwner();
+            return secondRoom.size();
+        }
+
+        public void clearSecondRoom() {
+            WorldPartition.checkOwner();
+            secondRoom.clear();
+        }
+
+        public int getMiniBoss() {
+            WorldPartition.checkOwner();
+            return miniBoss;
+        }
+
+        public void setMiniBoss(int miniBoss) {
+            WorldPartition.checkOwner();
+            this.miniBoss = miniBoss;
+        }
+
+        public Npc getBoss() {
+            WorldPartition.checkOwner();
+            return boss;
+        }
+
+        public void setBoss(Npc boss) {
+            WorldPartition.checkOwner();
+            this.boss = boss;
+        }
+
+        public void setSecondRoomAt(int index, Integer element) {
+            WorldPartition.checkOwner();
+            secondRoom.set(index, element);
+        }
     }
 
     private Kamaloka() {
@@ -624,7 +723,7 @@ public class Kamaloka extends InstanceScript {
             }
 
             // check for level difference again on reenter
-            if (Math.abs(player.getLevel() - LEVEL[((KamaWorld) world).index]) > MAX_LEVEL_DIFFERENCE) {
+            if (Math.abs(player.getLevel() - LEVEL[((KamaWorld) world).getIndex()]) > MAX_LEVEL_DIFFERENCE) {
                 final SystemMessage sm =
                         new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
                 sm.addPcName(player);
@@ -662,7 +761,7 @@ public class Kamaloka extends InstanceScript {
         instance.setEmptyDestroyTime(EMPTY_DESTROY_TIME * 60000);
 
         // set index for easy access to the arrays
-        ((KamaWorld) world).index = index;
+        ((KamaWorld) world).setIndex(index);
         InstanceManager.getInstance().addWorld(world);
 
         // spawn npcs
@@ -728,13 +827,13 @@ public class Kamaloka extends InstanceScript {
         int[] npcs;
         int[][] spawns;
         Npc npc;
-        final int index = world.index;
+        final int index = world.getIndex();
 
         // first room
         npcs = FIRST_ROOM[index];
         spawns = FIRST_ROOM_SPAWNS[index];
         if (npcs != null) {
-            world.firstRoom = new ArrayList<>(spawns.length - 1);
+            world.setFirstRoom(new ArrayList<>(spawns.length - 1));
             final int shaman = getRandom(spawns.length); // random position for shaman
             for (int i = 0; i < spawns.length; i++) {
                 if (i == shaman) {
@@ -749,7 +848,7 @@ public class Kamaloka extends InstanceScript {
                             0,
                             false,
                             world.getInstanceId());
-                    world.shaman = npc.getObjectId();
+                    world.setShaman(npc.getObjectId());
                 } else {
                     npc = addSpawn(
                             npcs[1],
@@ -765,7 +864,7 @@ public class Kamaloka extends InstanceScript {
                     spawn.setRespawnDelay(FIRST_ROOM_RESPAWN_DELAY);
                     spawn.setAmount(1);
                     spawn.startRespawn();
-                    world.firstRoom.add(spawn); // store mobs spawns
+                    world.addFirstRoom(spawn);
                 }
 
                 npc.setRandomWalking(false);
@@ -776,11 +875,11 @@ public class Kamaloka extends InstanceScript {
         npcs = SECOND_ROOM[index];
         spawns = SECOND_ROOM_SPAWNS[index];
         if (npcs != null) {
-            world.secondRoom = new ArrayList<>(spawns.length);
+            world.setSecondRoom(new ArrayList<>(spawns.length));
             for (int[] spawn : spawns) {
                 npc = addSpawn(npcs[0], spawn[0], spawn[1], spawn[2], 0, false, 0, false, world.getInstanceId());
                 npc.setRandomWalking(false);
-                world.secondRoom.add(npc.getObjectId());
+                world.addSecondRoom(npc.getObjectId());
             }
         }
 
@@ -797,7 +896,7 @@ public class Kamaloka extends InstanceScript {
                     false,
                     world.getInstanceId());
             npc.setRandomWalking(false);
-            world.miniBoss = npc.getObjectId();
+            world.setMiniBoss(npc.getObjectId());
         }
 
         // escape teleporter
@@ -826,7 +925,7 @@ public class Kamaloka extends InstanceScript {
                 false,
                 world.getInstanceId());
         npc.asMonster().setOnKillDelay(100);
-        world.boss = npc;
+        world.setBoss(npc);
     }
 
     /**
@@ -902,25 +1001,25 @@ public class Kamaloka extends InstanceScript {
             final int objectId = npc.getObjectId();
 
             // first room was spawned ? is shaman killed ?
-            if ((world.firstRoom != null) && (world.shaman != 0) && (world.shaman == objectId)) {
-                world.shaman = 0;
+            if ((world.getFirstRoom() != null) && (world.getShaman() != 0) && (world.getShaman() == objectId)) {
+                world.setShaman(0);
 
                 // stop respawn of the minions
-                for (Spawn spawn : world.firstRoom) {
+                for (Spawn spawn : world.getFirstRoom()) {
                     if (spawn != null) {
                         spawn.stopRespawn();
                     }
                 }
 
-                world.firstRoom.clear();
-                world.firstRoom = null;
-                if (world.boss != null) {
-                    final int skillId = FIRST_ROOM[world.index][2];
-                    final int skillLevel = FIRST_ROOM[world.index][3];
+                world.clearFirstRoom();
+                world.setFirstRoom(null);
+                if (world.getBoss() != null) {
+                    final int skillId = FIRST_ROOM[world.getIndex()][2];
+                    final int skillLevel = FIRST_ROOM[world.getIndex()][3];
                     if ((skillId != 0) && (skillLevel != 0)) {
                         final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
                         if (skill != null) {
-                            skill.applyEffects(world.boss, world.boss);
+                            skill.applyEffects(world.getBoss(), world.getBoss());
                         }
                     }
                 }
@@ -928,30 +1027,30 @@ public class Kamaloka extends InstanceScript {
             }
 
             // second room was spawned ?
-            if (world.secondRoom != null) {
+            if (world.getSecondRoom() != null) {
                 boolean all = true;
 
                 // check for all mobs in the second room
-                for (int i = 0; i < world.secondRoom.size(); i++) {
+                for (int i = 0; i < world.getSecondRoomCount(); i++) {
                     // found killed now mob
-                    if (world.secondRoom.get(i) == objectId) {
-                        world.secondRoom.set(i, 0);
-                    } else if (world.secondRoom.get(i) != 0) {
+                    if (world.getSecondRoomAt(i) == objectId) {
+                        world.setSecondRoomAt(i, 0);
+                    } else if (world.getSecondRoomAt(i) != 0) {
                         all = false;
                     }
                 }
 
                 // all mobs killed ?
                 if (all) {
-                    world.secondRoom.clear();
-                    world.secondRoom = null;
-                    if (world.boss != null) {
-                        final int skillId = SECOND_ROOM[world.index][1];
-                        final int skillLevel = SECOND_ROOM[world.index][2];
+                    world.clearSecondRoom();
+                    world.setSecondRoom(null);
+                    if (world.getBoss() != null) {
+                        final int skillId = SECOND_ROOM[world.getIndex()][1];
+                        final int skillLevel = SECOND_ROOM[world.getIndex()][2];
                         if ((skillId != 0) && (skillLevel != 0)) {
                             final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
                             if (skill != null) {
-                                skill.applyEffects(world.boss, world.boss);
+                                skill.applyEffects(world.getBoss(), world.getBoss());
                             }
                         }
                     }
@@ -960,15 +1059,15 @@ public class Kamaloka extends InstanceScript {
             }
 
             // miniboss spawned ?
-            if ((world.miniBoss != 0) && (world.miniBoss == objectId)) {
-                world.miniBoss = 0;
-                if (world.boss != null) {
-                    final int skillId = MINIBOSS[world.index][4];
-                    final int skillLevel = MINIBOSS[world.index][5];
+            if ((world.getMiniBoss() != 0) && (world.getMiniBoss() == objectId)) {
+                world.setMiniBoss(0);
+                if (world.getBoss() != null) {
+                    final int skillId = MINIBOSS[world.getIndex()][4];
+                    final int skillLevel = MINIBOSS[world.getIndex()][5];
                     if ((skillId != 0) && (skillLevel != 0)) {
                         final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
                         if (skill != null) {
-                            skill.applyEffects(world.boss, world.boss);
+                            skill.applyEffects(world.getBoss(), world.getBoss());
                         }
                     }
                 }
@@ -976,8 +1075,8 @@ public class Kamaloka extends InstanceScript {
             }
 
             // boss was killed, finish instance
-            if ((world.boss != null) && (world.boss == npc)) {
-                world.boss = null;
+            if ((world.getBoss() != null) && (world.getBoss() == npc)) {
+                world.setBoss(null);
                 finishInstance(world);
             }
         }

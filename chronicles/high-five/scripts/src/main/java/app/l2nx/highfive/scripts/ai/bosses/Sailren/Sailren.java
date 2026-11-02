@@ -413,8 +413,7 @@ public class Sailren extends Script {
             return;
         }
 
-        if ((SAILREN_ZONE == null) || SAILREN_ZONE.getPlayersInside().isEmpty()) {
-            // No players inside: no reschedule.
+        if ((SAILREN_ZONE == null) || !SAILREN_ZONE.hasPlayersInside()) {
             return;
         }
 

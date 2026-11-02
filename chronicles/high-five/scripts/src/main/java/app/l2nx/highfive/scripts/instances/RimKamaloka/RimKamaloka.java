@@ -22,10 +22,13 @@
  */
 package app.l2nx.highfive.scripts.instances.RimKamaloka;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -44,9 +47,11 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -296,25 +301,201 @@ public class RimKamaloka extends Script {
 
     // @formatter:on
 
+    @SingleWriter
     private class RimKamaWorld extends InstanceWorld {
-        public int index;
-        public int KANABION;
-        public int DOPPLER;
-        public int VOIDER;
+        private int index;
+        private int kanabion;
+        private int doppler;
+        private int voider;
 
-        public int kanabionsCount = 0;
-        public int dopplersCount = 0;
-        public int voidersCount = 0;
-        public int grade = 0;
-        public boolean finished = false;
-        public boolean rewarded = false;
+        private int kanabionsCount = 0;
+        private int dopplersCount = 0;
+        private int voidersCount = 0;
+        private int grade = 0;
+        private boolean finished = false;
+        private boolean rewarded = false;
 
-        public ScheduledFuture<?> finishTask = null;
-        public Set<Monster> spawnedMobs = ConcurrentHashMap.newKeySet();
-        public Map<Integer, Long> lastAttack = new ConcurrentHashMap<>();
-        public ScheduledFuture<?> despawnTask = null;
+        private ScheduledFuture<?> finishTask = null;
+        private Set<Monster> spawnedMobs = new LinkedHashSet<>();
+        private Map<Integer, Long> lastAttack = new HashMap<>();
+        private ScheduledFuture<?> despawnTask = null;
 
         public RimKamaWorld() {}
+
+        public int getIndex() {
+            WorldPartition.checkOwner();
+            return index;
+        }
+
+        public void setIndex(int index) {
+            WorldPartition.checkOwner();
+            this.index = index;
+        }
+
+        public int getKanabion() {
+            WorldPartition.checkOwner();
+            return kanabion;
+        }
+
+        public void setKanabion(int kanabion) {
+            WorldPartition.checkOwner();
+            this.kanabion = kanabion;
+        }
+
+        public int getDoppler() {
+            WorldPartition.checkOwner();
+            return doppler;
+        }
+
+        public void setDoppler(int doppler) {
+            WorldPartition.checkOwner();
+            this.doppler = doppler;
+        }
+
+        public int getVoider() {
+            WorldPartition.checkOwner();
+            return voider;
+        }
+
+        public void setVoider(int voider) {
+            WorldPartition.checkOwner();
+            this.voider = voider;
+        }
+
+        public int getKanabionsCount() {
+            WorldPartition.checkOwner();
+            return kanabionsCount;
+        }
+
+        public void incrementKanabionsCount() {
+            WorldPartition.checkOwner();
+            kanabionsCount++;
+        }
+
+        public int getDopplersCount() {
+            WorldPartition.checkOwner();
+            return dopplersCount;
+        }
+
+        public void incrementDopplersCount() {
+            WorldPartition.checkOwner();
+            dopplersCount++;
+        }
+
+        public int getVoidersCount() {
+            WorldPartition.checkOwner();
+            return voidersCount;
+        }
+
+        public void incrementVoidersCount() {
+            WorldPartition.checkOwner();
+            voidersCount++;
+        }
+
+        public int getGrade() {
+            WorldPartition.checkOwner();
+            return grade;
+        }
+
+        public void setGrade(int grade) {
+            WorldPartition.checkOwner();
+            this.grade = grade;
+        }
+
+        public boolean isFinished() {
+            WorldPartition.checkOwner();
+            return finished;
+        }
+
+        public void setFinished(boolean finished) {
+            WorldPartition.checkOwner();
+            this.finished = finished;
+        }
+
+        public boolean isRewarded() {
+            WorldPartition.checkOwner();
+            return rewarded;
+        }
+
+        public void setRewarded(boolean rewarded) {
+            WorldPartition.checkOwner();
+            this.rewarded = rewarded;
+        }
+
+        public ScheduledFuture<?> getFinishTask() {
+            WorldPartition.checkOwner();
+            return finishTask;
+        }
+
+        public void setFinishTask(ScheduledFuture<?> finishTask) {
+            WorldPartition.checkOwner();
+            this.finishTask = finishTask;
+        }
+
+        public void collectSpawnedMobs(Collection<? super Monster> target) {
+            WorldPartition.checkOwner();
+            target.addAll(spawnedMobs);
+        }
+
+        public void addSpawnedMobs(Monster element) {
+            WorldPartition.checkOwner();
+            spawnedMobs.add(element);
+        }
+
+        public void removeSpawnedMobs(Monster element) {
+            WorldPartition.checkOwner();
+            spawnedMobs.remove(element);
+        }
+
+        public boolean isSpawnedMobsEmpty() {
+            WorldPartition.checkOwner();
+            return spawnedMobs.isEmpty();
+        }
+
+        public void clearSpawnedMobs() {
+            WorldPartition.checkOwner();
+            spawnedMobs.clear();
+        }
+
+        public void putLastAttack(Integer key, Long value) {
+            WorldPartition.checkOwner();
+            lastAttack.put(key, value);
+        }
+
+        public Long getLastAttack(Integer key) {
+            WorldPartition.checkOwner();
+            return lastAttack.get(key);
+        }
+
+        public void removeLastAttack(Integer key) {
+            WorldPartition.checkOwner();
+            lastAttack.remove(key);
+        }
+
+        public boolean containsLastAttack(Integer key) {
+            WorldPartition.checkOwner();
+            return lastAttack.containsKey(key);
+        }
+
+        public boolean isLastAttackEmpty() {
+            WorldPartition.checkOwner();
+            return lastAttack.isEmpty();
+        }
+
+        public void clearLastAttack() {
+            WorldPartition.checkOwner();
+            lastAttack.clear();
+        }
+
+        public ScheduledFuture<?> getDespawnTask() {
+            WorldPartition.checkOwner();
+            return despawnTask;
+        }
+
+        public void setDespawnTask(ScheduledFuture<?> despawnTask) {
+            WorldPartition.checkOwner();
+            this.despawnTask = despawnTask;
+        }
     }
 
     private RimKamaloka() {
@@ -429,11 +610,11 @@ public class RimKamaloka extends Script {
             final InstanceWorld tmpWorld = InstanceManager.getInstance().getWorld(npc.getInstanceId());
             if (tmpWorld instanceof RimKamaWorld) {
                 final RimKamaWorld world = (RimKamaWorld) tmpWorld;
-                if (!world.finished) {
+                if (!world.isFinished()) {
                     return "";
                 }
 
-                switch (world.grade) {
+                switch (world.getGrade()) {
                     case 0: {
                         return "GradeF.htm";
                     }
@@ -483,9 +664,7 @@ public class RimKamaloka extends Script {
         final InstanceWorld tmpWorld = InstanceManager.getInstance().getWorld(npc.getInstanceId());
         if (tmpWorld instanceof RimKamaWorld) {
             final RimKamaWorld world = (RimKamaWorld) tmpWorld;
-            synchronized (world.lastAttack) {
-                world.lastAttack.put(npc.getObjectId(), ClockBridge.gameMillis());
-            }
+            world.putLastAttack(npc.getObjectId(), ClockBridge.gameMillis());
 
             final int maxHp = npc.getMaxHp();
             if (npc.getCurrentHp() == maxHp) {
@@ -494,19 +673,19 @@ public class RimKamaloka extends Script {
                     final int chance = ClockBridge.random().nextInt(100);
                     int nextId = 0;
 
-                    if (npcId == world.KANABION) {
+                    if (npcId == world.getKanabion()) {
                         if (chance < 5) {
-                            nextId = world.DOPPLER;
+                            nextId = world.getDoppler();
                         }
-                    } else if (npcId == world.DOPPLER) {
+                    } else if (npcId == world.getDoppler()) {
                         if (chance < 5) {
-                            nextId = world.DOPPLER;
+                            nextId = world.getDoppler();
                         } else if (chance < 10) {
-                            nextId = world.VOIDER;
+                            nextId = world.getVoider();
                         }
-                    } else if (npcId == world.VOIDER) {
+                    } else if (npcId == world.getVoider()) {
                         if (chance < 5) {
-                            nextId = world.VOIDER;
+                            nextId = world.getVoider();
                         }
                     }
 
@@ -527,48 +706,46 @@ public class RimKamaloka extends Script {
         final InstanceWorld tmpWorld = InstanceManager.getInstance().getWorld(npc.getInstanceId());
         if (tmpWorld instanceof RimKamaWorld) {
             final RimKamaWorld world = (RimKamaWorld) tmpWorld;
-            synchronized (world.lastAttack) {
-                world.lastAttack.remove(npc.getObjectId());
-            }
+            world.removeLastAttack(npc.getObjectId());
 
             final int npcId = npc.getId();
             final int chance = ClockBridge.random().nextInt(100);
             int nextId = 0;
 
-            if (npcId == world.KANABION) {
-                world.kanabionsCount++;
+            if (npcId == world.getKanabion()) {
+                world.incrementKanabionsCount();
                 if (((Attackable) npc).isOverhit()) {
                     if (chance < 30) {
-                        nextId = world.DOPPLER;
+                        nextId = world.getDoppler();
                     } else if (chance < 40) {
-                        nextId = world.VOIDER;
+                        nextId = world.getVoider();
                     }
                 } else if (chance < 15) {
-                    nextId = world.DOPPLER;
+                    nextId = world.getDoppler();
                 }
-            } else if (npcId == world.DOPPLER) {
-                world.dopplersCount++;
+            } else if (npcId == world.getDoppler()) {
+                world.incrementDopplersCount();
                 if (((Attackable) npc).isOverhit()) {
                     if (chance < 30) {
-                        nextId = world.DOPPLER;
+                        nextId = world.getDoppler();
                     } else if (chance < 60) {
-                        nextId = world.VOIDER;
+                        nextId = world.getVoider();
                     }
                 } else {
                     if (chance < 10) {
-                        nextId = world.DOPPLER;
+                        nextId = world.getDoppler();
                     } else if (chance < 20) {
-                        nextId = world.VOIDER;
+                        nextId = world.getVoider();
                     }
                 }
-            } else if (npcId == world.VOIDER) {
-                world.voidersCount++;
+            } else if (npcId == world.getVoider()) {
+                world.incrementVoidersCount();
                 if (((Attackable) npc).isOverhit()) {
                     if (chance < 50) {
-                        nextId = world.VOIDER;
+                        nextId = world.getVoider();
                     }
                 } else if (chance < 20) {
-                    nextId = world.VOIDER;
+                    nextId = world.getVoider();
                 }
             }
 
@@ -675,7 +852,7 @@ public class RimKamaloka extends Script {
 
             // Check for level difference again on reenter.
             final RimKamaWorld world = (RimKamaWorld) tmpWorld;
-            if (Math.abs(player.getLevel() - LEVEL[world.index]) > MAX_LEVEL_DIFFERENCE) {
+            if (Math.abs(player.getLevel() - LEVEL[world.getIndex()]) > MAX_LEVEL_DIFFERENCE) {
                 final SystemMessage sm =
                         new SystemMessage(SystemMessageId.C1_S_LEVEL_DOES_NOT_CORRESPOND_TO_THE_REQUIREMENTS_FOR_ENTRY);
                 sm.addPcName(player);
@@ -704,14 +881,14 @@ public class RimKamaloka extends Script {
             instance.setExitLoc(new Location(player));
 
             // Set index for easy access to the arrays.
-            world.index = index;
+            world.setIndex(index);
 
             // Spawn NPCs.
             spawnKama(world);
-            world.finishTask =
-                    WorldPartition.loop().schedule(new FinishTask(world), DURATION * 60000, TimeUnit.MILLISECONDS);
-            world.despawnTask = WorldPartition.loop()
-                    .scheduleAtFixedRate(new DespawnTask(world), 1000, 1000, TimeUnit.MILLISECONDS);
+            world.setFinishTask(
+                    WorldPartition.loop().schedule(new FinishTask(world), DURATION * 60000, TimeUnit.MILLISECONDS));
+            world.setDespawnTask(WorldPartition.loop()
+                    .scheduleAtFixedRate(new DespawnTask(world), 1000, 1000, TimeUnit.MILLISECONDS));
             WorldPartition.loop().schedule(new LockTask(world), LOCK_TIME * 60000, TimeUnit.MILLISECONDS);
 
             world.addAllowed(player);
@@ -726,13 +903,13 @@ public class RimKamaloka extends Script {
      */
     private static void spawnKama(RimKamaWorld world) {
         int[][] spawnlist;
-        final int index = world.index;
-        world.KANABION = KANABIONS[index][0];
-        world.DOPPLER = KANABIONS[index][1];
-        world.VOIDER = KANABIONS[index][2];
+        final int index = world.getIndex();
+        world.setKanabion(KANABIONS[index][0]);
+        world.setDoppler(KANABIONS[index][1]);
+        world.setVoider(KANABIONS[index][2]);
 
         try {
-            final NpcTemplate mob1 = NpcData.getInstance().getTemplate(world.KANABION);
+            final NpcTemplate mob1 = NpcData.getInstance().getTemplate(world.getKanabion());
             spawnlist = SPAWNLIST[index];
 
             Spawn spawn;
@@ -752,39 +929,40 @@ public class RimKamaloka extends Script {
     }
 
     private static void spawnNextMob(RimKamaWorld world, Npc oldNpc, int npcId, Player player) {
-        if (world.finished) {
+        if (world.isFinished()) {
             return;
         }
 
         Monster monster = null;
-        if (!world.spawnedMobs.isEmpty()) {
-            for (Monster mob : world.spawnedMobs) {
-                if ((mob == null) || !mob.isDecayed() || (mob.getId() != npcId)) {
-                    continue;
-                }
+        if (!world.isSpawnedMobsEmpty()) {
+            try (Snapshot<Monster> mobs = ScratchBuffers.empty()) {
+                world.collectSpawnedMobs(mobs);
+                for (Monster mob : mobs) {
+                    if ((mob == null) || !mob.isDecayed() || (mob.getId() != npcId)) {
+                        continue;
+                    }
 
-                mob.setDecayed(false);
-                mob.setDead(false);
-                mob.overhitEnabled(false);
-                // A new id changes the hash: leave the hash sets holding the mob first, join them again after.
-                world.spawnedMobs.remove(mob);
-                mob.setInstanceId(0);
-                mob.refreshId();
-                world.spawnedMobs.add(mob);
-                monster = mob;
-                break;
+                    mob.setDecayed(false);
+                    mob.setDead(false);
+                    mob.overhitEnabled(false);
+                    // A new id changes the hash: leave the hash sets holding the mob first, join them again after.
+                    world.removeSpawnedMobs(mob);
+                    mob.setInstanceId(0);
+                    mob.refreshId();
+                    world.addSpawnedMobs(mob);
+                    monster = mob;
+                    break;
+                }
             }
         }
 
         if (monster == null) {
             final NpcTemplate template = NpcData.getInstance().getTemplate(npcId);
             monster = new Monster(template);
-            world.spawnedMobs.add(monster);
+            world.addSpawnedMobs(monster);
         }
 
-        synchronized (world.lastAttack) {
-            world.lastAttack.put(monster.getObjectId(), ClockBridge.gameMillis());
-        }
+        world.putLastAttack(monster.getObjectId(), ClockBridge.gameMillis());
 
         monster.setCurrentHpMp(monster.getMaxHp(), monster.getMaxMp());
         monster.setHeading(oldNpc.getHeading());
@@ -796,22 +974,22 @@ public class RimKamaloka extends Script {
     }
 
     private synchronized void rewardPlayer(RimKamaWorld world, Npc npc) {
-        if (!world.finished || world.rewarded) {
+        if (!world.isFinished() || world.isRewarded()) {
             return;
         }
 
-        world.rewarded = true;
+        world.setRewarded(true);
 
-        final int[][] allRewards = REWARDS[world.index];
-        world.grade = Math.min(world.grade, allRewards.length);
-        final int[] reward = allRewards[world.grade];
+        final int[][] allRewards = REWARDS[world.getIndex()];
+        world.setGrade(Math.min(world.getGrade(), allRewards.length));
+        final int[] reward = allRewards[world.getGrade()];
         if (reward == null) {
             return;
         }
 
         for (Player player : world.getAllowed()) {
             if ((player != null) && player.isOnline()) {
-                player.sendMessage("Grade:" + world.grade);
+                player.sendMessage("Grade:" + world.getGrade());
                 for (int i = 0; i < reward.length; i += 2) {
                     player.addItem(ItemProcessType.REWARD, reward[i], reward[i + 1], npc, true);
                 }
@@ -857,17 +1035,17 @@ public class RimKamaloka extends Script {
                 }
 
                 if (!found) {
-                    world.finished = true;
-                    world.spawnedMobs.clear();
-                    world.lastAttack.clear();
-                    if (world.finishTask != null) {
-                        world.finishTask.cancel(false);
-                        world.finishTask = null;
+                    world.setFinished(true);
+                    world.clearSpawnedMobs();
+                    world.clearLastAttack();
+                    if (world.getFinishTask() != null) {
+                        world.getFinishTask().cancel(false);
+                        world.setFinishTask(null);
                     }
 
-                    if (world.despawnTask != null) {
-                        world.despawnTask.cancel(false);
-                        world.despawnTask = null;
+                    if (world.getDespawnTask() != null) {
+                        world.getDespawnTask().cancel(false);
+                        world.setDespawnTask(null);
                     }
 
                     InstanceManager.getInstance().destroyInstance(world.getInstanceId());
@@ -886,21 +1064,21 @@ public class RimKamaloka extends Script {
         @Override
         public void run() {
             if (world != null) {
-                world.finished = true;
-                if (world.despawnTask != null) {
-                    world.despawnTask.cancel(false);
-                    world.despawnTask = null;
+                world.setFinished(true);
+                if (world.getDespawnTask() != null) {
+                    world.getDespawnTask().cancel(false);
+                    world.setDespawnTask(null);
                 }
 
-                world.spawnedMobs.clear();
-                world.lastAttack.clear();
+                world.clearSpawnedMobs();
+                world.clearLastAttack();
 
                 // Destroy instance after EXIT_TIME.
                 final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                 if (inst != null) {
                     inst.removeNpcs();
                     inst.setDuration(EXIT_TIME * 60000);
-                    if (inst.getPlayers().isEmpty()) {
+                    if (inst.getPlayerCount() == 0) {
                         inst.setDuration(EMPTY_DESTROY_TIME * 60000);
                     } else {
                         inst.setDuration(EXIT_TIME * 60000);
@@ -909,14 +1087,16 @@ public class RimKamaloka extends Script {
                 }
 
                 // Calculate reward.
-                if (world.kanabionsCount < 10) {
-                    world.grade = 0;
+                if (world.getKanabionsCount() < 10) {
+                    world.setGrade(0);
                 } else {
-                    world.grade =
-                            Math.min(((world.dopplersCount + (2 * world.voidersCount)) / world.kanabionsCount) + 1, 5);
+                    world.setGrade(Math.min(
+                            ((world.getDopplersCount() + (2 * world.getVoidersCount())) / world.getKanabionsCount())
+                                    + 1,
+                            5));
                 }
 
-                final int index = world.index;
+                final int index = world.getIndex();
 
                 // Spawn rewarder NPC.
                 addSpawn(
@@ -942,18 +1122,19 @@ public class RimKamaloka extends Script {
 
         @Override
         public void run() {
-            if ((world != null) && !world.finished && !world.lastAttack.isEmpty() && !world.spawnedMobs.isEmpty()) {
+            if ((world != null) && !world.isFinished() && !world.isLastAttackEmpty() && !world.isSpawnedMobsEmpty()) {
                 final long time = ClockBridge.gameMillis();
-                for (Monster mob : world.spawnedMobs) {
-                    if ((mob == null) || mob.isDead() || mob.isInvisible()) {
-                        continue;
-                    }
+                try (Snapshot<Monster> mobs = ScratchBuffers.empty()) {
+                    world.collectSpawnedMobs(mobs);
+                    for (Monster mob : mobs) {
+                        if ((mob == null) || mob.isDead() || mob.isInvisible()) {
+                            continue;
+                        }
 
-                    if (world.lastAttack.containsKey(mob.getObjectId())
-                            && ((time - world.lastAttack.get(mob.getObjectId())) > DESPAWN_DELAY)) {
-                        mob.deleteMe();
-                        synchronized (world.lastAttack) {
-                            world.lastAttack.remove(mob.getObjectId());
+                        if (world.containsLastAttack(mob.getObjectId())
+                                && ((time - world.getLastAttack(mob.getObjectId())) > DESPAWN_DELAY)) {
+                            mob.deleteMe();
+                            world.removeLastAttack(mob.getObjectId());
                         }
                     }
                 }

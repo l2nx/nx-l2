@@ -21,6 +21,8 @@ package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.interfaces.IPositionable;
 import app.l2nx.highfive.partition.WorldPartition;
 
 /**
@@ -74,5 +76,77 @@ public class TeleportBookmark extends Location {
     public void setTag(String tag) {
         WorldPartition.checkOwner();
         this.tag = tag;
+    }
+
+    @Override
+    public int getX() {
+        WorldPartition.checkOwner();
+        return super.getX();
+    }
+
+    @Override
+    public int getY() {
+        WorldPartition.checkOwner();
+        return super.getY();
+    }
+
+    @Override
+    public int getZ() {
+        WorldPartition.checkOwner();
+        return super.getZ();
+    }
+
+    @Override
+    public int getHeading() {
+        WorldPartition.checkOwner();
+        return super.getHeading();
+    }
+
+    @Override
+    public int getInstanceId() {
+        WorldPartition.checkOwner();
+        return super.getInstanceId();
+    }
+
+    @Override
+    public IPositionable getLocation() {
+        WorldPartition.checkOwner();
+        return super.getLocation();
+    }
+
+    @Override
+    public Location clone() {
+        WorldPartition.checkOwner();
+        return super.clone();
+    }
+
+    @Override
+    public void setXYZ(int x, int y, int z) {
+        WorldPartition.checkOwner();
+        super.setXYZ(x, y, z);
+    }
+
+    @Override
+    public void setXYZ(ILocational loc) {
+        WorldPartition.checkOwner();
+        super.setXYZ(loc);
+    }
+
+    @Override
+    public void setHeading(int heading) {
+        WorldPartition.checkOwner();
+        super.setHeading(heading);
+    }
+
+    @Override
+    public void setInstanceId(int instanceId) {
+        WorldPartition.checkOwner();
+        super.setInstanceId(instanceId);
+    }
+
+    @Override
+    public void setLocation(Location loc) {
+        WorldPartition.checkOwner();
+        super.setLocation(loc);
     }
 }

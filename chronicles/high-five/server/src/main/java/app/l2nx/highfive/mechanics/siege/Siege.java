@@ -1194,8 +1194,9 @@ public class Siege implements Siegable {
         setNextSiegeDate(); // Set the next set date for 2 weeks from now.
 
         // Schedule Time registration end.
-        getTimeRegistrationOverDate().setTimeInMillis(ClockBridge.wallMillis());
-        getTimeRegistrationOverDate().add(Calendar.DAY_OF_MONTH, 1);
+        final Calendar registrationEnd = ClockBridge.calendar();
+        registrationEnd.add(Calendar.DAY_OF_MONTH, 1);
+        getCastle().setTimeRegistrationOverDate(registrationEnd.getTimeInMillis());
         getCastle().setTimeRegistrationOver(false);
 
         saveSiegeDate(); // Save the new date.
@@ -1286,6 +1287,8 @@ public class Siege implements Siegable {
         if (calendar.before(ClockBridge.calendar())) {
             calendar.add(Calendar.WEEK_OF_YEAR, SiegeManager.getInstance().getSiegeCycle());
         }
+
+        castle.setSiegeDate(calendar.getTimeInMillis());
 
         if (CastleManager.getInstance().getSiegeDates(calendar.getTimeInMillis()) < holder.getMaxConcurrent()) {
             CastleManager.getInstance().registerSiegeDate(getCastle().getResidenceId(), calendar.getTimeInMillis());

@@ -19,13 +19,16 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A castle zone
  * @author durgus
  */
+@SingleWriter
 public class FortZone extends ResidenceZone {
     public FortZone(int id) {
         super(id);
@@ -33,6 +36,7 @@ public class FortZone extends ResidenceZone {
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("fortId")) {
             setResidenceId(Integer.parseInt(value));
         } else {

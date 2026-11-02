@@ -155,7 +155,7 @@ public class CastleChamberlain extends Script {
                 html = getHtmlPacket(player, npc, "castleresetdeco.html");
                 html.replace("%AgitDecoSubmit%", Integer.toString(func));
             } else if ((castle.getFunction(func) != null)
-                    && (castle.getFunction(func).getLvl() == level)) {
+                    && (castle.getFunction(func).getLevel() == level)) {
                 html = getHtmlPacket(player, npc, "castledecoalreadyset.html");
                 html.replace("%AgitDecoEffect%", "<fstring p1=\"" + level + "\">" + fstring + "</fstring>");
             } else {
@@ -186,7 +186,7 @@ public class CastleChamberlain extends Script {
             final String fstring = ((func == Castle.FUNC_SUPPORT) || (func == Castle.FUNC_TELEPORT)) ? "9" : "10";
             final Calendar calendar = ClockBridge.calendar();
             calendar.setTimeInMillis(function.getEndTime());
-            html.replace("%" + str + "Depth%", "<fstring p1=\"" + function.getLvl() + "\">" + fstring + "</fstring>");
+            html.replace("%" + str + "Depth%", "<fstring p1=\"" + function.getLevel() + "\">" + fstring + "</fstring>");
             html.replace(
                     "%" + str + "Cost%",
                     "<fstring p1=\"" + function.getLease() + "\" p2=\"" + (function.getRate() / 86400000)
@@ -899,9 +899,9 @@ public class CastleChamberlain extends Script {
                     final CastleFunction mp = castle.getFunction(Castle.FUNC_RESTORE_MP);
                     final CastleFunction xp = castle.getFunction(Castle.FUNC_RESTORE_EXP);
                     final NpcHtmlMessage html = getHtmlPacket(player, npc, "castledecofunction.html");
-                    html.replace("%HPDepth%", (hp == null) ? "0" : Integer.toString(hp.getLvl()));
-                    html.replace("%MPDepth%", (mp == null) ? "0" : Integer.toString(mp.getLvl()));
-                    html.replace("%XPDepth%", (xp == null) ? "0" : Integer.toString(xp.getLvl()));
+                    html.replace("%HPDepth%", (hp == null) ? "0" : Integer.toString(hp.getLevel()));
+                    html.replace("%MPDepth%", (mp == null) ? "0" : Integer.toString(mp.getLevel()));
+                    html.replace("%XPDepth%", (xp == null) ? "0" : Integer.toString(xp.getLevel()));
                     player.sendPacket(html);
                 } else {
                     htmltext = "chamberlain-21.html";
@@ -915,7 +915,7 @@ public class CastleChamberlain extends Script {
                     htmltext = "castlefuncdisabled.html";
                 } else {
                     htmltext = npc.getId() + "-t"
-                            + castle.getFunction(Castle.FUNC_TELEPORT).getLvl() + ".html";
+                            + castle.getFunction(Castle.FUNC_TELEPORT).getLevel() + ".html";
                 }
                 break;
             }
@@ -930,7 +930,7 @@ public class CastleChamberlain extends Script {
                     final String listIndex = st.nextToken();
                     final int functionLevel =
                             listIndex.length() == 2 ? Character.getNumericValue(listIndex.charAt(0)) : -1;
-                    if (function.getLvl() == functionLevel) {
+                    if (function.getLevel() == functionLevel) {
                         final TeleportHolder holder =
                                 TeleporterData.getInstance().getHolder(npc.getId(), TeleportType.OTHER.name());
                         if (holder != null) {
@@ -952,7 +952,7 @@ public class CastleChamberlain extends Script {
                                 npc,
                                 "castlebuff-0"
                                         + castle.getFunction(Castle.FUNC_SUPPORT)
-                                                .getLvl() + ".html");
+                                                .getLevel() + ".html");
                         html.replace("%MPLeft%", Integer.toString((int) npc.getCurrentMp()));
                         player.sendPacket(html);
                     }

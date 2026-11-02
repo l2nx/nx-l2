@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HeartInfinityDefence;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
@@ -50,6 +51,7 @@ import app.l2nx.highfive.scripts.quests.Q00697_DefendTheHallOfErosion.Q00697_Def
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -57,16 +59,102 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class HeartInfinityDefence extends Script {
+    @SingleWriter
     private class HIDWorld extends InstanceWorld {
         public HIDWorld() {}
 
-        public List<Npc> npcList = new ArrayList<>();
-        public List<Npc> deadTumors = new ArrayList<>();
-        protected Npc deadTumor;
-        public long startTime = 0;
-        protected ScheduledFuture<?> finishTask = null;
-        protected ScheduledFuture<?> timerTask = null;
-        protected ScheduledFuture<?> wagonSpawnTask = null;
+        private List<Npc> npcList = new ArrayList<>();
+        private List<Npc> deadTumors = new ArrayList<>();
+        private Npc deadTumor;
+        private long startTime = 0;
+        private ScheduledFuture<?> finishTask = null;
+        private ScheduledFuture<?> timerTask = null;
+        private ScheduledFuture<?> wagonSpawnTask = null;
+
+        public void addNpcList(Npc element) {
+            WorldPartition.checkOwner();
+            npcList.add(element);
+        }
+
+        public List<Npc> getDeadTumors() {
+            WorldPartition.checkOwner();
+            return Collections.unmodifiableList(new ArrayList<>(deadTumors));
+        }
+
+        public void addDeadTumors(Npc element) {
+            WorldPartition.checkOwner();
+            deadTumors.add(element);
+        }
+
+        public Npc getDeadTumorsAt(int index) {
+            WorldPartition.checkOwner();
+            return deadTumors.get(index);
+        }
+
+        public boolean isDeadTumorsEmpty() {
+            WorldPartition.checkOwner();
+            return deadTumors.isEmpty();
+        }
+
+        public int getDeadTumorsCount() {
+            WorldPartition.checkOwner();
+            return deadTumors.size();
+        }
+
+        public void clearDeadTumors() {
+            WorldPartition.checkOwner();
+            deadTumors.clear();
+        }
+
+        public Npc getDeadTumor() {
+            WorldPartition.checkOwner();
+            return deadTumor;
+        }
+
+        public void setDeadTumor(Npc deadTumor) {
+            WorldPartition.checkOwner();
+            this.deadTumor = deadTumor;
+        }
+
+        public long getStartTime() {
+            WorldPartition.checkOwner();
+            return startTime;
+        }
+
+        public void setStartTime(long startTime) {
+            WorldPartition.checkOwner();
+            this.startTime = startTime;
+        }
+
+        public ScheduledFuture<?> getFinishTask() {
+            WorldPartition.checkOwner();
+            return finishTask;
+        }
+
+        public void setFinishTask(ScheduledFuture<?> finishTask) {
+            WorldPartition.checkOwner();
+            this.finishTask = finishTask;
+        }
+
+        public ScheduledFuture<?> getTimerTask() {
+            WorldPartition.checkOwner();
+            return timerTask;
+        }
+
+        public void setTimerTask(ScheduledFuture<?> timerTask) {
+            WorldPartition.checkOwner();
+            this.timerTask = timerTask;
+        }
+
+        public ScheduledFuture<?> getWagonSpawnTask() {
+            WorldPartition.checkOwner();
+            return wagonSpawnTask;
+        }
+
+        public void setWagonSpawnTask(ScheduledFuture<?> wagonSpawnTask) {
+            WorldPartition.checkOwner();
+            this.wagonSpawnTask = wagonSpawnTask;
+        }
     }
 
     private static final String qn = "HeartInfinityDefence";
@@ -344,12 +432,14 @@ public class HeartInfinityDefence extends Script {
                 }
             }
 
-            ((HIDWorld) world).startTime = ClockBridge.gameMillis();
-            ((HIDWorld) world).finishTask =
-                    WorldPartition.loop().schedule(new FinishTask((HIDWorld) world), 30 * 60000, TimeUnit.MILLISECONDS);
-            ((HIDWorld) world).timerTask = WorldPartition.loop()
-                    .scheduleAtFixedRate(
-                            new TimerTask((HIDWorld) world), 298 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS);
+            ((HIDWorld) world).setStartTime(ClockBridge.gameMillis());
+            ((HIDWorld) world)
+                    .setFinishTask(WorldPartition.loop()
+                            .schedule(new FinishTask((HIDWorld) world), 30 * 60000, TimeUnit.MILLISECONDS));
+            ((HIDWorld) world)
+                    .setTimerTask(WorldPartition.loop()
+                            .scheduleAtFixedRate(
+                                    new TimerTask((HIDWorld) world), 298 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS));
             conquestBegins((HIDWorld) world);
         }
     }
@@ -399,7 +489,7 @@ public class HeartInfinityDefence extends Script {
                                             0,
                                             false,
                                             world.getInstanceId());
-                                    world.deadTumors.add(npc2);
+                                    world.addDeadTumors(npc2);
                                 }
                             }
 
@@ -413,8 +503,8 @@ public class HeartInfinityDefence extends Script {
                             WorldPartition.loop()
                                     .schedule(
                                             () -> {
-                                                if (!conquestEnded && !world.deadTumors.isEmpty()) {
-                                                    for (Npc npc : world.deadTumors) {
+                                                if (!conquestEnded && !world.isDeadTumorsEmpty()) {
+                                                    for (Npc npc : world.getDeadTumors()) {
                                                         if (npc != null) {
                                                             spawnCoffin(npc, world);
                                                         }
@@ -428,14 +518,14 @@ public class HeartInfinityDefence extends Script {
                                     .schedule(
                                             () -> {
                                                 if (!conquestEnded) {
-                                                    if (!world.deadTumors.isEmpty()) {
-                                                        for (Npc npc3 : world.deadTumors) {
+                                                    if (!world.isDeadTumorsEmpty()) {
+                                                        for (Npc npc3 : world.getDeadTumors()) {
                                                             if (npc3 != null) {
                                                                 npc3.deleteMe();
                                                             }
                                                         }
 
-                                                        world.deadTumors.clear();
+                                                        world.clearDeadTumors();
                                                     }
 
                                                     for (int[] spawn : ROOMS_ALIVE_TUMORS) {
@@ -451,7 +541,7 @@ public class HeartInfinityDefence extends Script {
                                                                     false,
                                                                     world.getInstanceId());
                                                             npc4.setCurrentHp(npc4.getMaxHp() * .5);
-                                                            world.deadTumors.add(npc4);
+                                                            world.addDeadTumors(npc4);
                                                         }
                                                     }
 
@@ -467,7 +557,7 @@ public class HeartInfinityDefence extends Script {
                                             tumorRespawnTime,
                                             TimeUnit.MILLISECONDS);
 
-                            world.wagonSpawnTask = WorldPartition.loop()
+                            world.setWagonSpawnTask(WorldPartition.loop()
                                     .scheduleAtFixedRate(
                                             () -> addSpawn(
                                                     SOULWAGON,
@@ -481,7 +571,7 @@ public class HeartInfinityDefence extends Script {
                                                     world.getInstanceId()),
                                             1000,
                                             wagonRespawnTime,
-                                            TimeUnit.MILLISECONDS);
+                                            TimeUnit.MILLISECONDS));
                         },
                         20000,
                         TimeUnit.MILLISECONDS);
@@ -524,14 +614,14 @@ public class HeartInfinityDefence extends Script {
                 }
             } else if (event.startsWith("warp")) {
                 Npc victim = null;
-                victim = world.deadTumor;
+                victim = world.getDeadTumor();
                 if (victim != null) {
-                    world.deadTumors.add(victim);
+                    world.addDeadTumors(victim);
                 }
 
                 player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true);
-                final Location loc =
-                        world.deadTumors.get(getRandom(world.deadTumors.size())).getLocation();
+                final Location loc = world.getDeadTumorsAt(getRandom(world.getDeadTumorsCount()))
+                        .getLocation();
                 if (loc != null) {
                     broadCastPacket(
                             world,
@@ -609,8 +699,8 @@ public class HeartInfinityDefence extends Script {
             if (npc.getId() == ALIVETUMOR) {
                 npc.dropItem(player, 13797, getRandom(2, 5));
                 npc.deleteMe();
-                world.deadTumor = addSpawn(DEADTUMOR, loc, world.getInstanceId());
-                world.deadTumors.add(world.deadTumor);
+                world.setDeadTumor(addSpawn(DEADTUMOR, loc, world.getInstanceId()));
+                world.addDeadTumors(world.getDeadTumor());
                 wagonRespawnTime += 10000;
                 broadCastPacket(
                         world,
@@ -623,10 +713,10 @@ public class HeartInfinityDefence extends Script {
                 WorldPartition.loop()
                         .schedule(
                                 () -> {
-                                    world.deadTumor.deleteMe();
+                                    world.getDeadTumor().deleteMe();
                                     final Npc alivetumor = addSpawn(ALIVETUMOR, loc, world.getInstanceId());
                                     alivetumor.setCurrentHp(alivetumor.getMaxHp() * .25);
-                                    world.npcList.add(alivetumor);
+                                    world.addNpcList(alivetumor);
                                     wagonRespawnTime -= 10000;
                                     broadCastPacket(
                                             world,
@@ -675,7 +765,7 @@ public class HeartInfinityDefence extends Script {
 
         @Override
         public void run() {
-            final long time = ((world.startTime + (25 * 60 * 1000)) - ClockBridge.gameMillis()) / 60000;
+            final long time = ((world.getStartTime() + (25 * 60 * 1000)) - ClockBridge.gameMillis()) / 60000;
             if (time == 0) {
                 conquestConclusion(world);
             } else {
@@ -727,7 +817,7 @@ public class HeartInfinityDefence extends Script {
                                     2,
                                     8000));
                     inst.removeNpcs();
-                    if (inst.getPlayers().isEmpty()) {
+                    if (inst.getPlayerCount() == 0) {
                         inst.setDuration(5 * 60000);
                     } else {
                         inst.setDuration(5 * 60000);
@@ -739,16 +829,16 @@ public class HeartInfinityDefence extends Script {
     }
 
     protected void conquestConclusion(HIDWorld world) {
-        if (world.timerTask != null) {
-            world.timerTask.cancel(false);
+        if (world.getTimerTask() != null) {
+            world.getTimerTask().cancel(false);
         }
 
-        if (world.finishTask != null) {
-            world.finishTask.cancel(false);
+        if (world.getFinishTask() != null) {
+            world.getFinishTask().cancel(false);
         }
 
-        if (world.wagonSpawnTask != null) {
-            world.wagonSpawnTask.cancel(false);
+        if (world.getWagonSpawnTask() != null) {
+            world.getWagonSpawnTask().cancel(false);
         }
 
         broadCastPacket(
@@ -760,7 +850,7 @@ public class HeartInfinityDefence extends Script {
         final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
         if (inst != null) {
             inst.removeNpcs();
-            if (inst.getPlayers().isEmpty()) {
+            if (inst.getPlayerCount() == 0) {
                 inst.setDuration(5 * 60000);
             } else {
                 inst.setDuration(5 * 60000);

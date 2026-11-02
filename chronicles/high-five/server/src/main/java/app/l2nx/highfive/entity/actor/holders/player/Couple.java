@@ -25,12 +25,13 @@ package app.l2nx.highfive.entity.actor.holders.player;
 
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CoupleManager;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.world.model.CoupleRow;
 import java.util.Calendar;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
@@ -38,26 +39,15 @@ import org.springframework.dao.DataAccessException;
  * @author evill33t
  */
 @Slf4j
+@SingleWriter
 public class Couple {
-
-    @Getter
     private final long id;
-
-    @Getter
     private final int player1Id;
-
-    @Getter
     private final int player2Id;
-
     private boolean maried;
-
-    @Getter
     private final Calendar affiancedDate;
 
-    /**
-     * The engagement date until the couple marries.
-     */
-    @Getter
+    /** Holds the engagement date until the couple marries. */
     private Calendar weddingDate;
 
     public Couple(CoupleRow row) {
@@ -85,7 +75,35 @@ public class Couple {
         id = CoupleManager.getInstance().insert(player1Id, player2Id, currentTime);
     }
 
+    public long getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public int getPlayer1Id() {
+        WorldPartition.checkOwner();
+        return player1Id;
+    }
+
+    public int getPlayer2Id() {
+        WorldPartition.checkOwner();
+        return player2Id;
+    }
+
+    /** @return a copy, the couple's own calendar stays unchanged */
+    public Calendar getAffiancedDate() {
+        WorldPartition.checkOwner();
+        return (Calendar) affiancedDate.clone();
+    }
+
+    /** @return a copy, the couple's own calendar stays unchanged */
+    public Calendar getWeddingDate() {
+        WorldPartition.checkOwner();
+        return (Calendar) weddingDate.clone();
+    }
+
     public void marry() {
+        WorldPartition.checkOwner();
         final Calendar marriedAt = ClockBridge.calendar();
         try {
             CoupleManager.getInstance().updateMarried(id, marriedAt.getTimeInMillis());
@@ -97,6 +115,7 @@ public class Couple {
     }
 
     public void divorce() {
+        WorldPartition.checkOwner();
         try {
             CoupleManager.getInstance().delete(id);
         } catch (DataAccessException e) {
@@ -105,6 +124,7 @@ public class Couple {
     }
 
     public boolean getMaried() {
+        WorldPartition.checkOwner();
         return maried;
     }
 }

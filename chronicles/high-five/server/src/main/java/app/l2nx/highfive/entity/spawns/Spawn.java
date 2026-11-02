@@ -22,30 +22,33 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.NpcPersonalAIData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.zone.type.NpcSpawnTerritory;
 import app.l2nx.highfive.entity.zone.type.WaterZone;
 import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.interfaces.IPositionable;
 import app.l2nx.highfive.managers.WalkingManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.RespawnTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.lang.reflect.Constructor;
-import java.util.Deque;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.List;
 import java.util.random.RandomGenerator;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -56,63 +59,35 @@ import lombok.extern.slf4j.Slf4j;
  * @author Nightmare, Mobius
  */
 @Slf4j
+@SingleWriter
 public class Spawn extends Location {
+    private static final ObjectLinkedOpenHashSet<SevenSignsFestival> SPAWN_LISTENERS = new ObjectLinkedOpenHashSet<>(1);
+    /** The heading a spawn definition gives for "pick one per spawned NPC"; {@link Location} clamps it to 0. */
+    private static final int RANDOM_HEADING = -1;
 
-    @Getter
-    @Setter
+    // Hash of a spawn: its creation order, which is the same on every run, unlike an identity hash.
+    private static int nextSequence;
+
+    private final int sequence = nextSequence++;
+    private boolean randomHeading;
+
     private String name;
-
-    @Getter
-    private NpcTemplate template;
-
-    @Getter
-    @Setter
+    private final NpcTemplate template;
     private int amount;
-
     private int currentCount;
-    public int scheduledCount;
-
-    @Getter
-    @Setter
+    private int scheduledCount;
     private int locationId;
-
-    @Getter
-    @Setter
     private NpcSpawnTerritory spawnTerritory = null;
-
-    @Getter
-    @Setter
     private int respawnMinDelay;
-
-    @Getter
-    @Setter
     private int respawnMaxDelay;
-
-    @Getter
-    @Setter
     private int chaseRange = 0;
-
     private Constructor<? extends Npc> constructor;
-
-    @Getter
     private boolean respawnEnabled = true;
-
-    private static Set<SevenSignsFestival> spawnListeners = ConcurrentHashMap.newKeySet(1);
-
-    @Getter
-    private final Deque<Npc> spawnedNpcs = new ConcurrentLinkedDeque<>();
-
-    @Setter
+    private final ObjectArrayList<Npc> spawnedNpcs = new ObjectArrayList<>(1);
     private boolean randomWalking = false;
-
-    @Getter
     private int npcSpawnTemplateId = 0;
-
-    @Getter
     private Location spawnLocation = null;
     /** Spawn group this spawn is a slot of, null for regular spawns */
-    @Getter
-    @Setter
     private SpawnGroup group = null;
 
     public Spawn(NpcTemplate template) throws ClassNotFoundException, NoSuchMethodException, ClassCastException {
@@ -134,10 +109,12 @@ public class Spawn extends Location {
     }
 
     public int getId() {
+        WorldPartition.checkOwner();
         return template.getId();
     }
 
     public void decreaseCount(Npc oldNpc) {
+        WorldPartition.checkOwner();
         if (currentCount <= 0) {
             return;
         }
@@ -165,6 +142,7 @@ public class Spawn extends Location {
     }
 
     public int init() {
+        WorldPartition.checkOwner();
         while (currentCount < amount) {
             final int previousCount = currentCount;
             if ((doSpawn() == null) && (currentCount == previousCount)) {
@@ -179,18 +157,22 @@ public class Spawn extends Location {
     }
 
     public void stopRespawn() {
+        WorldPartition.checkOwner();
         respawnEnabled = false;
     }
 
     public void startRespawn() {
+        WorldPartition.checkOwner();
         respawnEnabled = true;
     }
 
     public Npc doSpawn() {
+        WorldPartition.checkOwner();
         return respawnEnabled ? doSpawn(false) : null;
     }
 
     public Npc doSpawn(boolean isSummonSpawn) {
+        WorldPartition.checkOwner();
         try {
             if (template.isType("Pet") || template.isType("Decoy") || template.isType("Trap")) {
                 currentCount++;
@@ -224,8 +206,8 @@ public class Spawn extends Location {
             newlocx = loc.getX();
             newlocy = loc.getY();
             newlocz = loc.getZ();
-            setLocation(loc);
-            setHeading(-1);
+            super.setLocation(loc);
+            heading(RANDOM_HEADING);
         } else if ((getX() == 0) && (getY() == 0)) {
             log.warn("NPC {} doesn't have spawn location!", npc);
             return null;
@@ -241,8 +223,10 @@ public class Spawn extends Location {
 
         final WaterZone water = ZoneManager.getInstance().getZone(newlocx, newlocy, newlocz, WaterZone.class);
 
+        // Rolled on every spawn of a point spawn, with any heading; a territory spawn already picked a random point
+        // inside its territory, which the offset could leave.
         if (RandomSpawnsConfig.ENABLE_RANDOM_MONSTER_SPAWNS
-                && (getHeading() != -1)
+                && (spawnTerritory == null)
                 && npc.isMonster()
                 && !npc.isQuestMonster()
                 && !WalkingManager.getInstance().isTargeted(npc)
@@ -264,8 +248,7 @@ public class Spawn extends Location {
                             .canSeeTarget(newlocx, newlocy, newlocz, randX, randY, newlocz, getInstanceId())) {
                 newlocx = randX;
                 newlocy = randY;
-                setXYZ(newlocx, newlocy, newlocz);
-                setHeading(-1);
+                super.setXYZ(newlocx, newlocy, newlocz);
             }
         }
 
@@ -293,7 +276,7 @@ public class Spawn extends Location {
 
         npc.setRandomWalking(randomWalking);
 
-        if (getHeading() == -1) {
+        if (randomHeading) {
             npc.setHeading(ClockBridge.random().nextInt(61794));
         } else {
             npc.setHeading(getHeading());
@@ -346,21 +329,30 @@ public class Spawn extends Location {
     }
 
     public static void addSpawnListener(SevenSignsFestival listener) {
-        spawnListeners.add(listener);
+        WorldPartition.checkOwner();
+        SPAWN_LISTENERS.add(listener);
     }
 
     public static void removeSpawnListener(SevenSignsFestival listener) {
-        spawnListeners.remove(listener);
+        WorldPartition.checkOwner();
+        SPAWN_LISTENERS.remove(listener);
     }
 
-    public static void notifyNpcSpawned(Npc npc) {
-        for (SevenSignsFestival listener : spawnListeners) {
-            listener.npcSpawned(npc);
+    private static void notifyNpcSpawned(Npc npc) {
+        if (SPAWN_LISTENERS.isEmpty()) {
+            return;
+        }
+
+        try (ScratchBuffers.Snapshot<SevenSignsFestival> listeners = ScratchBuffers.snapshot(SPAWN_LISTENERS)) {
+            for (SevenSignsFestival listener : listeners) {
+                listener.npcSpawned(npc);
+            }
         }
     }
 
     /** Both arguments are seconds; the stored bounds are milliseconds. */
     public void setRespawnDelay(int delay, int randomInterval) {
+        WorldPartition.checkOwner();
         if (delay != 0) {
             if (delay < 0) {
                 log.warn("respawn delay is negative for spawn:{}", this);
@@ -378,42 +370,259 @@ public class Spawn extends Location {
     }
 
     public void setRespawnDelay(int delay) {
+        WorldPartition.checkOwner();
         setRespawnDelay(delay, 0);
     }
 
     public int getRespawnDelay() {
+        WorldPartition.checkOwner();
         return (respawnMinDelay + respawnMaxDelay) / 2;
     }
 
     public boolean hasRespawnRandom() {
+        WorldPartition.checkOwner();
         return respawnMinDelay != respawnMaxDelay;
     }
 
     public boolean isTerritoryBased() {
+        WorldPartition.checkOwner();
         return (spawnTerritory != null) && (getX() == 0) && (getY() == 0);
     }
 
     public Npc getLastSpawn() {
-        return spawnedNpcs.peekLast();
+        WorldPartition.checkOwner();
+        return spawnedNpcs.isEmpty() ? null : spawnedNpcs.get(spawnedNpcs.size() - 1);
     }
 
+    /** Runs a respawn {@link #decreaseCount(Npc)} scheduled, which frees its slot whether or not the NPC comes back. */
     public void respawnNpc(Npc oldNpc) {
+        WorldPartition.checkOwner();
+        scheduledCount--;
         if (respawnEnabled) {
             initializeNpc(oldNpc);
         }
     }
 
     public boolean getRandomWalking() {
+        WorldPartition.checkOwner();
         return randomWalking;
     }
 
     public void setSpawnTemplateId(int npcSpawnTemplateId) {
+        WorldPartition.checkOwner();
         this.npcSpawnTemplateId = npcSpawnTemplateId;
+    }
+
+    public int getNpcSpawnTemplateId() {
+        WorldPartition.checkOwner();
+        return npcSpawnTemplateId;
+    }
+
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public void setName(String name) {
+        WorldPartition.checkOwner();
+        this.name = name;
+    }
+
+    public NpcTemplate getTemplate() {
+        WorldPartition.checkOwner();
+        return template;
+    }
+
+    public int getAmount() {
+        WorldPartition.checkOwner();
+        return amount;
+    }
+
+    public void setAmount(int amount) {
+        WorldPartition.checkOwner();
+        this.amount = amount;
+    }
+
+    public int getLocationId() {
+        WorldPartition.checkOwner();
+        return locationId;
+    }
+
+    public void setLocationId(int locationId) {
+        WorldPartition.checkOwner();
+        this.locationId = locationId;
+    }
+
+    public NpcSpawnTerritory getSpawnTerritory() {
+        WorldPartition.checkOwner();
+        return spawnTerritory;
+    }
+
+    public void setSpawnTerritory(NpcSpawnTerritory spawnTerritory) {
+        WorldPartition.checkOwner();
+        this.spawnTerritory = spawnTerritory;
+    }
+
+    public int getRespawnMinDelay() {
+        WorldPartition.checkOwner();
+        return respawnMinDelay;
+    }
+
+    public void setRespawnMinDelay(int respawnMinDelay) {
+        WorldPartition.checkOwner();
+        this.respawnMinDelay = respawnMinDelay;
+    }
+
+    public int getRespawnMaxDelay() {
+        WorldPartition.checkOwner();
+        return respawnMaxDelay;
+    }
+
+    public void setRespawnMaxDelay(int respawnMaxDelay) {
+        WorldPartition.checkOwner();
+        this.respawnMaxDelay = respawnMaxDelay;
+    }
+
+    public int getChaseRange() {
+        WorldPartition.checkOwner();
+        return chaseRange;
+    }
+
+    public void setChaseRange(int chaseRange) {
+        WorldPartition.checkOwner();
+        this.chaseRange = chaseRange;
+    }
+
+    public boolean isRespawnEnabled() {
+        WorldPartition.checkOwner();
+        return respawnEnabled;
+    }
+
+    public List<Npc> getSpawnedNpcs() {
+        WorldPartition.checkOwner();
+        return spawnedNpcs.isEmpty()
+                ? ObjectLists.emptyList()
+                : ObjectLists.unmodifiable(new ObjectArrayList<>(spawnedNpcs));
+    }
+
+    public void setRandomWalking(boolean randomWalking) {
+        WorldPartition.checkOwner();
+        this.randomWalking = randomWalking;
+    }
+
+    public Location getSpawnLocation() {
+        WorldPartition.checkOwner();
+        return spawnLocation;
+    }
+
+    public SpawnGroup getGroup() {
+        WorldPartition.checkOwner();
+        return group;
+    }
+
+    public void setGroup(SpawnGroup group) {
+        WorldPartition.checkOwner();
+        this.group = group;
+    }
+
+    @Override
+    public int getX() {
+        WorldPartition.checkOwner();
+        return super.getX();
+    }
+
+    @Override
+    public int getY() {
+        WorldPartition.checkOwner();
+        return super.getY();
+    }
+
+    @Override
+    public int getZ() {
+        WorldPartition.checkOwner();
+        return super.getZ();
+    }
+
+    @Override
+    public int getHeading() {
+        WorldPartition.checkOwner();
+        return super.getHeading();
+    }
+
+    @Override
+    public int getInstanceId() {
+        WorldPartition.checkOwner();
+        return super.getInstanceId();
+    }
+
+    @Override
+    public IPositionable getLocation() {
+        WorldPartition.checkOwner();
+        return super.getLocation();
+    }
+
+    @Override
+    public Location clone() {
+        WorldPartition.checkOwner();
+        return super.clone();
+    }
+
+    @Override
+    public void setXYZ(int x, int y, int z) {
+        WorldPartition.checkOwner();
+        super.setXYZ(x, y, z);
+    }
+
+    @Override
+    public void setXYZ(ILocational loc) {
+        WorldPartition.checkOwner();
+        super.setXYZ(loc);
+    }
+
+    /** {@code -1} gives every spawned NPC a random heading; {@link #getHeading()} then answers 0. */
+    @Override
+    public void setHeading(int heading) {
+        WorldPartition.checkOwner();
+        heading(heading);
+    }
+
+    public boolean isRandomHeading() {
+        WorldPartition.checkOwner();
+        return randomHeading;
+    }
+
+    private void heading(int value) {
+        randomHeading = value == RANDOM_HEADING;
+        super.setHeading(randomHeading ? 0 : value);
+    }
+
+    @Override
+    public void setInstanceId(int instanceId) {
+        WorldPartition.checkOwner();
+        super.setInstanceId(instanceId);
+    }
+
+    @Override
+    public void setLocation(Location loc) {
+        WorldPartition.checkOwner();
+        super.setLocation(loc);
+        randomHeading = false;
+    }
+
+    /** Identity: a spawn is world state that moves while hash sets ({@code SpawnTable}) hold it. */
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj;
+    }
+
+    @Override
+    public int hashCode() {
+        return sequence;
     }
 
     @Override
     public String toString() {
-        return "Spawn ID: " + template.getId() + " X: " + getX() + " Y: " + getY() + " Z: " + getZ() + " Heading: "
-                + getHeading();
+        return "Spawn ID: " + (template != null ? template.getId() : null) + " X: " + x + " Y: " + y + " Z: " + z
+                + " Heading: " + heading;
     }
 }

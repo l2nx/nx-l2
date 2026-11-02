@@ -11,6 +11,13 @@ lists what is open.
 - [#152](https://github.com/l2nx/nx-l2/issues/152) ItemContainer.getItems copies the container on every call
 - [#156](https://github.com/l2nx/nx-l2/issues/156) Second ownership check on Creature and Player stat delegation
 - [#157](https://github.com/l2nx/nx-l2/issues/157) Remaining group and clan member copies on cold paths
+- [#164](https://github.com/l2nx/nx-l2/issues/164) Ownership checks on the aggro holders cost the hate list 7-21%
+- [#158](https://github.com/l2nx/nx-l2/issues/158) Scripts keep stale zones after ZoneManager.reload
+- [#159](https://github.com/l2nx/nx-l2/issues/159) InstanceManager reload duplicates the instance template names
+- [#160](https://github.com/l2nx/nx-l2/issues/160) ClanHallAuctionManager.reload leaves the old auction timers running
+- [#161](https://github.com/l2nx/nx-l2/issues/161) Single writer for managers, data tables, mechanics and task managers
+- [#162](https://github.com/l2nx/nx-l2/issues/162) Clan hall sale returns a deposit that was never taken
+- [#163](https://github.com/l2nx/nx-l2/issues/163) Ekimus ignores the tumor count: stat scaling hook is empty
 - [#1](https://github.com/l2nx/nx-l2/issues/1) Push GPLv3 out of the build
 - [#2](https://github.com/l2nx/nx-l2/issues/2) Essence chronicle and shared core extraction
 - [#3](https://github.com/l2nx/nx-l2/issues/3) Interlude chronicle

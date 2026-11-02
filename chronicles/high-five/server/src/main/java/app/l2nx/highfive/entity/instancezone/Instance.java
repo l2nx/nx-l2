@@ -19,12 +19,16 @@
  */
 package app.l2nx.highfive.entity.instancezone;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.InstanceReenterTimeHolder;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.IntSnapshot;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldRegion;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -38,20 +42,26 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
+import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.io.File;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.xml.parsers.DocumentBuilderFactory;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -62,85 +72,176 @@ import org.w3c.dom.Node;
  * @author evill33t, GodKratos
  */
 @Slf4j
+@SingleWriter
 public class Instance {
 
-    @Getter
     private final int id;
 
-    @Getter
     private int templateId = -1;
 
-    @Getter
-    @Setter
     private int ejectTime = GeneralConfig.EJECT_DEAD_PLAYER_TIME;
     /** Allow random walk for NPCs, global parameter. */
     private boolean allowRandomWalk = true;
 
-    @Getter
-    private final Collection<Integer> players = ConcurrentHashMap.newKeySet();
+    // Entry and spawn order: timer notices, ejections and NPC lookups follow it on every run.
+    private final IntLinkedOpenHashSet players = new IntLinkedOpenHashSet();
 
-    @Getter
-    private final Collection<Npc> npcs = ConcurrentHashMap.newKeySet();
+    private final ObjectLinkedOpenHashSet<Npc> npcs = new ObjectLinkedOpenHashSet<>();
 
-    private final Collection<StatSet> doorTemplates = ConcurrentHashMap.newKeySet();
-    private final Map<Integer, Door> doors = new ConcurrentHashMap<>();
-    private final Collection<StatSet> spawnTemplates = ConcurrentHashMap.newKeySet();
+    // By door id, so a door the template lists twice spawns once.
+    private final Int2ObjectLinkedOpenHashMap<StatSet> doorTemplates = new Int2ObjectLinkedOpenHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<Door> doors = new Int2ObjectLinkedOpenHashMap<>();
+    private final List<StatSet> spawnTemplates = new ObjectArrayList<>();
 
-    @Getter
-    private Collection<Location> enterLocs = ConcurrentHashMap.newKeySet();
+    private final List<Location> enterLocs = new ObjectArrayList<>();
 
-    @Getter
-    @Setter
     private Location exitLoc = null;
 
-    @Getter
     private boolean summonAllowed = true;
 
-    @Setter
     private long emptyDestroyTime = -1;
 
     private long lastLeft = -1;
 
-    @Getter
     private long instanceStartTime = -1;
 
-    @Getter
     private long instanceEndTime = -1;
 
-    @Getter
-    @Setter
     private boolean pvP = false;
 
-    @Getter
     private boolean showTimer = false;
 
-    @Getter
     private boolean timerIncrease = true;
 
-    @Getter
-    private String timerText = "";
+    private String timerText;
 
-    // Instance reset data
-    @Getter
-    @Setter
     private InstanceReenterType reenterType = InstanceReenterType.NONE;
 
-    @Getter
-    private final List<InstanceReenterTimeHolder> reenterData = new ArrayList<>();
+    private final List<InstanceReenterTimeHolder> reenterData = new ObjectArrayList<>();
 
-    // Instance remove buffs data
-    @Getter
     private InstanceRemoveBuffType removeBuffType = InstanceRemoveBuffType.NONE;
 
-    @Getter
-    private final List<Integer> buffExceptionList = new ArrayList<>();
+    private final IntArrayList buffExceptions = new IntArrayList();
 
     protected ScheduledFuture<?> checkTimeUpTask = null;
-    protected final Map<Integer, ScheduledFuture<?>> ejectDeadTasks = new ConcurrentHashMap<>();
+    private final Int2ObjectOpenHashMap<ScheduledFuture<?>> ejectDeadTasks = new Int2ObjectOpenHashMap<>();
 
     public Instance(int id) {
         this.id = id;
         instanceStartTime = ClockBridge.gameMillis();
+    }
+
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public int getTemplateId() {
+        WorldPartition.checkOwner();
+        return templateId;
+    }
+
+    public int getEjectTime() {
+        WorldPartition.checkOwner();
+        return ejectTime;
+    }
+
+    public void setEjectTime(int ejectTime) {
+        WorldPartition.checkOwner();
+        this.ejectTime = ejectTime;
+    }
+
+    /**
+     * @return a copy of the exit location, {@code null} for none
+     */
+    public Location getExitLoc() {
+        WorldPartition.checkOwner();
+        return exitLoc == null ? null : exitLoc.clone();
+    }
+
+    public void setExitLoc(Location exitLoc) {
+        WorldPartition.checkOwner();
+        this.exitLoc = exitLoc == null ? null : exitLoc.clone();
+    }
+
+    public boolean isSummonAllowed() {
+        WorldPartition.checkOwner();
+        return summonAllowed;
+    }
+
+    public void setEmptyDestroyTime(long emptyDestroyTime) {
+        WorldPartition.checkOwner();
+        this.emptyDestroyTime = emptyDestroyTime;
+    }
+
+    public long getInstanceStartTime() {
+        WorldPartition.checkOwner();
+        return instanceStartTime;
+    }
+
+    public long getInstanceEndTime() {
+        WorldPartition.checkOwner();
+        return instanceEndTime;
+    }
+
+    public boolean isPvP() {
+        WorldPartition.checkOwner();
+        return pvP;
+    }
+
+    public void setPvP(boolean pvP) {
+        WorldPartition.checkOwner();
+        this.pvP = pvP;
+    }
+
+    public boolean isShowTimer() {
+        WorldPartition.checkOwner();
+        return showTimer;
+    }
+
+    public boolean isTimerIncrease() {
+        WorldPartition.checkOwner();
+        return timerIncrease;
+    }
+
+    /**
+     * @return the text shown with the timer, {@code null} when the template sets none
+     */
+    public String getTimerText() {
+        WorldPartition.checkOwner();
+        return timerText;
+    }
+
+    public InstanceReenterType getReenterType() {
+        WorldPartition.checkOwner();
+        return reenterType;
+    }
+
+    public void setReenterType(InstanceReenterType reenterType) {
+        WorldPartition.checkOwner();
+        this.reenterType = reenterType;
+    }
+
+    /**
+     * @return a read-only snapshot of the reset times in template order
+     */
+    public List<InstanceReenterTimeHolder> getReenterData() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(reenterData));
+    }
+
+    public InstanceRemoveBuffType getRemoveBuffType() {
+        WorldPartition.checkOwner();
+        return removeBuffType;
+    }
+
+    /**
+     * @return whether the template lists the skill for its remove buff type: kept by a whitelist, removed by a
+     *     blacklist
+     */
+    public boolean isBuffException(int skillId) {
+        WorldPartition.checkOwner();
+        return buffExceptions.contains(skillId);
     }
 
     /**
@@ -148,6 +249,7 @@ public class Instance {
      * @param value
      */
     public void setAllowSummon(boolean value) {
+        WorldPartition.checkOwner();
         summonAllowed = value;
     }
 
@@ -156,6 +258,7 @@ public class Instance {
      * @param duration in milliseconds
      */
     public void setDuration(int duration) {
+        WorldPartition.checkOwner();
         if (checkTimeUpTask != null) {
             checkTimeUpTask.cancel(true);
         }
@@ -170,6 +273,7 @@ public class Instance {
      * @return true if player exists in instance
      */
     public boolean containsPlayer(int objectId) {
+        WorldPartition.checkOwner();
         return players.contains(objectId);
     }
 
@@ -178,6 +282,7 @@ public class Instance {
      * @param objectId Players object ID
      */
     public void addPlayer(int objectId) {
+        WorldPartition.checkOwner();
         players.add(objectId);
     }
 
@@ -185,7 +290,8 @@ public class Instance {
      * Removes the specified player from the instance list.
      * @param objectId the player's object Id
      */
-    public void removePlayer(Integer objectId) {
+    public void removePlayer(int objectId) {
+        WorldPartition.checkOwner();
         players.remove(objectId);
         if (!players.isEmpty() || (emptyDestroyTime < 0)) {
             return;
@@ -195,11 +301,27 @@ public class Instance {
         setDuration((int) (instanceEndTime - ClockBridge.gameMillis() - 500));
     }
 
+    public int getPlayerCount() {
+        WorldPartition.checkOwner();
+        return players.size();
+    }
+
+    /**
+     * Adds the object ids of the players inside to the target in entry order. A caller that walks them passes a
+     * {@link ScratchBuffers#intEmpty()} lease.
+     */
+    public void collectPlayers(IntCollection target) {
+        WorldPartition.checkOwner();
+        target.addAll(players);
+    }
+
     public void addNpc(Npc npc) {
+        WorldPartition.checkOwner();
         npcs.add(npc);
     }
 
     public void removeNpc(Npc npc) {
+        WorldPartition.checkOwner();
         if (npc.getSpawn() != null) {
             npc.getSpawn().stopRespawn();
         }
@@ -208,23 +330,80 @@ public class Instance {
     }
 
     /**
+     * @return a read-only snapshot of the NPCs in spawn order
+     */
+    public List<Npc> getNpcs() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(npcs));
+    }
+
+    /**
+     * @return the first NPC spawned with the template id, {@code null} for none
+     */
+    public Npc getNpc(int npcId) {
+        WorldPartition.checkOwner();
+        for (Npc npc : npcs) {
+            if (npc.getId() == npcId) {
+                return npc;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds the NPCs of the type with one of the template ids to the target in spawn order.
+     * @param ids the template ids to match, none when empty
+     * @param aliveOnly whether to skip NPCs without HP
+     */
+    public <T> void collectNpcs(Class<T> type, int[] ids, boolean aliveOnly, List<? super T> target) {
+        WorldPartition.checkOwner();
+        if (ids.length > 0) {
+            collect(type, ids, aliveOnly, target);
+        }
+    }
+
+    /**
+     * Adds the NPCs of the type with any template id to the target in spawn order.
+     * @param aliveOnly whether to skip NPCs without HP
+     */
+    public <T> void collectNpcs(Class<T> type, boolean aliveOnly, List<? super T> target) {
+        WorldPartition.checkOwner();
+        collect(type, null, aliveOnly, target);
+    }
+
+    private <T> void collect(Class<T> type, int[] ids, boolean aliveOnly, List<? super T> target) {
+        for (Npc npc : npcs) {
+            if (((ids == null) || ArrayUtil.contains(ids, npc.getId()))
+                    && (!aliveOnly || (npc.getCurrentHp() > 0))
+                    && type.isInstance(npc)) {
+                target.add(type.cast(npc));
+            }
+        }
+    }
+
+    /**
      * Adds a door into the instance
      * @param set - StatSet for initializing door
      */
     public void addDoor(StatSet set) {
-        if (doorTemplates.contains(set)) {
-            log.warn("Door ID {} already exists in instance {}", set.getInt("DoorId"), id);
+        WorldPartition.checkOwner();
+        final int doorId = set.getInt("DoorId");
+        if (doorTemplates.containsKey(doorId)) {
+            log.warn("Door ID {} already exists in instance {}", doorId, id);
             return;
         }
 
-        doorTemplates.add(set);
+        doorTemplates.put(doorId, set);
     }
 
     /**
      * Spawn doors inside instance world.
      */
     public void spawnDoors() {
-        for (StatSet template : doorTemplates) {
+        WorldPartition.checkOwner();
+        // The templates change only while the instance template loads, so spawning walks them live.
+        for (StatSet template : doorTemplates.values()) {
             // Create new door instance.
             final int doorId = template.getInt("DoorId");
             final StatSet doorTemplate = DoorData.getInstance().getDoorTemplate(doorId);
@@ -239,11 +418,31 @@ public class Instance {
         }
     }
 
-    public Collection<Door> getDoors() {
-        return doors.values();
+    /**
+     * @return a read-only snapshot of the doors in spawn order
+     */
+    public List<Door> getDoors() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(doors.values()));
+    }
+
+    /**
+     * Walks the live doors without a copy, since movement and line-of-sight checks ask on every step: the predicate
+     * must be a pure filter that opens, closes, spawns or removes no door.
+     */
+    public boolean anyDoor(Predicate<Door> test) {
+        WorldPartition.checkOwner();
+        for (Door door : doors.values()) {
+            if (test.test(door)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public Door getDoor(int id) {
+        WorldPartition.checkOwner();
         return doors.get(id);
     }
 
@@ -252,18 +451,31 @@ public class Instance {
      * @param loc
      */
     public void addEnterLoc(Location loc) {
-        enterLocs.add(loc);
+        WorldPartition.checkOwner();
+        enterLocs.add(loc.clone());
+    }
+
+    /**
+     * @return a read-only list of copies of the enter locations in template order
+     */
+    public List<Location> getEnterLocs() {
+        WorldPartition.checkOwner();
+        return Location.copiesOf(enterLocs);
     }
 
     public void removePlayers() {
-        for (Integer objectId : players) {
-            final Player player = World.getPlayer(objectId);
-            if ((player != null) && (player.getInstanceId() == id)) {
-                player.setInstanceId(0);
-                if (exitLoc != null) {
-                    player.teleToLocation(exitLoc, true);
-                } else {
-                    player.teleToLocation(TeleportWhereType.TOWN);
+        WorldPartition.checkOwner();
+        // A teleport out takes the player off the list through his instance id change.
+        try (IntSnapshot walk = ScratchBuffers.intSnapshot(players)) {
+            for (int i = 0; i < walk.size(); i++) {
+                final Player player = World.getPlayer(walk.getInt(i));
+                if ((player != null) && (player.getInstanceId() == id)) {
+                    player.setInstanceId(0);
+                    if (exitLoc != null) {
+                        player.teleToLocation(exitLoc.clone(), true);
+                    } else {
+                        player.teleToLocation(TeleportWhereType.TOWN);
+                    }
                 }
             }
         }
@@ -272,13 +484,16 @@ public class Instance {
     }
 
     public void removeNpcs() {
-        for (Npc mob : npcs) {
-            if (mob != null) {
-                if (mob.getSpawn() != null) {
-                    mob.getSpawn().stopRespawn();
-                }
+        WorldPartition.checkOwner();
+        try (Snapshot<Npc> walk = ScratchBuffers.snapshot(npcs)) {
+            for (Npc mob : walk) {
+                if (mob != null) {
+                    if (mob.getSpawn() != null) {
+                        mob.getSpawn().stopRespawn();
+                    }
 
-                mob.deleteMe();
+                    mob.deleteMe();
+                }
             }
         }
 
@@ -286,16 +501,19 @@ public class Instance {
     }
 
     public void removeDoors() {
-        for (Door door : doors.values()) {
-            if (door != null) {
-                final WorldRegion region = door.getWorldRegion();
-                door.decayMe();
+        WorldPartition.checkOwner();
+        try (Snapshot<Door> walk = ScratchBuffers.snapshot(doors.values())) {
+            for (Door door : walk) {
+                if (door != null) {
+                    final WorldRegion region = door.getWorldRegion();
+                    door.decayMe();
 
-                if (region != null) {
-                    region.removeVisibleObject(door);
+                    if (region != null) {
+                        region.removeVisibleObject(door);
+                    }
+
+                    World.removeObject(door);
                 }
-
-                World.removeObject(door);
             }
         }
 
@@ -308,7 +526,9 @@ public class Instance {
      * @return list of spawned NPCs
      */
     public List<Npc> spawnGroup(String groupName) {
+        WorldPartition.checkOwner();
         final List<Npc> spawnedNpcs = new ArrayList<>();
+        // The templates change only while the instance template loads, so spawning walks them live.
         for (StatSet set : spawnTemplates) {
             if (set.getString("spawnGroup").equals(groupName)) {
                 try {
@@ -341,6 +561,7 @@ public class Instance {
     }
 
     public void loadInstanceTemplate(int templateId) {
+        WorldPartition.checkOwner();
         // TODO: Cache templates.
         Document document = null;
         final File xml = new File("." + File.separator + "data" + File.separator + "instances" + File.separator
@@ -392,7 +613,7 @@ public class Instance {
                 case "allowsummon": {
                     a = n.getAttributes().getNamedItem("val");
                     if (a != null) {
-                        setAllowSummon(Boolean.parseBoolean(a.getNodeValue()));
+                        summonAllowed = Boolean.parseBoolean(a.getNodeValue());
                     }
                     break;
                 }
@@ -423,7 +644,7 @@ public class Instance {
                 case "pvpinstance": {
                     a = n.getAttributes().getNamedItem("val");
                     if (a != null) {
-                        setPvP(Boolean.parseBoolean(a.getNodeValue()));
+                        pvP = Boolean.parseBoolean(a.getNodeValue());
                     }
                     break;
                 }
@@ -539,7 +760,7 @@ public class Instance {
                     break;
                 }
                 case "spawnpoints": {
-                    enterLocs = new ArrayList<>();
+                    enterLocs.clear();
                     for (Node loc = n.getFirstChild(); loc != null; loc = loc.getNextSibling()) {
                         if (loc.getNodeName().equals("Location")) {
                             try {
@@ -609,7 +830,7 @@ public class Instance {
                         if ("skill".equalsIgnoreCase(d.getNodeName())) {
                             a = d.getAttributes().getNamedItem("id");
                             if (a != null) {
-                                buffExceptionList.add(Integer.parseInt(a.getNodeValue()));
+                                buffExceptions.add(Integer.parseInt(a.getNodeValue()));
                             }
                         }
                     }
@@ -648,44 +869,12 @@ public class Instance {
         } else if (remaining > 300000) {
             timeLeft = remaining / 60000;
             interval = 300000;
-
-            final SystemMessage sm = new SystemMessage(
-                    SystemMessageId
-                            .THIS_DUNGEON_WILL_EXPIRE_IN_S1_MINUTE_S_YOU_WILL_BE_FORCED_OUT_OF_THE_DUNGEON_WHEN_THE_TIME_EXPIRES);
-            sm.addString(Integer.toString(timeLeft));
-            sm.sendInBroadcast();
-            try {
-                for (Integer playerId : players) {
-                    final Player player = World.getPlayer(playerId);
-                    if ((player != null) && player.isOnline() && (player.getInstanceId() == id)) {
-                        player.sendPacket(sm);
-                    }
-                }
-            } finally {
-                sm.releaseBroadcast();
-            }
-
+            sendExpiryNotice(timeLeft);
             remaining -= 300000;
         } else if (remaining > 60000) {
             timeLeft = remaining / 60000;
             interval = 60000;
-
-            final SystemMessage sm = new SystemMessage(
-                    SystemMessageId
-                            .THIS_DUNGEON_WILL_EXPIRE_IN_S1_MINUTE_S_YOU_WILL_BE_FORCED_OUT_OF_THE_DUNGEON_WHEN_THE_TIME_EXPIRES);
-            sm.addString(Integer.toString(timeLeft));
-            sm.sendInBroadcast();
-            try {
-                for (Integer playerId : players) {
-                    final Player player = World.getPlayer(playerId);
-                    if ((player != null) && player.isOnline() && (player.getInstanceId() == id)) {
-                        player.sendPacket(sm);
-                    }
-                }
-            } finally {
-                sm.releaseBroadcast();
-            }
-
+            sendExpiryNotice(timeLeft);
             remaining -= 60000;
         } else if (remaining > 30000) {
             timeLeft = remaining / 1000;
@@ -700,12 +889,8 @@ public class Instance {
         }
 
         if (cs != null) {
-            for (Integer objectId : players) {
-                final Player player = World.getPlayer(objectId);
-                if ((player != null) && (player.getInstanceId() == id)) {
-                    player.sendPacket(cs);
-                }
-            }
+            final CreatureSay notice = cs;
+            forEachPlayerInside(false, player -> player.sendPacket(notice));
         }
 
         cancelTimer();
@@ -717,13 +902,39 @@ public class Instance {
         }
     }
 
+    private void sendExpiryNotice(int minutesLeft) {
+        final SystemMessage sm = new SystemMessage(
+                SystemMessageId
+                        .THIS_DUNGEON_WILL_EXPIRE_IN_S1_MINUTE_S_YOU_WILL_BE_FORCED_OUT_OF_THE_DUNGEON_WHEN_THE_TIME_EXPIRES);
+        sm.addString(Integer.toString(minutesLeft));
+        sm.sendInBroadcast();
+        try {
+            forEachPlayerInside(true, player -> player.sendPacket(sm));
+        } finally {
+            sm.releaseBroadcast();
+        }
+    }
+
+    private void forEachPlayerInside(boolean onlineOnly, Consumer<Player> action) {
+        try (IntSnapshot walk = ScratchBuffers.intSnapshot(players)) {
+            for (int i = 0; i < walk.size(); i++) {
+                final Player player = World.getPlayer(walk.getInt(i));
+                if ((player != null) && (!onlineOnly || player.isOnline()) && (player.getInstanceId() == id)) {
+                    action.accept(player);
+                }
+            }
+        }
+    }
+
     public void cancelTimer() {
+        WorldPartition.checkOwner();
         if (checkTimeUpTask != null) {
             checkTimeUpTask.cancel(true);
         }
     }
 
     public void cancelEjectDeadPlayer(Player player) {
+        WorldPartition.checkOwner();
         final ScheduledFuture<?> task = ejectDeadTasks.remove(player.getObjectId());
         if (task != null) {
             task.cancel(true);
@@ -735,6 +946,7 @@ public class Instance {
      * @param player
      */
     public void notifyDeath(Player player) {
+        WorldPartition.checkOwner();
         if (!player.isOnEvent() && (ejectTime > 0)) {
             // Send message
             final SystemMessage sm = new SystemMessage(
@@ -743,16 +955,19 @@ public class Instance {
             sm.addInt(ejectTime / 60 / 1000);
             player.sendPacket(sm);
 
-            // Start eject task
+            // A second death before the first ejection keeps one ejection, timed from the last death.
+            cancelEjectDeadPlayer(player);
+            final int objectId = player.getObjectId();
             ejectDeadTasks.put(
-                    player.getObjectId(),
+                    objectId,
                     WorldPartition.loop()
                             .schedule(
                                     () -> {
+                                        ejectDeadTasks.remove(objectId);
                                         if (player.isDead() && (player.getInstanceId() == id)) {
                                             player.setInstanceId(0);
                                             if (exitLoc != null) {
-                                                player.teleToLocation(exitLoc, true);
+                                                player.teleToLocation(exitLoc.clone(), true);
                                             } else {
                                                 player.teleToLocation(TeleportWhereType.TOWN);
                                             }
@@ -779,11 +994,12 @@ public class Instance {
     public class TimeUp implements Runnable {
         @Override
         public void run() {
-            InstanceManager.getInstance().destroyInstance(getId());
+            InstanceManager.getInstance().destroyInstance(id);
         }
     }
 
     public boolean isRemoveBuffEnabled() {
+        WorldPartition.checkOwner();
         return removeBuffType != InstanceRemoveBuffType.NONE;
     }
 }

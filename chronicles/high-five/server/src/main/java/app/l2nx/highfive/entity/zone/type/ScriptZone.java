@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
@@ -27,6 +28,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
  * A scripted zone... Creation of such a zone should require somekind of script reference which can handle onEnter() / onExit()
  * @author durgus
  */
+@SingleWriter
 public class ScriptZone extends ZoneType {
     public ScriptZone(int id) {
         super(id);

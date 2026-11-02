@@ -25,38 +25,36 @@ package app.l2nx.highfive.entity;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.interfaces.IPositionable;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
+import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Represents a 3D coordinate (x, y, z) with an optional heading and instance id.
+ * Plain value type without the ownership check, so no field needs {@code volatile}: loader-built data is published
+ * with its owner, world-state copies belong to the world loop. A {@code @SingleWriter} subclass adds the check.
  */
 public class Location implements IPositionable {
-    private static final int MAX_HEADING = 65535; // Max unsigned 16-bit value.
+    private static final int MAX_HEADING = 65535;
 
     @Getter
-    protected volatile int x;
+    protected int x;
 
     @Getter
-    protected volatile int y;
+    protected int y;
 
     @Getter
-    protected volatile int z;
+    protected int z;
 
     @Getter
-    protected volatile int heading;
+    protected int heading;
 
     @Getter
     @Setter
-    protected volatile int instanceId;
+    protected int instanceId;
 
-    /**
-     * Constructs a Location at a specified x, y and z coordinate, with a default heading and instance id of 0.
-     * @param x the x coordinate
-     * @param y the y coordinate
-     * @param z the z coordinate
-     */
     public Location(int x, int y, int z) {
         this.x = x;
         this.y = y;
@@ -65,13 +63,6 @@ public class Location implements IPositionable {
         instanceId = 0;
     }
 
-    /**
-     * Constructs a Location at a specified x, y, z coordinate and heading, with a default instance id of 0.
-     * @param x the x coordinate
-     * @param y the y coordinate
-     * @param z the z coordinate
-     * @param heading the heading (direction)
-     */
     public Location(int x, int y, int z, int heading) {
         this.x = x;
         this.y = y;
@@ -80,22 +71,10 @@ public class Location implements IPositionable {
         instanceId = 0;
     }
 
-    /**
-     * Constructs a Location based on the position and heading of a WorldObject.
-     * @param obj the WorldObject to derive the location from.
-     */
     public Location(WorldObject obj) {
         this(obj.getX(), obj.getY(), obj.getZ(), obj.getHeading(), obj.getInstanceId());
     }
 
-    /**
-     * Constructs a Location based on the position, heading and instance id of a WorldObject.
-     * @param x the x coordinate
-     * @param y the y coordinate
-     * @param z the z coordinate
-     * @param heading the heading (direction)
-     * @param instanceId the instance id
-     */
     public Location(int x, int y, int z, int heading, int instanceId) {
         this.x = x;
         this.y = y;
@@ -104,10 +83,6 @@ public class Location implements IPositionable {
         this.instanceId = instanceId;
     }
 
-    /**
-     * Constructs a Location from a {@link StatSet}, retrieving values for x, y, z, heading and instance id.
-     * @param set a StatSet containing x, y, z and heading properties.
-     */
     public Location(StatSet set) {
         x = set.getInt("x", 0);
         y = set.getInt("y", 0);
@@ -116,12 +91,6 @@ public class Location implements IPositionable {
         instanceId = set.getInt("instanceId", 0);
     }
 
-    /**
-     * Sets the x, y and z coordinates of this Location.
-     * @param x the new x coordinate
-     * @param y the new y coordinate
-     * @param z the new z coordinate
-     */
     @Override
     public void setXYZ(int x, int y, int z) {
         this.x = x;
@@ -129,37 +98,21 @@ public class Location implements IPositionable {
         this.z = z;
     }
 
-    /**
-     * Updates the x, y and z coordinates of this Location based on another {@link ILocational}.
-     * @param loc the source ILocational to copy coordinates from.
-     */
     @Override
     public void setXYZ(ILocational loc) {
         setXYZ(loc.getX(), loc.getY(), loc.getZ());
     }
 
-    /**
-     * Sets the heading (direction) for this Location.
-     * @param heading the new the heading for this location.
-     */
     @Override
     public void setHeading(int heading) {
         this.heading = Math.clamp(heading, 0, MAX_HEADING);
     }
 
-    /**
-     * Provides the current Location instance, as this class implements {@link IPositionable}.
-     * @return the current Location instance
-     */
     @Override
     public IPositionable getLocation() {
         return this;
     }
 
-    /**
-     * Sets this Location's coordinates and heading to match another Location's.
-     * @param loc the source Location to copy from.
-     */
     @Override
     public void setLocation(Location loc) {
         x = loc.getX();
@@ -169,48 +122,48 @@ public class Location implements IPositionable {
         instanceId = loc.getInstanceId();
     }
 
-    /**
-     * Creates a shallow copy of this Location.
-     * @return a new Location instance with the same x, y, z, heading and instance id values.
-     */
     @Override
     public Location clone() {
         return new Location(x, y, z, heading, instanceId);
     }
 
     /**
-     * Computes a hash code based on this Location's coordinates and heading.
-     * @return the hash code for this Location.
+     * Copies locations for a caller outside their owner, so adjusting one leaves the owner's.
+     * Returns {@code null} for {@code null}.
      */
+    public static List<Location> copiesOf(List<? extends Location> locations) {
+        if (locations == null) {
+            return null;
+        }
+
+        final ObjectArrayList<Location> copies = new ObjectArrayList<>(locations.size());
+        for (Location location : locations) {
+            copies.add(location.clone());
+        }
+
+        return ObjectLists.unmodifiable(copies);
+    }
+
     @Override
     public int hashCode() {
         return (31 * Objects.hash(x, y)) + Objects.hash(z);
     }
 
-    /**
-     * Checks equality between this Location and another object.<br>
-     * Two Locations are considered equal if they have the same x, y, z coordinates and heading.
-     * @param obj the object to compare
-     * @return {@code true} if the given object is a Location with the same x, y, z and heading values; otherwise, {@code false}
-     */
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Location) {
+            // Fields, not getters: a single-writer subclass checks its getters, which equals must not.
             final Location loc = (Location) obj;
-            return (getX() == loc.getX())
-                    && (getY() == loc.getY())
-                    && (getZ() == loc.getZ())
-                    && (getHeading() == loc.getHeading())
-                    && (getInstanceId() == loc.getInstanceId());
+            return (x == loc.x)
+                    && (y == loc.y)
+                    && (z == loc.z)
+                    && (heading == loc.heading)
+                    && (instanceId == loc.instanceId);
         }
 
         return false;
     }
 
-    /**
-     * Provides a string representation of this Location.
-     * @return a formatted string containing the class name, x, y, z coordinates and heading.
-     */
     @Override
     public String toString() {
         return "[" + getClass().getSimpleName() + "] X: " + x + " Y: " + y + " Z: " + z + " Heading: " + heading

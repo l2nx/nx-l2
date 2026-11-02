@@ -22,65 +22,48 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
- * Holds aggro-related information for a single aggressor against an NPC.
- * <p>
- * This holder tracks two independent counters:
- * </p>
- * <ul>
- * <li><b>Hate</b>: used for target selection / threat calculations.</li>
- * <li><b>Damage</b>: used for contribution tracking and auxiliary logic.</li>
- * </ul>
- * <p>
- * Values are capped to avoid uncontrolled growth. This class is intentionally lightweight and mutable. Concurrency control, if needed, should be handled by the owner container (e.g. the aggro map in {@code Attackable}).
- * </p>
+ * Hate (target selection) and damage (contribution) of one aggressor, both capped at {@link #LIMIT}. Belongs to the
+ * world loop like the aggro map of {@code Attackable}.
  * @author BazookaRpm
  */
+@SingleWriter
 public class AggroInfo {
-    /**
-     * Upper cap applied to accumulated hate/damage.
-     */
     private static final long LIMIT = 1000000000000000L;
 
-    /**
-     * The aggressor (attacker) this aggro entry belongs to.
-     */
-    @Getter
     private final Creature attacker;
 
-    /**
-     * Total accumulated damage credited to the aggressor.
-     */
-    @Getter
     private long damage;
 
-    /**
-     * Total accumulated hate credited to the aggressor.
-     */
-    @Getter
     private long hate;
 
-    /**
-     * Creates a new aggro entry bound to a specific aggressor.
-     * @param aggressor the attacker for this entry
-     */
     public AggroInfo(Creature aggressor) {
         attacker = aggressor;
         damage = 0;
         hate = 0;
     }
 
-    /**
-     * Adds damage to this entry.
-     * <p>
-     * Positive values are capped to {@link #LIMIT}. Negative values are applied as-is.
-     * </p>
-     * @param value the damage delta to add
-     */
+    public Creature getAttacker() {
+        WorldPartition.checkOwner();
+        return attacker;
+    }
+
+    public long getDamage() {
+        WorldPartition.checkOwner();
+        return damage;
+    }
+
+    public long getHate() {
+        WorldPartition.checkOwner();
+        return hate;
+    }
+
     public void addDamage(long value) {
+        WorldPartition.checkOwner();
         if (value == 0) {
             return;
         }
@@ -94,14 +77,8 @@ public class AggroInfo {
         damage += value;
     }
 
-    /**
-     * Adds hate to this entry.
-     * <p>
-     * Positive values are capped to {@link #LIMIT}. Negative values are applied as-is.
-     * </p>
-     * @param value the hate delta to add
-     */
     public void addHate(long value) {
+        WorldPartition.checkOwner();
         if (value == 0) {
             return;
         }
@@ -115,27 +92,13 @@ public class AggroInfo {
         hate += value;
     }
 
-    /**
-     * Resets hate to zero.
-     */
     public void stopHate() {
+        WorldPartition.checkOwner();
         hate = 0;
     }
 
-    /**
-     * Validates whether the stored hate should remain active for the current owner context.
-     * <p>
-     * Hate is reset when:
-     * </p>
-     * <ul>
-     * <li>Owner or aggressor is null.</li>
-     * <li>Aggressor is dead or not spawned.</li>
-     * <li>Aggressor is outside the owner's surrounding region.</li>
-     * </ul>
-     * @param owner the NPC/creature owning this aggro list
-     * @return the current hate value after validation
-     */
     public long checkHate(Creature owner) {
+        WorldPartition.checkOwner();
         final Creature attacker = this.attacker;
         if ((attacker == null) || (owner == null)) {
             hate = 0;
@@ -159,21 +122,13 @@ public class AggroInfo {
         return hate;
     }
 
-    /**
-     * Hash is based on the aggressor object id.
-     * @return the aggressor object id, or {@code 0} if aggressor is null
-     */
     @Override
     public int hashCode() {
+        // WorldObject hashes by its object id without the ownership check, which equals and hashCode must not take.
         final Creature c = attacker;
-        return (c != null) ? c.getObjectId() : 0;
+        return (c != null) ? c.hashCode() : 0;
     }
 
-    /**
-     * Equality is based on aggressor identity (same instance).
-     * @param other the object to compare with
-     * @return {@code true} if both entries reference the same aggressor instance
-     */
     @Override
     public boolean equals(Object other) {
         if (other == this) {
@@ -187,10 +142,6 @@ public class AggroInfo {
         return ((AggroInfo) other).attacker == attacker;
     }
 
-    /**
-     * Debug representation of this aggro entry.
-     * @return a human-readable representation of aggressor, hate and damage
-     */
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder(96);

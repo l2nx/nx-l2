@@ -19,7 +19,10 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -30,7 +33,6 @@ import app.l2nx.highfive.entity.zone.AbstractZoneSettings;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneRespawn;
 import app.l2nx.highfive.managers.InstanceManager;
-import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTask;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExOlympiadMatchEnd;
@@ -38,56 +40,58 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.ExOlympiadUserInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.List;
-import lombok.Getter;
 
 /**
  * An olympiad stadium
  * @author durgus, DS
  */
+@SingleWriter
 public class OlympiadStadiumZone extends ZoneRespawn {
-    @Getter
-    private List<Location> spectatorSpawns;
+    private ObjectArrayList<Location> spectatorSpawns;
 
     public OlympiadStadiumZone(int id) {
-        super(id);
-        AbstractZoneSettings settings = ZoneManager.getSettings(getName());
-        if (settings == null) {
-            settings = new Settings();
-        }
-
-        setSettings(settings);
-
+        super(id, new Settings());
         checkAffected = true;
     }
 
-    public class Settings extends AbstractZoneSettings {
-        @Getter
+    @SingleWriter
+    public static final class Settings extends AbstractZoneSettings {
         private OlympiadGameTask olympiadTask = null;
 
-        protected Settings() {}
-
-        protected void setTask(OlympiadGameTask task) {
-            olympiadTask = task;
-        }
+        Settings() {}
 
         @Override
         public void clear() {
+            WorldPartition.checkOwner();
             olympiadTask = null;
         }
     }
 
+    /** Read-only snapshot of copies; {@code null} without any. */
+    public List<Location> getSpectatorSpawns() {
+        WorldPartition.checkOwner();
+        return Location.copiesOf(spectatorSpawns);
+    }
+
     @Override
     public Settings getSettings() {
-        return (Settings) super.getSettings();
+        WorldPartition.checkOwner();
+        return settings();
+    }
+
+    private Settings settings() {
+        return (Settings) currentSettings();
     }
 
     public void registerTask(OlympiadGameTask task) {
-        getSettings().setTask(task);
+        WorldPartition.checkOwner();
+        settings().olympiadTask = task;
     }
 
     public void openDoors() {
+        WorldPartition.checkOwner();
         for (Door door :
                 InstanceManager.getInstance().getInstance(getInstanceId()).getDoors()) {
             if ((door != null) && !door.isOpen()) {
@@ -97,6 +101,7 @@ public class OlympiadStadiumZone extends ZoneRespawn {
     }
 
     public void closeDoors() {
+        WorldPartition.checkOwner();
         for (Door door :
                 InstanceManager.getInstance().getInstance(getInstanceId()).getDoors()) {
             if ((door != null) && door.isOpen()) {
@@ -106,6 +111,7 @@ public class OlympiadStadiumZone extends ZoneRespawn {
     }
 
     public void spawnBuffers() {
+        WorldPartition.checkOwner();
         for (Npc buffer :
                 InstanceManager.getInstance().getInstance(getInstanceId()).getNpcs()) {
             if ((buffer instanceof OlympiadManager) && !buffer.isSpawned()) {
@@ -115,6 +121,7 @@ public class OlympiadStadiumZone extends ZoneRespawn {
     }
 
     public void deleteBuffers() {
+        WorldPartition.checkOwner();
         for (Npc buffer :
                 InstanceManager.getInstance().getInstance(getInstanceId()).getNpcs()) {
             if ((buffer instanceof OlympiadManager) && buffer.isSpawned()) {
@@ -124,29 +131,42 @@ public class OlympiadStadiumZone extends ZoneRespawn {
     }
 
     public void broadcastStatusUpdate(Player player) {
+        WorldPartition.checkOwner();
         final ExOlympiadUserInfo packet = new ExOlympiadUserInfo(player);
-        for (Player target : getPlayersInside()) {
-            if ((target != null)
-                    && (target.inObserverMode() || (target.getOlympiadSide() != player.getOlympiadSide()))
-                    && (target.getInstanceId() == player.getInstanceId())) {
-                target.sendPacket(packet);
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player target : players) {
+                if ((target.inObserverMode() || (target.getOlympiadSide() != player.getOlympiadSide()))
+                        && (target.getInstanceId() == player.getInstanceId())) {
+                    target.sendPacket(packet);
+                }
             }
         }
     }
 
     public void broadcastPacketToObservers(ServerPacket packet) {
-        for (Player creature : getPlayersInside()) {
-            if ((creature != null) && creature.inObserverMode() && (creature.getInstanceId() == getInstanceId())) {
-                creature.sendPacket(packet);
+        WorldPartition.checkOwner();
+        final int instanceId = getInstanceId();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player creature : players) {
+                if (creature.inObserverMode() && (creature.getInstanceId() == instanceId)) {
+                    creature.sendPacket(packet);
+                }
             }
         }
     }
 
     @Override
     public void broadcastPacket(ServerPacket packet) {
-        for (Player creature : getPlayersInside()) {
-            if ((creature != null) && (creature.getInstanceId() == getInstanceId())) {
-                creature.sendPacket(packet);
+        WorldPartition.checkOwner();
+        final int instanceId = getInstanceId();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player creature : players) {
+                if (creature.getInstanceId() == instanceId) {
+                    creature.sendPacket(packet);
+                }
             }
         }
     }
@@ -169,10 +189,10 @@ public class OlympiadStadiumZone extends ZoneRespawn {
         creature.setInsideZone(ZoneId.PVP, true);
 
         if (creature.isPlayer()
-                && (getSettings().getOlympiadTask() != null)
-                && getSettings().getOlympiadTask().isBattleStarted()) {
+                && (settings().olympiadTask != null)
+                && settings().olympiadTask.isBattleStarted()) {
             creature.sendPacket(SystemMessageId.YOU_HAVE_ENTERED_A_COMBAT_ZONE);
-            getSettings().getOlympiadTask().getGame().sendOlympiadInfo(creature);
+            settings().olympiadTask.getGame().sendOlympiadInfo(creature);
         }
 
         if (!creature.isPlayable()) {
@@ -181,11 +201,9 @@ public class OlympiadStadiumZone extends ZoneRespawn {
 
         final Player player = creature.asPlayer();
         if (player != null) {
-            // only participants, observers and GMs allowed
             if (!player.isGM() && !player.isInOlympiadMode() && !player.inObserverMode()) {
                 WorldPartition.loop().execute(new KickPlayer(player));
             } else {
-                // check for pet
                 if (player.hasPet()) {
                     player.getSummon().unSummon(player);
                 }
@@ -198,45 +216,46 @@ public class OlympiadStadiumZone extends ZoneRespawn {
         creature.setInsideZone(ZoneId.PVP, false);
 
         if (creature.isPlayer()
-                && (getSettings().getOlympiadTask() != null)
-                && getSettings().getOlympiadTask().isBattleStarted()) {
+                && (settings().olympiadTask != null)
+                && settings().olympiadTask.isBattleStarted()) {
             creature.sendPacket(SystemMessageId.YOU_HAVE_LEFT_A_COMBAT_ZONE);
             creature.sendPacket(ExOlympiadMatchEnd.STATIC_PACKET);
         }
     }
 
     public void updateZoneStatusForCharactersInside() {
-        if (getSettings().getOlympiadTask() == null) {
+        WorldPartition.checkOwner();
+        if (settings().olympiadTask == null) {
             return;
         }
 
-        final boolean battleStarted = getSettings().getOlympiadTask().isBattleStarted();
+        final boolean battleStarted = settings().olympiadTask.isBattleStarted();
         final SystemMessage sm = battleStarted
                 ? new SystemMessage(SystemMessageId.YOU_HAVE_ENTERED_A_COMBAT_ZONE)
                 : new SystemMessage(SystemMessageId.YOU_HAVE_LEFT_A_COMBAT_ZONE);
-        for (Creature creature : getCharactersInside()) {
-            if (creature == null) {
-                continue;
-            }
-
-            if (creature.getInstanceId() != getInstanceId()) {
-                continue;
-            }
-
-            if (battleStarted) {
-                creature.setInsideZone(ZoneId.PVP, true);
-                if (creature.isPlayer()) {
-                    creature.sendPacket(sm);
+        final int instanceId = getInstanceId();
+        try (Snapshot<Creature> inside = ScratchBuffers.empty()) {
+            collectCharactersInside(inside);
+            for (Creature creature : inside) {
+                if (creature.getInstanceId() != instanceId) {
+                    continue;
                 }
-            } else {
-                creature.setInsideZone(ZoneId.PVP, false);
-                if (creature.isPlayer()) {
-                    creature.sendPacket(sm);
-                    creature.sendPacket(ExOlympiadMatchEnd.STATIC_PACKET);
-                }
-            }
 
-            creature.broadcastInfo();
+                if (battleStarted) {
+                    creature.setInsideZone(ZoneId.PVP, true);
+                    if (creature.isPlayer()) {
+                        creature.sendPacket(sm);
+                    }
+                } else {
+                    creature.setInsideZone(ZoneId.PVP, false);
+                    if (creature.isPlayer()) {
+                        creature.sendPacket(sm);
+                        creature.sendPacket(ExOlympiadMatchEnd.STATIC_PACKET);
+                    }
+                }
+
+                creature.broadcastInfo();
+            }
         }
     }
 
@@ -265,9 +284,10 @@ public class OlympiadStadiumZone extends ZoneRespawn {
 
     @Override
     public void parseLoc(int x, int y, int z, String type) {
+        WorldPartition.checkOwner();
         if ((type != null) && type.equals("spectatorSpawn")) {
             if (spectatorSpawns == null) {
-                spectatorSpawns = new ArrayList<>();
+                spectatorSpawns = new ObjectArrayList<>();
             }
 
             spectatorSpawns.add(new Location(x, y, z));

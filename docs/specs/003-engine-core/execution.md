@@ -379,20 +379,29 @@ the `CreatureStat` and `CreatureStatus` hierarchies and the variables family (`A
 one, since the public methods of a shared base cannot carry the check; the player groups (`AbstractPlayerGroup`,
 `Party`, `CommandChannel`) with the party matching lists (`PartyMatchRoom`, `PartyMatchRoomList`,
 `PartyMatchWaitingList`), and the clan (`Clan` with its sub-units and rank privileges, `ClanMember`,
-`ClanPrivileges`); then the rest of `entity/` (zones, spawns, instances, residences and auctions, `MinionList`,
-`WalkInfo`, `Location`, cubic tasks). Every world entity is then a single writer. A class is
+`ClanPrivileges`); then the rest of `entity/`: zones with their settings and spawn territories, spawns and the
+auto-spawn handler, the NPC holders (minions, walks, aggro, absorbers, damage done), the cubic tasks, instances with
+their parameters and the instance worlds of the scripts, residences with their functions (clan halls, castles, forts,
+siegeable halls), the clan hall and item auctions, cursed weapons, couples, the block checker teams, the player
+appearance, the cast task and item attributes. Every world entity is then a single writer. Three kinds of type stay
+outside by design: `Location` is a value type that static data builds in the parse pool, so it carries no check, and
+the world-state subclasses that extend it (`Spawn`, `TeleportBookmark`) override all its getters and mutators with
+the check while every holder hands its locations out as copies (`Location.copiesOf`); static data (templates,
+geometry, holders with final fields) is built once and only read; and the global managers, data tables and task
+managers that keep their own collections are the next scope
+([#161](https://github.com/l2nx/nx-l2/issues/161)). A class is
 migrated when its methods carry the ownership check, runs show no violation, and its `synchronized` methods and
 blocks, `Lock` fields, concurrent collections and atomics are gone (plain fastutil or JDK collections in their
 place). Done: `World`, `WorldRegion`, `Creature`, `Npc`, `Attackable`, `Playable`, `Summon`, `WorldObject` with
 `ListenersContainer`, `Vehicle`, `Tower`, the `instance` package, `EffectList` with `BuffInfo`, `TimeStamp` and
 `InvulSkillHolder`, `Item` with `DropProtection` and the item containers, and `Player` with `PlayerWorldEntry`, its
 holders, the stat and status hierarchies and the variables family, the player groups with the party matching lists,
-and the clan. Their runs were the tests, client runs on the live
+the clan, and the rest of `entity/` listed above. Their runs were the tests, client runs on the live
 world and a JMH A/B of the hot paths (`WorldBenchmark` for visibility, `CreatureBenchmark` for zones, stat functions,
 skills and reuse, `AttackableBenchmark` for the aggro list, `WorldObjectBenchmark` for positions and distances, `EffectListBenchmark` for adding,
 stacking and stopping effects and their lookups, `ItemContainerBenchmark` for adding and removing items, lookups by
 item and object id, the item snapshot and item counts, `VariablesBenchmark` for reading, writing and probing
-variables, `ClanBenchmark` for member lookups by id and name, member walks, the online count and the war check); the
+variables, `ClanBenchmark` for member lookups by id and name, member walks, the online count and the war check, `ZoneBenchmark` for zone revalidation on a move); the
 load-run check waits for the load harness to enter the world
 ([#68](https://github.com/l2nx/nx-l2/issues/68)), since a login storm that stops at `GAME_CONNECT` never touches it.
 A caller that used to change a collection a getter handed out now calls a mutator or a lookup of the class (for
@@ -405,7 +414,9 @@ friend, premium item, sell buff, manufacture and recipe lookups and counts, the 
 `chargeAutoShots`/`disableAutoShots`, `forEachStatusListener` and the trait mutators of `CreatureStat`; for the
 groups: `collectMembers` and `collectParties` into a scratch buffer, `containsPlayer`, `getMemberCount`,
 `getMember(index)`, `getPartyCount`; for the clan: `collectMembers`, `collectWarList`, `collectAttackerList`,
-`collectRankPrivs`, `getSkill`), so the
+`collectRankPrivs`, `getSkill`; for zones: `collectCharactersInside`, `collectPlayersInside`, `hasPlayersInside`,
+`getCharacterCount`, `isCharacterInZone`; for instances: `collectPlayers`, `collectNpcs`, `getPlayerCount`, `anyDoor`),
+so the
 snapshot rule below costs no copy on those paths. The `StampedLock` around `Creature.doAttack` was also a re-entry
 guard (`tryWriteLock` fails on the thread that holds it), so an attack ordered from inside an attack is still
 dropped, by a plain flag. The stat getters check once each: a `public final` getter checks and calls protected unchecked internals that
@@ -417,7 +428,13 @@ the getters of `Creature` that delegate to its stat and a player's level lookup 
 migration also closed holes the old code left open: only a party room's owner edits or dismisses it, a deleted room
 resets only the members still in it, command channel leadership follows the party leader who takes over when the
 leader leaves, and the server packets that listed rooms and waiting players no longer prune those lists while they
-are written (the client-packet handlers do it first). With `WorldObject`
+are written (the client-packet handlers do it first). Two walks stay on the live collection on purpose, because
+their body is a pure filter on hot paths and nothing can change the collection meanwhile: a region's zone list during
+revalidation on every move (zones change only at load and reload), and the door checks of line of sight
+(`WorldRegion.anyDoor`, `Instance.anyDoor`, whose predicate only reads door state). Zone revalidation on a move came
+out about twice as fast (274 ns to 131 ns entering and leaving four zones, 99 ns to 58 ns staying inside them), since
+a region now walks a dense list instead of a concurrent map; the checks on the aggro holders cost the aggro list 7–21%
+(84 ns to 102 ns for a hate list read), tracked in [#164](https://github.com/l2nx/nx-l2/issues/164). With `WorldObject`
 checked, its accessors carry the check too, so a region switch over 500 objects per region, about 6 000 checks, runs
 about twice as long (23 µs to 54 µs; a build with the check emptied measures as before); the same issue tracks it.
 

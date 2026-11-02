@@ -19,13 +19,13 @@
  */
 package app.l2nx.highfive.entity.zone;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+
 /**
  * Abstract class for Zone settings.
  * @author UnAfraid
  */
+@SingleWriter
 public abstract class AbstractZoneSettings {
-    /**
-     * Clear the Zone settings.
-     */
     public abstract void clear();
 }

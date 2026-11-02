@@ -19,45 +19,37 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.creature;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.util.Collections;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Task dedicated to magic use of character
  * @author xban1x
  */
+@SingleWriter
 public class MagicUseTask implements Runnable {
     private final Creature creature;
 
-    @Getter
-    @Setter
     private List<WorldObject> targets;
 
-    @Getter
     private final Skill skill;
 
-    @Getter
-    @Setter
     private int count;
 
-    @Getter
-    @Setter
     private int skillTime;
 
-    @Getter
-    @Setter
     private int phase;
 
-    @Getter
     private final boolean simultaneous;
 
     public MagicUseTask(Creature creature, List<WorldObject> targets, Skill s, int hit, boolean simultaneous) {
         this.creature = creature;
-        this.targets = targets;
+        this.targets = readOnly(targets);
         skill = s;
         count = 0;
         phase = 1;
@@ -65,8 +57,65 @@ public class MagicUseTask implements Runnable {
         this.simultaneous = simultaneous;
     }
 
+    // A read-only view, not a copy: the cast hands over a target list it built for this task alone.
+    private static List<WorldObject> readOnly(List<WorldObject> targets) {
+        return targets == null ? null : Collections.unmodifiableList(targets);
+    }
+
+    /** Read-only, or {@code null} when the cast has no target list. */
+    public List<WorldObject> getTargets() {
+        WorldPartition.checkOwner();
+        return targets;
+    }
+
+    public void setTargets(List<WorldObject> targets) {
+        WorldPartition.checkOwner();
+        this.targets = readOnly(targets);
+    }
+
+    public Skill getSkill() {
+        WorldPartition.checkOwner();
+        return skill;
+    }
+
+    public int getCount() {
+        WorldPartition.checkOwner();
+        return count;
+    }
+
+    public void setCount(int count) {
+        WorldPartition.checkOwner();
+        this.count = count;
+    }
+
+    public int getSkillTime() {
+        WorldPartition.checkOwner();
+        return skillTime;
+    }
+
+    public void setSkillTime(int skillTime) {
+        WorldPartition.checkOwner();
+        this.skillTime = skillTime;
+    }
+
+    public int getPhase() {
+        WorldPartition.checkOwner();
+        return phase;
+    }
+
+    public void setPhase(int phase) {
+        WorldPartition.checkOwner();
+        this.phase = phase;
+    }
+
+    public boolean isSimultaneous() {
+        WorldPartition.checkOwner();
+        return simultaneous;
+    }
+
     @Override
     public void run() {
+        WorldPartition.checkOwner();
         if (creature == null) {
             return;
         }

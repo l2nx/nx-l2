@@ -19,33 +19,39 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.partition.WorldPartition;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 
 /**
  * Teleport residence zone for clan hall sieges
  * @author BiggBoss
  */
+@SingleWriter
 public class ResidenceHallTeleportZone extends ResidenceTeleportZone {
-    @Getter
     private int residenceZoneId;
 
     private ScheduledFuture<?> teleTask;
 
-    /**
-     * @param id
-     */
     public ResidenceHallTeleportZone(int id) {
         super(id);
     }
 
+    public int getResidenceZoneId() {
+        WorldPartition.checkOwner();
+        return residenceZoneId;
+    }
+
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("residenceZoneId")) {
             residenceZoneId = Integer.parseInt(value);
         } else {
@@ -53,25 +59,26 @@ public class ResidenceHallTeleportZone extends ResidenceTeleportZone {
         }
     }
 
-    public synchronized void checkTeleportTask() {
+    public void checkTeleportTask() {
+        WorldPartition.checkOwner();
         if ((teleTask == null) || teleTask.isDone()) {
             teleTask = WorldPartition.loop().schedule(new TeleportTask(), 30000, TimeUnit.MILLISECONDS);
         }
     }
 
-    protected class TeleportTask implements Runnable {
+    private class TeleportTask implements Runnable {
         @Override
         public void run() {
-            final int index = getSpawns().size() > 1
-                    ? ClockBridge.random().nextInt(getSpawns().size())
-                    : 0;
-            final Location loc = getSpawns().get(index);
+            final List<Location> spawns = getSpawns();
+            final int index = spawns.size() > 1 ? ClockBridge.random().nextInt(spawns.size()) : 0;
+            final Location loc = spawns.get(index);
             if (loc == null) {
                 throw new NullPointerException();
             }
 
-            for (Player pc : getPlayersInside()) {
-                if (pc != null) {
+            try (Snapshot<Player> players = ScratchBuffers.empty()) {
+                collectPlayersInside(players);
+                for (Player pc : players) {
                     pc.teleToLocation(loc, false);
                 }
             }

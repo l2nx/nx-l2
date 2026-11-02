@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -30,7 +31,9 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.FakePlayerInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerObjectInfo;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class WaterZone extends ZoneType {
     public WaterZone(int id) {
         super(id);
@@ -67,7 +70,6 @@ public class WaterZone extends ZoneType {
 
         // TODO: update to only send speed status when that packet is known
         if (creature.isPlayer()) {
-            // Mobius: Attempt to stop water task.
             if (!creature.isInsideZone(ZoneId.WATER)) {
                 creature.asPlayer().stopWaterTask();
             }
@@ -89,6 +91,7 @@ public class WaterZone extends ZoneType {
     }
 
     public int getWaterZ() {
+        WorldPartition.checkOwner();
         return getZone().getHighZ();
     }
 }

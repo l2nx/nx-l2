@@ -185,7 +185,7 @@ public class RequestRestartPoint extends ClientPacket {
                     player.restoreExp(CastleManager.getInstance()
                             .getCastleByOwner(clan)
                             .getFunction(Castle.FUNC_RESTORE_EXP)
-                            .getLvl());
+                            .getLevel());
                 }
                 break;
             }

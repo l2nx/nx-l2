@@ -22,38 +22,51 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.zone.ZoneForm;
 import app.l2nx.highfive.geoengine.GeoEngine;
-import java.util.ArrayList;
-import java.util.List;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 /**
  * Just dummy zone, needs only for geometry calculations
  * @author GKR, Mobius
  */
+@SingleWriter
 public class NpcSpawnTerritory {
-    @Getter
     private final String name;
 
     private final ZoneForm territory;
-    private List<ZoneForm> bannedTerritories;
+    private ObjectArrayList<ZoneForm> bannedTerritories;
 
     public NpcSpawnTerritory(String name, ZoneForm territory) {
         this.name = name;
         this.territory = territory;
     }
 
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
     public void addBannedTerritory(ZoneForm territory) {
+        WorldPartition.checkOwner();
         if (bannedTerritories == null) {
-            bannedTerritories = new ArrayList<>(1);
+            bannedTerritories = new ObjectArrayList<>(1);
         }
 
         bannedTerritories.add(territory);
     }
 
+    /** Drops the banned parts, which the spawn data declares again on each load of it. */
+    public void clearBannedTerritories() {
+        WorldPartition.checkOwner();
+        bannedTerritories = null;
+    }
+
     public Location getRandomPoint() {
+        WorldPartition.checkOwner();
         int count = 0; // Prevent infinite loop.
         Location location;
         int randomX;
@@ -117,17 +130,16 @@ public class NpcSpawnTerritory {
     }
 
     public boolean isInsideZone(int x, int y, int z) {
+        WorldPartition.checkOwner();
         return territory.isInsideZone(x, y, z);
     }
 
     /**
      * Tests containment on the XY plane only, ignoring the Z band.<br>
      * Banned territories are excluded, like getRandomPoint does.
-     * @param x
-     * @param y
-     * @return {@code true} if the point lies inside the territory polygon
      */
     public boolean isInsideZone(int x, int y) {
+        WorldPartition.checkOwner();
         final int z = this.territory.getLowZ();
         if (!this.territory.isInsideZone(x, y, z)) {
             return false;
@@ -145,10 +157,12 @@ public class NpcSpawnTerritory {
     }
 
     public int getHighZ() {
+        WorldPartition.checkOwner();
         return territory.getHighZ();
     }
 
     public void visualizeZone(int z) {
+        WorldPartition.checkOwner();
         territory.visualizeZone(z);
     }
 }

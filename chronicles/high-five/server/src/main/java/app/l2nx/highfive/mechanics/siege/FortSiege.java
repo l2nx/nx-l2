@@ -501,7 +501,7 @@ public class FortSiege implements Siegable {
 
     /** Set the date for the next siege. */
     private void clearSiegeDate() {
-        fort.getSiegeDate().setTimeInMillis(0);
+        fort.setSiegeDate(0);
     }
 
     /**
@@ -898,7 +898,7 @@ public class FortSiege implements Siegable {
             newDate.add(Calendar.MINUTE, 60);
         }
 
-        fort.setSiegeDate(newDate);
+        fort.setSiegeDate(newDate.getTimeInMillis());
         saveSiegeDate();
     }
 

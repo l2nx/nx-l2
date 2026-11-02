@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HeartInfinityAttack;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
@@ -52,6 +53,7 @@ import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -59,22 +61,129 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class HeartInfinityAttack extends Script {
+    @SingleWriter
     private class HIAWorld extends InstanceWorld {
-        public List<Npc> npcList = new ArrayList<>();
-        public List<Npc> startroom = new ArrayList<>();
-        public List<Npc> deadTumors = new ArrayList<>();
-        protected Npc ekimus;
-        protected Npc deadTumor;
-        protected List<Npc> hounds = new ArrayList<>(2);
-        public int tumorCount = 0;
-        public boolean bossAttacked = false;
-        public long startTime = 0;
-        protected ScheduledFuture<?> timerTask;
+        private List<Npc> npcList = new ArrayList<>();
+        private List<Npc> startroom = new ArrayList<>();
+        private List<Npc> deadTumors = new ArrayList<>();
+        private Npc ekimus;
+        private Npc deadTumor;
+        private List<Npc> hounds = new ArrayList<>(2);
+        private int tumorCount = 0;
+        private boolean bossAttacked = false;
+        private long startTime = 0;
+        private ScheduledFuture<?> timerTask;
 
         public HIAWorld() {}
 
-        public synchronized void addTumorCount(int value) {
+        public void addTumorCount(int value) {
+            WorldPartition.checkOwner();
             tumorCount += value;
+        }
+
+        public void addNpcList(Npc element) {
+            WorldPartition.checkOwner();
+            npcList.add(element);
+        }
+
+        public List<Npc> getStartroom() {
+            WorldPartition.checkOwner();
+            return Collections.unmodifiableList(new ArrayList<>(startroom));
+        }
+
+        public void addStartroom(Npc element) {
+            WorldPartition.checkOwner();
+            startroom.add(element);
+        }
+
+        public boolean isStartroomEmpty() {
+            WorldPartition.checkOwner();
+            return startroom.isEmpty();
+        }
+
+        public void clearStartroom() {
+            WorldPartition.checkOwner();
+            startroom.clear();
+        }
+
+        public void addDeadTumors(Npc element) {
+            WorldPartition.checkOwner();
+            deadTumors.add(element);
+        }
+
+        public Npc getDeadTumorsAt(int index) {
+            WorldPartition.checkOwner();
+            return deadTumors.get(index);
+        }
+
+        public int getDeadTumorsCount() {
+            WorldPartition.checkOwner();
+            return deadTumors.size();
+        }
+
+        public Npc getEkimus() {
+            WorldPartition.checkOwner();
+            return ekimus;
+        }
+
+        public void setEkimus(Npc ekimus) {
+            WorldPartition.checkOwner();
+            this.ekimus = ekimus;
+        }
+
+        public Npc getDeadTumor() {
+            WorldPartition.checkOwner();
+            return deadTumor;
+        }
+
+        public void setDeadTumor(Npc deadTumor) {
+            WorldPartition.checkOwner();
+            this.deadTumor = deadTumor;
+        }
+
+        public List<Npc> getHounds() {
+            WorldPartition.checkOwner();
+            return Collections.unmodifiableList(new ArrayList<>(hounds));
+        }
+
+        public void addHounds(Npc element) {
+            WorldPartition.checkOwner();
+            hounds.add(element);
+        }
+
+        public int getTumorCount() {
+            WorldPartition.checkOwner();
+            return tumorCount;
+        }
+
+        public boolean isBossAttacked() {
+            WorldPartition.checkOwner();
+            return bossAttacked;
+        }
+
+        public void setBossAttacked(boolean bossAttacked) {
+            WorldPartition.checkOwner();
+            this.bossAttacked = bossAttacked;
+        }
+
+        public long getStartTime() {
+            WorldPartition.checkOwner();
+            return startTime;
+        }
+
+        public void setStartTime(long startTime) {
+            WorldPartition.checkOwner();
+            this.startTime = startTime;
+        }
+
+        public ScheduledFuture<?> getTimerTask() {
+            WorldPartition.checkOwner();
+            return timerTask;
+        }
+
+        public void setTimerTask(ScheduledFuture<?> timerTask) {
+            WorldPartition.checkOwner();
+            this.timerTask = timerTask;
         }
     }
 
@@ -329,7 +438,7 @@ public class HeartInfinityAttack extends Script {
                     new ExShowScreenMessage(
                             NpcStringId.YOU_WILL_PARTICIPATE_IN_S1_S2_SHORTLY_BE_PREPARED_FOR_ANYTHING, 2, 8000));
             final Npc npc = addSpawn(32536, -179376, 206111, -15538, 16384, false, 0, false, world.getInstanceId());
-            ((HIAWorld) world).startroom.add(npc);
+            ((HIAWorld) world).addStartroom(npc);
         }
     }
 
@@ -350,14 +459,14 @@ public class HeartInfinityAttack extends Script {
     }
 
     protected void conquestBegins(HIAWorld world) {
-        if (!world.startroom.isEmpty()) {
-            for (Npc npc : world.startroom) {
+        if (!world.isStartroomEmpty()) {
+            for (Npc npc : world.getStartroom()) {
                 if (npc != null) {
                     npc.deleteMe();
                 }
             }
 
-            world.startroom.clear();
+            world.clearStartroom();
         }
 
         for (int[] spawn : ROOMS_TUMORS) {
@@ -365,7 +474,7 @@ public class HeartInfinityAttack extends Script {
                 final Npc npc = addSpawn(
                         spawn[0], spawn[1], spawn[2], spawn[3], spawn[4], false, 0, false, world.getInstanceId());
                 npc.setCurrentHp(npc.getMaxHp() * .5);
-                world.npcList.add(npc);
+                world.addNpcList(npc);
             }
         }
 
@@ -393,17 +502,18 @@ public class HeartInfinityAttack extends Script {
                         NpcStringId.YOU_CAN_HEAR_THE_UNDEAD_OF_EKIMUS_RUSHING_TOWARD_YOU_S1_S2_IT_HAS_NOW_BEGUN,
                         2,
                         8000));
-        world.ekimus = addSpawn(EKIMUS, -179537, 208854, -15504, 16384, false, 0, false, world.getInstanceId());
-        world.ekimus.broadcastPacket(new NpcSay(
-                world.ekimus.getObjectId(),
-                ChatType.SHOUT,
-                world.ekimus.getId(),
-                NpcStringId.I_SHALL_ACCEPT_YOUR_CHALLENGE_S1_COME_AND_DIE_IN_THE_ARMS_OF_IMMORTALITY));
-        world.hounds.add(addSpawn(HOUND, -179224, 209624, -15504, 16384, false, 0, false, world.getInstanceId()));
-        world.hounds.add(addSpawn(HOUND, -179880, 209464, -15504, 16384, false, 0, false, world.getInstanceId()));
-        world.startTime = ClockBridge.gameMillis();
-        world.timerTask = WorldPartition.loop()
-                .scheduleAtFixedRate(new TimerTask(world), 298 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS);
+        world.setEkimus(addSpawn(EKIMUS, -179537, 208854, -15504, 16384, false, 0, false, world.getInstanceId()));
+        world.getEkimus()
+                .broadcastPacket(new NpcSay(
+                        world.getEkimus().getObjectId(),
+                        ChatType.SHOUT,
+                        world.getEkimus().getId(),
+                        NpcStringId.I_SHALL_ACCEPT_YOUR_CHALLENGE_S1_COME_AND_DIE_IN_THE_ARMS_OF_IMMORTALITY));
+        world.addHounds(addSpawn(HOUND, -179224, 209624, -15504, 16384, false, 0, false, world.getInstanceId()));
+        world.addHounds(addSpawn(HOUND, -179880, 209464, -15504, 16384, false, 0, false, world.getInstanceId()));
+        world.setStartTime(ClockBridge.gameMillis());
+        world.setTimerTask(WorldPartition.loop()
+                .scheduleAtFixedRate(new TimerTask(world), 298 * 1000, 5 * 60 * 1000, TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -442,14 +552,14 @@ public class HeartInfinityAttack extends Script {
                 }
             } else if (event.startsWith("warp")) {
                 Npc victim = null;
-                victim = world.deadTumor;
+                victim = world.getDeadTumor();
                 if (victim != null) {
-                    world.deadTumors.add(victim);
+                    world.addDeadTumors(victim);
                 }
 
                 player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true);
-                final Location loc =
-                        world.deadTumors.get(getRandom(world.deadTumors.size())).getLocation();
+                final Location loc = world.getDeadTumorsAt(getRandom(world.getDeadTumorsCount()))
+                        .getLocation();
                 if (loc != null) {
                     broadCastPacket(
                             world,
@@ -509,8 +619,8 @@ public class HeartInfinityAttack extends Script {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
         if (tmpworld instanceof HIAWorld) {
             final HIAWorld world = (HIAWorld) tmpworld;
-            if (!world.bossAttacked) {
-                world.bossAttacked = true;
+            if (!world.isBossAttacked()) {
+                world.setBossAttacked(true);
                 final Calendar reenter = ClockBridge.calendar();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
@@ -531,7 +641,7 @@ public class HeartInfinityAttack extends Script {
             }
 
             if (npc.getId() == EKIMUS) {
-                for (Npc mob : world.hounds) {
+                for (Npc mob : world.getHounds()) {
                     mob.asMonster().addDamageHate(attacker, 0, 500);
                     mob.setRunning();
                     mob.getAI().setIntentionAttack(attacker);
@@ -577,15 +687,17 @@ public class HeartInfinityAttack extends Script {
                 world.addTumorCount(-1);
                 npc.dropItem(player, 13797, getRandom(2, 5));
                 npc.deleteMe();
-                world.deadTumor = addSpawn(DEADTUMOR, loc, world.getInstanceId());
-                world.deadTumors.add(world.deadTumor);
+                world.setDeadTumor(addSpawn(DEADTUMOR, loc, world.getInstanceId()));
+                world.addDeadTumors(world.getDeadTumor());
                 WorldPartition.loop()
-                        .schedule(new TumorRevival(world.deadTumor, world), tumorRespawnTime, TimeUnit.MILLISECONDS);
+                        .schedule(
+                                new TumorRevival(world.getDeadTumor(), world), tumorRespawnTime, TimeUnit.MILLISECONDS);
                 WorldPartition.loop()
-                        .schedule(new RegenerationCoffinSpawn(world.deadTumor, world), 20000, TimeUnit.MILLISECONDS);
-                if (world.tumorCount < 1) {
+                        .schedule(
+                                new RegenerationCoffinSpawn(world.getDeadTumor(), world), 20000, TimeUnit.MILLISECONDS);
+                if (world.getTumorCount() < 1) {
                     houndBlocked = true;
-                    for (Npc hound : world.hounds) {
+                    for (Npc hound : world.getHounds()) {
                         hound.setInvul(true);
                     }
 
@@ -625,7 +737,7 @@ public class HeartInfinityAttack extends Script {
         private final HIAWorld world;
 
         public TumorRevival(Npc deadTumor, HIAWorld world) {
-            this.deadTumor = world.deadTumor;
+            this.deadTumor = world.getDeadTumor();
             this.world = world;
         }
 
@@ -638,7 +750,7 @@ public class HeartInfinityAttack extends Script {
             final Npc alivetumor = addSpawn(ALIVETUMOR, deadTumor.getLocation(), world.getInstanceId());
             alivetumor.setCurrentHp(alivetumor.getMaxHp() * .25);
             notifyTumorRevival(world);
-            world.npcList.add(alivetumor);
+            world.addNpcList(alivetumor);
             deadTumor.deleteMe();
             final int tag = world.getParameters().getInt("tag", -1);
             world.setParameter("tag", tag - 1);
@@ -654,7 +766,7 @@ public class HeartInfinityAttack extends Script {
 
         @Override
         public void run() {
-            final long time = ((world.startTime + (25 * 60 * 1000)) - ClockBridge.gameMillis()) / 60000;
+            final long time = ((world.getStartTime() + (25 * 60 * 1000)) - ClockBridge.gameMillis()) / 60000;
             if (time == 0) {
                 broadCastPacket(
                         world,
@@ -665,7 +777,7 @@ public class HeartInfinityAttack extends Script {
                     final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                     if (inst != null) {
                         inst.removeNpcs();
-                        if (inst.getPlayers().isEmpty()) {
+                        if (inst.getPlayerCount() == 0) {
                             inst.setDuration(5 * 60000);
                         } else {
                             inst.setDuration(5 * 60000);
@@ -693,9 +805,9 @@ public class HeartInfinityAttack extends Script {
     }
 
     protected void notifyTumorRevival(HIAWorld world) {
-        if ((world.tumorCount == 1) && houndBlocked) {
+        if ((world.getTumorCount() == 1) && houndBlocked) {
             houndBlocked = false;
-            for (Npc hound : world.hounds) {
+            for (Npc hound : world.getHounds()) {
                 hound.setInvul(false);
             }
 
@@ -724,7 +836,7 @@ public class HeartInfinityAttack extends Script {
         private final HIAWorld world;
 
         public RegenerationCoffinSpawn(Npc deadTumor, HIAWorld world) {
-            this.deadTumor = world.deadTumor;
+            this.deadTumor = world.getDeadTumor();
             this.world = world;
         }
 
@@ -736,31 +848,19 @@ public class HeartInfinityAttack extends Script {
 
             for (int i = 0; i < 4; i++) {
                 final Npc worm = addSpawn(COFFIN, deadTumor.getLocation(), world.getInstanceId());
-                world.npcList.add(worm);
+                world.addNpcList(worm);
             }
         }
     }
 
     private void handleEkimusStats(HIAWorld world) {
-        // TODO FIXME
-        // double[] a = getStatMultiplier(world);
-        // world.ekimus.removeStatsOwner(this);
-        // world.ekimus.addStatFunc(new FuncGet(Stats.POWER_ATTACK, 0x30, this, world.ekimus.getTemplate().getBasePAtk()
-        // * 3));
-        // world.ekimus.addStatFunc(new FuncGet(Stats.MAGIC_ATTACK, 0x30, this, world.ekimus.getTemplate().getBaseMAtk()
-        // * 10));
-        // world.ekimus.addStatFunc(new FuncGet(Stats.POWER_DEFENCE, 0x30, this,
-        // world.ekimus.getTemplate().getBasePDef() * a[1]));
-        // world.ekimus.addStatFunc(new FuncGet(Stats.MAGIC_DEFENCE, 0x30, this,
-        // world.ekimus.getTemplate().getBaseMDef() * a[0]));
-        // world.ekimus.addStatFunc(new FuncGet(Stats.REGENERATE_HP_RATE, 0x30, this,
-        // world.ekimus.getTemplate().getBaseHpReg() * a[2]));
+        // TODO: apply getStatMultiplier(world) scaling to Ekimus stats (#163).
     }
 
     @SuppressWarnings("unused")
     private double[] getStatMultiplier(HIAWorld world) {
         final double[] a = new double[3];
-        switch (world.tumorCount) {
+        switch (world.getTumorCount()) {
             case 6: {
                 a[0] = 2;
                 a[1] = 1;
@@ -829,8 +929,8 @@ public class HeartInfinityAttack extends Script {
     }
 
     protected void conquestConclusion(HIAWorld world) {
-        if (world.timerTask != null) {
-            world.timerTask.cancel(false);
+        if (world.getTimerTask() != null) {
+            world.getTimerTask().cancel(false);
         }
 
         broadCastPacket(
@@ -843,7 +943,7 @@ public class HeartInfinityAttack extends Script {
         final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
         if (inst != null) {
             inst.removeNpcs();
-            if (inst.getPlayers().isEmpty()) {
+            if (inst.getPlayerCount() == 0) {
                 inst.setDuration(5 * 60000);
             } else {
                 inst.setDuration(5 * 60000);

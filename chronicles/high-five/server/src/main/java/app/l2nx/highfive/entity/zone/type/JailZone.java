@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
  * A jail zone
  * @author durgus
  */
+@SingleWriter
 public class JailZone extends ZoneType {
     private static final Location JAIL_IN_LOC = new Location(-114356, -249645, -2984);
     private static final Location JAIL_OUT_LOC = new Location(17836, 170178, -3507);
@@ -71,8 +73,8 @@ public class JailZone extends ZoneType {
             }
 
             if (player.isJailed()) {
-                // When a player wants to exit jail even if he is still jailed, teleport him back to jail.
-                WorldPartition.loop().schedule(new TeleportTask(player, JAIL_IN_LOC), 2000, TimeUnit.MILLISECONDS);
+                WorldPartition.loop()
+                        .schedule(new TeleportTask(player, JAIL_IN_LOC.clone()), 2000, TimeUnit.MILLISECONDS);
                 creature.sendMessage(
                         "You cannot cheat your way out of here. You must wait until your jail time is over.");
             }
@@ -84,10 +86,12 @@ public class JailZone extends ZoneType {
     }
 
     public static Location getLocationIn() {
-        return JAIL_IN_LOC;
+        WorldPartition.checkOwner();
+        return JAIL_IN_LOC.clone();
     }
 
     public static Location getLocationOut() {
-        return JAIL_OUT_LOC;
+        WorldPartition.checkOwner();
+        return JAIL_OUT_LOC.clone();
     }
 }

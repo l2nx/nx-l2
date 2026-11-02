@@ -4513,7 +4513,10 @@ public abstract class Creature extends WorldObject {
                 }
             }
 
-            callSkill(mut.getSkill(), mut.getTargets());
+            // callSkill drops raid bosses from the targets it gets; the cast keeps that list for its last phase.
+            final List<WorldObject> hitTargets = new ArrayList<>(targets);
+            callSkill(skill, hitTargets);
+            mut.setTargets(hitTargets);
         } catch (NullPointerException e) {
             log.warn("onMagicHitTimer: ", e);
         }

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
@@ -29,14 +30,14 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.OnEventTrigger;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * another type of zone where your speed is changed
  * @author Kerberos, Mobius
  */
+@SingleWriter
 public class SwampZone extends ZoneType {
-    @Getter
     private double moveBonus;
 
     private int castleId;
@@ -46,19 +47,22 @@ public class SwampZone extends ZoneType {
     public SwampZone(int id) {
         super(id);
 
-        // Setup default speed reduce (in %).
         moveBonus = 0.5;
 
-        // no castle by default
         castleId = 0;
         castle = null;
 
-        // no event by default
         eventId = 0;
+    }
+
+    public double getMoveBonus() {
+        WorldPartition.checkOwner();
+        return moveBonus;
     }
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("move_bonus")) {
             moveBonus = Double.parseDouble(value);
         } else if (name.equals("castleId")) {
@@ -81,12 +85,10 @@ public class SwampZone extends ZoneType {
     @Override
     protected void onEnter(Creature creature) {
         if (getCastle() != null) {
-            // castle zones active only during siege
             if (!getCastle().getSiege().isInProgress()) {
                 return;
             }
 
-            // defenders not affected
             final Player player = creature.asPlayer();
             if ((player != null) && player.isInSiege() && (player.getSiegeState() == 2)) {
                 return;
@@ -105,7 +107,6 @@ public class SwampZone extends ZoneType {
 
     @Override
     protected void onExit(Creature creature) {
-        // don't broadcast info if not needed
         if (creature.isInsideZone(ZoneId.SWAMP)) {
             creature.setInsideZone(ZoneId.SWAMP, false);
             if (creature.isPlayer()) {

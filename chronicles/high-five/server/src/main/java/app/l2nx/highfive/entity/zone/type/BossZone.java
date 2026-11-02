@@ -19,9 +19,12 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -29,66 +32,63 @@ import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.entity.zone.AbstractZoneSettings;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.GrandBossManager;
-import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntLists;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import lombok.Getter;
 
 /**
  * @author DaRkRaGe
  */
+@SingleWriter
 public class BossZone extends ZoneType {
-    @Getter
     private int timeInvade;
 
-    private int[] oustLoc = {0, 0, 0};
+    private final int[] oustLoc = new int[3];
 
-    public class Settings extends AbstractZoneSettings {
-        // track the times that players got disconnected. Players are allowed
-        // to log back into the zone as long as their log-out was within timeInvade time...
-        // <player objectId, expiration time in milliseconds>
-        @Getter
-        private final Map<Integer, Long> playerAllowedReEntryTimes = new ConcurrentHashMap<>();
+    @SingleWriter
+    public static final class Settings extends AbstractZoneSettings {
+        // Entry deadline in game millis per player objectId, set on logout or by allowPlayerEntry.
+        private final Int2LongOpenHashMap playerAllowedReEntryTimes = new Int2LongOpenHashMap();
 
-        // track the players admitted to the zone who should be allowed back in
-        // after reboot/server downtime (outside of their control), within 30 of server restart
-        @Getter
-        private final List<Integer> playersAllowed = new CopyOnWriteArrayList<>();
+        // Admitted players in admission order; they may also re-enter after a server restart within timeInvade.
+        private final IntLinkedOpenHashSet playersAllowed = new IntLinkedOpenHashSet();
 
-        @Getter
-        private final List<Creature> raidList = new CopyOnWriteArrayList<>();
-
-        protected Settings() {}
+        Settings() {}
 
         @Override
         public void clear() {
+            WorldPartition.checkOwner();
             playerAllowedReEntryTimes.clear();
             playersAllowed.clear();
-            raidList.clear();
         }
     }
 
     public BossZone(int id) {
-        super(id);
-        oustLoc = new int[3];
-        AbstractZoneSettings settings = ZoneManager.getSettings(getName());
-        if (settings == null) {
-            settings = new Settings();
-        }
-
-        setSettings(settings);
+        super(id, new Settings());
         GrandBossManager.getInstance().addZone(this);
+    }
+
+    public int getTimeInvade() {
+        WorldPartition.checkOwner();
+        return timeInvade;
     }
 
     @Override
     public Settings getSettings() {
-        return (Settings) super.getSettings();
+        WorldPartition.checkOwner();
+        return settings();
+    }
+
+    private Settings settings() {
+        return (Settings) currentSettings();
     }
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("InvadeTime")) {
             timeInvade = Integer.parseInt(value);
         } else if (name.equals("oustX")) {
@@ -103,69 +103,43 @@ public class BossZone extends ZoneType {
     }
 
     /**
-     * Boss zones have special behaviors for player characters.<br>
-     * Players are automatically teleported out when the attempt to enter these zones, except if the time at which they enter the zone is prior to the entry expiration time set for that player.<br>
-     * Entry expiration times are set by any one of the following:<br>
-     * 1) A player logs out while in a zone (Expiration gets set to logoutTime + timeInvade)<br>
-     * 2) An external source (such as a quest or AI of NPC) set up the player for entry.<br>
-     * There exists one more case in which the player will be allowed to enter.<br>
-     * That is if the server recently rebooted (boot-up time more recent than currentTime - timeInvade) AND the player was in the zone prior to reboot.
+     * Players without an unexpired entry time are ousted; it is set on logout (logoutTime + timeInvade) or by
+     * {@link #allowPlayerEntry}. A player admitted before a restart may re-enter within timeInvade of boot.
      */
     @Override
     protected void onEnter(Creature creature) {
+        final Settings settings = settings();
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
             if (player.isGM()) {
                 return;
             }
 
-            // if player has been (previously) cleared by npc/ai for entry and the zone is
-            // set to receive players (aka not waiting for boss to respawn)
-            if (getSettings().getPlayersAllowed().contains(player.getObjectId())) {
-                // Get the information about this player's last logout-exit from
-                // this zone.
-                final Long expirationTime =
-                        getSettings().getPlayerAllowedReEntryTimes().get(player.getObjectId());
-
-                // with legal entries, do nothing.
-                if (expirationTime == null) // legal null expirationTime entries
-                {
+            final int objectId = player.getObjectId();
+            if (settings.playersAllowed.contains(objectId)) {
+                if (!settings.playerAllowedReEntryTimes.containsKey(objectId)) {
                     if (WorldLoader.getStartTime() > (ClockBridge.gameMillis() - timeInvade)) {
                         return;
                     }
                 } else {
-                    // legal non-null logoutTime entries
-                    getSettings().getPlayerAllowedReEntryTimes().remove(player.getObjectId());
-                    if (expirationTime.longValue() > ClockBridge.gameMillis()) {
+                    final long expirationTime = settings.playerAllowedReEntryTimes.remove(objectId);
+                    if (expirationTime > ClockBridge.gameMillis()) {
                         return;
                     }
                 }
 
-                getSettings()
-                        .getPlayersAllowed()
-                        .remove(getSettings().getPlayersAllowed().indexOf(player.getObjectId()));
+                settings.playersAllowed.remove(objectId);
             }
 
-            // teleport out all players who attempt "illegal" (re-)entry
-            if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
-                player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
-            } else {
-                player.teleToLocation(TeleportWhereType.TOWN);
-            }
+            oust(player);
         } else if (creature.isSummon()) {
             final Player player = creature.asPlayer();
             if (player != null) {
-                if (getSettings().getPlayersAllowed().contains(player.getObjectId()) || player.isGM()) {
+                if (settings.playersAllowed.contains(player.getObjectId()) || player.isGM()) {
                     return;
                 }
 
-                // remove summon and teleport out owner
-                // who attempt "illegal" (re-)entry
-                if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
-                    player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
-                } else {
-                    player.teleToLocation(TeleportWhereType.TOWN);
-                }
+                oust(player);
             }
 
             creature.asSummon().unSummon(player);
@@ -174,57 +148,39 @@ public class BossZone extends ZoneType {
 
     @Override
     protected void onExit(Creature creature) {
+        final Settings settings = settings();
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
             if (player.isGM()) {
                 return;
             }
 
-            // If the player just got disconnected/logged out, store the dc time so that
-            // decisions can be made later about allowing or not the player to log into the zone.
-            if (!player.isOnline() && getSettings().getPlayersAllowed().contains(player.getObjectId())) {
-                // mark the time that the player left the zone
-                getSettings()
-                        .getPlayerAllowedReEntryTimes()
-                        .put(player.getObjectId(), ClockBridge.gameMillis() + timeInvade);
+            if (!player.isOnline() && settings.playersAllowed.contains(player.getObjectId())) {
+                settings.playerAllowedReEntryTimes.put(player.getObjectId(), ClockBridge.gameMillis() + timeInvade);
             } else {
-                if (getSettings().getPlayersAllowed().contains(player.getObjectId())) {
-                    getSettings()
-                            .getPlayersAllowed()
-                            .remove(getSettings().getPlayersAllowed().indexOf(player.getObjectId()));
-                }
-
-                getSettings().getPlayerAllowedReEntryTimes().remove(player.getObjectId());
+                settings.playersAllowed.remove(player.getObjectId());
+                settings.playerAllowedReEntryTimes.remove(player.getObjectId());
             }
         }
 
-        if (creature.isPlayable()
-                && (getCharactersInside() != null)
-                && !getCharactersInside().isEmpty()) {
-            getSettings().getRaidList().clear();
-            int count = 0;
-            for (Creature obj : getCharactersInside()) {
-                if (obj == null) {
-                    continue;
-                }
+        if (creature.isPlayable() && hasCharactersInside()) {
+            // Sending a raid home moves it, so the walk runs over a copy.
+            try (Snapshot<Creature> inside = ScratchBuffers.empty()) {
+                collectCharactersInside(inside);
+                if (!containsPlayable(inside)) {
+                    for (Creature obj : inside) {
+                        if (!obj.isAttackable() || !obj.isRaid()) {
+                            continue;
+                        }
 
-                if (obj.isPlayable()) {
-                    count++;
-                } else if (obj.isAttackable() && obj.isRaid()) {
-                    getSettings().getRaidList().add(obj);
-                }
-            }
+                        final Attackable raid = obj.asAttackable();
+                        if ((raid.getSpawn() == null) || raid.isDead()) {
+                            continue;
+                        }
 
-            // If inside zone is not any player, force all boss instance return to its spawn points.
-            if ((count == 0) && !getSettings().getRaidList().isEmpty()) {
-                for (int i = 0; i < getSettings().getRaidList().size(); i++) {
-                    final Attackable raid = getSettings().getRaidList().get(i).asAttackable();
-                    if ((raid == null) || (raid.getSpawn() == null) || raid.isDead()) {
-                        continue;
-                    }
-
-                    if (!raid.isInsideRadius2D(raid.getSpawn(), 150)) {
-                        raid.returnHome();
+                        if (!raid.isInsideRadius2D(raid.getSpawn(), 150)) {
+                            raid.returnHome();
+                        }
                     }
                 }
             }
@@ -235,8 +191,19 @@ public class BossZone extends ZoneType {
         }
     }
 
+    private static boolean containsPlayable(List<Creature> creatures) {
+        for (Creature creature : creatures) {
+            if (creature.isPlayable()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public void setEnabled(boolean flag) {
+        WorldPartition.checkOwner();
         if (isEnabled() != flag) {
             oustAllPlayers();
         }
@@ -245,38 +212,44 @@ public class BossZone extends ZoneType {
     }
 
     public void setAllowedPlayers(List<Integer> players) {
+        WorldPartition.checkOwner();
         if (players != null) {
-            getSettings().getPlayersAllowed().clear();
-            getSettings().getPlayersAllowed().addAll(players);
+            final Settings settings = settings();
+            settings.playersAllowed.clear();
+            settings.playersAllowed.addAll(players);
         }
     }
 
+    /** Read-only snapshot in admission order. */
     public List<Integer> getAllowedPlayers() {
-        return getSettings().getPlayersAllowed();
+        WorldPartition.checkOwner();
+        return IntLists.unmodifiable(new IntArrayList(settings().playersAllowed));
     }
 
     public boolean isPlayerAllowed(Player player) {
-        if (player.isGM() || getSettings().getPlayersAllowed().contains(player.getObjectId())) {
+        WorldPartition.checkOwner();
+        if (player.isGM() || settings().playersAllowed.contains(player.getObjectId())) {
             return true;
         }
 
+        oust(player);
+        return false;
+    }
+
+    private void oust(Player player) {
         if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
             player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
         } else {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
-
-        return false;
     }
 
-    /**
-     * Some GrandBosses send all players in zone to a specific part of the zone, rather than just removing them all. If this is the case, this command should be used. If this is no the case, then use oustAllPlayers().
-     * @param loc
-     */
     public void movePlayersTo(Location loc) {
-        for (Creature creature : getCharactersInside()) {
-            if ((creature != null) && creature.isPlayer()) {
-                final Player player = creature.asPlayer();
+        WorldPartition.checkOwner();
+        // A teleport may take the player out of this zone, so the walk runs over a copy.
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player player : players) {
                 if (player.isOnline()) {
                     player.teleToLocation(loc);
                 }
@@ -284,79 +257,49 @@ public class BossZone extends ZoneType {
         }
     }
 
-    /**
-     * Occasionally, all players need to be sent out of the zone (for example, if the players are just running around without fighting for too long, or if all players die, etc). This call sends all online players to town and marks offline players to be teleported (by clearing their relog expiration
-     * times) when they log back in (no real need for off-line teleport).
-     */
+    /** Clearing the entry times makes offline players fail re-entry on login, so they need no teleport. */
     @Override
     public void oustAllPlayers() {
-        if (getCharactersInside().isEmpty()) {
+        WorldPartition.checkOwner();
+        if (!hasCharactersInside()) {
             return;
         }
 
-        for (Creature creature : getCharactersInside()) {
-            if ((creature != null) && creature.isPlayer()) {
-                final Player player = creature.asPlayer();
+        // A teleport takes the player out of this zone, so the walk runs over a copy.
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player player : players) {
                 if (player.isOnline()) {
-                    if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
-                        player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
-                    } else {
-                        player.teleToLocation(TeleportWhereType.TOWN);
-                    }
+                    oust(player);
                 }
             }
         }
 
-        getSettings().getPlayerAllowedReEntryTimes().clear();
-        getSettings().getPlayersAllowed().clear();
+        final Settings settings = settings();
+        settings.playerAllowedReEntryTimes.clear();
+        settings.playersAllowed.clear();
     }
 
-    /**
-     * This function is to be used by external sources, such as quests and AI in order to allow a player for entry into the zone for some time. Naturally if the player does not enter within the allowed time, he/she will be teleported out again...
-     * @param player reference to the player we wish to allow
-     * @param durationInSec amount of time in seconds during which entry is valid.
-     */
+    /** Entry is valid for {@code durationInSec} seconds; later entry ousts the player again. */
     public void allowPlayerEntry(Player player, int durationInSec) {
+        WorldPartition.checkOwner();
         if (player.isGM()) {
             return;
         }
 
-        if (!getSettings().getPlayersAllowed().contains(player.getObjectId())) {
-            getSettings().getPlayersAllowed().add(player.getObjectId());
-        }
-
-        getSettings()
-                .getPlayerAllowedReEntryTimes()
-                .put(player.getObjectId(), ClockBridge.gameMillis() + (durationInSec * 1000));
+        final Settings settings = settings();
+        settings.playersAllowed.add(player.getObjectId());
+        settings.playerAllowedReEntryTimes.put(player.getObjectId(), ClockBridge.gameMillis() + (durationInSec * 1000));
     }
 
     public void removePlayer(Player player) {
+        WorldPartition.checkOwner();
         if (player.isGM()) {
             return;
         }
 
-        getSettings().getPlayersAllowed().remove(Integer.valueOf(player.getObjectId()));
-        getSettings().getPlayerAllowedReEntryTimes().remove(player.getObjectId());
+        final Settings settings = settings();
+        settings.playersAllowed.remove(player.getObjectId());
+        settings.playerAllowedReEntryTimes.remove(player.getObjectId());
     }
-
-    // public void updateKnownList(Npc npc)
-    // {
-    // if ((_characterList == null) || _characterList.isEmpty())
-    // {
-    // return;
-    // }
-    //
-    // final Map<Integer, Player> npcKnownPlayers = npc.getKnownList().getKnownPlayers();
-    // for (Creature creature : getCharactersInside())
-    // {
-    // if ((character != null) && character.isPlayer())
-    // {
-    // final Player player = character.asPlayer();
-    // if (player.isOnline())
-    // {
-    // npcKnownPlayers.put(player.getObjectId(), player);
-    // }
-    // }
-    // }
-    // }
 }

@@ -27,7 +27,6 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.instance.Item;
-import app.l2nx.highfive.entity.zone.AbstractZoneSettings;
 import app.l2nx.highfive.entity.zone.ZoneForm;
 import app.l2nx.highfive.entity.zone.ZoneRegion;
 import app.l2nx.highfive.entity.zone.ZoneRespawn;
@@ -76,6 +75,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,7 +91,7 @@ import org.w3c.dom.Node;
 @Slf4j
 public class ZoneManager implements IXmlReader {
 
-    private static final Map<String, AbstractZoneSettings> SETTINGS = new HashMap<>();
+    private final Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replacedZones = new HashMap<>();
 
     private static final int SHIFT_BY = 15;
     private static final int OFFSET_X = Math.abs(World.WORLD_X_MIN >> SHIFT_BY);
@@ -128,37 +128,33 @@ public class ZoneManager implements IXmlReader {
         // Get the world regions.
         int count = 0;
 
-        // Backup old zone settings.
-        for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
-            for (ZoneType zone : map.values()) {
-                if (zone.getSettings() != null) {
-                    SETTINGS.put(zone.getName(), zone.getSettings());
+        try {
+            for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
+                for (ZoneType zone : map.values()) {
+                    rememberReplaced(zone, replacedZones);
                 }
             }
-        }
 
-        // Clear zones
-        for (ZoneRegion[] zoneRegions : this.zoneRegions) {
-            for (ZoneRegion zoneRegion : zoneRegions) {
-                zoneRegion.getZones().clear();
-                count++;
+            for (ZoneRegion[] zoneRegions : this.zoneRegions) {
+                for (ZoneRegion zoneRegion : zoneRegions) {
+                    zoneRegion.clearZones();
+                    count++;
+                }
             }
-        }
 
-        GrandBossManager.getInstance().getZones().clear();
-        log.info("Removed zones in {} regions.", count);
+            GrandBossManager.getInstance().getZones().clear();
+            log.info("Removed zones in {} regions.", count);
 
-        // Load the zones
-        load();
+            load();
 
-        // Re-validate all characters in zones.
-        for (WorldObject obj : World.getVisibleObjects()) {
-            if (obj.isCreature()) {
-                obj.asCreature().revalidateZone(true);
+            for (WorldObject obj : World.getVisibleObjects()) {
+                if (obj.isCreature()) {
+                    obj.asCreature().revalidateZone(true);
+                }
             }
+        } finally {
+            replacedZones.clear();
         }
-
-        SETTINGS.clear();
     }
 
     @Override
@@ -217,7 +213,8 @@ public class ZoneManager implements IXmlReader {
                                 continue;
                             } else if (spawnTerritories.containsKey(zoneName)) {
                                 log.warn(
-                                        "ZoneData: Name {} already used for another zone, check file: {}. Skipping zone",
+                                        "ZoneData: Name {} already used for another zone, check file: {}. Skipping"
+                                                + " zone",
                                         zoneName,
                                         file.getName());
                                 continue;
@@ -360,6 +357,8 @@ public class ZoneManager implements IXmlReader {
                             temp.setName(zoneName);
                         }
 
+                        restoreSettings(temp, replacedZones);
+
                         addZone(zoneId, temp);
 
                         // Register the zone into any world region it
@@ -371,8 +370,8 @@ public class ZoneManager implements IXmlReader {
                                 final int bx = ((x + 1) - OFFSET_X) << SHIFT_BY;
                                 final int ay = (y - OFFSET_Y) << SHIFT_BY;
                                 final int by = ((y + 1) - OFFSET_Y) << SHIFT_BY;
-                                if (temp.getZone().intersectsRectangle(ax, bx, ay, by)) {
-                                    zoneRegions[x][y].getZones().put(temp.getId(), temp);
+                                if (zoneForm.intersectsRectangle(ax, bx, ay, by)) {
+                                    zoneRegions[x][y].addZone(temp);
                                 }
                             }
                         }
@@ -384,6 +383,8 @@ public class ZoneManager implements IXmlReader {
 
     @Override
     public void load() {
+        // Zones without an id in the datapack take ids in load order, so a reload gives each the id it had.
+        lastDynamicId.set(300000);
         classZones.clear();
         classZones.put(ArenaZone.class, new ConcurrentHashMap<>());
         classZones.put(BossZone.class, new ConcurrentHashMap<>());
@@ -438,6 +439,22 @@ public class ZoneManager implements IXmlReader {
         }
 
         return i;
+    }
+
+    /** Matches by id because names repeat (olympiad stadiums); a changed name under that id keeps fresh settings. */
+    static void restoreSettings(ZoneType zone, Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replaced) {
+        final Map<Integer, ZoneType> ofType = replaced.get(zone.getClass());
+        final ZoneType previous = ofType == null ? null : ofType.get(zone.getId());
+        if ((previous != null) && Objects.equals(previous.getName(), zone.getName()) && (zone.getSettings() != null)) {
+            zone.setSettings(previous.getSettings());
+        }
+    }
+
+    /** Keyed by type as well as id: ids repeat across zone types. */
+    static void rememberReplaced(ZoneType zone, Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replaced) {
+        if (zone.getSettings() != null) {
+            replaced.computeIfAbsent(zone.getClass(), _ -> new HashMap<>()).put(zone.getId(), zone);
+        }
     }
 
     /**
@@ -587,12 +604,7 @@ public class ZoneManager implements IXmlReader {
         }
 
         final List<ZoneType> result = new ArrayList<>();
-        for (ZoneType zone : region.getZones().values()) {
-            if (zone.isInsideZone(x, y)) {
-                result.add(zone);
-            }
-        }
-
+        region.collectZones(x, y, result);
         return result;
     }
 
@@ -610,12 +622,7 @@ public class ZoneManager implements IXmlReader {
         }
 
         final List<ZoneType> result = new ArrayList<>();
-        for (ZoneType zone : region.getZones().values()) {
-            if (zone.isInsideZone(x, y, z)) {
-                result.add(zone);
-            }
-        }
-
+        region.collectZones(x, y, z, result);
         return result;
     }
 
@@ -628,20 +635,13 @@ public class ZoneManager implements IXmlReader {
      * @param type the type
      * @return zone from given coordinates
      */
-    @SuppressWarnings("unchecked")
     public <T extends ZoneType> T getZone(int x, int y, int z, Class<T> type) {
         final ZoneRegion region = getRegion(x, y);
         if (region == null) {
             return null;
         }
 
-        for (ZoneType zone : region.getZones().values()) {
-            if (zone.isInsideZone(x, y, z) && type.isInstance(zone)) {
-                return (T) zone;
-            }
-        }
-
-        return null;
+        return region.getZone(x, y, z, type);
     }
 
     /**
@@ -651,6 +651,13 @@ public class ZoneManager implements IXmlReader {
      */
     public void addSpawnTerritory(String name, NpcSpawnTerritory zone) {
         spawnTerritories.putIfAbsent(name, zone);
+    }
+
+    /** Lets a spawn data reload re-declare the banned parts without duplicating them. */
+    public void clearBannedTerritories() {
+        for (NpcSpawnTerritory territory : spawnTerritories.values()) {
+            territory.clearBannedTerritories();
+        }
     }
 
     /**
@@ -788,15 +795,6 @@ public class ZoneManager implements IXmlReader {
 
     public ZoneRegion getRegion(ILocational point) {
         return getRegion(point.getX(), point.getY());
-    }
-
-    /**
-     * Gets the settings.
-     * @param name the name
-     * @return the settings
-     */
-    public static AbstractZoneSettings getSettings(String name) {
-        return SETTINGS.get(name);
     }
 
     /**

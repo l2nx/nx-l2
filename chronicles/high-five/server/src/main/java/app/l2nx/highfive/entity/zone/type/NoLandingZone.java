@@ -19,17 +19,20 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.MountType;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A no landing zone
  * @author durgus
  */
+@SingleWriter
 public class NoLandingZone extends ZoneType {
     private int dismountDelay = 5;
 
@@ -39,6 +42,7 @@ public class NoLandingZone extends ZoneType {
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("dismountDelay")) {
             dismountDelay = Integer.parseInt(value);
         } else {

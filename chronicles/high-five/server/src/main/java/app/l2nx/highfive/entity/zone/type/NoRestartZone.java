@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.WorldLoader;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -26,28 +27,45 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A simple no restart zone
  * @author GKR
  */
+@SingleWriter
 public class NoRestartZone extends ZoneType {
-    @Getter
-    @Setter
     private int restartAllowedTime = 0;
 
-    @Getter
-    @Setter
     private int restartTime = 0;
 
     public NoRestartZone(int id) {
         super(id);
     }
 
+    public int getRestartAllowedTime() {
+        WorldPartition.checkOwner();
+        return restartAllowedTime;
+    }
+
+    public void setRestartAllowedTime(int restartAllowedTime) {
+        WorldPartition.checkOwner();
+        this.restartAllowedTime = restartAllowedTime;
+    }
+
+    public int getRestartTime() {
+        WorldPartition.checkOwner();
+        return restartTime;
+    }
+
+    public void setRestartTime(int restartTime) {
+        WorldPartition.checkOwner();
+        this.restartTime = restartTime;
+    }
+
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equalsIgnoreCase("restartAllowedTime")) {
             restartAllowedTime = Integer.parseInt(value) * 1000;
         } else if (name.equalsIgnoreCase("restartTime")) {
@@ -75,6 +93,7 @@ public class NoRestartZone extends ZoneType {
 
     @Override
     public void onPlayerLoginInside(Player player) {
+        WorldPartition.checkOwner();
         if (!isEnabled()) {
             return;
         }

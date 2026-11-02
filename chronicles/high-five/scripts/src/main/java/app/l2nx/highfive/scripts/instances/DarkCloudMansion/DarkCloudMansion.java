@@ -988,7 +988,7 @@ public class DarkCloudMansion extends InstanceScript {
                 teleportPlayer(player, new Location(139968, 150367, -3111), 0);
                 final int instanceId = npc.getInstanceId();
                 final Instance instance = InstanceManager.getInstance().getInstance(instanceId);
-                if (instance.getPlayers().isEmpty()) {
+                if (instance.getPlayerCount() == 0) {
                     InstanceManager.getInstance().destroyInstance(instanceId);
                 }
 

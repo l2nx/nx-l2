@@ -22,13 +22,15 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.holders.ElementalItemHolder;
 import app.l2nx.highfive.data.xml.ElementalAttributeData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.mechanics.stats.functions.FuncAdd;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class Elementals {
     public static final byte NONE = -1;
     public static final byte FIRE = 0;
@@ -42,7 +44,7 @@ public class Elementals {
     public static final int NEXT_WEAPON_BONUS = 5;
     public static final int ARMOR_BONUS = 6;
 
-    public static final int[] WEAPON_VALUES = {
+    private static final int[] WEAPON_VALUES = {
         0, // Level 1
         25, // Level 2
         75, // Level 3
@@ -57,10 +59,9 @@ public class Elementals {
         525, // Level 12
         600, // Level 13
         Integer.MAX_VALUE
-        // TODO: Higher stones
     };
 
-    public static final int[] ARMOR_VALUES = {
+    private static final int[] ARMOR_VALUES = {
         0, // Level 1
         12, // Level 2
         30, // Level 3
@@ -75,24 +76,43 @@ public class Elementals {
         210, // Level 12
         240, // Level 13
         Integer.MAX_VALUE
-        // TODO: Higher stones
     };
 
+    /** The highest attribute value a weapon reaches with stones of the given maximum level. */
+    public static int weaponValue(int level) {
+        WorldPartition.checkOwner();
+        return WEAPON_VALUES[level];
+    }
+
+    /** The highest attribute value an armor reaches with stones of the given maximum level. */
+    public static int armorValue(int level) {
+        WorldPartition.checkOwner();
+        return ARMOR_VALUES[level];
+    }
+
     public static byte getItemElement(int itemId) {
+        WorldPartition.checkOwner();
         final ElementalItemHolder item = ElementalAttributeData.getInstance().getElementalItem(itemId);
         return item != null ? item.getElementId() : NONE;
     }
 
     public static ElementalItemHolder getItemElemental(int itemId) {
+        WorldPartition.checkOwner();
         return ElementalAttributeData.getInstance().getElementalItem(itemId);
     }
 
     public static int getMaxElementLevel(int itemId) {
+        WorldPartition.checkOwner();
         final ElementalItemHolder item = ElementalAttributeData.getInstance().getElementalItem(itemId);
         return item != null ? item.getType().getMaxLevel() : -1;
     }
 
     public static String getElementName(byte element) {
+        WorldPartition.checkOwner();
+        return elementName(element);
+    }
+
+    private static String elementName(byte element) {
         switch (element) {
             case FIRE: {
                 return "Fire";
@@ -118,6 +138,7 @@ public class Elementals {
     }
 
     public static byte getElementId(String name) {
+        WorldPartition.checkOwner();
         final String tmp = name.toLowerCase();
         if (tmp.equals("fire")) {
             return FIRE;
@@ -147,122 +168,107 @@ public class Elementals {
     }
 
     public static byte getOppositeElement(byte element) {
+        WorldPartition.checkOwner();
         return (byte) (((element % 2) == 0) ? (element + 1) : (element - 1));
     }
 
-    public static class ElementalStatBonus {
-        private byte elementalType;
-        private int elementalValue;
-        private boolean active;
+    private byte element;
 
-        public ElementalStatBonus(byte type, int value) {
-            elementalType = type;
-            elementalValue = value;
-            active = false;
-        }
+    private int value;
 
-        public void applyBonus(Player player, boolean isArmor) {
-            // make sure the bonuses are not applied twice..
-            if (active) {
-                return;
-            }
-
-            switch (elementalType) {
-                case FIRE: {
-                    player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.FIRE_RES : Stat.FIRE_POWER, 0x40, this, elementalValue, null));
-                    break;
-                }
-                case WATER: {
-                    player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.WATER_RES : Stat.WATER_POWER, 0x40, this, elementalValue, null));
-                    break;
-                }
-                case WIND: {
-                    player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.WIND_RES : Stat.WIND_POWER, 0x40, this, elementalValue, null));
-                    break;
-                }
-                case EARTH: {
-                    player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.EARTH_RES : Stat.EARTH_POWER, 0x40, this, elementalValue, null));
-                    break;
-                }
-                case DARK: {
-                    player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.DARK_RES : Stat.DARK_POWER, 0x40, this, elementalValue, null));
-                    break;
-                }
-                case HOLY: {
-                    player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.HOLY_RES : Stat.HOLY_POWER, 0x40, this, elementalValue, null));
-                    break;
-                }
-            }
-
-            active = true;
-        }
-
-        public void removeBonus(Player player) {
-            // Make sure the bonuses are not removed twice.
-            if (!active) {
-                return;
-            }
-
-            player.removeStatsOwner(this);
-
-            active = false;
-        }
-
-        public void setValue(int value) {
-            elementalValue = value;
-        }
-
-        public void setElement(byte type) {
-            elementalType = type;
-        }
-    }
-
-    // non static:
-    private ElementalStatBonus bonus = null;
-
-    @Getter
-    private byte element = NONE;
-
-    @Getter
-    private int value = 0;
-
-    public void setElement(byte type) {
-        element = type;
-        bonus.setElement(type);
-    }
-
-    public void setValue(int value) {
-        this.value = value;
-        bonus.setValue(value);
-    }
-
-    @Override
-    public String toString() {
-        return getElementName(element) + " +" + value;
-    }
+    private boolean bonusActive;
 
     public Elementals(byte type, int value) {
         element = type;
         this.value = value;
-        bonus = new ElementalStatBonus(element, this.value);
+    }
+
+    public byte getElement() {
+        WorldPartition.checkOwner();
+        return element;
+    }
+
+    public int getValue() {
+        WorldPartition.checkOwner();
+        return value;
+    }
+
+    public void setElement(byte type) {
+        WorldPartition.checkOwner();
+        element = type;
+    }
+
+    public void setValue(int value) {
+        WorldPartition.checkOwner();
+        this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return elementName(element) + " +" + value;
     }
 
     public void applyBonus(Player player, boolean isArmor) {
-        bonus.applyBonus(player, isArmor);
+        WorldPartition.checkOwner();
+        apply(player, isArmor);
     }
 
     public void removeBonus(Player player) {
-        bonus.removeBonus(player);
+        WorldPartition.checkOwner();
+        remove(player);
     }
 
     public void updateBonus(Player player, boolean isArmor) {
-        bonus.removeBonus(player);
-        bonus.applyBonus(player, isArmor);
+        WorldPartition.checkOwner();
+        remove(player);
+        apply(player, isArmor);
+    }
+
+    private void apply(Player player, boolean isArmor) {
+        if (bonusActive) {
+            return;
+        }
+
+        final Stat stat = bonusStat(isArmor);
+        if (stat != null) {
+            player.addStatFunc(new FuncAdd(stat, 0x40, this, value, null));
+        }
+
+        bonusActive = true;
+    }
+
+    private void remove(Player player) {
+        if (!bonusActive) {
+            return;
+        }
+
+        player.removeStatsOwner(this);
+        bonusActive = false;
+    }
+
+    private Stat bonusStat(boolean isArmor) {
+        switch (element) {
+            case FIRE: {
+                return isArmor ? Stat.FIRE_RES : Stat.FIRE_POWER;
+            }
+            case WATER: {
+                return isArmor ? Stat.WATER_RES : Stat.WATER_POWER;
+            }
+            case WIND: {
+                return isArmor ? Stat.WIND_RES : Stat.WIND_POWER;
+            }
+            case EARTH: {
+                return isArmor ? Stat.EARTH_RES : Stat.EARTH_POWER;
+            }
+            case DARK: {
+                return isArmor ? Stat.DARK_RES : Stat.DARK_POWER;
+            }
+            case HOLY: {
+                return isArmor ? Stat.HOLY_RES : Stat.HOLY_POWER;
+            }
+            default: {
+                return null;
+            }
+        }
     }
 }

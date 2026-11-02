@@ -256,8 +256,7 @@ public abstract class InstanceScript extends Script {
             }
             case WHITELIST: {
                 for (BuffInfo buffInfo : player.getEffectList().getBuffs()) {
-                    if (!instance.getBuffExceptionList()
-                            .contains(buffInfo.getSkill().getId())) {
+                    if (!instance.isBuffException(buffInfo.getSkill().getId())) {
                         buffInfo.getEffected()
                                 .getEffectList()
                                 .stopSkillEffects(SkillFinishType.REMOVED, buffInfo.getSkill());
@@ -267,8 +266,7 @@ public abstract class InstanceScript extends Script {
                 final Summon summon = player.getSummon();
                 if (summon != null) {
                     for (BuffInfo buffInfo : summon.getEffectList().getBuffs()) {
-                        if (!instance.getBuffExceptionList()
-                                .contains(buffInfo.getSkill().getId())) {
+                        if (!instance.isBuffException(buffInfo.getSkill().getId())) {
                             buffInfo.getEffected()
                                     .getEffectList()
                                     .stopSkillEffects(SkillFinishType.REMOVED, buffInfo.getSkill());
@@ -279,8 +277,7 @@ public abstract class InstanceScript extends Script {
             }
             case BLACKLIST: {
                 for (BuffInfo buffInfo : player.getEffectList().getBuffs()) {
-                    if (instance.getBuffExceptionList()
-                            .contains(buffInfo.getSkill().getId())) {
+                    if (instance.isBuffException(buffInfo.getSkill().getId())) {
                         buffInfo.getEffected()
                                 .getEffectList()
                                 .stopSkillEffects(SkillFinishType.REMOVED, buffInfo.getSkill());
@@ -290,8 +287,7 @@ public abstract class InstanceScript extends Script {
                 final Summon summon = player.getSummon();
                 if (summon != null) {
                     for (BuffInfo buffInfo : summon.getEffectList().getBuffs()) {
-                        if (instance.getBuffExceptionList()
-                                .contains(buffInfo.getSkill().getId())) {
+                        if (instance.isBuffException(buffInfo.getSkill().getId())) {
                             buffInfo.getEffected()
                                     .getEffectList()
                                     .stopSkillEffects(SkillFinishType.REMOVED, buffInfo.getSkill());

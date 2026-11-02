@@ -274,9 +274,7 @@ public class AdminGrandBoss implements IAdminCommandHandler {
             html.replace("%respawnTime%", bossStatus == deadStatus ? bossRespawn : "Already respawned!");
             html.replace(
                     "%playersInside%",
-                    bossZone != null
-                            ? String.valueOf(bossZone.getPlayersInside().size())
-                            : "Zone not found!");
+                    bossZone != null ? String.valueOf(bossZone.getPlayerCount()) : "Zone not found!");
             activeChar.sendPacket(html);
         } else {
             activeChar.sendSysMessage("Wrong ID!");

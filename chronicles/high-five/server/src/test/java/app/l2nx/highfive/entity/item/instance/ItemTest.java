@@ -147,14 +147,14 @@ class ItemTest {
         void getElementals_shouldKeepTheItemsAttributes_whenTheCallerWritesTheArray() {
             final Item item = item();
 
-            final Elementals actual = WorldLoopExtension.callInPass(() -> {
+            final Integer actual = WorldLoopExtension.callInPass(() -> {
                 item.setElementAttr(Elementals.FIRE, 10);
                 item.getElementals()[0] = null;
-                return item.getElemental(Elementals.FIRE);
+                final Elementals fire = item.getElemental(Elementals.FIRE);
+                return fire == null ? null : fire.getValue();
             });
 
-            assertThat(actual).isNotNull();
-            assertThat(actual.getValue()).isEqualTo(10);
+            assertThat(actual).isEqualTo(10);
         }
     }
 

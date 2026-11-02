@@ -66,7 +66,6 @@ public class RespawnTaskManager implements Runnable {
                     final Spawn spawn = npc.getSpawn();
                     if (spawn != null) {
                         spawn.respawnNpc(npc);
-                        spawn.scheduledCount--;
                     }
                 }
             }

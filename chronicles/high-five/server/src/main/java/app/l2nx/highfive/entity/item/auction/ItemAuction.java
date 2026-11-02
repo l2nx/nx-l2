@@ -23,8 +23,11 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -39,46 +42,35 @@ import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author Forsaiken
  */
+@SingleWriter
 public class ItemAuction {
 
     private static final long ENDING_TIME_EXTEND_5 = TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
     private static final long ENDING_TIME_EXTEND_3 = TimeUnit.MILLISECONDS.convert(3, TimeUnit.MINUTES);
 
-    @Getter
     private final int auctionId;
 
-    @Getter
     private final int instanceId;
 
-    @Getter
     private final long startingTime;
 
-    @Getter
-    private volatile long endingTime;
+    private long endingTime;
 
     private final AuctionItem auctionItem;
     private final List<ItemAuctionBid> auctionBids;
-    private final Object auctionStateLock;
 
     private ItemAuctionState auctionState;
 
-    @Getter
-    @Setter
     private ItemAuctionExtendState scheduledAuctionEndingExtendState;
 
-    @Getter
     private ItemAuctionExtendState auctionEndingExtendState;
 
-    @Getter
     private final ItemInfo itemInfo;
 
-    @Getter
     private ItemAuctionBid highestBid;
 
     private int lastBidPlayerObjId;
@@ -102,7 +94,6 @@ public class ItemAuction {
         this.auctionItem = auctionItem;
         this.auctionBids = auctionBids;
         this.auctionState = auctionState;
-        auctionStateLock = new Object();
         scheduledAuctionEndingExtendState = ItemAuctionExtendState.INITIAL;
         auctionEndingExtendState = ItemAuctionExtendState.INITIAL;
 
@@ -117,62 +108,89 @@ public class ItemAuction {
         }
     }
 
+    public int getAuctionId() {
+        WorldPartition.checkOwner();
+        return auctionId;
+    }
+
+    public int getInstanceId() {
+        WorldPartition.checkOwner();
+        return instanceId;
+    }
+
+    public long getStartingTime() {
+        WorldPartition.checkOwner();
+        return startingTime;
+    }
+
+    public long getEndingTime() {
+        WorldPartition.checkOwner();
+        return endingTime;
+    }
+
+    public ItemAuctionExtendState getScheduledAuctionEndingExtendState() {
+        WorldPartition.checkOwner();
+        return scheduledAuctionEndingExtendState;
+    }
+
+    public void setScheduledAuctionEndingExtendState(ItemAuctionExtendState scheduledAuctionEndingExtendState) {
+        WorldPartition.checkOwner();
+        this.scheduledAuctionEndingExtendState = scheduledAuctionEndingExtendState;
+    }
+
+    public ItemAuctionExtendState getAuctionEndingExtendState() {
+        WorldPartition.checkOwner();
+        return auctionEndingExtendState;
+    }
+
+    public ItemInfo getItemInfo() {
+        WorldPartition.checkOwner();
+        return itemInfo;
+    }
+
+    public ItemAuctionBid getHighestBid() {
+        WorldPartition.checkOwner();
+        return highestBid;
+    }
+
     public ItemAuctionState getAuctionState() {
-        final ItemAuctionState auctionState;
-
-        synchronized (auctionStateLock) {
-            auctionState = this.auctionState;
-        }
-
+        WorldPartition.checkOwner();
         return auctionState;
     }
 
     public boolean setAuctionState(ItemAuctionState expected, ItemAuctionState wanted) {
-        synchronized (auctionStateLock) {
-            if (auctionState != expected) {
-                return false;
-            }
-
-            auctionState = wanted;
-            storeMe();
-            return true;
+        WorldPartition.checkOwner();
+        if (auctionState != expected) {
+            return false;
         }
+
+        auctionState = wanted;
+        ItemAuctionManager.getInstance().updateAuctionState(auctionId, auctionState);
+        return true;
     }
 
     public Item createNewItemInstance() {
+        WorldPartition.checkOwner();
         return auctionItem.createNewItemInstance();
     }
 
     public long getAuctionInitBid() {
+        WorldPartition.checkOwner();
         return auctionItem.getAuctionInitBid();
     }
 
-    public long getStartingTimeRemaining() {
-        return Math.max(endingTime - ClockBridge.wallMillis(), 0);
-    }
-
     public long getFinishingTimeRemaining() {
+        WorldPartition.checkOwner();
         return Math.max(endingTime - ClockBridge.wallMillis(), 0);
     }
 
-    /**
-     * Stores the state; the auction itself is stored when it is created.
-     */
-    public void storeMe() {
-        ItemAuctionManager.getInstance().updateAuctionState(auctionId, auctionState);
-    }
-
-    public int getAndSetLastBidPlayerObjectId(int playerObjId) {
+    private int getAndSetLastBidPlayerObjectId(int playerObjId) {
         final int lastBid = lastBidPlayerObjId;
         lastBidPlayerObjId = playerObjId;
         return lastBid;
     }
 
     private void updatePlayerBid(ItemAuctionBid bid, boolean delete) {
-        updatePlayerBidInternal(bid, delete);
-    }
-
-    private void updatePlayerBidInternal(ItemAuctionBid bid, boolean delete) {
         if (delete) {
             ItemAuctionManager.getInstance().deleteBid(auctionId, bid.getPlayerObjId());
         } else {
@@ -187,6 +205,7 @@ public class ItemAuction {
     }
 
     public void registerBid(Player player, long newBid) {
+        WorldPartition.checkOwner();
         if (player == null) {
             throw new NullPointerException();
         }
@@ -202,54 +221,51 @@ public class ItemAuction {
             return;
         }
 
-        if (getAuctionState() != ItemAuctionState.STARTED) {
+        if (auctionState != ItemAuctionState.STARTED) {
+            return;
+        }
+
+        if ((highestBid != null) && (newBid < highestBid.getLastBid())) {
+            player.sendPacket(SystemMessageId.YOUR_BID_MUST_BE_HIGHER_THAN_THE_CURRENT_HIGHEST_BID);
             return;
         }
 
         final int playerObjId = player.getObjectId();
-
-        synchronized (auctionBids) {
-            if ((highestBid != null) && (newBid < highestBid.getLastBid())) {
-                player.sendPacket(SystemMessageId.YOUR_BID_MUST_BE_HIGHER_THAN_THE_CURRENT_HIGHEST_BID);
+        ItemAuctionBid bid = findBid(playerObjId);
+        if (bid == null) {
+            if (!reduceItemCount(player, newBid)) {
+                player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA_FOR_THIS_BID);
                 return;
             }
 
-            ItemAuctionBid bid = getBidFor(playerObjId);
-            if (bid == null) {
-                if (!reduceItemCount(player, newBid)) {
-                    player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA_FOR_THIS_BID);
+            bid = new ItemAuctionBid(playerObjId, newBid);
+            auctionBids.add(bid);
+        } else {
+            if (!bid.isCanceled()) {
+                if (newBid < bid.getLastBid()) // just another check
+                {
+                    player.sendPacket(SystemMessageId.YOUR_BID_MUST_BE_HIGHER_THAN_THE_CURRENT_HIGHEST_BID);
                     return;
                 }
 
-                bid = new ItemAuctionBid(playerObjId, newBid);
-                auctionBids.add(bid);
-            } else {
-                if (!bid.isCanceled()) {
-                    if (newBid < bid.getLastBid()) // just another check
-                    {
-                        player.sendPacket(SystemMessageId.YOUR_BID_MUST_BE_HIGHER_THAN_THE_CURRENT_HIGHEST_BID);
-                        return;
-                    }
-
-                    if (!reduceItemCount(player, newBid - bid.getLastBid())) {
-                        player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA_FOR_THIS_BID);
-                        return;
-                    }
-                } else if (!reduceItemCount(player, newBid)) {
+                if (!reduceItemCount(player, newBid - bid.getLastBid())) {
                     player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA_FOR_THIS_BID);
                     return;
                 }
-
-                bid.setLastBid(newBid);
+            } else if (!reduceItemCount(player, newBid)) {
+                player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA_FOR_THIS_BID);
+                return;
             }
 
-            onPlayerBid(player, bid);
-            updatePlayerBid(bid, false);
-
-            final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_SUBMITTED_A_BID_FOR_THE_AUCTION_OF_S1);
-            sm.addLong(newBid);
-            player.sendPacket(sm);
+            bid.setLastBid(newBid);
         }
+
+        onPlayerBid(player, bid);
+        updatePlayerBid(bid, false);
+
+        final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_SUBMITTED_A_BID_FOR_THE_AUCTION_OF_S1);
+        sm.addLong(newBid);
+        player.sendPacket(sm);
     }
 
     private void onPlayerBid(Player player, ItemAuctionBid bid) {
@@ -264,13 +280,12 @@ public class ItemAuction {
             highestBid = bid;
         }
 
-        if ((endingTime - ClockBridge.wallMillis()) <= (1000 * 60 * 10)) // 10 minutes
-        {
+        if ((endingTime - ClockBridge.wallMillis()) <= (1000 * 60 * 10)) {
             switch (auctionEndingExtendState) {
                 case INITIAL: {
                     auctionEndingExtendState = ItemAuctionExtendState.EXTEND_BY_5_MIN;
                     endingTime += ENDING_TIME_EXTEND_5;
-                    broadcastToAllBidders(new SystemMessage(
+                    broadcastToAllBiddersLater(new SystemMessage(
                             SystemMessageId.BIDDER_EXISTS_THE_AUCTION_TIME_HAS_BEEN_EXTENDED_BY_5_MINUTES));
                     break;
                 }
@@ -278,7 +293,7 @@ public class ItemAuction {
                     if (getAndSetLastBidPlayerObjectId(player.getObjectId()) != player.getObjectId()) {
                         auctionEndingExtendState = ItemAuctionExtendState.EXTEND_BY_3_MIN;
                         endingTime += ENDING_TIME_EXTEND_3;
-                        broadcastToAllBidders(new SystemMessage(
+                        broadcastToAllBiddersLater(new SystemMessage(
                                 SystemMessageId.BIDDER_EXISTS_AUCTION_TIME_HAS_BEEN_EXTENDED_BY_3_MINUTES));
                     }
                     break;
@@ -310,28 +325,33 @@ public class ItemAuction {
         }
     }
 
-    public void broadcastToAllBidders(ServerPacket packet) {
-        WorldPartition.loop().execute(() -> broadcastToAllBiddersInternal(packet));
+    // Deferred, so the notice reaches the bidder after the confirmation of his own bid.
+    private void broadcastToAllBiddersLater(ServerPacket packet) {
+        WorldPartition.loop().execute(() -> broadcastToAllBidders(packet));
     }
 
-    public void broadcastToAllBiddersInternal(ServerPacket packet) {
-        for (int i = auctionBids.size(); i-- > 0; ) {
-            final ItemAuctionBid bid = auctionBids.get(i);
-            if (bid != null) {
-                final Player player = bid.getPlayer();
-                if (player != null) {
-                    player.sendPacket(packet);
+    public void broadcastToAllBidders(ServerPacket packet) {
+        WorldPartition.checkOwner();
+        try (Snapshot<ItemAuctionBid> walk = ScratchBuffers.snapshot(auctionBids)) {
+            for (int i = walk.size(); i-- > 0; ) {
+                final ItemAuctionBid bid = walk.get(i);
+                if (bid != null) {
+                    final Player player = bid.getPlayer();
+                    if (player != null) {
+                        player.sendPacket(packet);
+                    }
                 }
             }
         }
     }
 
     public boolean cancelBid(Player player) {
+        WorldPartition.checkOwner();
         if (player == null) {
             throw new NullPointerException();
         }
 
-        switch (getAuctionState()) {
+        switch (auctionState) {
             case CREATED: {
                 return false;
             }
@@ -346,57 +366,50 @@ public class ItemAuction {
             }
         }
 
-        final int playerObjId = player.getObjectId();
-
-        synchronized (auctionBids) {
-            if (highestBid == null) {
-                return false;
-            }
-
-            final int bidIndex = getBidIndexFor(playerObjId);
-            if (bidIndex == -1) {
-                return false;
-            }
-
-            final ItemAuctionBid bid = auctionBids.get(bidIndex);
-            if (bid.getPlayerObjId() == highestBid.getPlayerObjId()) {
-                // Can't return winning bid.
-                if (getAuctionState() == ItemAuctionState.FINISHED) {
-                    return false;
-                }
-
-                player.sendPacket(SystemMessageId.YOU_CURRENTLY_HAVE_THE_HIGHEST_BID_BUT_THE_RESERVE_HAS_NOT_BEEN_MET);
-                return true;
-            }
-
-            if (bid.isCanceled()) {
-                return false;
-            }
-
-            increaseItemCount(player, bid.getLastBid());
-            bid.cancelBid();
-
-            // Delete bid from database if auction already finished.
-            updatePlayerBid(bid, getAuctionState() == ItemAuctionState.FINISHED);
-
-            player.sendPacket(SystemMessageId.YOU_HAVE_CANCELED_YOUR_BID);
+        if (highestBid == null) {
+            return false;
         }
 
+        final ItemAuctionBid bid = findBid(player.getObjectId());
+        if (bid == null) {
+            return false;
+        }
+
+        if (bid.getPlayerObjId() == highestBid.getPlayerObjId()) {
+            // Can't return winning bid.
+            if (auctionState == ItemAuctionState.FINISHED) {
+                return false;
+            }
+
+            player.sendPacket(SystemMessageId.YOU_CURRENTLY_HAVE_THE_HIGHEST_BID_BUT_THE_RESERVE_HAS_NOT_BEEN_MET);
+            return true;
+        }
+
+        if (bid.isCanceled()) {
+            return false;
+        }
+
+        increaseItemCount(player, bid.getLastBid());
+        bid.cancelBid();
+
+        // Delete bid from database if auction already finished.
+        updatePlayerBid(bid, auctionState == ItemAuctionState.FINISHED);
+
+        player.sendPacket(SystemMessageId.YOU_HAVE_CANCELED_YOUR_BID);
         return true;
     }
 
     public void clearCanceledBids() {
-        if (getAuctionState() != ItemAuctionState.FINISHED) {
+        WorldPartition.checkOwner();
+        if (auctionState != ItemAuctionState.FINISHED) {
             throw new IllegalStateException("Attempt to clear canceled bids for non-finished auction");
         }
 
-        synchronized (auctionBids) {
-            for (ItemAuctionBid bid : auctionBids) {
-                if ((bid == null) || !bid.isCanceled()) {
-                    continue;
+        try (Snapshot<ItemAuctionBid> walk = ScratchBuffers.snapshot(auctionBids)) {
+            for (ItemAuctionBid bid : walk) {
+                if ((bid != null) && bid.isCanceled()) {
+                    updatePlayerBid(bid, true);
                 }
-
-                updatePlayerBid(bid, true);
             }
         }
     }
@@ -420,23 +433,24 @@ public class ItemAuction {
      * @return The last bid the player made or -1
      */
     public long getLastBid(Player player) {
-        final ItemAuctionBid bid = getBidFor(player.getObjectId());
+        WorldPartition.checkOwner();
+        final ItemAuctionBid bid = findBid(player.getObjectId());
         return bid != null ? bid.getLastBid() : -1L;
     }
 
     public ItemAuctionBid getBidFor(int playerObjId) {
-        final int index = getBidIndexFor(playerObjId);
-        return index != -1 ? auctionBids.get(index) : null;
+        WorldPartition.checkOwner();
+        return findBid(playerObjId);
     }
 
-    private int getBidIndexFor(int playerObjId) {
+    private ItemAuctionBid findBid(int playerObjId) {
         for (int i = auctionBids.size(); i-- > 0; ) {
             final ItemAuctionBid bid = auctionBids.get(i);
             if ((bid != null) && (bid.getPlayerObjId() == playerObjId)) {
-                return i;
+                return bid;
             }
         }
 
-        return -1;
+        return null;
     }
 }

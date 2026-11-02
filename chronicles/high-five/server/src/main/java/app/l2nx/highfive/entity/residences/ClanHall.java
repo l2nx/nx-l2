@@ -27,61 +27,53 @@
 package app.l2nx.highfive.entity.residences;
 
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
-import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
-import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.clan.Clan;
-import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
+import app.l2nx.highfive.entity.residences.function.AbstractResidenceFunction;
+import app.l2nx.highfive.entity.residences.function.ResidenceFunctions;
 import app.l2nx.highfive.entity.zone.type.ClanHallZone;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import app.l2nx.highfive.util.StatSet;
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
+@SingleWriter
 public abstract class ClanHall {
 
-    @Getter
     final int id;
 
-    private List<Door> doors;
+    // Registration order of the doors, which open and close in it.
+    private final List<Door> doors = new ObjectArrayList<>();
 
-    @Getter
     private final String name;
 
-    @Getter
     private int ownerId;
 
-    @Getter
     private final String desc;
 
-    @Getter
     private final String location;
 
-    @Getter
-    @Setter
     private ClanHallZone zone;
 
-    @Getter
     protected boolean free = true;
 
-    private final Map<Integer, ClanHallFunction> functions;
+    private final ResidenceFunctions<ClanHallFunction> functions = new ResidenceFunctions<>();
 
-    /** Clan Hall Functions */
     public static final int FUNC_TELEPORT = 1;
 
     public static final int FUNC_ITEM_CREATE = 2;
@@ -92,103 +84,31 @@ public abstract class ClanHall {
     public static final int FUNC_DECO_FRONTPLATEFORM = 7; // Only Auctionable Halls
     public static final int FUNC_DECO_CURTAINS = 8; // Only Auctionable Halls
 
-    public class ClanHallFunction {
-        @Getter
-        final int type;
-
-        @Getter
-        @Setter
-        private int level;
-
-        @Getter
-        @Setter
-        protected int lease;
-
-        protected int tempFee;
-
-        @Getter
-        final long rate;
-
-        @Getter
-        @Setter
-        long endTime;
-
-        protected boolean inDebt;
-        public boolean cwh; // first activating clanhall function is payed from player inventory, any others from clan
-        // warehouse
-
+    @SingleWriter
+    public class ClanHallFunction extends AbstractResidenceFunction {
         public ClanHallFunction(int type, int lvl, int lease, int tempLease, long rate, long time, boolean cwh) {
-            this.type = type;
-            level = lvl;
-            this.lease = lease;
-            tempFee = tempLease;
-            this.rate = rate;
-            endTime = time;
-            initializeTask(cwh);
+            super(type, lvl, lease, tempLease, rate, time);
+            startFee(cwh);
         }
 
-        private void initializeTask(boolean cwh) {
-            if (free) {
-                return;
-            }
-
-            final long currentTime = ClockBridge.wallMillis();
-            if (endTime > currentTime) {
-                WorldPartition.loop().schedule(new FunctionTask(cwh), endTime - currentTime, TimeUnit.MILLISECONDS);
-            } else {
-                WorldPartition.loop().schedule(new FunctionTask(cwh), 0, TimeUnit.MILLISECONDS);
-            }
+        @Override
+        protected boolean isOwned() {
+            return !free;
         }
 
-        private class FunctionTask implements Runnable {
-            public FunctionTask(boolean cwh) {
-                ClanHall.ClanHallFunction.this.cwh = cwh;
-            }
-
-            @Override
-            public void run() {
-                try {
-                    if (free) {
-                        return;
-                    }
-
-                    if ((ClanTable.getInstance()
-                                            .getClan(getOwnerId())
-                                            .getWarehouse()
-                                            .getAdena()
-                                    >= lease)
-                            || !cwh) {
-                        final int fee = endTime == -1 ? tempFee : lease;
-                        setEndTime(ClockBridge.wallMillis() + rate);
-                        dbSave();
-                        if (cwh) {
-                            ClanTable.getInstance()
-                                    .getClan(getOwnerId())
-                                    .getWarehouse()
-                                    .destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, fee, null, null);
-                        }
-
-                        WorldPartition.loop().schedule(new FunctionTask(true), rate, TimeUnit.MILLISECONDS);
-                    } else {
-                        removeFunction(type);
-                    }
-                } catch (Exception e) {
-                    log.error("", e);
-                }
-            }
+        @Override
+        protected ItemContainer ownerWarehouse() {
+            return ClanTable.getInstance().getClan(ownerId).getWarehouse();
         }
 
-        public void dbSave() {
-            ClanHallTable.getInstance()
-                    .saveFunction(
-                            id,
-                            ResidenceFunction.builder()
-                                    .type(type)
-                                    .level(level)
-                                    .lease(lease)
-                                    .rate(rate)
-                                    .endTime(instantOrNull(endTime))
-                                    .build());
+        @Override
+        protected void save(ResidenceFunction function) {
+            ClanHallTable.getInstance().saveFunction(id, function);
+        }
+
+        @Override
+        protected void removeUnpaid() {
+            removeFunction(getType());
         }
     }
 
@@ -198,7 +118,6 @@ public abstract class ClanHall {
         ownerId = set.getInt("ownerId");
         desc = set.getString("desc");
         location = set.getString("location");
-        functions = new ConcurrentHashMap<>();
         if (ownerId <= 0) {
             return;
         }
@@ -215,6 +134,7 @@ public abstract class ClanHall {
      * persists through the subclass {@link #updateDb()}, which needs state the subclass constructor sets.
      */
     public final void releaseUnloadedOwner() {
+        WorldPartition.checkOwner();
         if (!free || (ownerId <= 0)) {
             return;
         }
@@ -227,27 +147,63 @@ public abstract class ClanHall {
         free();
     }
 
-    /**
-     * @return all Door
-     */
-    public List<Door> getDoors() {
-        if (doors == null) {
-            doors = new ArrayList<>();
-        }
-
-        return doors;
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
     }
 
-    /**
-     * @param doorId
-     * @return Door
-     */
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public int getOwnerId() {
+        WorldPartition.checkOwner();
+        return ownerId;
+    }
+
+    public String getDesc() {
+        WorldPartition.checkOwner();
+        return desc;
+    }
+
+    public String getLocation() {
+        WorldPartition.checkOwner();
+        return location;
+    }
+
+    public ClanHallZone getZone() {
+        WorldPartition.checkOwner();
+        return zone;
+    }
+
+    public void setZone(ClanHallZone zone) {
+        WorldPartition.checkOwner();
+        this.zone = zone;
+    }
+
+    public boolean isFree() {
+        WorldPartition.checkOwner();
+        return free;
+    }
+
+    public List<Door> getDoors() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(doors));
+    }
+
+    public void addDoor(Door door) {
+        WorldPartition.checkOwner();
+        doors.add(door);
+    }
+
     public Door getDoor(int doorId) {
+        WorldPartition.checkOwner();
         if (doorId <= 0) {
             return null;
         }
 
-        for (Door door : getDoors()) {
+        for (Door door : doors) {
             if (door.getId() == doorId) {
                 return door;
             }
@@ -256,42 +212,27 @@ public abstract class ClanHall {
         return null;
     }
 
-    /**
-     * @param type
-     * @return function with id
-     */
     public ClanHallFunction getFunction(int type) {
+        WorldPartition.checkOwner();
         return functions.get(type);
     }
 
-    /**
-     * @param x
-     * @param y
-     * @param z
-     * @return true if object is inside the zone
-     */
     public boolean checkIfInZone(int x, int y, int z) {
+        WorldPartition.checkOwner();
         return zone.isInsideZone(x, y, z);
     }
 
-    /** Free this clan hall */
     public void free() {
+        WorldPartition.checkOwner();
         ownerId = 0;
         free = true;
-        for (Integer fc : functions.keySet()) {
-            removeFunction(fc);
-        }
+        functions.forEachType(this::removeFunction);
 
-        functions.clear();
         updateDb();
     }
 
-    /**
-     * Set owner if clan hall is free
-     * @param clan
-     */
     public void setOwner(Clan clan) {
-        // Verify that this ClanHall is Free and Clan isn't null.
+        WorldPartition.checkOwner();
         if ((ownerId > 0) || (clan == null)) {
             return;
         }
@@ -300,28 +241,24 @@ public abstract class ClanHall {
         free = false;
         clan.setHideoutId(id);
 
-        // Announce to Online member new ClanHall.
         clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan));
         updateDb();
     }
 
-    /**
-     * Open or Close Door
-     * @param player
-     * @param doorId
-     * @param open
-     */
     public void openCloseDoor(Player player, int doorId, boolean open) {
+        WorldPartition.checkOwner();
         if ((player != null) && (player.getClanId() == ownerId)) {
-            openCloseDoor(doorId, open);
+            openCloseDoor(getDoor(doorId), open);
         }
     }
 
     public void openCloseDoor(int doorId, boolean open) {
+        WorldPartition.checkOwner();
         openCloseDoor(getDoor(doorId), open);
     }
 
     public void openCloseDoor(Door door, boolean open) {
+        WorldPartition.checkOwner();
         if (door != null) {
             if (open) {
                 door.openMe();
@@ -332,25 +269,29 @@ public abstract class ClanHall {
     }
 
     public void openCloseDoors(Player player, boolean open) {
+        WorldPartition.checkOwner();
         if ((player != null) && (player.getClanId() == ownerId)) {
             openCloseDoors(open);
         }
     }
 
     public void openCloseDoors(boolean open) {
-        for (Door door : getDoors()) {
-            if (door != null) {
-                if (open) {
-                    door.openMe();
-                } else {
-                    door.closeMe();
+        WorldPartition.checkOwner();
+        try (Snapshot<Door> walk = ScratchBuffers.snapshot(doors)) {
+            for (Door door : walk) {
+                if (door != null) {
+                    if (open) {
+                        door.openMe();
+                    } else {
+                        door.closeMe();
+                    }
                 }
             }
         }
     }
 
-    /** Banish Foreigner */
     public void banishForeigners() {
+        WorldPartition.checkOwner();
         if (zone != null) {
             zone.banishForeigners(ownerId);
         } else {
@@ -358,66 +299,62 @@ public abstract class ClanHall {
         }
     }
 
-    /** Load All Functions */
     protected void loadFunctions() {
         for (ResidenceFunction stored : ClanHallTable.getInstance().findFunctions(id)) {
-            functions.put(
+            functions.put(new ClanHallFunction(
                     stored.type(),
-                    new ClanHallFunction(
-                            stored.type(),
-                            stored.level(),
-                            stored.lease(),
-                            0,
-                            stored.rate(),
-                            epochMillisOrZero(stored.endTime()),
-                            true));
+                    stored.level(),
+                    stored.lease(),
+                    0,
+                    stored.rate(),
+                    epochMillisOrZero(stored.endTime()),
+                    true));
         }
     }
 
-    /**
-     * Remove function In List and in DB
-     * @param functionType
-     */
     public void removeFunction(int functionType) {
+        WorldPartition.checkOwner();
         functions.remove(functionType);
         ClanHallTable.getInstance().deleteFunction(id, functionType);
     }
 
     public boolean updateFunctions(Player player, int type, int level, int lease, long rate, boolean addNew) {
+        WorldPartition.checkOwner();
         if ((player == null)
                 || ((lease > 0) && !player.destroyItemByItemId(null, Inventory.ADENA_ID, lease, null, true))) {
             return false;
         }
 
         if (addNew) {
-            functions.put(type, new ClanHallFunction(type, level, lease, 0, rate, 0, false));
+            functions.put(new ClanHallFunction(type, level, lease, 0, rate, 0, false));
         } else if ((level == 0) && (lease == 0)) {
             removeFunction(type);
         } else if ((lease - functions.get(type).getLease()) > 0) {
-            functions.remove(type);
-            functions.put(type, new ClanHallFunction(type, level, lease, 0, rate, -1, false));
+            functions.put(new ClanHallFunction(type, level, lease, 0, rate, -1, false));
         } else {
-            functions.get(type).setLease(lease);
-            functions.get(type).setLevel(level);
-            functions.get(type).dbSave();
+            functions.get(type).change(level, lease);
         }
 
         return true;
     }
 
     public int getGrade() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public long getPaidUntil() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public int getLease() {
+        WorldPartition.checkOwner();
         return 0;
     }
 
     public boolean isSiegableHall() {
+        WorldPartition.checkOwner();
         return false;
     }
 

@@ -19,33 +19,44 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A mother-trees zone Basic type zone for Hp, MP regen
  * @author durgus
  */
+@SingleWriter
 public class MotherTreeZone extends ZoneType {
     private int enterMsg;
     private int leaveMsg;
 
-    @Getter
     private int mpRegenBonus;
 
-    @Getter
     private int hpRegenBonus;
 
     public MotherTreeZone(int id) {
         super(id);
     }
 
+    public int getMpRegenBonus() {
+        WorldPartition.checkOwner();
+        return mpRegenBonus;
+    }
+
+    public int getHpRegenBonus() {
+        WorldPartition.checkOwner();
+        return hpRegenBonus;
+    }
+
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("enterMsgId")) {
             enterMsg = Integer.parseInt(value);
         } else if (name.equals("leaveMsgId")) {

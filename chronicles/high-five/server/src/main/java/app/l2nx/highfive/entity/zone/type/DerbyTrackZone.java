@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
@@ -27,6 +28,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
  * The Monster Derby Track Zone
  * @author durgus
  */
+@SingleWriter
 public class DerbyTrackZone extends ZoneType {
     public DerbyTrackZone(int id) {
         super(id);

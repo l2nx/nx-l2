@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HallOfSufferingAttack;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.ScratchBuffers;
@@ -40,24 +41,83 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExSendUIEvent;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00694_BreakThroughTheHallOfSuffering.Q00694_BreakThroughTheHallOfSuffering;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class HallOfSufferingAttack extends Script {
+    @SingleWriter
     private class HSAWorld extends InstanceWorld {
         public HSAWorld() {}
 
-        public Map<Npc, Boolean> npcList = new HashMap<>();
-        public Npc klodekus = null;
-        public Npc klanikus = null;
-        public boolean bossesAttacked = false;
-        public long[] storeTime = {0, 0}; // 0: instance start, 1: finish time
+        private Map<Npc, Boolean> npcList = new HashMap<>();
+        private Npc klodekus = null;
+        private Npc klanikus = null;
+        private boolean bossesAttacked = false;
+        private long[] storeTime = {0, 0}; // 0: instance start, 1: finish time
+
+        public Map<Npc, Boolean> getNpcList() {
+            WorldPartition.checkOwner();
+            return Collections.unmodifiableMap(new LinkedHashMap<>(npcList));
+        }
+
+        public void putNpcList(Npc key, Boolean value) {
+            WorldPartition.checkOwner();
+            npcList.put(key, value);
+        }
+
+        public boolean containsNpcList(Npc key) {
+            WorldPartition.checkOwner();
+            return npcList.containsKey(key);
+        }
+
+        public Npc getKlodekus() {
+            WorldPartition.checkOwner();
+            return klodekus;
+        }
+
+        public void setKlodekus(Npc klodekus) {
+            WorldPartition.checkOwner();
+            this.klodekus = klodekus;
+        }
+
+        public Npc getKlanikus() {
+            WorldPartition.checkOwner();
+            return klanikus;
+        }
+
+        public void setKlanikus(Npc klanikus) {
+            WorldPartition.checkOwner();
+            this.klanikus = klanikus;
+        }
+
+        public boolean isBossesAttacked() {
+            WorldPartition.checkOwner();
+            return bossesAttacked;
+        }
+
+        public void setBossesAttacked(boolean bossesAttacked) {
+            WorldPartition.checkOwner();
+            this.bossesAttacked = bossesAttacked;
+        }
+
+        public long getStoreTime(int index) {
+            WorldPartition.checkOwner();
+            return storeTime[index];
+        }
+
+        public void setStoreTime(int index, long value) {
+            WorldPartition.checkOwner();
+            storeTime[index] = value;
+        }
     }
 
     private static final int INSTANCEID = 115;
@@ -225,7 +285,7 @@ public class HallOfSufferingAttack extends Script {
         if (checkConditions(player)) {
             world = new HSAWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
-            ((HSAWorld) world).storeTime[0] = ClockBridge.gameMillis();
+            ((HSAWorld) world).setStoreTime(0, ClockBridge.gameMillis());
             InstanceManager.getInstance().addWorld(world);
             log.info(
                     "Hall Of Suffering Attack started {} Instance: {} created by player: {}",
@@ -251,11 +311,11 @@ public class HallOfSufferingAttack extends Script {
     }
 
     protected boolean checkKillProgress(Npc mob, HSAWorld world) {
-        if (world.npcList.containsKey(mob)) {
-            world.npcList.put(mob, true);
+        if (world.containsNpcList(mob)) {
+            world.putNpcList(mob, true);
         }
 
-        for (boolean isDead : world.npcList.values()) {
+        for (boolean isDead : world.getNpcList().values()) {
             if (!isDead) {
                 return false;
             }
@@ -289,7 +349,7 @@ public class HallOfSufferingAttack extends Script {
     protected void runTumors(HSAWorld world) {
         for (int[] mob : getRoomSpawns(world.getStatus())) {
             final Npc npc = addSpawn(mob[0], mob[1], mob[2], mob[3], 0, false, 0, false, world.getInstanceId());
-            world.npcList.put(npc, false);
+            world.putNpcList(npc, false);
         }
 
         final Npc mob = addSpawn(
@@ -305,13 +365,13 @@ public class HallOfSufferingAttack extends Script {
         mob.disableCoreAI(true);
         mob.setImmobilized(true);
         mob.setCurrentHp(mob.getMaxHp() * 0.5);
-        world.npcList.put(mob, false);
+        world.putNpcList(mob, false);
         world.incStatus();
     }
 
     protected void runTwins(HSAWorld world) {
         world.incStatus();
-        world.klodekus = addSpawn(
+        world.setKlodekus(addSpawn(
                 TWIN_SPAWNS[0][0],
                 TWIN_SPAWNS[0][1],
                 TWIN_SPAWNS[0][2],
@@ -320,8 +380,8 @@ public class HallOfSufferingAttack extends Script {
                 false,
                 0,
                 false,
-                world.getInstanceId());
-        world.klanikus = addSpawn(
+                world.getInstanceId()));
+        world.setKlanikus(addSpawn(
                 TWIN_SPAWNS[1][0],
                 TWIN_SPAWNS[1][1],
                 TWIN_SPAWNS[1][2],
@@ -330,9 +390,9 @@ public class HallOfSufferingAttack extends Script {
                 false,
                 0,
                 false,
-                world.getInstanceId());
-        world.klanikus.setMortal(false);
-        world.klodekus.setMortal(false);
+                world.getInstanceId()));
+        world.getKlanikus().setMortal(false);
+        world.getKlodekus().setMortal(false);
     }
 
     protected void bossSimpleDie(Npc boss) {
@@ -388,8 +448,8 @@ public class HallOfSufferingAttack extends Script {
         if (tmpworld instanceof HSAWorld) {
             final HSAWorld world = (HSAWorld) tmpworld;
             if (event.equalsIgnoreCase("spawnBossGuards")) {
-                if (!world.klanikus.isInCombat() && !world.klodekus.isInCombat()) {
-                    world.bossesAttacked = false;
+                if (!world.getKlanikus().isInCombat() && !world.getKlodekus().isInCombat()) {
+                    world.setBossesAttacked(false);
                     return "";
                 }
 
@@ -420,18 +480,18 @@ public class HallOfSufferingAttack extends Script {
 
                 startQuestTimer("spawnBossGuards", BOSS_MINION_SPAWN_TIME, npc, null);
             } else if (event.equalsIgnoreCase("isTwinSeparated")) {
-                if (LocationUtil.checkIfInRange(500, world.klanikus, world.klodekus, false)) {
-                    world.klanikus.setInvul(false);
-                    world.klodekus.setInvul(false);
+                if (LocationUtil.checkIfInRange(500, world.getKlanikus(), world.getKlodekus(), false)) {
+                    world.getKlanikus().setInvul(false);
+                    world.getKlodekus().setInvul(false);
                 } else {
-                    world.klanikus.setInvul(true);
-                    world.klodekus.setInvul(true);
+                    world.getKlanikus().setInvul(true);
+                    world.getKlodekus().setInvul(true);
                 }
 
                 startQuestTimer("isTwinSeparated", 10000, npc, null);
             } else if (event.equalsIgnoreCase("ressurectTwin")) {
                 final Skill skill = SkillData.getInstance().getSkill(5824, 1);
-                final Npc aliveTwin = (world.klanikus == npc ? world.klodekus : world.klanikus);
+                final Npc aliveTwin = (world.getKlanikus() == npc ? world.getKlodekus() : world.getKlanikus());
                 npc.doRevive();
                 npc.doCast(skill);
                 npc.setCurrentHp(aliveTwin.getCurrentHp());
@@ -457,8 +517,8 @@ public class HallOfSufferingAttack extends Script {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
         if (tmpworld instanceof HSAWorld) {
             final HSAWorld world = (HSAWorld) tmpworld;
-            if (!world.bossesAttacked) {
-                world.bossesAttacked = true;
+            if (!world.isBossesAttacked()) {
+                world.setBossesAttacked(true);
                 final Calendar reenter = ClockBridge.calendar();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
@@ -481,14 +541,14 @@ public class HallOfSufferingAttack extends Script {
                 startQuestTimer("spawnBossGuards", BOSS_MINION_SPAWN_TIME, npc, null);
                 startQuestTimer("isTwinSeparated", 10000, npc, null);
             } else if (damage >= npc.getCurrentHp()) {
-                if (world.klanikus.isDead()) {
-                    world.klanikus.setDead(false);
-                    world.klanikus.doDie(attacker);
-                    world.klodekus.doDie(attacker);
-                } else if (((HSAWorld) tmpworld).klodekus.isDead()) {
-                    world.klodekus.setDead(false);
-                    world.klodekus.doDie(attacker);
-                    world.klanikus.doDie(attacker);
+                if (world.getKlanikus().isDead()) {
+                    world.getKlanikus().setDead(false);
+                    world.getKlanikus().doDie(attacker);
+                    world.getKlodekus().doDie(attacker);
+                } else if (((HSAWorld) tmpworld).getKlodekus().isDead()) {
+                    world.getKlodekus().setDead(false);
+                    world.getKlodekus().doDie(attacker);
+                    world.getKlanikus().doDie(attacker);
                 } else {
                     bossSimpleDie(npc);
                     startQuestTimer("ressurectTwin", BOSS_RESSURECT_TIME, npc, null);
@@ -526,11 +586,11 @@ public class HallOfSufferingAttack extends Script {
                     runTwins(world);
                 }
             } else if (((world.getStatus() == 6) && ((npc.getId() == KLODEKUS) || (npc.getId() == KLANIKUS))) //
-                    && (world.klanikus.isDead() && world.klodekus.isDead())) {
+                    && (world.getKlanikus().isDead() && world.getKlodekus().isDead())) {
                 world.incStatus();
-                world.storeTime[1] = ClockBridge.gameMillis();
+                world.setStoreTime(1, ClockBridge.gameMillis());
 
-                final Long finishDiff = world.storeTime[1] - world.storeTime[0];
+                final Long finishDiff = world.getStoreTime(1) - world.getStoreTime(0);
                 if (finishDiff < 1260000) {
                     world.setParameter("tag", 13777);
                 } else if (finishDiff < 1380000) {
@@ -553,8 +613,8 @@ public class HallOfSufferingAttack extends Script {
                     world.setParameter("tag", 13786);
                 }
 
-                world.klanikus = null;
-                world.klodekus = null;
+                world.setKlanikus(null);
+                world.setKlodekus(null);
                 cancelQuestTimers("ressurectTwin");
                 cancelQuestTimers("spawnBossGuards");
                 cancelQuestTimers("isTwinSeparated");

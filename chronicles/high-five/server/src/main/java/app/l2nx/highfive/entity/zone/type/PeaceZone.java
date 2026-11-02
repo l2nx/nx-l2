@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -31,6 +32,7 @@ import app.l2nx.highfive.managers.TerritoryWarManager;
  * A Peace Zone
  * @author durgus
  */
+@SingleWriter
 public class PeaceZone extends ZoneType {
     public PeaceZone(int id) {
         super(id);
@@ -45,17 +47,14 @@ public class PeaceZone extends ZoneType {
                 TerritoryWarManager.getInstance().dropCombatFlag(player, false, true);
             }
 
-            // PVP possible during siege, now for siege participants only.
-            // Could also check if this town is in siege, or if any siege is going on.
+            // Siege participants skip the peace-zone effects in mode 1.
             if ((player.getSiegeState() != 0) && (GeneralConfig.PEACE_ZONE_MODE == 1)) {
                 return;
             }
 
-            /* Nevit Turn Off on Peace Zone */
             if (PlayerConfig.NEVIT_ENABLED) {
                 player.getNevitSystem().stopAdventTask(true);
 
-                // Stop Nevit's Hourglass
                 player.storeRecommendations(true);
                 player.getStat().setPausedNevitHourglassStatus(true);
             }

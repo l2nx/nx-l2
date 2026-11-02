@@ -55,7 +55,7 @@ public class ConditionPlayerCanTakeCastle extends Condition {
             sm.addSkillName(skill);
             player.sendPacket(sm);
             return false;
-        } else if (!castle.getArtefacts().contains(effected)) {
+        } else if (!castle.isArtefact(effected)) {
             player.sendPacket(SystemMessageId.INVALID_TARGET);
             return false;
         } else if (!LocationUtil.checkIfInRange(200, player, effected, true)

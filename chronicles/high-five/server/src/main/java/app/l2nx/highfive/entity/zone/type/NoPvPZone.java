@@ -22,17 +22,22 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * No PVP Zone
  * @author Edoo
  */
+@SingleWriter
 public class NoPvPZone extends ZoneType {
     public NoPvPZone(int id) {
         super(id);
@@ -43,8 +48,6 @@ public class NoPvPZone extends ZoneType {
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
 
-            // PVP possible during siege, now for siege participants only.
-            // Could also check if this town is in siege, or if any siege is going on.
             if ((player.getSiegeState() != 0) && (GeneralConfig.PEACE_ZONE_MODE == 1)) {
                 return;
             }
@@ -54,7 +57,6 @@ public class NoPvPZone extends ZoneType {
             creature.setInsideZone(ZoneId.NO_PVP, true);
         }
 
-        // Send player info to nearby players.
         if (creature.isPlayer()) {
             creature.broadcastInfo();
         }
@@ -66,7 +68,6 @@ public class NoPvPZone extends ZoneType {
             creature.setInsideZone(ZoneId.NO_PVP, false);
         }
 
-        // Send player info to nearby players.
         if (creature.isPlayer() && !creature.isTeleporting()) {
             creature.broadcastInfo();
         }
@@ -74,6 +75,7 @@ public class NoPvPZone extends ZoneType {
 
     @Override
     public void setEnabled(boolean value) {
+        WorldPartition.checkOwner();
         super.setEnabled(value);
         if (value) {
             for (Player player : World.getPlayers()) {
@@ -86,8 +88,9 @@ public class NoPvPZone extends ZoneType {
                 }
             }
         } else {
-            for (Creature creature : getCharactersInside()) {
-                if (creature != null) {
+            try (Snapshot<Creature> inside = ScratchBuffers.empty()) {
+                collectCharactersInside(inside);
+                for (Creature creature : inside) {
                     removeCharacter(creature);
                 }
             }

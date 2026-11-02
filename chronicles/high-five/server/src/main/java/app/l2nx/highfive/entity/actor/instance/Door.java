@@ -106,7 +106,7 @@ public class Door extends Creature {
             final ClanHall hall = ClanHallTable.getAllClanHalls().get(clanhallId);
             if (hall != null) {
                 setClanHall(hall);
-                hall.getDoors().add(this);
+                hall.addDoor(this);
             }
         }
     }

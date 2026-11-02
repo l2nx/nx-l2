@@ -23,6 +23,7 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.holders.AutoSpawnGroup;
@@ -30,22 +31,17 @@ import app.l2nx.highfive.data.holders.SpawnPoint;
 import app.l2nx.highfive.data.xml.AutoSpawnData;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -65,49 +61,51 @@ import lombok.extern.slf4j.Slf4j;
  * @author Tempy
  */
 @Slf4j
+@SingleWriter
 public class AutoSpawnHandler {
 
     private static final int DEFAULT_INITIAL_SPAWN = 30000; // 30 seconds after registration
     private static final int DEFAULT_RESPAWN = 3600000; // 1 hour in millisecs
     private static final int DEFAULT_DESPAWN = 3600000; // 1 hour in millisecs
 
-    protected Map<Integer, AutoSpawnInstance> registeredSpawns = new ConcurrentHashMap<>();
-    protected Map<Integer, ScheduledFuture<?>> runningSpawns = new ConcurrentHashMap<>();
+    // Registration order: a lookup by NPC id answers the first registered instance.
+    private final Int2ObjectLinkedOpenHashMap<AutoSpawnInstance> registeredSpawns = new Int2ObjectLinkedOpenHashMap<>();
+    private final Int2ObjectLinkedOpenHashMap<ScheduledFuture<?>> runningSpawns = new Int2ObjectLinkedOpenHashMap<>();
 
-    protected boolean activeState = true;
+    private boolean activeState = true;
 
     protected AutoSpawnHandler() {
         restoreSpawnData();
     }
 
     public int size() {
+        WorldPartition.checkOwner();
         return registeredSpawns.size();
     }
 
     public void reload() {
-        // unload
+        WorldPartition.checkOwner();
         unload();
 
-        // create clean list
         registeredSpawns.clear();
         runningSpawns.clear();
 
-        // load
         restoreSpawnData();
     }
 
     public void unload() {
-        // stop all timers
+        WorldPartition.checkOwner();
         for (ScheduledFuture<?> sf : runningSpawns.values()) {
             if (sf != null) {
                 sf.cancel(true);
             }
         }
 
-        // unregister all registered spawns
-        for (AutoSpawnInstance asi : registeredSpawns.values()) {
-            if (asi != null) {
-                removeSpawn(asi);
+        try (ScratchBuffers.Snapshot<AutoSpawnInstance> walk = ScratchBuffers.snapshot(registeredSpawns.values())) {
+            for (AutoSpawnInstance asi : walk) {
+                if (asi != null) {
+                    removeSpawn(asi);
+                }
             }
         }
     }
@@ -139,18 +137,10 @@ public class AutoSpawnHandler {
         return seconds < 0 ? seconds : seconds * 1000;
     }
 
-    /**
-     * Registers a spawn with the given parameters with the spawner, and marks it as active.<br>
-     * Returns a AutoSpawnInstance containing info about the spawn.
-     * @param npcId
-     * @param spawnPoints
-     * @param initialDelay (If < 0 = default value)
-     * @param respawnDelay (If < 0 = default value)
-     * @param despawnDelay (If < 0 = default value or if = 0, function disabled)
-     * @return AutoSpawnInstance spawnInst
-     */
+    /** A negative delay selects the handler default; a zero {@code despawnDelay} disables despawning. */
     public AutoSpawnInstance registerSpawn(
             int npcId, int[][] spawnPoints, int initialDelay, int respawnDelay, int despawnDelay) {
+        WorldPartition.checkOwner();
         final AutoSpawnInstance newSpawn = new AutoSpawnInstance(
                 npcId,
                 initialDelay < 0 ? DEFAULT_INITIAL_SPAWN : initialDelay,
@@ -170,66 +160,35 @@ public class AutoSpawnHandler {
         return newSpawn;
     }
 
-    /**
-     * Registers a spawn with the given parameters with the spawner, and marks it as active.<br>
-     * Returns a AutoSpawnInstance containing info about the spawn.<br>
-     * <b>Warning:</b> Spawn locations must be specified separately using addSpawnLocation().
-     * @param npcId
-     * @param initialDelay (If < 0 = default value)
-     * @param respawnDelay (If < 0 = default value)
-     * @param despawnDelay (If < 0 = default value or if = 0, function disabled)
-     * @return AutoSpawnInstance spawnInst
-     */
+    /** Spawn locations must be added separately through {@code addSpawnLocation}. */
     public AutoSpawnInstance registerSpawn(int npcId, int initialDelay, int respawnDelay, int despawnDelay) {
+        WorldPartition.checkOwner();
         return registerSpawn(npcId, null, initialDelay, respawnDelay, despawnDelay);
     }
 
-    /**
-     * Remove a registered spawn from the list, specified by the given spawn instance.
-     * @param spawnInst
-     * @return boolean removedSuccessfully
-     */
     public boolean removeSpawn(AutoSpawnInstance spawnInst) {
+        WorldPartition.checkOwner();
         if (!isSpawnRegistered(spawnInst)) {
             return false;
         }
 
-        try {
-            // Try to remove from the list of registered spawns if it exists.
-            registeredSpawns.remove(spawnInst.getId());
+        registeredSpawns.remove(spawnInst.objectId);
 
-            // Cancel the currently associated running scheduled task.
-            final ScheduledFuture<?> task = runningSpawns.remove(spawnInst.objectId);
-            if (task != null) {
-                task.cancel(false);
-            }
-        } catch (Exception e) {
-            log.warn(
-                    "Could not auto spawn for NPC ID {} (Object ID = {}): {}",
-                    spawnInst.id,
-                    spawnInst.objectId,
-                    e.getMessage(),
-                    e);
-            return false;
+        final ScheduledFuture<?> task = runningSpawns.remove(spawnInst.objectId);
+        if (task != null) {
+            task.cancel(false);
         }
 
         return true;
     }
 
-    /**
-     * Remove a registered spawn from the list, specified by the given spawn object ID.
-     * @param objectId
-     */
     public void removeSpawn(int objectId) {
+        WorldPartition.checkOwner();
         removeSpawn(registeredSpawns.get(objectId));
     }
 
-    /**
-     * Sets the active state of the specified spawn.
-     * @param spawnInst
-     * @param isActive
-     */
     public void setSpawnActive(AutoSpawnInstance spawnInst, boolean isActive) {
+        WorldPartition.checkOwner();
         if (spawnInst == null) {
             return;
         }
@@ -241,6 +200,12 @@ public class AutoSpawnHandler {
 
         ScheduledFuture<?> spawnTask = null;
         if (isActive) {
+            // Seven Signs activates some spawns again without asking: an active spawn keeps its timer and its NPCs,
+            // even a one-shot one whose timer already fired.
+            if (spawnInst.spawnActive) {
+                return;
+            }
+
             final AutoSpawner rs = new AutoSpawner(objectId);
             spawnTask = spawnInst.despawnDelay > 0
                     ? WorldPartition.loop()
@@ -258,56 +223,46 @@ public class AutoSpawnHandler {
             WorldPartition.loop().schedule(rd, 0, TimeUnit.MILLISECONDS);
         }
 
-        spawnInst.setSpawnActive(isActive);
+        spawnInst.spawnActive = isActive;
     }
 
-    /**
-     * Sets the active state of all auto spawn instances to that specified, and cancels the scheduled spawn task if necessary.
-     * @param isActive
-     */
     public void setAllActive(boolean isActive) {
+        WorldPartition.checkOwner();
         if (activeState == isActive) {
             return;
         }
 
-        for (AutoSpawnInstance spawnInst : registeredSpawns.values()) {
-            setSpawnActive(spawnInst, isActive);
+        try (ScratchBuffers.Snapshot<AutoSpawnInstance> walk = ScratchBuffers.snapshot(registeredSpawns.values())) {
+            for (AutoSpawnInstance spawnInst : walk) {
+                setSpawnActive(spawnInst, isActive);
+            }
         }
 
         activeState = isActive;
     }
 
-    /**
-     * Returns the number of milliseconds until the next occurrence of the given spawn.
-     * @param spawnInst
-     * @return
-     */
+    /** @return milliseconds to the next spawn; -1 when not registered, 0 when no task is scheduled */
     public long getTimeToNextSpawn(AutoSpawnInstance spawnInst) {
-        final int objectId = spawnInst.getObjectId();
-        return !isSpawnRegistered(objectId)
-                ? -1
-                : runningSpawns.containsKey(objectId)
-                        ? runningSpawns.get(objectId).getDelay(TimeUnit.MILLISECONDS)
-                        : 0;
+        WorldPartition.checkOwner();
+        final int objectId = spawnInst.objectId;
+        if (!registeredSpawns.containsKey(objectId)) {
+            return -1;
+        }
+
+        final ScheduledFuture<?> task = runningSpawns.get(objectId);
+        return task != null ? task.getDelay(TimeUnit.MILLISECONDS) : 0;
     }
 
-    /**
-     * Attempts to return the AutoSpawnInstance associated with the given NPC or Object ID type.<br>
-     * Note: If isObjectId == false, returns first instance for the specified NPC ID.
-     * @param id
-     * @param isObjectId
-     * @return AutoSpawnInstance spawnInst
-     */
+    /** With {@code isObjectId} false, {@code id} is an NPC id and the first registered instance answers. */
     public AutoSpawnInstance getAutoSpawnInstance(int id, boolean isObjectId) {
+        WorldPartition.checkOwner();
         if (isObjectId) {
-            if (isSpawnRegistered(id)) {
-                return registeredSpawns.get(id);
-            }
-        } else {
-            for (AutoSpawnInstance spawnInst : registeredSpawns.values()) {
-                if (spawnInst.getId() == id) {
-                    return spawnInst;
-                }
+            return registeredSpawns.get(id);
+        }
+
+        for (AutoSpawnInstance spawnInst : registeredSpawns.values()) {
+            if (spawnInst.id == id) {
+                return spawnInst;
             }
         }
 
@@ -315,9 +270,10 @@ public class AutoSpawnHandler {
     }
 
     public List<AutoSpawnInstance> getAutoSpawnInstances(int npcId) {
-        final List<AutoSpawnInstance> result = new ArrayList<>();
+        WorldPartition.checkOwner();
+        final List<AutoSpawnInstance> result = new ObjectArrayList<>();
         for (AutoSpawnInstance spawnInst : registeredSpawns.values()) {
-            if (spawnInst.getId() == npcId) {
+            if (spawnInst.id == npcId) {
                 result.add(spawnInst);
             }
         }
@@ -325,28 +281,17 @@ public class AutoSpawnHandler {
         return result;
     }
 
-    /**
-     * Tests if the specified object ID is assigned to an auto spawn.
-     * @param objectId
-     * @return isAssigned
-     */
     public boolean isSpawnRegistered(int objectId) {
+        WorldPartition.checkOwner();
         return registeredSpawns.containsKey(objectId);
     }
 
-    /**
-     * Tests if the specified spawn instance is assigned to an auto spawn.
-     * @param spawnInst
-     * @return boolean isAssigned
-     */
     public boolean isSpawnRegistered(AutoSpawnInstance spawnInst) {
-        return registeredSpawns.containsValue(spawnInst);
+        WorldPartition.checkOwner();
+        return (spawnInst != null) && (registeredSpawns.get(spawnInst.objectId) == spawnInst);
     }
 
-    /**
-     * AutoSpawner class<br>
-     * This handles the main spawn task for an auto spawn instance, and initializes a despawner if required.
-     */
+    @SingleWriter
     private class AutoSpawner implements Runnable {
         private final int objectId;
 
@@ -356,18 +301,17 @@ public class AutoSpawnHandler {
 
         @Override
         public void run() {
+            WorldPartition.checkOwner();
             try {
-                // Retrieve the required spawn instance for this spawn task.
                 final AutoSpawnInstance spawnInst = registeredSpawns.get(objectId);
 
-                // If the spawn is not scheduled to be active, cancel the spawn task.
-                if (!spawnInst.isSpawnActive()) {
+                // A removed spawn or one not scheduled to be active spawns nothing.
+                if ((spawnInst == null) || !spawnInst.spawnActive) {
                     return;
                 }
 
-                final List<Location> locationList = spawnInst.getLocationList();
+                final List<Location> locationList = spawnInst.locationList;
 
-                // If there are no set co-ordinates, cancel the spawn task.
                 if (locationList.isEmpty()) {
                     log.info("No location co-ords specified for spawn instance (Object ID = {}).", objectId);
                     return;
@@ -376,9 +320,7 @@ public class AutoSpawnHandler {
                 final int locationCount = locationList.size();
                 int locationIndex = ClockBridge.random().nextInt(locationCount);
 
-                // If random spawning is disabled, the spawn at the next set of co-ordinates after the last.
-                // If the index is greater than the number of possible spawns, reset the counter to zero.
-                if (!spawnInst.isRandomSpawn()) {
+                if (!spawnInst.randomSpawn) {
                     locationIndex = spawnInst.lastLocIndex + 1;
                     if (locationIndex == locationCount) {
                         locationIndex = 0;
@@ -387,70 +329,65 @@ public class AutoSpawnHandler {
                     spawnInst.lastLocIndex = locationIndex;
                 }
 
-                // Set the X, Y and Z co-ordinates, where this spawn will take place.
                 final int x = locationList.get(locationIndex).getX();
                 final int y = locationList.get(locationIndex).getY();
                 final int z = locationList.get(locationIndex).getZ();
                 final int heading = locationList.get(locationIndex).getHeading();
-                final Spawn newSpawn = new Spawn(spawnInst.getId());
+                final Spawn newSpawn = new Spawn(spawnInst.id);
                 newSpawn.setXYZ(x, y, z);
-                if (heading != -1) {
-                    newSpawn.setHeading(heading);
-                }
+                newSpawn.setHeading(heading);
 
-                newSpawn.setAmount(spawnInst.getSpawnCount());
+                newSpawn.setAmount(spawnInst.spawnCount);
                 if (spawnInst.despawnDelay == 0) {
                     newSpawn.setRespawnDelay(spawnInst.respawnDelay / 1000);
                 }
 
-                // Add the new spawn information to the spawn table, but do not store it.
                 SpawnTable.getInstance().addSpawn(newSpawn);
                 Npc npcInst = null;
                 if (spawnInst.spawnCount == 1) {
                     npcInst = newSpawn.doSpawn();
-                    npcInst.setXYZ(npcInst.getX(), npcInst.getY(), npcInst.getZ());
-                    spawnInst.addNpc(npcInst);
+                    if (npcInst != null) {
+                        npcInst.setXYZ(npcInst.getX(), npcInst.getY(), npcInst.getZ());
+                        spawnInst.npcList.add(npcInst);
+                    }
                 } else {
                     for (int i = 0; i < spawnInst.spawnCount; i++) {
-                        npcInst = newSpawn.doSpawn();
+                        final Npc spawned = newSpawn.doSpawn();
+                        if (spawned == null) {
+                            continue;
+                        }
 
-                        // To prevent spawning of more than one NPC in the exact same spot, move it slightly by a small
-                        // random offset.
-                        npcInst.setXYZ(
-                                npcInst.getX() + ClockBridge.random().nextInt(50),
-                                npcInst.getY() + ClockBridge.random().nextInt(50),
-                                npcInst.getZ());
+                        // Offset so that NPCs do not stack on the exact same spot.
+                        spawned.setXYZ(
+                                spawned.getX() + ClockBridge.random().nextInt(50),
+                                spawned.getY() + ClockBridge.random().nextInt(50),
+                                spawned.getZ());
 
-                        // Add the NPC instance to the list of managed instances.
-                        spawnInst.addNpc(npcInst);
+                        spawnInst.npcList.add(spawned);
+                        npcInst = spawned;
                     }
                 }
 
                 newSpawn.stopRespawn();
 
                 if (npcInst != null) {
-                    if (spawnInst.isRandomSpawn()) {
+                    if (spawnInst.randomSpawn) {
                         while ((World.getFirstVisibleObjectInRange(npcInst, Npc.class, 5) != null)) {
-                            // LOGGER.log(Level.INFO, "AutoSpawnHandler: Random spawn location " + npcInst.getLocation()
-                            // + " for " + npcInst + " is occupied. Teleporting...");
                             npcInst.teleToLocation(
                                     locationList.get(ClockBridge.random().nextInt(locationList.size())));
                         }
                     }
 
-                    if (spawnInst.isBroadcasting()) {
+                    if (spawnInst.broadcasting) {
                         World.broadcastToAllOnlinePlayers("The " + npcInst.getName() + " has spawned near "
                                 + MapRegionData.getInstance().getClosestTownName(npcInst) + "!");
                     }
                 }
 
-                // If there is no despawn time, do not create a despawn task.
-                if (spawnInst.getDespawnDelay() > 0) {
+                if (spawnInst.despawnDelay > 0) {
                     WorldPartition.loop()
                             .schedule(
-                                    new AutoDespawner(objectId),
-                                    spawnInst.getDespawnDelay() - 1000,
-                                    TimeUnit.MILLISECONDS);
+                                    new AutoDespawner(objectId), spawnInst.despawnDelay - 1000, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 log.warn(
@@ -462,10 +399,7 @@ public class AutoSpawnHandler {
         }
     }
 
-    /**
-     * AutoDespawner Class<br>
-     * Simply used as a secondary class for despawning an auto spawn instance.
-     */
+    @SingleWriter
     private class AutoDespawner implements Runnable {
         private final int objectId;
 
@@ -475,6 +409,7 @@ public class AutoSpawnHandler {
 
         @Override
         public void run() {
+            WorldPartition.checkOwner();
             try {
                 final AutoSpawnInstance spawnInst = registeredSpawns.get(objectId);
                 if (spawnInst == null) {
@@ -482,14 +417,16 @@ public class AutoSpawnHandler {
                     return;
                 }
 
-                for (Npc npcInst : spawnInst.getNpcList()) {
-                    if (npcInst == null) {
-                        continue;
-                    }
+                try (ScratchBuffers.Snapshot<Npc> walk = ScratchBuffers.snapshot(spawnInst.npcList)) {
+                    for (Npc npcInst : walk) {
+                        if (npcInst == null) {
+                            continue;
+                        }
 
-                    npcInst.deleteMe();
-                    SpawnTable.getInstance().removeSpawn(npcInst.getSpawn());
-                    spawnInst.removeNpc(npcInst);
+                        npcInst.deleteMe();
+                        SpawnTable.getInstance().removeSpawn(npcInst.getSpawn());
+                        spawnInst.npcList.remove(npcInst);
+                    }
                 }
             } catch (Exception e) {
                 log.warn("An error occurred while despawning spawn (Object ID = {}): {}", objectId, e.getMessage(), e);
@@ -497,49 +434,19 @@ public class AutoSpawnHandler {
         }
     }
 
-    /**
-     * AutoSpawnInstance Class<br>
-     * Stores information about a registered auto spawn.
-     */
+    @SingleWriter
     public static class AutoSpawnInstance {
-        @Getter
-        protected int objectId;
-
-        protected int spawnIndex;
-
-        @Getter
-        protected int id;
-
-        @Getter
-        protected int initialDelay;
-
-        @Getter
-        protected int respawnDelay;
-
-        @Getter
-        protected int despawnDelay;
-
-        @Getter
-        @Setter
-        protected int spawnCount = 1;
-
-        protected int lastLocIndex = -1;
-
-        @Getter
-        private final Queue<Npc> npcList = new ConcurrentLinkedQueue<>();
-
-        @Getter
-        private final List<Location> locationList = new CopyOnWriteArrayList<>();
-
-        @Getter
-        @Setter(AccessLevel.PROTECTED)
+        private int objectId;
+        private final int id;
+        private final int initialDelay;
+        private final int respawnDelay;
+        private final int despawnDelay;
+        private int spawnCount = 1;
+        private int lastLocIndex = -1;
+        private final ObjectArrayList<Npc> npcList = new ObjectArrayList<>();
+        private final ObjectArrayList<Location> locationList = new ObjectArrayList<>();
         private boolean spawnActive;
-
-        @Getter
-        @Setter
         private boolean randomSpawn = false;
-
-        @Getter
         private boolean broadcasting = false;
 
         protected AutoSpawnInstance(int npcId, int initDelay, int respawnDelay, int despawnDelay) {
@@ -549,16 +456,80 @@ public class AutoSpawnHandler {
             this.despawnDelay = despawnDelay;
         }
 
-        protected boolean addNpc(Npc npcInst) {
-            return npcList.add(npcInst);
+        public int getObjectId() {
+            WorldPartition.checkOwner();
+            return objectId;
         }
 
-        protected boolean removeNpc(Npc npcInst) {
-            return npcList.remove(npcInst);
+        public int getId() {
+            WorldPartition.checkOwner();
+            return id;
+        }
+
+        public int getInitialDelay() {
+            WorldPartition.checkOwner();
+            return initialDelay;
+        }
+
+        public int getRespawnDelay() {
+            WorldPartition.checkOwner();
+            return respawnDelay;
+        }
+
+        public int getDespawnDelay() {
+            WorldPartition.checkOwner();
+            return despawnDelay;
+        }
+
+        public int getSpawnCount() {
+            WorldPartition.checkOwner();
+            return spawnCount;
+        }
+
+        public void setSpawnCount(int spawnCount) {
+            WorldPartition.checkOwner();
+            this.spawnCount = spawnCount;
+        }
+
+        public boolean isSpawnActive() {
+            WorldPartition.checkOwner();
+            return spawnActive;
+        }
+
+        public boolean isRandomSpawn() {
+            WorldPartition.checkOwner();
+            return randomSpawn;
+        }
+
+        public void setRandomSpawn(boolean randomSpawn) {
+            WorldPartition.checkOwner();
+            this.randomSpawn = randomSpawn;
+        }
+
+        public boolean isBroadcasting() {
+            WorldPartition.checkOwner();
+            return broadcasting;
+        }
+
+        public void setBroadcast(boolean broadcastValue) {
+            WorldPartition.checkOwner();
+            broadcasting = broadcastValue;
+        }
+
+        public List<Npc> getNpcList() {
+            WorldPartition.checkOwner();
+            return ObjectLists.unmodifiable(new ObjectArrayList<>(npcList));
+        }
+
+        /** @return the earliest spawned NPC still managed, {@code null} when none is */
+        public Npc getFirstNpc() {
+            WorldPartition.checkOwner();
+            return npcList.isEmpty() ? null : npcList.getFirst();
         }
 
         public List<Spawn> getSpawns() {
-            final List<Spawn> npcSpawns = new ArrayList<>();
+            WorldPartition.checkOwner();
+            final List<Spawn> npcSpawns = new ObjectArrayList<>(npcList.size());
             for (Npc npcInst : npcList) {
                 npcSpawns.add(npcInst.getSpawn());
             }
@@ -566,28 +537,24 @@ public class AutoSpawnHandler {
             return npcSpawns;
         }
 
-        public void setBroadcast(boolean broadcastValue) {
-            broadcasting = broadcastValue;
-        }
-
         public boolean addSpawnLocation(int x, int y, int z, int heading) {
+            WorldPartition.checkOwner();
             return locationList.add(new Location(x, y, z, heading));
         }
 
         public boolean addSpawnLocation(int[] spawnLoc) {
+            WorldPartition.checkOwner();
             return (spawnLoc.length == 3) && addSpawnLocation(spawnLoc[0], spawnLoc[1], spawnLoc[2], -1);
         }
 
         public Location removeSpawnLocation(int locIndex) {
-            try {
-                return locationList.remove(locIndex);
-            } catch (IndexOutOfBoundsException e) {
-                return null;
-            }
+            WorldPartition.checkOwner();
+            return (locIndex >= 0) && (locIndex < locationList.size()) ? locationList.remove(locIndex) : null;
         }
     }
 
     public static AutoSpawnHandler getInstance() {
+        WorldPartition.checkOwner();
         return SingletonHolder.INSTANCE;
     }
 

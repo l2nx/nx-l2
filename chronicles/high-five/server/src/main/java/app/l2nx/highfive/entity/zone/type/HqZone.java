@@ -19,14 +19,17 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * Zone where 'Build Headquarters' is allowed.
  * @author Gnacik
  */
+@SingleWriter
 public class HqZone extends ZoneType {
     public HqZone(int id) {
         super(id);
@@ -34,16 +37,11 @@ public class HqZone extends ZoneType {
 
     @Override
     public void setParameter(String name, String value) {
-        if ("castleId".equals(name)) {
-            // TODO
-        } else if ("fortId".equals(name)) {
-            // TODO
-        } else if ("clanHallId".equals(name)) {
-            // TODO
-        } else if ("territoryId".equals(name)) {
-            // TODO
-        } else {
-            super.setParameter(name, value);
+        WorldPartition.checkOwner();
+        // The datapack names the residence each HQ zone belongs to; nothing reads it, so it is accepted and dropped.
+        switch (name) {
+            case "castleId", "fortId", "clanHallId", "territoryId" -> {}
+            default -> super.setParameter(name, value);
         }
     }
 

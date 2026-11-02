@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00727_HopeWithinTheDarkness;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -63,9 +64,30 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class Q00727_HopeWithinTheDarkness extends Quest {
+    @SingleWriter
     protected class CAUWorld extends InstanceWorld {
-        public boolean underAttack = false;
-        public boolean allMonstersDead = true;
+        private boolean underAttack = false;
+        private boolean allMonstersDead = true;
+
+        public boolean isUnderAttack() {
+            WorldPartition.checkOwner();
+            return underAttack;
+        }
+
+        public void setUnderAttack(boolean underAttack) {
+            WorldPartition.checkOwner();
+            this.underAttack = underAttack;
+        }
+
+        public boolean isAllMonstersDead() {
+            WorldPartition.checkOwner();
+            return allMonstersDead;
+        }
+
+        public void setAllMonstersDead(boolean allMonstersDead) {
+            WorldPartition.checkOwner();
+            this.allMonstersDead = allMonstersDead;
+        }
     }
 
     public static class CastleDungeon {
@@ -269,7 +291,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(player);
         if (tmpworld instanceof CAUWorld) {
             final CAUWorld world = (CAUWorld) tmpworld;
-            if (world.underAttack) {
+            if (world.isUnderAttack()) {
                 return "Victim-02.html";
             } else if (world.getStatus() == 4) {
                 return "Victim-03.html";
@@ -387,7 +409,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
 
             if ((tmpworld.getStatus() == 3)
                     && (ArrayUtil.contains(BOSSES, npc.getId()) || ArrayUtil.contains(MONSTERS, npc.getId()))) {
-                world.allMonstersDead = true;
+                world.setAllMonstersDead(true);
                 final Instance inst = InstanceManager.getInstance().getInstance(tmpworld.getInstanceId());
                 if (inst != null) {
                     for (Npc _npc : inst.getNpcs()) {
@@ -395,12 +417,12 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                                 && !_npc.isDead()
                                 && (ArrayUtil.contains(BOSSES, _npc.getId())
                                         || ArrayUtil.contains(MONSTERS, _npc.getId()))) {
-                            world.allMonstersDead = false;
+                            world.setAllMonstersDead(false);
                             break;
                         }
                     }
 
-                    if (world.allMonstersDead) {
+                    if (world.isAllMonstersDead()) {
                         tmpworld.setStatus(4);
 
                         // Destroy instance after 5 minutes
@@ -626,7 +648,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                 if (world.getStatus() == 0) {
                     instance.spawnGroup("monsters_first_wave");
 
-                    world.underAttack = true;
+                    world.setUnderAttack(true);
                 } else if (world.getStatus() == 1) {
                     instance.spawnGroup("monsters_second_wave");
                 } else if (world.getStatus() == 2) {
@@ -654,7 +676,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
         public void run() {
             try {
                 if (world.getStatus() == 4) {
-                    world.underAttack = false;
+                    world.setUnderAttack(false);
 
                     final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                     for (Npc npc : inst.getNpcs()) {

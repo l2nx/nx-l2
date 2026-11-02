@@ -182,6 +182,9 @@ public abstract class ItemTemplate extends ListenersContainer {
     @Getter
     protected Elementals[] elementals = null;
 
+    // Element per entry of elementals, so the parse pool never touches Elementals accessors (world-loop only).
+    private byte[] elementalTypes;
+
     protected List<FuncTemplate> funcTemplates;
     protected List<Condition> preConditions;
     private SkillHolder[] skills;
@@ -263,7 +266,8 @@ public abstract class ItemTemplate extends ListenersContainer {
                     ++used;
                 } catch (Exception e) {
                     log.warn(
-                            "Failed to parse item_skill({}) for item {}! Format: SkillId0-SkillLevel0[;SkillIdN-SkillLevelN]",
+                            "Failed to parse item_skill({}) for item {}! Format:"
+                                    + " SkillId0-SkillLevel0[;SkillIdN-SkillLevelN]",
                             element,
                             this);
                 }
@@ -442,34 +446,34 @@ public abstract class ItemTemplate extends ListenersContainer {
     }
 
     public Elementals getElemental(byte attribute) {
-        for (Elementals elm : elementals) {
-            if (elm.getElement() == attribute) {
-                return elm;
+        final int index = elementalIndex(attribute);
+        return index < 0 ? null : elementals[index];
+    }
+
+    private int elementalIndex(byte attribute) {
+        if (elementalTypes != null) {
+            for (int i = 0; i < elementalTypes.length; i++) {
+                if (elementalTypes[i] == attribute) {
+                    return i;
+                }
             }
         }
 
-        return null;
+        return -1;
     }
 
-    /**
-     * Sets the base elemental of the item.
-     * @param element the element to set.
-     */
-    public void setElementals(Elementals element) {
-        if (elementals == null) {
-            elementals = new Elementals[1];
-            elementals[0] = element;
+    private void putElemental(byte element, int value) {
+        final int index = elementalIndex(element);
+        if (index >= 0) {
+            elementals[index] = new Elementals(element, value);
+        } else if (elementals == null) {
+            elementals = new Elementals[] {new Elementals(element, value)};
+            elementalTypes = new byte[] {element};
         } else {
-            Elementals elm = getElemental(element.getElement());
-            if (elm != null) {
-                elm.setValue(element.getValue());
-            } else {
-                elm = element;
-                final Elementals[] array = new Elementals[elementals.length + 1];
-                System.arraycopy(elementals, 0, array, 0, elementals.length);
-                array[elementals.length] = elm;
-                elementals = array;
-            }
+            elementals = Arrays.copyOf(elementals, elementals.length + 1);
+            elementals[elementals.length - 1] = new Elementals(element, value);
+            elementalTypes = Arrays.copyOf(elementalTypes, elementalTypes.length + 1);
+            elementalTypes[elementalTypes.length - 1] = element;
         }
     }
 
@@ -549,32 +553,32 @@ public abstract class ItemTemplate extends ListenersContainer {
         switch (f.getStat()) {
             case FIRE_RES:
             case FIRE_POWER: {
-                setElementals(new Elementals(Elementals.FIRE, (int) f.getValue()));
+                putElemental(Elementals.FIRE, (int) f.getValue());
                 break;
             }
             case WATER_RES:
             case WATER_POWER: {
-                setElementals(new Elementals(Elementals.WATER, (int) f.getValue()));
+                putElemental(Elementals.WATER, (int) f.getValue());
                 break;
             }
             case WIND_RES:
             case WIND_POWER: {
-                setElementals(new Elementals(Elementals.WIND, (int) f.getValue()));
+                putElemental(Elementals.WIND, (int) f.getValue());
                 break;
             }
             case EARTH_RES:
             case EARTH_POWER: {
-                setElementals(new Elementals(Elementals.EARTH, (int) f.getValue()));
+                putElemental(Elementals.EARTH, (int) f.getValue());
                 break;
             }
             case HOLY_RES:
             case HOLY_POWER: {
-                setElementals(new Elementals(Elementals.HOLY, (int) f.getValue()));
+                putElemental(Elementals.HOLY, (int) f.getValue());
                 break;
             }
             case DARK_RES:
             case DARK_POWER: {
-                setElementals(new Elementals(Elementals.DARK, (int) f.getValue()));
+                putElemental(Elementals.DARK, (int) f.getValue());
                 break;
             }
         }

@@ -27,31 +27,20 @@ import java.util.Objects;
 import lombok.Getter;
 
 /**
- * Defines an NPC walking route.<br>
- * Stores an ordered node list and repeat policy.
- * <ul>
- * <li>Fail-fast validation for route name and node list.</li>
- * <li>Repeat is enabled only for repeat types 0..2.</li>
- * <li>Provides helpers for route traversal.</li>
- * </ul>
  * @author BazookaRpm
  */
 public class WalkRoute {
-    // Constants.
     private static final byte REPEAT_MIN = 0;
     private static final byte REPEAT_MID = 1;
     private static final byte REPEAT_MAX = 2;
 
-    // Route Definition.
     @Getter
     private final String name;
 
     @Getter
     private final List<WalkNode> nodeList;
 
-    // Repeat Policy.
     private final boolean repeatWalk;
-    private boolean stopAfterCycle;
 
     @Getter
     private final byte repeatType;
@@ -95,10 +84,6 @@ public class WalkRoute {
 
     public boolean repeatWalk() {
         return repeatWalk;
-    }
-
-    public boolean doOnce() {
-        return stopAfterCycle;
     }
 
     public WalkNode getLastNode() {

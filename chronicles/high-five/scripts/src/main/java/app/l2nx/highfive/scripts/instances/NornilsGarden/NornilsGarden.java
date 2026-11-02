@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.NornilsGarden;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.ScratchBuffers;
@@ -37,6 +38,7 @@ import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.scripts.quests.Q00179_IntoTheLargeCavern.Q00179_IntoTheLargeCavern;
 import app.l2nx.highfive.util.ArrayUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -49,12 +51,63 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Slf4j
 public class NornilsGarden extends InstanceScript {
+    @SingleWriter
     protected class NornilsWorld extends InstanceWorld {
-        protected Npc first_npc = null;
-        protected boolean spawned_1 = false;
-        protected boolean spawned_2 = false;
-        protected boolean spawned_3 = false;
-        protected boolean spawned_4 = false;
+        private Npc firstNpc = null;
+        private boolean spawned1 = false;
+        private boolean spawned2 = false;
+        private boolean spawned3 = false;
+        private boolean spawned4 = false;
+
+        public Npc getFirstNpc() {
+            WorldPartition.checkOwner();
+            return firstNpc;
+        }
+
+        public void setFirstNpc(Npc firstNpc) {
+            WorldPartition.checkOwner();
+            this.firstNpc = firstNpc;
+        }
+
+        public boolean isSpawned1() {
+            WorldPartition.checkOwner();
+            return spawned1;
+        }
+
+        public void setSpawned1(boolean spawned1) {
+            WorldPartition.checkOwner();
+            this.spawned1 = spawned1;
+        }
+
+        public boolean isSpawned2() {
+            WorldPartition.checkOwner();
+            return spawned2;
+        }
+
+        public void setSpawned2(boolean spawned2) {
+            WorldPartition.checkOwner();
+            this.spawned2 = spawned2;
+        }
+
+        public boolean isSpawned3() {
+            WorldPartition.checkOwner();
+            return spawned3;
+        }
+
+        public void setSpawned3(boolean spawned3) {
+            WorldPartition.checkOwner();
+            this.spawned3 = spawned3;
+        }
+
+        public boolean isSpawned4() {
+            WorldPartition.checkOwner();
+            return spawned4;
+        }
+
+        public void setSpawned4(boolean spawned4) {
+            WorldPartition.checkOwner();
+            this.spawned4 = spawned4;
+        }
     }
 
     // NPCs
@@ -248,7 +301,7 @@ public class NornilsGarden extends InstanceScript {
         instance.setEmptyDestroyTime(EMPTY_DESTROY_TIME * 60000);
         final int instanceId = newWorld.getInstanceId();
         log.info("Nornils Garden: started, Instance: {} created by player: {}", instanceId, player.getName());
-        newWorld.first_npc = addSpawn(18362, -109702, 74696, -12528, 49568, false, 0, false, newWorld.getInstanceId());
+        newWorld.setFirstNpc(addSpawn(18362, -109702, 74696, -12528, 49568, false, 0, false, newWorld.getInstanceId()));
         final Door door = instance.getDoor(16200010);
         if (door != null) {
             door.setTargetable(false);
@@ -274,8 +327,8 @@ public class NornilsGarden extends InstanceScript {
         final InstanceWorld inst = InstanceManager.getInstance().getWorld(npc);
         if (inst instanceof NornilsWorld) {
             final NornilsWorld world = (NornilsWorld) inst;
-            if (npc.equals(world.first_npc) && !world.spawned_1) {
-                world.spawned_1 = true;
+            if (npc.equals(world.getFirstNpc()) && !world.isSpawned1()) {
+                world.setSpawned1(true);
                 for (int[] mob : GROUP_1) {
                     addSpawn(mob[0], mob[1], mob[2], mob[3], mob[4], false, 0, false, world.getInstanceId());
                 }
@@ -287,8 +340,8 @@ public class NornilsGarden extends InstanceScript {
         final InstanceWorld inst = InstanceManager.getInstance().getWorld(npc);
         if (inst instanceof NornilsWorld) {
             final NornilsWorld world = (NornilsWorld) inst;
-            if (!world.spawned_2) {
-                world.spawned_2 = true;
+            if (!world.isSpawned2()) {
+                world.setSpawned2(true);
                 for (int[] mob : GROUP_2) {
                     addSpawn(mob[0], mob[1], mob[2], mob[3], mob[4], false, 0, false, world.getInstanceId());
                 }
@@ -300,8 +353,8 @@ public class NornilsGarden extends InstanceScript {
         final InstanceWorld inst = InstanceManager.getInstance().getWorld(creature);
         if (inst instanceof NornilsWorld) {
             final NornilsWorld world = (NornilsWorld) inst;
-            if (!world.spawned_3) {
-                world.spawned_3 = true;
+            if (!world.isSpawned3()) {
+                world.setSpawned3(true);
                 for (int[] mob : GROUP_3) {
                     addSpawn(mob[0], mob[1], mob[2], mob[3], mob[4], false, 0, false, world.getInstanceId());
                 }
@@ -313,8 +366,8 @@ public class NornilsGarden extends InstanceScript {
         final InstanceWorld inst = InstanceManager.getInstance().getWorld(creature);
         if (inst instanceof NornilsWorld) {
             final NornilsWorld world = (NornilsWorld) inst;
-            if (!world.spawned_4) {
-                world.spawned_4 = true;
+            if (!world.isSpawned4()) {
+                world.setSpawned4(true);
                 for (int[] mob : GROUP_4) {
                     addSpawn(mob[0], mob[1], mob[2], mob[3], mob[4], false, 0, false, world.getInstanceId());
                 }

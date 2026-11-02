@@ -7,6 +7,7 @@ package app.l2nx.highfive.entity.actor.holders.player;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.partition.WorldLoopExtension;
 import java.util.List;
 import java.util.function.Consumer;
@@ -45,7 +46,19 @@ class TeleportBookmarkTest {
                     Named.of("getName", TeleportBookmark::getName),
                     Named.of("setName", bookmark -> bookmark.setName("Giran")),
                     Named.of("getTag", TeleportBookmark::getTag),
-                    Named.of("setTag", bookmark -> bookmark.setTag("GI")));
+                    Named.of("setTag", bookmark -> bookmark.setTag("GI")),
+                    Named.of("setXYZ(int, int, int) (Location)", bookmark -> bookmark.setXYZ(1, 2, 3)),
+                    Named.of("setXYZ(ILocational) (Location)", bookmark -> bookmark.setXYZ(new Location(1, 2, 3))),
+                    Named.of("setHeading (Location)", bookmark -> bookmark.setHeading(100)),
+                    Named.of("setInstanceId (Location)", bookmark -> bookmark.setInstanceId(7)),
+                    Named.of("setLocation (Location)", bookmark -> bookmark.setLocation(new Location(1, 2, 3))),
+                    Named.of("getX (Location)", bookmark -> bookmark.getX()),
+                    Named.of("getY (Location)", bookmark -> bookmark.getY()),
+                    Named.of("getZ (Location)", bookmark -> bookmark.getZ()),
+                    Named.of("getHeading (Location)", bookmark -> bookmark.getHeading()),
+                    Named.of("getInstanceId (Location)", bookmark -> bookmark.getInstanceId()),
+                    Named.of("getLocation (Location)", bookmark -> bookmark.getLocation()),
+                    Named.of("clone (Location)", bookmark -> bookmark.clone()));
         }
     }
 
@@ -63,6 +76,47 @@ class TeleportBookmarkTest {
             });
 
             assertThat(actual).containsExactly(1, 2, "Giran", "GI");
+        }
+
+        @Test
+        void locationSetters_shouldMoveTheBookmark_whenCalledOnTheLoop() {
+            final TeleportBookmark bookmark = bookmark();
+
+            final List<Integer> actual = WorldLoopExtension.callInPass(() -> {
+                bookmark.setXYZ(new Location(1, 2, 3));
+                bookmark.setHeading(4);
+                bookmark.setInstanceId(5);
+                return List.of(
+                        bookmark.getX(),
+                        bookmark.getY(),
+                        bookmark.getZ(),
+                        bookmark.getHeading(),
+                        bookmark.getInstanceId());
+            });
+
+            assertThat(actual).containsExactly(1, 2, 3, 4, 5);
+        }
+
+        @Test
+        void setLocation_shouldCopyCoordinatesHeadingAndInstance() {
+            final TeleportBookmark bookmark = bookmark();
+
+            final List<Integer> actual = WorldLoopExtension.callInPass(() -> {
+                bookmark.setLocation(new Location(1, 2, 3, 4, 5));
+                return List.of(
+                        bookmark.getX(),
+                        bookmark.getY(),
+                        bookmark.getZ(),
+                        bookmark.getHeading(),
+                        bookmark.getInstanceId());
+            });
+
+            assertThat(actual).containsExactly(1, 2, 3, 4, 5);
+        }
+
+        @Test
+        void equals_shouldReadFieldsOnly_whenCalledOffTheLoop() {
+            assertThat(bookmark()).isEqualTo(bookmark()).hasSameHashCodeAs(bookmark());
         }
     }
 

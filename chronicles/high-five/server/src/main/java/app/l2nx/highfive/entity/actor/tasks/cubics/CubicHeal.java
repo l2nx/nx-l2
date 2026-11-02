@@ -22,13 +22,14 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.cubics;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
 import app.l2nx.highfive.entity.cubic.CubicSkill;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -37,10 +38,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author UnAfraid, BazookaRpm
  */
 @Slf4j
+@SingleWriter
 public class CubicHeal implements Runnable {
 
     private final Cubic cubic;
-    private final AtomicInteger currentCount = new AtomicInteger();
+    private int currentCount;
 
     public CubicHeal(Cubic cubic) {
         this.cubic = cubic;
@@ -48,6 +50,7 @@ public class CubicHeal implements Runnable {
 
     @Override
     public void run() {
+        WorldPartition.checkOwner();
         if (cubic == null) {
             return;
         }
@@ -59,7 +62,7 @@ public class CubicHeal implements Runnable {
         }
 
         try {
-            if ((cubic.getCubicMaxCount() > -1) && (currentCount.get() >= cubic.getCubicMaxCount())) {
+            if ((cubic.getCubicMaxCount() > -1) && (currentCount >= cubic.getCubicMaxCount())) {
                 cubic.stopAction();
                 if ((cubic.getTemplate() != null) && (cubic.getTemplate().getUseUp() > 0)) {
                     cubic.getOwner().removeCubic(cubic.getId());
@@ -88,7 +91,7 @@ public class CubicHeal implements Runnable {
             cubic.getOwner()
                     .broadcastPacket(
                             new MagicSkillUse(cubic.getOwner(), target, skill.getId(), skill.getLevel(), 0, 0));
-            currentCount.incrementAndGet();
+            currentCount++;
         } catch (Exception e) {
             log.error(
                     "Cubic heal failed. cubicId: {} ownerId: {}",

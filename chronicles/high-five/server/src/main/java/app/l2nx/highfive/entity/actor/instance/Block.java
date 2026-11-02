@@ -118,7 +118,7 @@ public class Block extends Monster {
         eng.increasePlayerPoints(player, team);
 
         final int timeLeft = (int) ((eng.getStarterTime() - ClockBridge.gameMillis()) / 1000);
-        final boolean isRed = eng.getHolder().getRedPlayers().contains(player);
+        final boolean isRed = eng.getHolder().getPlayerTeam(player) == 0;
         final ExCubeGameChangePoints changePoints =
                 new ExCubeGameChangePoints(timeLeft, eng.getBluePoints(), eng.getRedPoints());
         final ExCubeGameExtendedChangePoints secretPoints = new ExCubeGameExtendedChangePoints(

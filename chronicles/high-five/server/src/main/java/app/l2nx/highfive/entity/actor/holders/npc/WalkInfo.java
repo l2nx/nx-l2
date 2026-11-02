@@ -22,28 +22,21 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.WalkingManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveRouteFinished;
+import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
- * Holds info about current walk progress.<br>
- * Maintains the route cursor and runtime state for an NPC walking task.
- * <ul>
- * <li>Supports sequential and random traversal.</li>
- * <li>Dispatches route-finished event on last node reach.</li>
- * <li>Stores a check task reference and debug timestamp.</li>
- * </ul>
  * @author BazookaRpm
  */
+@SingleWriter
 public class WalkInfo {
-    // Constants.
     private static final int FLAG_BLOCKED = 0x01;
     private static final int FLAG_SUSPENDED = 0x02;
     private static final int FLAG_STOPPED_BY_ATTACK = 0x04;
@@ -53,25 +46,16 @@ public class WalkInfo {
     private static final int NODE_FIRST = 0;
     private static final int NODE_SECOND = 1;
 
-    // Route Data.
     private final String routeName;
 
-    // Task Data.
-    @Getter
-    @Setter
     private ScheduledFuture<?> walkCheckTask;
 
-    // Runtime State.
     private int stateFlags;
 
-    @Getter
     private int currentNodeId;
 
     private int step;
 
-    // Debug Data.
-    @Getter
-    @Setter
     private long lastAction;
 
     public WalkInfo(String routeName) {
@@ -85,11 +69,38 @@ public class WalkInfo {
         lastAction = 0L;
     }
 
+    public ScheduledFuture<?> getWalkCheckTask() {
+        WorldPartition.checkOwner();
+        return walkCheckTask;
+    }
+
+    public void setWalkCheckTask(ScheduledFuture<?> walkCheckTask) {
+        WorldPartition.checkOwner();
+        this.walkCheckTask = walkCheckTask;
+    }
+
+    public int getCurrentNodeId() {
+        WorldPartition.checkOwner();
+        return currentNodeId;
+    }
+
+    public long getLastAction() {
+        WorldPartition.checkOwner();
+        return lastAction;
+    }
+
+    public void setLastAction(long lastAction) {
+        WorldPartition.checkOwner();
+        this.lastAction = lastAction;
+    }
+
     public boolean isBlocked() {
+        WorldPartition.checkOwner();
         return (stateFlags & FLAG_BLOCKED) != 0;
     }
 
     public void setBlocked(boolean value) {
+        WorldPartition.checkOwner();
         int flags = stateFlags;
         if (value) {
             flags |= FLAG_BLOCKED;
@@ -100,10 +111,12 @@ public class WalkInfo {
     }
 
     public boolean isSuspended() {
+        WorldPartition.checkOwner();
         return (stateFlags & FLAG_SUSPENDED) != 0;
     }
 
     public void setSuspended(boolean value) {
+        WorldPartition.checkOwner();
         int flags = stateFlags;
         if (value) {
             flags |= FLAG_SUSPENDED;
@@ -114,10 +127,12 @@ public class WalkInfo {
     }
 
     public boolean isStoppedByAttack() {
+        WorldPartition.checkOwner();
         return (stateFlags & FLAG_STOPPED_BY_ATTACK) != 0;
     }
 
     public void setStoppedByAttack(boolean value) {
+        WorldPartition.checkOwner();
         int flags = stateFlags;
         if (value) {
             flags |= FLAG_STOPPED_BY_ATTACK;
@@ -128,12 +143,14 @@ public class WalkInfo {
     }
 
     public WalkRoute getRoute() {
+        WorldPartition.checkOwner();
         final WalkingManager manager = WalkingManager.getInstance();
         final WalkRoute route = manager.getRoute(routeName);
         return route;
     }
 
     public WalkNode getCurrentNode() {
+        WorldPartition.checkOwner();
         final WalkRoute route = getRoute();
         int cursor = currentNodeId;
         if (cursor < NODE_FIRST) {
@@ -149,7 +166,8 @@ public class WalkInfo {
         return route.getNodeList().get(cursor);
     }
 
-    public synchronized void calculateNextNode(Npc npc) {
+    public void calculateNextNode(Npc npc) {
+        WorldPartition.checkOwner();
         final WalkRoute route = getRoute();
         final int nodesCount = route.getNodesCount();
         final byte repeatType = route.getRepeatType();
@@ -231,11 +249,11 @@ public class WalkInfo {
         sb.append(", step=");
         sb.append(step);
         sb.append(", blocked=");
-        sb.append(isBlocked());
+        sb.append((stateFlags & FLAG_BLOCKED) != 0);
         sb.append(", suspended=");
-        sb.append(isSuspended());
+        sb.append((stateFlags & FLAG_SUSPENDED) != 0);
         sb.append(", stoppedByAttack=");
-        sb.append(isStoppedByAttack());
+        sb.append((stateFlags & FLAG_STOPPED_BY_ATTACK) != 0);
         sb.append(", lastActionTime=");
         sb.append(lastAction);
         sb.append(']');

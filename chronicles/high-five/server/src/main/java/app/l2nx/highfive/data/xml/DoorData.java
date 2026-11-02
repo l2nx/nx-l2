@@ -167,13 +167,7 @@ public class DoorData implements IXmlReader {
             return false;
         }
 
-        for (Door door : instance.getDoors()) {
-            if (blocks(door, x, y, z, tx, ty, tz, instanceId, doubleFaceCheck)) {
-                return true;
-            }
-        }
-
-        return false;
+        return instance.anyDoor(door -> blocks(door, x, y, z, tx, ty, tz, instanceId, doubleFaceCheck));
     }
 
     private boolean blocks(

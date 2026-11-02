@@ -44,15 +44,8 @@ public class ZoneNPoly extends ZoneForm {
     @Getter
     private final int highZ;
 
-    @Getter
     private final Location centerPoint;
 
-    /**
-     * @param x
-     * @param y
-     * @param z1
-     * @param z2
-     */
     public ZoneNPoly(int[] x, int[] y, int z1, int z2) {
         p = new Polygon(x, y, x.length);
 
@@ -136,6 +129,12 @@ public class ZoneNPoly extends ZoneForm {
                         z);
             }
         }
+    }
+
+    // A copy, so a caller that moves the point leaves the center of the zone as it is.
+    @Override
+    public Location getCenterPoint() {
+        return centerPoint.clone();
     }
 
     @Override

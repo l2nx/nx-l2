@@ -22,43 +22,30 @@
  */
 package app.l2nx.highfive.entity.actor.appearance;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Player;
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.highfive.partition.WorldPartition;
 
+@SingleWriter
 public class PlayerAppearance {
     public static final int DEFAULT_TITLE_COLOR = 0xECF9A2;
 
-    @Getter
-    @Setter
     private Player owner;
 
-    @Getter
     private byte face;
 
-    @Getter
     private byte hairColor;
 
-    @Getter
     private byte hairStyle;
 
-    @Getter
     private boolean female;
 
-    /** The current visible name of this player, not necessarily the real one */
-    @Setter
     private String visibleName;
 
-    /** The current visible title of this player, not necessarily the real one */
-    @Setter
     private String visibleTitle;
 
-    /** The default name color is 0xFFFFFF. */
-    @Getter
     private int nameColor = 0xFFFFFF;
 
-    /** The default title color is 0xECF9A2. */
-    @Getter
     private int titleColor = DEFAULT_TITLE_COLOR;
 
     public PlayerAppearance(byte face, byte hColor, byte hStyle, boolean isFemale) {
@@ -68,50 +55,93 @@ public class PlayerAppearance {
         female = isFemale;
     }
 
-    /**
-     * @return Returns the visibleName.
-     */
+    public Player getOwner() {
+        WorldPartition.checkOwner();
+        return owner;
+    }
+
+    public void setOwner(Player owner) {
+        WorldPartition.checkOwner();
+        this.owner = owner;
+    }
+
+    public byte getFace() {
+        WorldPartition.checkOwner();
+        return face;
+    }
+
+    public byte getHairColor() {
+        WorldPartition.checkOwner();
+        return hairColor;
+    }
+
+    public byte getHairStyle() {
+        WorldPartition.checkOwner();
+        return hairStyle;
+    }
+
+    public boolean isFemale() {
+        WorldPartition.checkOwner();
+        return female;
+    }
+
     public String getVisibleName() {
+        WorldPartition.checkOwner();
         return visibleName == null ? owner.getName() : visibleName;
     }
 
-    /**
-     * @return Returns the visibleTitle.
-     */
+    public void setVisibleName(String visibleName) {
+        WorldPartition.checkOwner();
+        this.visibleName = visibleName;
+    }
+
     public String getVisibleTitle() {
+        WorldPartition.checkOwner();
         return visibleTitle == null ? owner.getTitle() : visibleTitle;
     }
 
-    /**
-     * @param value
-     */
+    public void setVisibleTitle(String visibleTitle) {
+        WorldPartition.checkOwner();
+        this.visibleTitle = visibleTitle;
+    }
+
+    public int getNameColor() {
+        WorldPartition.checkOwner();
+        return nameColor;
+    }
+
+    public int getTitleColor() {
+        WorldPartition.checkOwner();
+        return titleColor;
+    }
+
     public void setFace(int value) {
+        WorldPartition.checkOwner();
         face = (byte) value;
     }
 
-    /**
-     * @param value
-     */
     public void setHairColor(int value) {
+        WorldPartition.checkOwner();
         hairColor = (byte) value;
     }
 
-    /**
-     * @param value
-     */
     public void setHairStyle(int value) {
+        WorldPartition.checkOwner();
         hairStyle = (byte) value;
     }
 
     public void setFemale() {
+        WorldPartition.checkOwner();
         female = true;
     }
 
     public void setMale() {
+        WorldPartition.checkOwner();
         female = false;
     }
 
     public void setNameColor(int nameColor) {
+        WorldPartition.checkOwner();
         if (nameColor < 0) {
             return;
         }
@@ -120,10 +150,12 @@ public class PlayerAppearance {
     }
 
     public void setNameColor(int red, int green, int blue) {
+        WorldPartition.checkOwner();
         nameColor = (red & 0xFF) + ((green & 0xFF) << 8) + ((blue & 0xFF) << 16);
     }
 
     public void setTitleColor(int titleColor) {
+        WorldPartition.checkOwner();
         if (titleColor < 0) {
             return;
         }
@@ -132,6 +164,7 @@ public class PlayerAppearance {
     }
 
     public void setTitleColor(int red, int green, int blue) {
+        WorldPartition.checkOwner();
         titleColor = (red & 0xFF) + ((green & 0xFF) << 8) + ((blue & 0xFF) << 16);
     }
 }

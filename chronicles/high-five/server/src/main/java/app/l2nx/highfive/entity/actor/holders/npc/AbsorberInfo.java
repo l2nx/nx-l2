@@ -19,19 +19,15 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
-import lombok.Getter;
-import lombok.Setter;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author xban1x
  */
+@SingleWriter
 public class AbsorberInfo {
-    @Getter
-    @Setter
     private int objectId;
-
-    @Getter
-    @Setter
     private double absorbedHp;
 
     public AbsorberInfo(int objectId, double pAbsorbedHp) {
@@ -39,9 +35,29 @@ public class AbsorberInfo {
         absorbedHp = pAbsorbedHp;
     }
 
+    public int getObjectId() {
+        WorldPartition.checkOwner();
+        return objectId;
+    }
+
+    public void setObjectId(int objectId) {
+        WorldPartition.checkOwner();
+        this.objectId = objectId;
+    }
+
+    public double getAbsorbedHp() {
+        WorldPartition.checkOwner();
+        return absorbedHp;
+    }
+
+    public void setAbsorbedHp(double absorbedHp) {
+        WorldPartition.checkOwner();
+        this.absorbedHp = absorbedHp;
+    }
+
     @Override
     public boolean equals(Object obj) {
-        return (this == obj) || ((obj instanceof AbsorberInfo) && (((AbsorberInfo) obj).getObjectId() == objectId));
+        return (this == obj) || ((obj instanceof AbsorberInfo other) && (other.objectId == objectId));
     }
 
     @Override

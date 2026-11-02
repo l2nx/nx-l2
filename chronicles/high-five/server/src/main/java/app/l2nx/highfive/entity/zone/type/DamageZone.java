@@ -19,6 +19,9 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -27,13 +30,14 @@ import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
  * A damage zone
  * @author durgus
  */
+@SingleWriter
 public class DamageZone extends ZoneType {
     private int hpDamagePerSecond;
     private int mpDamagePerSecond;
@@ -43,28 +47,23 @@ public class DamageZone extends ZoneType {
 
     private int startTask;
     private int reuseTask;
-    protected volatile Future<?> task;
+    private ScheduledFuture<?> task;
 
     public DamageZone(int id) {
-        super(id);
-
-        // Setup default damage
+        super(id, InstanceType.Playable);
         hpDamagePerSecond = 200;
         mpDamagePerSecond = 0;
 
-        // Setup default start / reuse time.
         startTask = 10;
         reuseTask = 5000;
 
-        // no castle by default
         castleId = 0;
         castle = null;
-
-        setTargetType(InstanceType.Playable); // default only playabale
     }
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("dmgHPSec")) {
             hpDamagePerSecond = Integer.parseInt(value);
         } else if (name.equals("dmgMPSec")) {
@@ -82,33 +81,23 @@ public class DamageZone extends ZoneType {
 
     @Override
     protected void onEnter(Creature creature) {
-        Future<?> task = this.task;
         if ((task == null) && ((hpDamagePerSecond != 0) || (mpDamagePerSecond != 0))) {
             final Player player = creature.asPlayer();
             final Castle castle = getCastle();
-            if (castle != null) // Castle zone
-            {
-                if (!(castle.getSiege().isInProgress()
-                        && (player != null)
-                        && (player.getSiegeState() != 2))) // Siege and no defender
-                {
+            if (castle != null) {
+                if (!(castle.getSiege().isInProgress() && (player != null) && (player.getSiegeState() != 2))) {
                     return;
                 }
             }
 
-            synchronized (this) {
-                task = this.task;
-                if (task == null) {
-                    this.task = task = WorldPartition.loop()
-                            .scheduleAtFixedRate(new ApplyDamage(), startTask, reuseTask, TimeUnit.MILLISECONDS);
-                }
-            }
+            task = WorldPartition.loop()
+                    .scheduleAtFixedRate(new ApplyDamage(), startTask, reuseTask, TimeUnit.MILLISECONDS);
         }
     }
 
     @Override
     protected void onExit(Creature creature) {
-        if (getCharactersInside().isEmpty() && (task != null)) {
+        if (!hasCharactersInside() && (task != null)) {
             task.cancel(true);
             task = null;
         }
@@ -139,7 +128,7 @@ public class DamageZone extends ZoneType {
 
         @Override
         public void run() {
-            if (getCharactersInside().isEmpty()) {
+            if (!hasCharactersInside()) {
                 if (task != null) {
                     task.cancel(false);
                     task = null;
@@ -155,7 +144,6 @@ public class DamageZone extends ZoneType {
             if (castle != null) {
                 siege = castle.getSiege().isInProgress();
 
-                // Castle zones active only during siege.
                 if (!siege) {
                     task.cancel(false);
                     task = null;
@@ -163,23 +151,26 @@ public class DamageZone extends ZoneType {
                 }
             }
 
-            for (Creature character : getCharactersInside()) {
-                if ((character != null) && character.isPlayer() && !character.isDead()) {
-                    if (siege) {
-                        // During siege defenders not affected.
-                        final Player player = character.asPlayer();
-                        if ((player != null) && player.isInSiege() && (player.getSiegeState() == 2)) {
-                            continue;
+            // Damage may kill and so move a creature, so the walk runs over a copy.
+            try (Snapshot<Creature> inside = ScratchBuffers.empty()) {
+                collectCharactersInside(inside);
+                for (Creature character : inside) {
+                    if (character.isPlayer() && !character.isDead()) {
+                        if (siege) {
+                            final Player player = character.asPlayer();
+                            if ((player != null) && player.isInSiege() && (player.getSiegeState() == 2)) {
+                                continue;
+                            }
                         }
-                    }
 
-                    final double multiplier = 1 + (character.calcStat(Stat.DAMAGE_ZONE_VULN, 0, null, null) / 100);
-                    if (getHPDamagePerSecond() != 0) {
-                        character.reduceCurrentHp(getHPDamagePerSecond() * multiplier, character, null);
-                    }
+                        final double multiplier = 1 + (character.calcStat(Stat.DAMAGE_ZONE_VULN, 0, null, null) / 100);
+                        if (getHPDamagePerSecond() != 0) {
+                            character.reduceCurrentHp(getHPDamagePerSecond() * multiplier, character, null);
+                        }
 
-                    if (getMPDamagePerSecond() != 0) {
-                        character.reduceCurrentMp(getMPDamagePerSecond() * multiplier);
+                        if (getMPDamagePerSecond() != 0) {
+                            character.reduceCurrentMp(getMPDamagePerSecond() * multiplier);
+                        }
                     }
                 }
             }

@@ -19,6 +19,9 @@
  */
 package app.l2nx.highfive.entity.zone;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -33,13 +36,11 @@ import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureZoneEnter;
 import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureZoneExit;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
-import java.util.ArrayList;
-import java.util.Collection;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
@@ -48,21 +49,17 @@ import org.slf4j.LoggerFactory;
  * @author durgus
  */
 @Slf4j
+@SingleWriter
 public abstract class ZoneType extends ListenersContainer {
-
-    @Getter
     private final int id;
 
-    @Getter
-    protected ZoneForm zone;
+    private ZoneForm zone;
 
-    private final Map<Integer, Creature> characterList = new ConcurrentHashMap<>();
+    // By object id in entry order, so walks over the creatures inside follow the same order on every run.
+    private final Int2ObjectLinkedOpenHashMap<Creature> characters = new Int2ObjectLinkedOpenHashMap<>();
 
-    /** Parameters to affect specific characters */
     protected boolean checkAffected = false;
 
-    @Getter
-    @Setter
     private String name = null;
 
     private int minLevel;
@@ -71,24 +68,15 @@ public abstract class ZoneType extends ListenersContainer {
     private int[] classIds;
     private char classType;
 
-    @Getter
-    private InstanceType targetType = InstanceType.Creature; // Default all chars.
-
+    private InstanceType targetType = InstanceType.Creature;
     private boolean allowStore;
 
-    @Getter
-    @Setter
     private boolean enabled;
 
-    @Getter
     private AbstractZoneSettings settings;
 
-    @Getter
-    @Setter
     private int instanceTemplateId = -1;
 
-    @Getter
-    @Setter
     private int instanceId = -1;
 
     protected ZoneType(int id) {
@@ -102,29 +90,94 @@ public abstract class ZoneType extends ListenersContainer {
         enabled = true;
     }
 
-    /**
-     * Setup new parameters for this zone
-     * @param name
-     * @param value
-     */
+    protected ZoneType(int id, InstanceType targetType) {
+        this(id);
+        this.targetType = targetType;
+        checkAffected = true;
+    }
+
+    /** A zone that keeps state in settings, which a zone reload hands over to the zone that replaces it. */
+    protected ZoneType(int id, AbstractZoneSettings settings) {
+        this(id);
+        this.settings = settings;
+    }
+
+    public int getId() {
+        WorldPartition.checkOwner();
+        return id;
+    }
+
+    public ZoneForm getZone() {
+        WorldPartition.checkOwner();
+        return zone;
+    }
+
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public void setName(String name) {
+        WorldPartition.checkOwner();
+        this.name = name;
+    }
+
+    public boolean isEnabled() {
+        WorldPartition.checkOwner();
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        WorldPartition.checkOwner();
+        this.enabled = enabled;
+    }
+
+    public InstanceType getTargetType() {
+        WorldPartition.checkOwner();
+        return targetType;
+    }
+
+    public AbstractZoneSettings getSettings() {
+        WorldPartition.checkOwner();
+        return settings;
+    }
+
+    /** Unchecked: subclasses read their typed settings from their own checked methods. */
+    protected final AbstractZoneSettings currentSettings() {
+        return settings;
+    }
+
+    public int getInstanceTemplateId() {
+        WorldPartition.checkOwner();
+        return instanceTemplateId;
+    }
+
+    public void setInstanceTemplateId(int instanceTemplateId) {
+        WorldPartition.checkOwner();
+        this.instanceTemplateId = instanceTemplateId;
+    }
+
+    public int getInstanceId() {
+        WorldPartition.checkOwner();
+        return instanceId;
+    }
+
+    public void setInstanceId(int instanceId) {
+        WorldPartition.checkOwner();
+        this.instanceId = instanceId;
+    }
+
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         checkAffected = true;
 
-        // Zone name
         if (name.equals("name")) {
             this.name = value;
-        }
-        // Minimum level
-        else if (name.equals("affectedLvlMin")) {
+        } else if (name.equals("affectedLvlMin")) {
             minLevel = Integer.parseInt(value);
-        }
-        // Maximum level
-        else if (name.equals("affectedLvlMax")) {
+        } else if (name.equals("affectedLvlMax")) {
             maxLevel = Integer.parseInt(value);
-        }
-        // Affected Races
-        else if (name.equals("affectedRace")) {
-            // Create a new array holding the affected race.
+        } else if (name.equals("affectedRace")) {
             if (race == null) {
                 race = new int[1];
                 race[0] = Integer.parseInt(value);
@@ -138,10 +191,7 @@ public abstract class ZoneType extends ListenersContainer {
                 temp[i] = Integer.parseInt(value);
                 race = temp;
             }
-        }
-        // Affected classes
-        else if (name.equals("affectedClassId")) {
-            // Create a new array holding the affected classIds.
+        } else if (name.equals("affectedClassId")) {
             if (classIds == null) {
                 classIds = new int[1];
                 classIds[0] = Integer.parseInt(value);
@@ -155,9 +205,7 @@ public abstract class ZoneType extends ListenersContainer {
                 temp[i] = Integer.parseInt(value);
                 classIds = temp;
             }
-        }
-        // Affected class type
-        else if (name.equals("affectedClassType")) {
+        } else if (name.equals("affectedClassType")) {
             if (value.equals("Fighter")) {
                 classType = 1;
             } else {
@@ -176,10 +224,7 @@ public abstract class ZoneType extends ListenersContainer {
         }
     }
 
-    /**
-     * Parses a parameter the world loop requires positive, such as a recurring task period.
-     * @return the parsed value, or {@code current} when it is zero or negative
-     */
+    /** Returns {@code current} when the parsed value is zero or negative; the world loop needs a positive period. */
     protected int parsePositiveParameter(String name, String value, int current) {
         final int parsed = Integer.parseInt(value);
         if (parsed <= 0) {
@@ -190,12 +235,7 @@ public abstract class ZoneType extends ListenersContainer {
         return parsed;
     }
 
-    /**
-     * @param creature the player to verify.
-     * @return {@code true} if the given character is affected by this zone, {@code false} otherwise.
-     */
     protected boolean isAffected(Creature creature) {
-        // Check instance
         if (instanceTemplateId > 0) {
             final InstanceWorld world = InstanceManager.getInstance().getWorld(creature);
             if ((world != null) && (world.getTemplateId() != instanceTemplateId)) {
@@ -203,22 +243,19 @@ public abstract class ZoneType extends ListenersContainer {
             }
         }
 
-        if (!isEnabled()) {
+        if (!enabled) {
             return false;
         }
 
-        // Check level
         if ((creature.getLevel() < minLevel) || (creature.getLevel() > maxLevel)) {
             return false;
         }
 
-        // Check obj class.
         if (!creature.isInstanceTypes(targetType)) {
             return false;
         }
 
         if (creature.isPlayer()) {
-            // Check class type.
             if (classType != 0) {
                 if (creature.asPlayer().isMageClass()) {
                     if (classType == 1) {
@@ -229,7 +266,6 @@ public abstract class ZoneType extends ListenersContainer {
                 }
             }
 
-            // Check race
             if (race != null) {
                 boolean ok = false;
                 for (int element : race) {
@@ -244,7 +280,6 @@ public abstract class ZoneType extends ListenersContainer {
                 }
             }
 
-            // Check class
             if (classIds != null) {
                 boolean ok = false;
                 for (int clas : classIds) {
@@ -263,11 +298,8 @@ public abstract class ZoneType extends ListenersContainer {
         return true;
     }
 
-    /**
-     * Set the zone for this ZoneType Instance
-     * @param zone
-     */
     public void setZone(ZoneForm zone) {
+        WorldPartition.checkOwner();
         if (this.zone != null) {
             throw new IllegalStateException("Zone already set");
         }
@@ -275,96 +307,90 @@ public abstract class ZoneType extends ListenersContainer {
         this.zone = zone;
     }
 
-    /**
-     * Checks if the given coordinates are within zone's plane
-     * @param x
-     * @param y
-     * @return
-     */
     public boolean isInsideZone(int x, int y) {
-        return isInsideZone(x, y, zone.getHighZ());
+        WorldPartition.checkOwner();
+        return covers(x, y);
     }
 
-    /**
-     * Checks if the given coordinates are within the zone, ignores instanceId check
-     * @param loc
-     * @return
-     */
     public boolean isInsideZone(ILocational loc) {
-        return isInsideZone(loc.getX(), loc.getY(), loc.getZ());
+        WorldPartition.checkOwner();
+        return zone.isInsideZone(loc.getX(), loc.getY(), loc.getZ());
     }
 
-    /**
-     * Checks if the given coordinates are within the zone, ignores instanceId check
-     * @param x
-     * @param y
-     * @param z
-     * @return
-     */
     public boolean isInsideZone(int x, int y, int z) {
+        WorldPartition.checkOwner();
+        return zone.isInsideZone(x, y, z);
+    }
+
+    /** Unchecked: the checked lookups of the region call it for every zone of the region. */
+    final boolean covers(int x, int y) {
+        return zone.isInsideZone(x, y, zone.getHighZ());
+    }
+
+    /** Unchecked: the checked lookups of the region call it for every zone of the region. */
+    final boolean covers(int x, int y, int z) {
         return zone.isInsideZone(x, y, z);
     }
 
     public double getDistanceToZone(int x, int y) {
+        WorldPartition.checkOwner();
         return zone.getDistanceToZone(x, y);
     }
 
     public double getDistanceToZone(WorldObject object) {
+        WorldPartition.checkOwner();
         return zone.getDistanceToZone(object.getX(), object.getY());
     }
 
     public void revalidateInZone(Creature creature) {
-        // If the object is inside the zone...
-        if (isInsideZone(creature)) {
-            // If the character can't be affected by this zone return.
+        WorldPartition.checkOwner();
+        revalidate(creature);
+    }
+
+    /** Unchecked: the region revalidates every zone of the region on each move, after its own check. */
+    final void revalidate(Creature creature) {
+        if (zone.isInsideZone(creature.getX(), creature.getY(), creature.getZ())) {
             if (checkAffected && !isAffected(creature)) {
                 return;
             }
 
-            if (characterList.putIfAbsent(creature.getObjectId(), creature) == null) {
-                // Notify to scripts.
+            if (characters.putIfAbsent(creature.getObjectId(), creature) == null) {
                 if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_ZONE_ENTER, this)) {
                     EventDispatcher.getInstance().notifyEventAsync(new OnCreatureZoneEnter(creature, this), this);
                 }
 
-                // Notify Zone implementation.
                 onEnter(creature);
             }
         } else {
-            removeCharacter(creature);
+            remove(creature);
         }
     }
 
-    /**
-     * Force fully removes a character from the zone Should use during teleport / logoff
-     * @param creature
-     */
     public void removeCharacter(Creature creature) {
-        // Was the character inside this zone?
-        if (characterList.containsKey(creature.getObjectId())) {
-            // Notify to scripts.
+        WorldPartition.checkOwner();
+        remove(creature);
+    }
+
+    /** Unchecked: the region removes a creature from every zone of the region, after its own check. */
+    final void remove(Creature creature) {
+        if (characters.containsKey(creature.getObjectId())) {
             if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_ZONE_EXIT, this)) {
                 EventDispatcher.getInstance().notifyEventAsync(new OnCreatureZoneExit(creature, this), this);
             }
 
-            // Unregister player.
-            characterList.remove(creature.getObjectId());
+            characters.remove(creature.getObjectId());
 
-            // Notify Zone implementation.
             onExit(creature);
         }
     }
 
-    /**
-     * Will scan the zones char list for the character
-     * @param creature
-     * @return
-     */
     public boolean isCharacterInZone(Creature creature) {
-        return characterList.containsKey(creature.getObjectId());
+        WorldPartition.checkOwner();
+        return characters.containsKey(creature.getObjectId());
     }
 
     public void setSettings(AbstractZoneSettings settings) {
+        WorldPartition.checkOwner();
         if (this.settings != null) {
             this.settings.clear();
         }
@@ -376,51 +402,113 @@ public abstract class ZoneType extends ListenersContainer {
 
     protected abstract void onExit(Creature creature);
 
-    public void onDieInside(Creature creature) {}
-
-    public void onReviveInside(Creature creature) {}
-
-    public void onPlayerLoginInside(Player player) {}
-
-    public void onPlayerLogoutInside(Player player) {}
-
-    public Collection<Creature> getCharactersInside() {
-        return characterList.values();
+    public void onDieInside(Creature creature) {
+        WorldPartition.checkOwner();
     }
 
+    public void onReviveInside(Creature creature) {
+        WorldPartition.checkOwner();
+    }
+
+    public void onPlayerLoginInside(Player player) {
+        WorldPartition.checkOwner();
+    }
+
+    public void onPlayerLogoutInside(Player player) {
+        WorldPartition.checkOwner();
+    }
+
+    /** Read-only snapshot in entry order. */
+    public List<Creature> getCharactersInside() {
+        WorldPartition.checkOwner();
+        if (characters.isEmpty()) {
+            return List.of();
+        }
+
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(characters.values()));
+    }
+
+    /** Read-only snapshot of the players inside, in entry order. */
     public List<Player> getPlayersInside() {
-        final List<Player> players = new ArrayList<>();
-        for (Creature ch : characterList.values()) {
-            if ((ch != null) && ch.isPlayer()) {
-                players.add(ch.asPlayer());
+        WorldPartition.checkOwner();
+        final ObjectArrayList<Player> players = new ObjectArrayList<>();
+        collectPlayers(players);
+        return ObjectLists.unmodifiable(players);
+    }
+
+    public void collectCharactersInside(List<? super Creature> into) {
+        WorldPartition.checkOwner();
+        into.addAll(characters.values());
+    }
+
+    public void collectPlayersInside(List<? super Player> into) {
+        WorldPartition.checkOwner();
+        collectPlayers(into);
+    }
+
+    private void collectPlayers(List<? super Player> into) {
+        for (Creature creature : characters.values()) {
+            if (creature.isPlayer()) {
+                into.add(creature.asPlayer());
+            }
+        }
+    }
+
+    public boolean hasCharactersInside() {
+        WorldPartition.checkOwner();
+        return !characters.isEmpty();
+    }
+
+    public boolean hasPlayersInside() {
+        WorldPartition.checkOwner();
+        for (Creature creature : characters.values()) {
+            if (creature.isPlayer()) {
+                return true;
             }
         }
 
-        return players;
+        return false;
     }
 
-    /**
-     * Broadcasts packet to all players inside the zone
-     * @param packet
-     */
+    public int getCharacterCount() {
+        WorldPartition.checkOwner();
+        return characters.size();
+    }
+
+    public int getPlayerCount() {
+        WorldPartition.checkOwner();
+        int count = 0;
+        for (Creature creature : characters.values()) {
+            if (creature.isPlayer()) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     public void broadcastPacket(ServerPacket packet) {
-        if (characterList.isEmpty()) {
+        WorldPartition.checkOwner();
+        if (characters.isEmpty()) {
             return;
         }
 
-        for (Creature creature : characterList.values()) {
-            if ((creature != null) && creature.isPlayer()) {
-                creature.sendPacket(packet);
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayers(players);
+            for (Player player : players) {
+                player.sendPacket(packet);
             }
         }
     }
 
     public void setTargetType(InstanceType type) {
+        WorldPartition.checkOwner();
         targetType = type;
         checkAffected = true;
     }
 
     public boolean getAllowStore() {
+        WorldPartition.checkOwner();
         return allowStore;
     }
 
@@ -430,13 +518,16 @@ public abstract class ZoneType extends ListenersContainer {
     }
 
     public void visualizeZone(int z) {
+        WorldPartition.checkOwner();
         zone.visualizeZone(z);
     }
 
     public void oustAllPlayers() {
-        for (Creature obj : characterList.values()) {
-            if ((obj != null) && obj.isPlayer()) {
-                final Player player = obj.asPlayer();
+        WorldPartition.checkOwner();
+        // A teleport takes the player out of this zone, so the walk runs over a copy.
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayers(players);
+            for (Player player : players) {
                 if (player.isOnline()) {
                     player.teleToLocation(TeleportWhereType.TOWN);
                 }

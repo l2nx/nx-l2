@@ -44,7 +44,6 @@ public class ZoneCuboid extends ZoneForm {
 
     private final Rectangle r;
 
-    @Getter
     private final Location centerPoint;
 
     public ZoneCuboid(int x1, int x2, int y1, int y2, int z1, int z2) {
@@ -112,17 +111,21 @@ public class ZoneCuboid extends ZoneForm {
         final int y1 = r.y;
         final int y2 = r.y + r.height;
 
-        // x1->x2
         for (int x = x1; x < x2; x += STEP) {
             dropDebugItem(Inventory.ADENA_ID, 1, x, y1, z);
             dropDebugItem(Inventory.ADENA_ID, 1, x, y2, z);
         }
 
-        // y1->y2
         for (int y = y1; y < y2; y += STEP) {
             dropDebugItem(Inventory.ADENA_ID, 1, x1, y, z);
             dropDebugItem(Inventory.ADENA_ID, 1, x2, y, z);
         }
+    }
+
+    // A copy, so a caller that moves the point leaves the center of the zone as it is.
+    @Override
+    public Location getCenterPoint() {
+        return centerPoint.clone();
     }
 
     @Override

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HallOfErosionDefence;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
@@ -51,6 +52,7 @@ import app.l2nx.highfive.scripts.quests.Q00697_DefendTheHallOfErosion.Q00697_Def
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -58,13 +60,89 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class HallOfErosionDefence extends Script {
+    @SingleWriter
     protected class HEDWorld extends InstanceWorld {
-        public List<Attackable> npcList = new ArrayList<>();
-        public List<Npc> alivetumor = new ArrayList<>();
-        public List<Npc> deadTumors = new ArrayList<>();
-        protected Npc deadTumor;
-        public long startTime = 0;
-        public ScheduledFuture<?> finishTask = null;
+        private List<Attackable> npcList = new ArrayList<>();
+        private List<Npc> alivetumor = new ArrayList<>();
+        private List<Npc> deadTumors = new ArrayList<>();
+        private Npc deadTumor;
+        private long startTime = 0;
+        private ScheduledFuture<?> finishTask = null;
+
+        public void setNpcList(List<Attackable> npcList) {
+            WorldPartition.checkOwner();
+            this.npcList = npcList;
+        }
+
+        public void addNpcList(Attackable element) {
+            WorldPartition.checkOwner();
+            npcList.add(element);
+        }
+
+        public void addAlivetumor(Npc element) {
+            WorldPartition.checkOwner();
+            alivetumor.add(element);
+        }
+
+        public List<Npc> getDeadTumors() {
+            WorldPartition.checkOwner();
+            return Collections.unmodifiableList(new ArrayList<>(deadTumors));
+        }
+
+        public void addDeadTumors(Npc element) {
+            WorldPartition.checkOwner();
+            deadTumors.add(element);
+        }
+
+        public Npc getDeadTumorsAt(int index) {
+            WorldPartition.checkOwner();
+            return deadTumors.get(index);
+        }
+
+        public boolean isDeadTumorsEmpty() {
+            WorldPartition.checkOwner();
+            return deadTumors.isEmpty();
+        }
+
+        public int getDeadTumorsCount() {
+            WorldPartition.checkOwner();
+            return deadTumors.size();
+        }
+
+        public void clearDeadTumors() {
+            WorldPartition.checkOwner();
+            deadTumors.clear();
+        }
+
+        public Npc getDeadTumor() {
+            WorldPartition.checkOwner();
+            return deadTumor;
+        }
+
+        public void setDeadTumor(Npc deadTumor) {
+            WorldPartition.checkOwner();
+            this.deadTumor = deadTumor;
+        }
+
+        public long getStartTime() {
+            WorldPartition.checkOwner();
+            return startTime;
+        }
+
+        public void setStartTime(long startTime) {
+            WorldPartition.checkOwner();
+            this.startTime = startTime;
+        }
+
+        public ScheduledFuture<?> getFinishTask() {
+            WorldPartition.checkOwner();
+            return finishTask;
+        }
+
+        public void setFinishTask(ScheduledFuture<?> finishTask) {
+            WorldPartition.checkOwner();
+            this.finishTask = finishTask;
+        }
     }
 
     private static final int INSTANCEID = 120;
@@ -298,7 +376,7 @@ public class HallOfErosionDefence extends Script {
         if (checkConditions(player)) {
             world = new HEDWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
-            ((HEDWorld) world).startTime = ClockBridge.gameMillis();
+            ((HEDWorld) world).setStartTime(ClockBridge.gameMillis());
             InstanceManager.getInstance().addWorld(world);
             log.info(
                     "Hall Of Erosion Defence started {} Instance: {} created by player: {}",
@@ -320,8 +398,9 @@ public class HallOfErosionDefence extends Script {
                 world.addAllowed(player);
             }
 
-            ((HEDWorld) world).finishTask =
-                    WorldPartition.loop().schedule(new FinishTask((HEDWorld) world), 20 * 60000, TimeUnit.MILLISECONDS);
+            ((HEDWorld) world)
+                    .setFinishTask(WorldPartition.loop()
+                            .schedule(new FinishTask((HEDWorld) world), 20 * 60000, TimeUnit.MILLISECONDS));
             runTumors((HEDWorld) world);
         }
     }
@@ -329,7 +408,7 @@ public class HallOfErosionDefence extends Script {
     protected void runTumors(HEDWorld world) {
         for (int[] spawn : ROOMS_MOBS) {
             for (int i = 0; i < spawn[6]; i++) {
-                world.npcList = new ArrayList<>();
+                world.setNpcList(new ArrayList<>());
                 final Attackable npc = addSpawn(
                                 spawn[0],
                                 spawn[1],
@@ -349,7 +428,7 @@ public class HallOfErosionDefence extends Script {
                     npc.getSpawn().stopRespawn();
                 }
 
-                world.npcList.add(npc);
+                world.addNpcList(npc);
             }
         }
 
@@ -357,7 +436,7 @@ public class HallOfErosionDefence extends Script {
             for (int i = 0; i < spawn[6]; i++) {
                 final Npc npc = addSpawn(
                         spawn[0], spawn[1], spawn[2], spawn[3], spawn[4], false, 0, false, world.getInstanceId());
-                world.deadTumors.add(npc);
+                world.addDeadTumors(npc);
                 WorldPartition.loop().schedule(new RegenerationCoffinSpawn(npc, world), 1000, TimeUnit.MILLISECONDS);
             }
         }
@@ -385,7 +464,7 @@ public class HallOfErosionDefence extends Script {
                                                 0,
                                                 false,
                                                 world.getInstanceId());
-                                        world.alivetumor.add(npc);
+                                        world.addAlivetumor(npc);
                                     }
                                 }
 
@@ -409,15 +488,15 @@ public class HallOfErosionDefence extends Script {
     }
 
     protected void stopDeadTumors(HEDWorld world) {
-        if (!world.deadTumors.isEmpty()) {
-            for (Npc npc : world.deadTumors) {
+        if (!world.isDeadTumorsEmpty()) {
+            for (Npc npc : world.getDeadTumors()) {
                 if (npc != null) {
                     npc.deleteMe();
                 }
             }
         }
 
-        world.deadTumors.clear();
+        world.clearDeadTumors();
     }
 
     @Override
@@ -427,14 +506,14 @@ public class HallOfErosionDefence extends Script {
             final HEDWorld world = (HEDWorld) tmpworld;
             if (event.startsWith("warp")) {
                 Npc victim = null;
-                victim = world.deadTumor;
+                victim = world.getDeadTumor();
                 if (victim != null) {
-                    world.deadTumors.add(victim);
+                    world.addDeadTumors(victim);
                 }
 
                 player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true);
-                final Location loc =
-                        world.deadTumors.get(getRandom(world.deadTumors.size())).getLocation();
+                final Location loc = world.getDeadTumorsAt(getRandom(world.getDeadTumorsCount()))
+                        .getLocation();
                 if (loc != null) {
                     broadCastPacket(
                             world,
@@ -513,8 +592,8 @@ public class HallOfErosionDefence extends Script {
                 npc.dropItem(player, 13797, getRandom(2, 5));
                 npc.deleteMe();
                 notifyTumorDeath(npc, world);
-                world.deadTumor = addSpawn(TUMOR_DEAD, npc.getLocation(), world.getInstanceId());
-                world.deadTumors.add(world.deadTumor);
+                world.setDeadTumor(addSpawn(TUMOR_DEAD, npc.getLocation(), world.getInstanceId()));
+                world.addDeadTumors(world.getDeadTumor());
                 broadCastPacket(
                         world,
                         new ExShowScreenMessage(
@@ -525,10 +604,10 @@ public class HallOfErosionDefence extends Script {
                 WorldPartition.loop()
                         .schedule(
                                 () -> {
-                                    world.deadTumor.deleteMe();
-                                    final Npc tumor =
-                                            addSpawn(TUMOR_ALIVE, world.deadTumor.getLocation(), world.getInstanceId());
-                                    world.alivetumor.add(tumor);
+                                    world.getDeadTumor().deleteMe();
+                                    final Npc tumor = addSpawn(
+                                            TUMOR_ALIVE, world.getDeadTumor().getLocation(), world.getInstanceId());
+                                    world.addAlivetumor(tumor);
                                     broadCastPacket(
                                             world,
                                             new ExShowScreenMessage(
@@ -584,7 +663,7 @@ public class HallOfErosionDefence extends Script {
 
             for (int i = 0; i < 4; i++) {
                 final Npc worm = addSpawn(18709, npc.getLocation(), world.getInstanceId());
-                world.deadTumors.add(worm);
+                world.addDeadTumors(worm);
             }
         }
     }
@@ -620,7 +699,7 @@ public class HallOfErosionDefence extends Script {
                                     2,
                                     8000));
                     inst.removeNpcs();
-                    if (inst.getPlayers().isEmpty()) {
+                    if (inst.getPlayerCount() == 0) {
                         inst.setDuration(5 * 60000);
                     } else {
                         inst.setDuration(5 * 60000);
@@ -632,9 +711,9 @@ public class HallOfErosionDefence extends Script {
     }
 
     private void conquestConclusion(HEDWorld world) {
-        if (world.finishTask != null) {
-            world.finishTask.cancel(false);
-            world.finishTask = null;
+        if (world.getFinishTask() != null) {
+            world.getFinishTask().cancel(false);
+            world.setFinishTask(null);
         }
 
         broadCastPacket(
@@ -645,7 +724,7 @@ public class HallOfErosionDefence extends Script {
         final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
         if (inst != null) {
             inst.removeNpcs();
-            if (inst.getPlayers().isEmpty()) {
+            if (inst.getPlayerCount() == 0) {
                 inst.setDuration(5 * 60000);
             } else {
                 inst.setDuration(5 * 60000);

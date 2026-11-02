@@ -35,6 +35,7 @@ import app.l2nx.highfive.entity.actor.instance.QuestGuard;
 import app.l2nx.highfive.entity.actor.instance.RaidBoss;
 import app.l2nx.highfive.entity.groups.CommandChannel;
 import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.instancezone.InstanceParameters;
 import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.mechanics.script.InstanceScript;
@@ -54,7 +55,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.scripts.quests.Q10286_ReunionWithSirra.Q10286_ReunionWithSirra;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
-import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -194,7 +194,7 @@ public class IceQueensCastleBattle extends InstanceScript {
         } else {
             final InstanceWorld world = InstanceManager.getInstance().getWorld(npc);
             if (world != null) {
-                final StatSet params = world.getParameters();
+                final InstanceParameters params = world.getParameters();
                 final Npc controller = params.getObject("controller", Npc.class);
                 final Npc freya = params.getObject("freya", Npc.class);
                 switch (event) {
@@ -757,7 +757,7 @@ public class IceQueensCastleBattle extends InstanceScript {
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon, Skill skill) {
         final InstanceWorld world = InstanceManager.getInstance().getWorld(npc);
         if (world != null) {
-            final StatSet params = world.getParameters();
+            final InstanceParameters params = world.getParameters();
             switch (npc.getId()) {
                 case FREYA_THRONE: {
                     final Npc controller = params.getObject("controller", Npc.class);
@@ -1051,7 +1051,7 @@ public class IceQueensCastleBattle extends InstanceScript {
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         final InstanceWorld world = InstanceManager.getInstance().getWorld(npc);
         if (world != null) {
-            final StatSet params = world.getParameters();
+            final InstanceParameters params = world.getParameters();
             final Npc controller = params.getObject("controller", Npc.class);
             switch (npc.getId()) {
                 case GLAKIAS_EASY:

@@ -22,30 +22,22 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
-import java.util.ArrayList;
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.partition.WorldPartition;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * A single NPC entry of a spawn group, holding its quota and one spawn slot per territory.
  * @author Altur
  */
+@SingleWriter
 public class SpawnGroupEntry {
-    @Getter
     private final int total;
-
-    @Getter
     private final int respawnDelay;
-
-    @Getter
     private final int respawnRandom;
-
-    @Getter
-    private final List<Spawn> slots = new ArrayList<>();
-
-    @Getter
-    @Setter
+    private final ObjectArrayList<Spawn> slots = new ObjectArrayList<>(1);
     private int aliveOrReserved = 0;
 
     public SpawnGroupEntry(int total, int respawnDelay, int respawnRandom) {
@@ -54,7 +46,53 @@ public class SpawnGroupEntry {
         this.respawnRandom = respawnRandom;
     }
 
+    public int getTotal() {
+        WorldPartition.checkOwner();
+        return total;
+    }
+
+    public int getRespawnDelay() {
+        WorldPartition.checkOwner();
+        return respawnDelay;
+    }
+
+    public int getRespawnRandom() {
+        WorldPartition.checkOwner();
+        return respawnRandom;
+    }
+
+    public int getAliveOrReserved() {
+        WorldPartition.checkOwner();
+        return aliveOrReserved;
+    }
+
+    public void setAliveOrReserved(int aliveOrReserved) {
+        WorldPartition.checkOwner();
+        this.aliveOrReserved = aliveOrReserved;
+    }
+
     public void addSlot(Spawn spawn) {
+        WorldPartition.checkOwner();
         slots.add(spawn);
+    }
+
+    public List<Spawn> getSlots() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(slots));
+    }
+
+    public int getSlotCount() {
+        WorldPartition.checkOwner();
+        return slots.size();
+    }
+
+    public Spawn getSlot(int index) {
+        WorldPartition.checkOwner();
+        return slots.get(index);
+    }
+
+    public boolean hasSlot(Spawn spawn) {
+        WorldPartition.checkOwner();
+        return slots.contains(spawn);
     }
 }

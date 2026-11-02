@@ -133,7 +133,6 @@ class ClanTableTest {
         set.set("paidUntil", ClockBridgeExtension.WALL_START.toEpochMilli() + 86_400_000L);
         set.set("grade", 1);
         set.set("paid", true);
-        // The hall registers itself as the clan's hideout, which is clan state.
         final AuctionableHall hall = WorldLoopExtension.callInPass(() -> new AuctionableHall(set));
         halls.getClanHalls().put(HALL, hall);
         return hall;
@@ -176,10 +175,12 @@ class ClanTableTest {
         void destroyClan_shouldFreeHallForNpcAuction_whenClanOwnsAuctionableHall() {
             final AuctionableHall hall = hallOwnedByClan();
 
-            WorldLoopExtension.runInPass(() -> table.destroyClan(CLAN_ID));
+            final List<Object> actual = WorldLoopExtension.callInPass(() -> {
+                table.destroyClan(CLAN_ID);
+                return List.of(hall.getOwnerId(), hall.isFree());
+            });
 
-            assertThat(hall.getOwnerId()).isZero();
-            assertThat(hall.isFree()).isTrue();
+            assertThat(actual).containsExactly(0, true);
             assertThat(halls.isFree(HALL)).isTrue();
             assertThat(halls.getClanHalls()).doesNotContainKey(HALL);
             verify(auctions).initNPC(HALL);

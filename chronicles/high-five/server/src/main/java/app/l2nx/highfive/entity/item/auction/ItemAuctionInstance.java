@@ -29,6 +29,7 @@ package app.l2nx.highfive.entity.item.auction;
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
@@ -44,49 +45,42 @@ import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionRow;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 @Slf4j
+@SingleWriter
 public class ItemAuctionInstance {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss dd.MM.yy");
 
     private static final long START_TIME_SPACE = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
     private static final long FINISH_TIME_SPACE = TimeUnit.MILLISECONDS.convert(10, TimeUnit.MINUTES);
 
-    // SQL queries
-
     private final int instanceId;
-    private final Map<Integer, ItemAuction> auctions;
-    private final List<AuctionItem> items;
+    // Load and creation order, which picks the current auction among equal starting times on every run.
+    private final Int2ObjectLinkedOpenHashMap<ItemAuction> auctions = new Int2ObjectLinkedOpenHashMap<>();
+    private final List<AuctionItem> items = new ArrayList<>();
     private final AuctionDateGenerator dateGenerator;
 
-    @Getter
     private ItemAuction currentAuction;
 
-    @Getter
     private ItemAuction nextAuction;
 
     private ScheduledFuture<?> stateTask;
 
     public ItemAuctionInstance(int instanceId, Node node) throws Exception {
         this.instanceId = instanceId;
-        auctions = new HashMap<>();
-        items = new ArrayList<>();
 
         final NamedNodeMap nanode = node.getAttributes();
         final StatSet generatorConfig = new StatSet();
@@ -184,7 +178,18 @@ public class ItemAuctionInstance {
         checkAndSetCurrentAndNextAuction();
     }
 
+    public ItemAuction getCurrentAuction() {
+        WorldPartition.checkOwner();
+        return currentAuction;
+    }
+
+    public ItemAuction getNextAuction() {
+        WorldPartition.checkOwner();
+        return nextAuction;
+    }
+
     public void shutdown() {
+        WorldPartition.checkOwner();
         if (stateTask != null) {
             stateTask.cancel(false);
         }
@@ -308,29 +313,23 @@ public class ItemAuctionInstance {
     }
 
     public ItemAuction getAuction(int auctionId) {
+        WorldPartition.checkOwner();
         return auctions.get(auctionId);
     }
 
+    /**
+     * @return the started and finished auctions the player bid on, in load and creation order
+     */
     public List<ItemAuction> getAuctionsByBidder(int bidderObjId) {
-        final Collection<ItemAuction> auctions = getAuctions();
-        final List<ItemAuction> stack = new ArrayList<>(auctions.size());
-        for (ItemAuction auction : getAuctions()) {
+        WorldPartition.checkOwner();
+        final List<ItemAuction> stack = new ArrayList<>();
+        for (ItemAuction auction : auctions.values()) {
             if ((auction.getAuctionState() != ItemAuctionState.CREATED) && (auction.getBidFor(bidderObjId) != null)) {
                 stack.add(auction);
             }
         }
 
         return stack;
-    }
-
-    public Collection<ItemAuction> getAuctions() {
-        final Collection<ItemAuction> auctions;
-
-        synchronized (this.auctions) {
-            auctions = this.auctions.values();
-        }
-
-        return auctions;
     }
 
     private class ScheduleAuctionTask implements Runnable {
@@ -435,7 +434,7 @@ public class ItemAuctionInstance {
     }
 
     protected void onAuctionFinished(ItemAuction auction) {
-        auction.broadcastToAllBiddersInternal(
+        auction.broadcastToAllBidders(
                 new SystemMessage(SystemMessageId.S1_S_AUCTION_HAS_ENDED).addInt(auction.getAuctionId()));
 
         final ItemAuctionBid bid = auction.getHighestBid();

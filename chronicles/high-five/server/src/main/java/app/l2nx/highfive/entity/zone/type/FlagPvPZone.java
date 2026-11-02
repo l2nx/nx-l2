@@ -22,14 +22,17 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * A zone where PvP flag is automatically enabled.
  * @author Stayway
  */
+@SingleWriter
 public class FlagPvPZone extends ZoneType {
     public FlagPvPZone(int id) {
         super(id);
@@ -59,13 +62,13 @@ public class FlagPvPZone extends ZoneType {
 
     @Override
     public void onDieInside(Creature creature) {
-        // When creature dies inside the zone, treat as if it had exited.
+        WorldPartition.checkOwner();
         onExit(creature);
     }
 
     @Override
     public void onReviveInside(Creature creature) {
-        // When creature revives inside the zone, treat as if it had entered.
+        WorldPartition.checkOwner();
         onEnter(creature);
     }
 }

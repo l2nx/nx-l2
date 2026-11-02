@@ -19,13 +19,16 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * @author UnAfraid
  */
+@SingleWriter
 public class ConditionZone extends ZoneType {
     private boolean NO_ITEM_DROP = false;
     private boolean NO_BOOKMARK = false;
@@ -36,6 +39,7 @@ public class ConditionZone extends ZoneType {
 
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equalsIgnoreCase("NoBookmark")) {
             NO_BOOKMARK = Boolean.parseBoolean(value);
         } else if (name.equalsIgnoreCase("NoItemDrop")) {

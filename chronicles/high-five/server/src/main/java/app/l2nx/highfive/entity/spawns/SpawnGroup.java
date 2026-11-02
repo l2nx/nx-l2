@@ -22,38 +22,28 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
+import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.SpawnGroupTaskManager;
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A group of NPC spawn entries sharing an entry selection policy, the runtime equivalent of a retail npcmaker.<br>
- * Reservations are made under the group monitor and the actual spawning happens outside of it.
+ * A group of NPC spawn entries sharing an entry selection policy, the runtime equivalent of a retail npcmaker.
  * @author Altur
  */
 @Slf4j
+@SingleWriter
 public class SpawnGroup {
-
-    @Getter
     private final String name;
-
-    @Getter
     private final SpawnSelection selection;
-
-    @Getter
     private final int maximumNpc;
-
-    @Getter
-    private final List<SpawnGroupEntry> entries = new ArrayList<>();
-
+    private final ObjectArrayList<SpawnGroupEntry> entries = new ObjectArrayList<>();
     private int aliveOrReserved = 0;
-
-    @Getter
-    @Setter
     private boolean active = true;
 
     public SpawnGroup(String name, SpawnSelection selection, int maximumNpc) {
@@ -62,22 +52,52 @@ public class SpawnGroup {
         this.maximumNpc = maximumNpc;
     }
 
+    public String getName() {
+        WorldPartition.checkOwner();
+        return name;
+    }
+
+    public SpawnSelection getSelection() {
+        WorldPartition.checkOwner();
+        return selection;
+    }
+
+    public int getMaximumNpc() {
+        WorldPartition.checkOwner();
+        return maximumNpc;
+    }
+
+    public boolean isActive() {
+        WorldPartition.checkOwner();
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        WorldPartition.checkOwner();
+        this.active = active;
+    }
+
+    public List<SpawnGroupEntry> getEntries() {
+        WorldPartition.checkOwner();
+        return ObjectLists.unmodifiable(new ObjectArrayList<>(entries));
+    }
+
     public void addEntry(SpawnGroupEntry entry) {
+        WorldPartition.checkOwner();
         entries.add(entry);
     }
 
-    public synchronized int getAliveOrReserved() {
+    public int getAliveOrReserved() {
+        WorldPartition.checkOwner();
         return aliveOrReserved;
     }
 
     /**
-     * Reserves the given amount of units on an entry, honoring the entry quota and the group cap.<br>
      * The group cap is deliberately not checked for RANDOM selection, retail random_spawn never reads it.
-     * @param entry the entry to reserve on
-     * @param count the amount of units to reserve
-     * @return {@code true} when the reservation was made, {@code false} when quota or cap would be exceeded
+     * @return {@code false} when the entry quota or the group cap would be exceeded
      */
-    public synchronized boolean tryReserve(SpawnGroupEntry entry, int count) {
+    public boolean tryReserve(SpawnGroupEntry entry, int count) {
+        WorldPartition.checkOwner();
         if ((selection != SpawnSelection.RANDOM) && (maximumNpc > 0) && ((aliveOrReserved + count) > maximumNpc)) {
             return false;
         }
@@ -91,21 +111,14 @@ public class SpawnGroup {
         return true;
     }
 
-    /**
-     * Releases previously reserved units, used when the actual spawn could not be created.
-     * @param entry the entry to release from
-     * @param count the amount of units to release
-     */
-    public synchronized void release(SpawnGroupEntry entry, int count) {
+    public void release(SpawnGroupEntry entry, int count) {
+        WorldPartition.checkOwner();
         entry.setAliveOrReserved(entry.getAliveOrReserved() - count);
         aliveOrReserved -= count;
     }
 
-    /**
-     * Performs the initial spawn of the group according to its selection policy.
-     * @return the number of NPC units spawned
-     */
     public int initialSpawn() {
+        WorldPartition.checkOwner();
         if (entries.isEmpty()) {
             log.warn("{} has no valid entries to spawn.", name);
             return 0;
@@ -114,9 +127,11 @@ public class SpawnGroup {
         int spawned = 0;
         switch (selection) {
             case ALL: {
-                for (SpawnGroupEntry entry : entries) {
-                    if (tryReserve(entry, entry.getTotal())) {
-                        spawned += spawnUnits(entry, entry.getTotal());
+                try (ScratchBuffers.Snapshot<SpawnGroupEntry> walk = ScratchBuffers.snapshot(entries)) {
+                    for (SpawnGroupEntry entry : walk) {
+                        if (tryReserve(entry, entry.getTotal())) {
+                            spawned += spawnUnits(entry, entry.getTotal());
+                        }
                     }
                 }
                 break;
@@ -148,11 +163,11 @@ public class SpawnGroup {
     }
 
     /**
-     * Handles the death of a unit of this group.<br>
-     * A new entry is rolled ignoring which one died; when the rolled entry is at its quota nothing is replaced this cycle.
-     * @param spawn the spawn slot the dead unit belonged to
+     * A new entry is rolled ignoring which one died; when the rolled entry is at its quota nothing is replaced this
+     * cycle.
      */
     public void onUnitDeath(Spawn spawn) {
+        WorldPartition.checkOwner();
         if (selection == SpawnSelection.ALL) {
             // ALL slots respawn themselves with their fixed species, the unit stays reserved.
             return;
@@ -163,10 +178,8 @@ public class SpawnGroup {
             return;
         }
 
-        synchronized (this) {
-            deadEntry.setAliveOrReserved(deadEntry.getAliveOrReserved() - 1);
-            aliveOrReserved--;
-        }
+        deadEntry.setAliveOrReserved(deadEntry.getAliveOrReserved() - 1);
+        aliveOrReserved--;
 
         if (!active) {
             // Deactivated groups keep their census truthful but stop replacing dead units.
@@ -191,30 +204,21 @@ public class SpawnGroup {
         }
     }
 
-    /**
-     * @param spawn the spawn slot to look up
-     * @return the entry owning the given slot, or {@code null} when it belongs to another group
-     */
+    /** @return {@code null} when the slot belongs to another group */
     public SpawnGroupEntry getEntryBySlot(Spawn spawn) {
+        WorldPartition.checkOwner();
         for (SpawnGroupEntry entry : entries) {
-            for (Spawn slot : entry.getSlots()) {
-                // Identity, not Location equality: slot coordinates mutate and can coincide.
-                if (slot == spawn) {
-                    return entry;
-                }
+            if (entry.hasSlot(spawn)) {
+                return entry;
             }
         }
 
         return null;
     }
 
-    /**
-     * Materializes the given amount of already reserved units of an entry, rolling a territory slot per unit.
-     * @param entry the entry to spawn from
-     * @param count the amount of units to spawn
-     * @return the number of NPC units spawned
-     */
+    /** Materializes already reserved units, rolling a territory slot per unit. */
     public int spawnUnits(SpawnGroupEntry entry, int count) {
+        WorldPartition.checkOwner();
         if (!active) {
             // A pending replacement dequeued while the group was being stopped must not materialize.
             release(entry, count);
@@ -222,9 +226,8 @@ public class SpawnGroup {
         }
 
         int spawned = 0;
-        final List<Spawn> slots = entry.getSlots();
         for (int i = 0; i < count; i++) {
-            final Spawn slot = slots.get(ClockBridge.random().nextInt(slots.size()));
+            final Spawn slot = entry.getSlot(ClockBridge.random().nextInt(entry.getSlotCount()));
             if (slot.doSpawn(false) == null) {
                 release(entry, 1);
             } else {

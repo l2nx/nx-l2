@@ -19,26 +19,35 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.engine.core.loop.SingleWriter;
+import app.l2nx.highfive.entity.ScratchBuffers;
+import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneRespawn;
-import lombok.Getter;
+import app.l2nx.highfive.partition.WorldPartition;
 
 /**
  * based on Kerberos work for custom CastleTeleportZone
  * @author Nyaran
  */
+@SingleWriter
 public class ResidenceTeleportZone extends ZoneRespawn {
-    @Getter
     private int residenceId;
 
     public ResidenceTeleportZone(int id) {
         super(id);
     }
 
+    public int getResidenceId() {
+        WorldPartition.checkOwner();
+        return residenceId;
+    }
+
     @Override
     public void setParameter(String name, String value) {
+        WorldPartition.checkOwner();
         if (name.equals("residenceId")) {
             residenceId = Integer.parseInt(value);
         } else {
@@ -48,19 +57,23 @@ public class ResidenceTeleportZone extends ZoneRespawn {
 
     @Override
     protected void onEnter(Creature creature) {
-        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, true); // FIXME: Custom ?
+        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, true);
     }
 
     @Override
     protected void onExit(Creature creature) {
-        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, false); // FIXME: Custom ?
+        creature.setInsideZone(ZoneId.NO_SUMMON_FRIEND, false);
     }
 
     @Override
     public void oustAllPlayers() {
-        for (Player player : getPlayersInside()) {
-            if ((player != null) && player.isOnline()) {
-                player.teleToLocation(getSpawnLoc(), 200);
+        WorldPartition.checkOwner();
+        try (Snapshot<Player> players = ScratchBuffers.empty()) {
+            collectPlayersInside(players);
+            for (Player player : players) {
+                if (player.isOnline()) {
+                    player.teleToLocation(getSpawnLoc(), 200);
+                }
             }
         }
     }

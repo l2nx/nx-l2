@@ -275,7 +275,7 @@ public class Antharas extends Script {
                     htmlText = "13001-01.html";
                 } else if (status == STATUS_IN_FIGHT) {
                     htmlText = "13001-02.html";
-                } else if (ANTHARAS_NEST_ZONE.getPlayersInside().size() >= MAX_PEOPLE) {
+                } else if (ANTHARAS_NEST_ZONE.getPlayerCount() >= MAX_PEOPLE) {
                     htmlText = "13001-04.html";
                 } else if (player.isInParty()) {
                     final Party party = player.getParty();
@@ -287,9 +287,7 @@ public class Antharas extends Script {
                         htmlText = "13001-05.html";
                     } else if (!hasQuestItems(player, ANTHARAS_STONE_ITEM_ID)) {
                         htmlText = "13001-03.html";
-                    } else if (group.getMemberCount()
-                            > (MAX_PEOPLE
-                                    - ANTHARAS_NEST_ZONE.getPlayersInside().size())) {
+                    } else if (group.getMemberCount() > (MAX_PEOPLE - ANTHARAS_NEST_ZONE.getPlayerCount())) {
                         htmlText = "13001-04.html";
                     } else {
                         try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
