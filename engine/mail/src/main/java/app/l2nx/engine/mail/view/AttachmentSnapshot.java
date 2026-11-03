@@ -17,6 +17,8 @@ import lombok.Builder;
  * @param elements {@code null} for an item without attributes
  * @param enchantOptions at most three, in their order on the item
  */
+// TODO: compose the common item snapshot of the gs-adapter api (object id, template, count, enchant, attributes,
+//  augmentation) plus slot and the fields the mail packets need (l2nx/nx-l2#188).
 @Builder(toBuilder = true)
 public record AttachmentSnapshot(
         int slot,
