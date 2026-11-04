@@ -153,19 +153,30 @@ class MailDecodersTest {
         }
 
         @Test
-        void deleteReceivedPost_shouldBeMalformed_whenOneNumberWasNeverGiven() {
-            final RequestDeleteReceivedPost packet = new RequestDeleteReceivedPost(List.of(RECEIVED_NUMBER, UNKNOWN));
-
-            assertThatThrownBy(() -> decode(packet::encode, MailDecoders::deleteReceivedPost))
-                    .isInstanceOf(PacketDecodeException.class);
-        }
-
-        @Test
         void sentPost_shouldBeMalformed_whenTheBoxWasShownAgainWithoutTheMail() {
             P267MailNumbers.of(connection).show(MailBox.SENT, List.of());
 
             assertThatThrownBy(() -> decode(new RequestSentPost(SENT_NUMBER)::encode, MailDecoders::sentPost))
                     .isInstanceOf(PacketDecodeException.class);
+        }
+    }
+
+    @Nested
+    class Delete {
+        @Test
+        void deleteReceivedPost_shouldDeleteTheKnownMails_whenOneNumberWasNeverGiven() {
+            final RequestDeleteReceivedPost packet = new RequestDeleteReceivedPost(List.of(UNKNOWN, RECEIVED_NUMBER));
+
+            assertThat(decode(packet::encode, MailDecoders::deleteReceivedPost))
+                    .isEqualTo(new DeleteReceivedMail(List.of(RECEIVED)));
+        }
+
+        @Test
+        void deleteSentPost_shouldDeleteNothing_whenTheBoxWasShownAgainWithoutTheMails() {
+            P267MailNumbers.of(connection).show(MailBox.SENT, List.of());
+            final RequestDeleteSentPost packet = new RequestDeleteSentPost(List.of(SENT_NUMBER, UNKNOWN));
+
+            assertThat(decode(packet::encode, MailDecoders::deleteSentPost)).isEqualTo(new DeleteSentMail(List.of()));
         }
     }
 

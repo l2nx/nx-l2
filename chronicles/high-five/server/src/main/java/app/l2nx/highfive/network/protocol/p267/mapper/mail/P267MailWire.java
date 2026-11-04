@@ -2,17 +2,20 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.p267.mapper;
+package app.l2nx.highfive.network.protocol.p267.mapper.mail;
 
 import app.l2nx.engine.mail.MailType;
 import app.l2nx.engine.mail.view.AttachmentSnapshot;
 import app.l2nx.engine.mail.view.Augmentation;
 import app.l2nx.engine.mail.view.Elements;
+import app.l2nx.engine.mail.view.MailSummary;
+import app.l2nx.highfive.character.CharacterService;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.holders.ItemInfo;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.logging.RateLimitedLog;
+import app.l2nx.network.codec.Frames;
 import app.l2nx.protocol.game.p267.serverpackets.ItemBlock;
 import app.l2nx.protocol.game.p267.serverpackets.PostSender;
 import java.time.Instant;
@@ -25,11 +28,12 @@ final class P267MailWire {
     private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
     private static final int AUGMENTATION_OPTION_BITS = 16;
     private static final int AUGMENTATION_OPTION_MASK = 0xFFFF;
-    /**
-     * A full box of 240 mails with 128-character subjects outgrows the 65535-byte frame; 96 characters keep the list of
-     * either box inside it with 16-character names.
-     */
-    static final int LIST_SUBJECT_CHARS = 96;
+    // Either list frame opens with its length, the extended opcode, the server time and the mail count.
+    private static final int LIST_HEAD_BYTES = Frames.HEADER + 3 + (2 * Integer.BYTES);
+    private static final int LIST_BUDGET = Frames.MAX_LENGTH - LIST_HEAD_BYTES;
+    static final int RECEIVED_LIST_MAIL_BYTES = 9 * Integer.BYTES;
+    static final int SENT_LIST_MAIL_BYTES = 6 * Integer.BYTES;
+    static final int MIN_LIST_SUBJECT_CHARS = 16;
 
     private P267MailWire() {}
 
@@ -41,14 +45,38 @@ final class P267MailWire {
         };
     }
 
-    static String listSubject(String subject) {
-        if ((subject == null) || (subject.length() <= LIST_SUBJECT_CHARS)) {
+    static int listSubjectChars(List<MailSummary> mails, int mailBytes) {
+        if (mails.isEmpty()) {
+            return 0;
+        }
+        long left = LIST_BUDGET;
+        for (MailSummary mail : mails) {
+            final String name = mail.counterpartName();
+            left -= mailBytes + stringBytes(0) + stringBytes((name == null) ? 0 : name.length());
+        }
+        return (int) Math.max(0, left / ((long) Character.BYTES * mails.size()));
+    }
+
+    static int maxListMails() {
+        return LIST_BUDGET
+                / (Math.max(RECEIVED_LIST_MAIL_BYTES, SENT_LIST_MAIL_BYTES)
+                        + stringBytes(MIN_LIST_SUBJECT_CHARS)
+                        + stringBytes(CharacterService.MAX_NAME_LENGTH));
+    }
+
+    /**
+     * @return {@code null} when nothing of the subject is left
+     */
+    static String listSubject(String subject, int chars) {
+        if ((subject == null) || (subject.length() <= chars)) {
             return subject;
         }
-        final int end = Character.isHighSurrogate(subject.charAt(LIST_SUBJECT_CHARS - 1))
-                ? (LIST_SUBJECT_CHARS - 1)
-                : LIST_SUBJECT_CHARS;
-        return subject.substring(0, end);
+        final int end = ((chars > 0) && Character.isHighSurrogate(subject.charAt(chars - 1))) ? (chars - 1) : chars;
+        return (end == 0) ? null : subject.substring(0, end);
+    }
+
+    private static int stringBytes(int chars) {
+        return Character.BYTES * (chars + 1);
     }
 
     static int unixSeconds(Instant instant) {

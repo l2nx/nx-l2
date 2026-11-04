@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.p267.mapper;
+package app.l2nx.highfive.network.protocol.p267.mapper.mail;
 
 import app.l2nx.engine.mail.view.MailBox;
 import app.l2nx.engine.mail.view.MailSummary;
@@ -10,6 +10,7 @@ import app.l2nx.engine.mail.view.SentMailList;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.P267MailNumbers;
+import app.l2nx.highfive.network.protocol.p267.mapper.OutboundMapper;
 import app.l2nx.protocol.game.p267.serverpackets.ExShowSentPostList;
 import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 import java.util.ArrayList;
@@ -27,11 +28,12 @@ public final class SentMailListMapper implements OutboundMapper<SentMailList> {
         final int[] numbers = P267MailNumbers.of(viewer)
                 .show(MailBox.SENT, summaries.stream().map(MailSummary::mailId).toList());
         final List<ExShowSentPostList.Mail> mails = new ArrayList<>(summaries.size());
+        final int subjectChars = P267MailWire.listSubjectChars(summaries, P267MailWire.SENT_LIST_MAIL_BYTES);
         for (int i = 0; i < numbers.length; i++) {
             final MailSummary mail = summaries.get(i);
             mails.add(ExShowSentPostList.Mail.builder()
                     .mailId(numbers[i])
-                    .subject(P267MailWire.listSubject(mail.subject()))
+                    .subject(P267MailWire.listSubject(mail.subject(), subjectChars))
                     .receiverName(mail.counterpartName())
                     .codPending(mail.codPending())
                     .expiresAt(P267MailWire.unixSeconds(mail.expiresAt()))

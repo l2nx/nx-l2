@@ -33,7 +33,7 @@ public final class MessageShownMapper implements OutboundMapper<MessageShown> {
         return map(P267Messages.id(event.key()), event.params(), viewer);
     }
 
-    static GameServerPacket map(SystemMessageId id, List<MessageParam> params, GameClient viewer) {
+    public static GameServerPacket map(SystemMessageId id, List<MessageParam> params, GameClient viewer) {
         final SystemMessage message = new SystemMessage(id);
         for (MessageParam param : params) {
             switch (param) {

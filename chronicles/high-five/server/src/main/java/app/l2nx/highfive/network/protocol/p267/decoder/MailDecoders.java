@@ -18,6 +18,7 @@ import app.l2nx.engine.mail.command.ReturnMail;
 import app.l2nx.engine.mail.command.SendMail;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.p267.P267MailNumbers;
+import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.codec.PacketDecodeException;
 import app.l2nx.protocol.game.p267.clientpackets.RequestCancelPostAttachment;
 import app.l2nx.protocol.game.p267.clientpackets.RequestDeleteReceivedPost;
@@ -34,12 +35,16 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The client names a mail by the session-local number the mappers gave it; a number this session never gave is a
- * malformed request and is dropped as a decode error.
+ * malformed request and is dropped as a decode error, except in a delete, which skips unknown numbers.
  */
+@Slf4j
 public final class MailDecoders {
+    private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
+
     private MailDecoders() {}
 
     public static Object postItemList(ByteBuf frame, GameConnection connection) {
@@ -115,17 +120,24 @@ public final class MailDecoders {
         final P267MailNumbers table = P267MailNumbers.of(connection);
         final List<UUID> mails = new ArrayList<>(numbers.size());
         for (int number : numbers) {
-            mails.add(resolve(table, number));
+            final UUID mail = table.mail(number);
+            if (mail != null) {
+                mails.add(mail);
+            }
+        }
+        final int unknown = numbers.size() - mails.size();
+        if ((unknown > 0) && RATE.tryAcquire("mail-delete-unknown-number")) {
+            log.debug(
+                    "Dropped {} unknown mail numbers of {} from a delete by {}",
+                    unknown,
+                    numbers.size(),
+                    connection.client());
         }
         return mails;
     }
 
     private static UUID mail(GameConnection connection, int number) {
-        return resolve(P267MailNumbers.of(connection), number);
-    }
-
-    private static UUID resolve(P267MailNumbers table, int number) {
-        final UUID mail = table.mail(number);
+        final UUID mail = P267MailNumbers.of(connection).mail(number);
         if (mail == null) {
             throw new PacketDecodeException("Unknown mail number " + number);
         }

@@ -6,6 +6,16 @@ package app.l2nx.highfive.network.protocol.p267.mapper;
 
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.MailArrivedMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.MailDoneMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.MailRefusedMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.MailSentMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.MailStateChangedMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.MailableItemsMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.ReceivedMailListMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.ReceivedMailOpenedMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.SentMailListMapper;
+import app.l2nx.highfive.network.protocol.p267.mapper.mail.SentMailOpenedMapper;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 import io.netty.buffer.ByteBuf;

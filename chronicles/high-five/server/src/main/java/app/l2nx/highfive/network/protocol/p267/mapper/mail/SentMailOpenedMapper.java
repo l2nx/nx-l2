@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.p267.mapper;
+package app.l2nx.highfive.network.protocol.p267.mapper.mail;
 
 import app.l2nx.engine.mail.view.MailBox;
 import app.l2nx.engine.mail.view.MailView;
@@ -10,6 +10,7 @@ import app.l2nx.engine.mail.view.SentMailOpened;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.p267.P267MailNumbers;
+import app.l2nx.highfive.network.protocol.p267.mapper.OutboundMapper;
 import app.l2nx.protocol.game.p267.serverpackets.ExReplySentPost;
 import app.l2nx.protocol.game.p267.serverpackets.GameServerPacket;
 

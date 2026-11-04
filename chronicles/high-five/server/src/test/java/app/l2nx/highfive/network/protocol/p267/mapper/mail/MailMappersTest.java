@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.p267.mapper;
+package app.l2nx.highfive.network.protocol.p267.mapper.mail;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -43,6 +43,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.P267MailNumbers;
+import app.l2nx.highfive.network.protocol.p267.mapper.P267Mappers;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.test.GoldenBytes;
 import app.l2nx.protocol.game.p267.serverpackets.ExChangePostState;
@@ -68,6 +69,7 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -78,6 +80,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 
 @ExtendWith(ClockBridgeExtension.class)
@@ -222,39 +225,64 @@ class MailMappersTest {
 
     @Nested
     class FullBox {
-        private static final int MAILS = 240;
+        private static final int RETAIL_LIMIT = 240;
         private static final String SUBJECT = "s".repeat(128);
         private static final String NAME = "n".repeat(16);
 
-        @Test
-        void serialize_shouldFitAFullReceivedBoxInOneFrame_whenEverySubjectIsAtItsLimit() {
-            final ReceivedMailList event = new ReceivedMailList(fullBox());
+        static IntStream boxSizes() {
+            return IntStream.of(RETAIL_LIMIT, P267MailWire.maxListMails());
+        }
 
-            assertThat(((ExShowReceivedPostList) new ReceivedMailListMapper().map(event, viewer)).mails())
-                    .allSatisfy(mail -> assertThat(mail.subject()).hasSize(P267MailWire.LIST_SUBJECT_CHARS));
+        @ParameterizedTest(name = "{0} mails")
+        @MethodSource("boxSizes")
+        void serialize_shouldFitAFullReceivedBoxInOneFrame_whenEverySubjectIsAtItsLimit(int size) {
+            final ReceivedMailList event = new ReceivedMailList(fullBox(size));
+
+            assertThat(frameBytes(P267Mappers.serialize(event, viewer, UnpooledByteBufAllocator.DEFAULT)))
+                    .isLessThanOrEqualTo(MAX_FRAME);
+        }
+
+        @ParameterizedTest(name = "{0} mails")
+        @MethodSource("boxSizes")
+        void serialize_shouldFitAFullSentBoxInOneFrame_whenEverySubjectIsAtItsLimit(int size) {
+            final SentMailList event = new SentMailList(fullBox(size));
+
             assertThat(frameBytes(P267Mappers.serialize(event, viewer, UnpooledByteBufAllocator.DEFAULT)))
                     .isLessThanOrEqualTo(MAX_FRAME);
         }
 
         @Test
-        void serialize_shouldFitAFullSentBoxInOneFrame_whenEverySubjectIsAtItsLimit() {
-            final SentMailList event = new SentMailList(fullBox());
+        void map_shouldCutEverySubjectAlike_whenTheRetailBoxIsFull() {
+            final ReceivedMailList event = new ReceivedMailList(fullBox(RETAIL_LIMIT));
 
-            assertThat(frameBytes(P267Mappers.serialize(event, viewer, UnpooledByteBufAllocator.DEFAULT)))
-                    .isLessThanOrEqualTo(MAX_FRAME);
+            assertThat(((ExShowReceivedPostList) new ReceivedMailListMapper().map(event, viewer)).mails())
+                    .allSatisfy(mail -> assertThat(mail.subject()).hasSize(100));
+        }
+
+        @Test
+        void map_shouldKeepTheWholeSubject_whenTheListHasRoomForIt() {
+            final ReceivedMailList event = new ReceivedMailList(fullBox(10));
+
+            assertThat(((ExShowReceivedPostList) new ReceivedMailListMapper().map(event, viewer)).mails())
+                    .allSatisfy(mail -> assertThat(mail.subject()).isEqualTo(SUBJECT));
         }
 
         @Test
         void listSubject_shouldNotSplitASurrogatePair() {
-            final String head = "a".repeat(P267MailWire.LIST_SUBJECT_CHARS - 1);
+            final String head = "a".repeat(9);
             final String subject = head + new String(Character.toChars(0x1F600)) + "tail";
 
-            assertThat(P267MailWire.listSubject(subject)).isEqualTo(head);
+            assertThat(P267MailWire.listSubject(subject, 10)).isEqualTo(head);
         }
 
-        private static List<MailSummary> fullBox() {
-            final List<MailSummary> mails = new ArrayList<>(MAILS);
-            for (int i = 0; i < MAILS; i++) {
+        @Test
+        void listSubject_shouldBeNull_whenNothingOfTheSubjectIsLeft() {
+            assertThat(P267MailWire.listSubject(SUBJECT, 0)).isNull();
+        }
+
+        private static List<MailSummary> fullBox(int size) {
+            final List<MailSummary> mails = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
                 mails.add(SUMMARY.toBuilder()
                         .mailId(new UUID(FIRST.getMostSignificantBits(), i))
                         .subject(SUBJECT)
