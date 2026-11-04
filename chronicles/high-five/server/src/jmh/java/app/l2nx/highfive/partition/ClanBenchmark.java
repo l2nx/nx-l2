@@ -123,7 +123,7 @@ public class ClanBenchmark {
 
     @Benchmark
     public ClanMember memberById() {
-        return clan.getClanMember(FIRST_ID + (cursor++ % MEMBERS));
+        return clan.getClanMember(FIRST_ID + Math.floorMod(cursor++, MEMBERS));
     }
 
     @Benchmark
@@ -161,6 +161,6 @@ public class ClanBenchmark {
 
     @Benchmark
     public boolean war() {
-        return clan.isAtWarWith(100 + (cursor++ % (WARS * 2)));
+        return clan.isAtWarWith(100 + Math.floorMod(cursor++, WARS * 2));
     }
 }

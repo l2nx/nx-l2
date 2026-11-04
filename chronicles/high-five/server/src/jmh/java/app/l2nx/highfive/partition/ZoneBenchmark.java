@@ -12,6 +12,7 @@ import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.LoopBinding;
 import app.l2nx.engine.core.partition.PartitionRuntime;
 import app.l2nx.highfive.clock.FixedClockBinding;
+import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.zone.ZoneRegion;
@@ -64,11 +65,14 @@ public class ZoneBenchmark {
     private static final int NPC_ID = 20_545;
     private static final int INSIDE_X = 1_000;
     private static final int OUTSIDE_X = 20_000;
+    private static final int Y = 1_000;
 
     private Loop previous;
     private FixedClockBinding clockBinding;
     private ZoneRegion region;
-    private WalkingMonster creature;
+    private Attackable creature;
+    private Location inside;
+    private Location outside;
 
     // JMH runs a thread-scoped setup on the benchmark thread, which so owns the world loop.
     @Setup
@@ -101,8 +105,11 @@ public class ZoneBenchmark {
         final NpcTemplate template = new NpcTemplate(new StatSet(Map.of("id", NPC_ID, "baseHpMax", 1_000)));
         template.setSkills(Map.of());
         template.setParameters(new StatSet());
-        creature = new WalkingMonster(template);
-        creature.walkTo(OUTSIDE_X);
+        creature = new Attackable(template);
+        inside = new Location(INSIDE_X, Y, 0);
+        outside = new Location(OUTSIDE_X, Y, 0);
+        // Creature.setXYZ would load every datapack zone via the zone manager; setLocation avoids that.
+        creature.setLocation(outside);
     }
 
     @TearDown
@@ -114,50 +121,21 @@ public class ZoneBenchmark {
     /** Walks in, entering four zones, and out again, leaving them: two revalidations. */
     @Benchmark
     public void revalidateEnterLeave() {
-        creature.walkTo(INSIDE_X);
+        creature.setLocation(inside);
         region.revalidateZones(creature);
-        creature.walkTo(OUTSIDE_X);
+        creature.setLocation(outside);
         region.revalidateZones(creature);
     }
 
     /** A move that stays inside the same four zones, the common case: one revalidation. */
     @Benchmark
     public void revalidateStay() {
-        creature.walkTo(INSIDE_X);
+        creature.setLocation(inside);
         region.revalidateZones(creature);
     }
 
     private static void addZone(ZoneRegion region, ZoneType zone, ZoneCuboid shape) {
         zone.setZone(shape);
         region.addZone(zone);
-    }
-
-    // Creature.setXYZ asks the zone manager for the region, which loads every datapack zone; the benchmark moves the
-    // monster by its coordinates instead and revalidates its one region itself.
-    private static final class WalkingMonster extends Attackable {
-        private int x;
-
-        private WalkingMonster(NpcTemplate template) {
-            super(template);
-        }
-
-        private void walkTo(int newX) {
-            x = newX;
-        }
-
-        @Override
-        public int getX() {
-            return x;
-        }
-
-        @Override
-        public int getY() {
-            return 1_000;
-        }
-
-        @Override
-        public int getZ() {
-            return 0;
-        }
     }
 }
