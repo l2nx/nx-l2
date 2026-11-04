@@ -20,11 +20,13 @@ import app.l2nx.engine.core.loop.Loop;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 @ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
@@ -46,22 +49,30 @@ import org.junit.jupiter.params.provider.MethodSource;
 class AbstractResidenceFunctionTest {
     private static final int TYPE = 3;
     private static final int LEASE = 1_000;
-    private static final int TEMP_FEE = 300;
     private static final long RATE = 86_400_000L;
 
     private final ItemContainer warehouse = mock(ItemContainer.class);
+    private final Item adena = mock(Item.class);
 
     static final class TestFunction extends AbstractResidenceFunction {
         private final boolean owned;
         private final ItemContainer warehouse;
         final List<ResidenceFunction> saved = new ArrayList<>();
         int removals;
+        int failingSaves;
+        int saveAttempts;
+        boolean failingRemoval;
 
         TestFunction(boolean owned, ItemContainer warehouse, long endTime, boolean fromWarehouse) {
-            super(TYPE, 1, LEASE, TEMP_FEE, RATE, endTime);
+            super(TYPE, 1, LEASE, RATE, endTime);
             this.owned = owned;
             this.warehouse = warehouse;
             startFee(fromWarehouse);
+        }
+
+        @Override
+        protected int residenceId() {
+            return 9;
         }
 
         @Override
@@ -76,12 +87,21 @@ class AbstractResidenceFunctionTest {
 
         @Override
         protected void save(ResidenceFunction function) {
+            saveAttempts++;
+            if (failingSaves > 0) {
+                failingSaves--;
+                throw new DataAccessResourceFailureException("save failed");
+            }
+
             saved.add(function);
         }
 
         @Override
         protected void removeUnpaid() {
             removals++;
+            if (failingRemoval) {
+                throw new DataAccessResourceFailureException("delete failed");
+            }
         }
     }
 
@@ -137,7 +157,7 @@ class AbstractResidenceFunctionTest {
     class ChargeFee {
         @Test
         void chargeFee_shouldTakeTheLeaseRenewAndStore_whenTheWarehousePays() {
-            when(warehouse.getAdena()).thenReturn((long) LEASE);
+            whenTheWarehousePays();
             final TestFunction function =
                     WorldLoopExtension.callInPass(() -> new TestFunction(true, warehouse, 0, true));
 
@@ -151,18 +171,92 @@ class AbstractResidenceFunctionTest {
         }
 
         @Test
-        void chargeFee_shouldTakeTheTempFee_whenAnUpgradeRenewsFirst() {
-            when(warehouse.getAdena()).thenReturn((long) LEASE);
-            WorldLoopExtension.runInPass(() -> new TestFunction(true, warehouse, -1, true));
+        void chargeFee_shouldRenewForFree_whenAnUpgradeRenewsFirst() {
+            final TestFunction function =
+                    WorldLoopExtension.callInPass(() -> new TestFunction(true, warehouse, -1, true));
 
             WorldLoopExtension.passAfter(Duration.ofMillis(1));
 
-            verify(warehouse).destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, TEMP_FEE, null, null);
+            assertThat(function.saved).hasSize(1);
+            assertThat(function.removals).isZero();
+            verify(warehouse, never()).destroyItemByItemId(any(), anyInt(), anyLong(), any(), any());
         }
 
         @Test
-        void chargeFee_shouldRemoveTheFunction_whenTheWarehouseCannotPay() {
-            when(warehouse.getAdena()).thenReturn((long) LEASE - 1);
+        void chargeFee_shouldKeepTheRenewalInMemoryWithoutRetrying_whenTheSaveFails() {
+            whenTheWarehousePays();
+            final TestFunction function = WorldLoopExtension.callInPass(() -> {
+                final TestFunction created = new TestFunction(true, warehouse, 0, true);
+                created.failingSaves = 1;
+                return created;
+            });
+
+            WorldLoopExtension.passAfter(Duration.ofMillis(1));
+            WorldLoopExtension.passAfter(Duration.ofMinutes(5));
+
+            verify(warehouse, times(1)).destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null);
+            assertThat(function.saveAttempts).isOne();
+            assertThat(WorldLoopExtension.callInPass(function::getEndTime))
+                    .isGreaterThan(ClockBridgeExtension.WALL_START.toEpochMilli());
+        }
+
+        @Test
+        void chargeFee_shouldStoreTheNewerEndTimeOnTheNextCharge_whenTheSaveFailed() {
+            whenTheWarehousePays();
+            final TestFunction function = WorldLoopExtension.callInPass(() -> {
+                final TestFunction created = new TestFunction(true, warehouse, 0, true);
+                created.failingSaves = 1;
+                return created;
+            });
+            WorldLoopExtension.passAfter(Duration.ofMillis(1));
+
+            WorldLoopExtension.passAfter(Duration.ofMillis(RATE));
+
+            verify(warehouse, times(2)).destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null);
+            assertThat(function.saved)
+                    .singleElement()
+                    .extracting(ResidenceFunction::endTime)
+                    .isEqualTo(Instant.ofEpochMilli(WorldLoopExtension.callInPass(function::getEndTime)));
+        }
+
+        @Test
+        void chargeFee_shouldRetryTheCharge_whenTakingTheFeeFailsWithTheAdenaStillHeld() {
+            when(warehouse.getAdena()).thenReturn(5_000L);
+            when(warehouse.destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null))
+                    .thenThrow(new IllegalStateException("warehouse failed"))
+                    .thenReturn(adena);
+            final TestFunction function =
+                    WorldLoopExtension.callInPass(() -> new TestFunction(true, warehouse, 0, true));
+
+            WorldLoopExtension.passAfter(Duration.ofMillis(1));
+
+            assertThat(function.saved).isEmpty();
+
+            WorldLoopExtension.passAfter(Duration.ofMinutes(1));
+
+            verify(warehouse, times(2)).destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null);
+            assertThat(function.saved).hasSize(1);
+            assertThat(function.removals).isZero();
+        }
+
+        @Test
+        void chargeFee_shouldRenewWithoutASecondFee_whenTakingTheFeeFailsAfterTheAdenaLeft() {
+            when(warehouse.getAdena()).thenReturn(5_000L, 4_000L);
+            when(warehouse.destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null))
+                    .thenThrow(new IllegalStateException("item log failed"));
+            final TestFunction function =
+                    WorldLoopExtension.callInPass(() -> new TestFunction(true, warehouse, 0, true));
+
+            WorldLoopExtension.passAfter(Duration.ofMillis(1));
+            WorldLoopExtension.passAfter(Duration.ofMinutes(5));
+
+            verify(warehouse, times(1)).destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null);
+            assertThat(function.saved).hasSize(1);
+            assertThat(function.removals).isZero();
+        }
+
+        @Test
+        void chargeFee_shouldRemoveTheFunction_whenTheWarehouseRefusesTheLease() {
             final TestFunction function =
                     WorldLoopExtension.callInPass(() -> new TestFunction(true, warehouse, 0, true));
 
@@ -170,12 +264,27 @@ class AbstractResidenceFunctionTest {
 
             assertThat(function.removals).isEqualTo(1);
             assertThat(function.saved).isEmpty();
-            verify(warehouse, never()).destroyItemByItemId(any(), anyInt(), anyLong(), any(), any());
+        }
+
+        @Test
+        void chargeFee_shouldNotRetry_whenRemovingTheUnpaidFunctionFails() {
+            final TestFunction function = WorldLoopExtension.callInPass(() -> {
+                final TestFunction created = new TestFunction(true, warehouse, 0, true);
+                created.failingRemoval = true;
+                return created;
+            });
+
+            WorldLoopExtension.passAfter(Duration.ofMillis(1));
+            WorldLoopExtension.passAfter(Duration.ofMinutes(1));
+            WorldLoopExtension.passAfter(Duration.ofMillis(RATE));
+
+            assertThat(function.removals).isEqualTo(1);
+            assertThat(function.saved).isEmpty();
+            verify(warehouse, times(1)).destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null);
         }
 
         @Test
         void chargeFee_shouldRenewWithoutCharging_whenThePlayerPaidTheFirstActivation() {
-            when(warehouse.getAdena()).thenReturn(0L);
             final TestFunction function =
                     WorldLoopExtension.callInPass(() -> new TestFunction(true, warehouse, 0, false));
 
@@ -184,6 +293,11 @@ class AbstractResidenceFunctionTest {
             assertThat(function.saved).hasSize(1);
             assertThat(function.removals).isZero();
             verify(warehouse, never()).destroyItemByItemId(any(), anyInt(), anyLong(), any(), any());
+        }
+
+        private void whenTheWarehousePays() {
+            when(warehouse.destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, LEASE, null, null))
+                    .thenReturn(adena);
         }
     }
 

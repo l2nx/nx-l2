@@ -41,19 +41,18 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * The first activation is paid from the player's inventory, every renewal from the owner's clan warehouse; a renewal
- * the warehouse cannot pay removes the function.
+ * the warehouse cannot pay removes the function. The first renewal after an upgrade (end time -1) is free.
  */
 @Slf4j
 @SingleWriter
 public abstract class AbstractResidenceFunction {
+    private static final long RETRY_DELAY = TimeUnit.MINUTES.toMillis(1);
+
     private final int type;
 
     private int level;
 
     private int lease;
-
-    // The fee of an upgrade the player already paid, charged instead of the lease on its first renewal.
-    private final int tempFee;
 
     private final long rate;
 
@@ -64,11 +63,10 @@ public abstract class AbstractResidenceFunction {
     // The pending fee, cancelled when the function is removed or replaced so that it charges no more.
     private ScheduledFuture<?> feeTask;
 
-    protected AbstractResidenceFunction(int type, int level, int lease, int tempFee, long rate, long endTime) {
+    protected AbstractResidenceFunction(int type, int level, int lease, long rate, long endTime) {
         this.type = type;
         this.level = level;
         this.lease = lease;
-        this.tempFee = tempFee;
         this.rate = rate;
         this.endTime = endTime;
     }
@@ -85,6 +83,8 @@ public abstract class AbstractResidenceFunction {
         final long currentTime = ClockBridge.wallMillis();
         scheduleFee(fromWarehouse, endTime > currentTime ? endTime - currentTime : 0);
     }
+
+    protected abstract int residenceId();
 
     protected abstract boolean isOwned();
 
@@ -109,26 +109,75 @@ public abstract class AbstractResidenceFunction {
 
     private void chargeFee() {
         feeTask = null;
+        final boolean paid;
         try {
             if (!isOwned()) {
                 return;
             }
 
-            final ItemContainer warehouse = ownerWarehouse();
-            if ((warehouse.getAdena() >= lease) || !cwh) {
-                final int fee = endTime == -1 ? tempFee : lease;
-                endTime = ClockBridge.wallMillis() + rate;
-                persist();
-                if (cwh) {
-                    warehouse.destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, fee, null, null);
-                }
-
-                scheduleFee(true, rate);
-            } else {
-                removeUnpaid();
-            }
+            paid = takeFee();
         } catch (Exception e) {
-            log.error("", e);
+            log.error("Could not charge function {} of residence {}, retrying", type, residenceId(), e);
+            scheduleFee(cwh, RETRY_DELAY);
+            return;
+        }
+
+        if (!paid) {
+            removeUnpaidOnce();
+            return;
+        }
+
+        endTime = ClockBridge.wallMillis() + rate;
+        storeRenewal();
+        scheduleFee(true, rate);
+    }
+
+    /**
+     * @throws RuntimeException only when the warehouse still holds the adena, so that the charge may run again
+     */
+    private boolean takeFee() {
+        final int fee = endTime == -1 ? 0 : lease;
+        if (!cwh || (fee == 0)) {
+            return true;
+        }
+
+        final ItemContainer warehouse = ownerWarehouse();
+        final long before = warehouse.getAdena();
+        try {
+            return warehouse.destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, fee, null, null) != null;
+        } catch (RuntimeException e) {
+            if (warehouse.getAdena() == before) {
+                throw e;
+            }
+
+            log.error(
+                    "Taking the fee of function {} of residence {} failed after the adena left",
+                    type,
+                    residenceId(),
+                    e);
+            return true;
+        }
+    }
+
+    private void removeUnpaidOnce() {
+        try {
+            removeUnpaid();
+        } catch (Exception e) {
+            // Not retried: the function may already be gone from memory, and its type may hold a newer function.
+            log.error("Could not remove unpaid function {} of residence {}", type, residenceId(), e);
+        }
+    }
+
+    // Not retried: a second charge would take a second fee; the next save writes the renewed end time.
+    private void storeRenewal() {
+        try {
+            persist();
+        } catch (Exception e) {
+            log.error(
+                    "Could not store the renewal of function {} of residence {}, the next save stores it",
+                    type,
+                    residenceId(),
+                    e);
         }
     }
 

@@ -124,9 +124,14 @@ public class Castle extends AbstractResidence {
 
     @SingleWriter
     public class CastleFunction extends AbstractResidenceFunction {
-        public CastleFunction(int type, int lvl, int lease, int tempLease, long rate, long time, boolean cwh) {
-            super(type, lvl, lease, tempLease, rate, time);
+        public CastleFunction(int type, int lvl, int lease, long rate, long time, boolean cwh) {
+            super(type, lvl, lease, rate, time);
             startFee(cwh);
+        }
+
+        @Override
+        protected int residenceId() {
+            return getResidenceId();
         }
 
         @Override
@@ -534,7 +539,6 @@ public class Castle extends AbstractResidence {
                     stored.type(),
                     stored.level(),
                     stored.lease(),
-                    0,
                     stored.rate(),
                     epochMillisOrZero(stored.endTime()),
                     true));
@@ -558,11 +562,11 @@ public class Castle extends AbstractResidence {
         }
 
         if (addNew) {
-            function.put(new CastleFunction(type, lvl, lease, 0, rate, 0, false));
+            function.put(new CastleFunction(type, lvl, lease, rate, 0, false));
         } else if ((lvl == 0) && (lease == 0)) {
             removeFunction(type);
         } else if ((lease - function.get(type).getLease()) > 0) {
-            function.put(new CastleFunction(type, lvl, lease, 0, rate, -1, false));
+            function.put(new CastleFunction(type, lvl, lease, rate, -1, false));
         } else {
             function.get(type).change(lvl, lease);
         }

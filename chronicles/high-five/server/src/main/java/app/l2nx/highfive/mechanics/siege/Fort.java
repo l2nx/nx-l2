@@ -124,9 +124,14 @@ public class Fort extends AbstractResidence {
 
     @SingleWriter
     public class FortFunction extends AbstractResidenceFunction {
-        public FortFunction(int type, int level, int lease, int tempLease, long rate, long time, boolean cwh) {
-            super(type, level, lease, tempLease, rate, time);
+        public FortFunction(int type, int level, int lease, long rate, long time, boolean cwh) {
+            super(type, level, lease, rate, time);
             startFee(cwh);
+        }
+
+        @Override
+        protected int residenceId() {
+            return getResidenceId();
         }
 
         @Override
@@ -527,7 +532,6 @@ public class Fort extends AbstractResidence {
                     stored.type(),
                     stored.level(),
                     stored.lease(),
-                    0,
                     stored.rate(),
                     epochMillisOrZero(stored.endTime()),
                     true));
@@ -555,11 +559,11 @@ public class Fort extends AbstractResidence {
         }
 
         if (addNew) {
-            function.put(new FortFunction(type, level, lease, 0, rate, 0, false));
+            function.put(new FortFunction(type, level, lease, rate, 0, false));
         } else if ((level == 0) && (lease == 0)) {
             removeFunction(type);
         } else if ((lease - function.get(type).getLease()) > 0) {
-            function.put(new FortFunction(type, level, lease, 0, rate, -1, false));
+            function.put(new FortFunction(type, level, lease, rate, -1, false));
         } else {
             function.get(type).change(level, lease);
         }

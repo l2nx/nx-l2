@@ -86,9 +86,14 @@ public abstract class ClanHall {
 
     @SingleWriter
     public class ClanHallFunction extends AbstractResidenceFunction {
-        public ClanHallFunction(int type, int lvl, int lease, int tempLease, long rate, long time, boolean cwh) {
-            super(type, lvl, lease, tempLease, rate, time);
+        public ClanHallFunction(int type, int lvl, int lease, long rate, long time, boolean cwh) {
+            super(type, lvl, lease, rate, time);
             startFee(cwh);
+        }
+
+        @Override
+        protected int residenceId() {
+            return id;
         }
 
         @Override
@@ -305,7 +310,6 @@ public abstract class ClanHall {
                     stored.type(),
                     stored.level(),
                     stored.lease(),
-                    0,
                     stored.rate(),
                     epochMillisOrZero(stored.endTime()),
                     true));
@@ -326,11 +330,11 @@ public abstract class ClanHall {
         }
 
         if (addNew) {
-            functions.put(new ClanHallFunction(type, level, lease, 0, rate, 0, false));
+            functions.put(new ClanHallFunction(type, level, lease, rate, 0, false));
         } else if ((level == 0) && (lease == 0)) {
             removeFunction(type);
         } else if ((lease - functions.get(type).getLease()) > 0) {
-            functions.put(new ClanHallFunction(type, level, lease, 0, rate, -1, false));
+            functions.put(new ClanHallFunction(type, level, lease, rate, -1, false));
         } else {
             functions.get(type).change(level, lease);
         }
