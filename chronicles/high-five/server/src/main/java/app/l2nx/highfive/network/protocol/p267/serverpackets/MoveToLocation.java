@@ -27,33 +27,23 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class MoveToLocation extends ServerPacket {
-    private final int objectId;
-    private final int x;
-    private final int y;
-    private final int z;
-    private final int xDst;
-    private final int yDst;
-    private final int zDst;
+    private final app.l2nx.protocol.game.p267.serverpackets.MoveToLocation wire;
 
     public MoveToLocation(Creature creature) {
-        objectId = creature.getObjectId();
-        x = creature.getX();
-        y = creature.getY();
-        z = creature.getZ();
-        xDst = creature.getXdestination();
-        yDst = creature.getYdestination();
-        zDst = creature.getZdestination();
+        wire = app.l2nx.protocol.game.p267.serverpackets.MoveToLocation.builder()
+                .objectId(creature.getObjectId())
+                .targetX(creature.getXdestination())
+                .targetY(creature.getYdestination())
+                .targetZ(creature.getZdestination())
+                .originX(creature.getX())
+                .originY(creature.getY())
+                .originZ(creature.getZ())
+                .build();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.MOVE_TO_LOCATION.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeInt(xDst);
-        buffer.writeInt(yDst);
-        buffer.writeInt(zDst);
-        buffer.writeInt(x);
-        buffer.writeInt(y);
-        buffer.writeInt(z);
+        ServerPackets.MOVE_TO_LOCATION.debug(this);
+        wire.write(buffer.buffer());
     }
 }

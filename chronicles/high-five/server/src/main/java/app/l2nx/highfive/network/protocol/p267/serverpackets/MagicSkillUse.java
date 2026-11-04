@@ -26,28 +26,32 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.MagicSkillUse.GroundLocation;
+import java.util.List;
 
 /**
  * MagicSkillUse server packet implementation.
  * @author Mobius
  */
 public class MagicSkillUse extends ServerPacket {
-    private final int skillId;
-    private final int skillLevel;
-    private final int hitTime;
-    private final int reuseDelay;
-    private final Creature creature;
-    private final Creature target;
-    private final Location groundLocation;
+    private final app.l2nx.protocol.game.p267.serverpackets.MagicSkillUse wire;
 
     public MagicSkillUse(Creature creature, Creature target, int skillId, int skillLevel, int hitTime, int reuseDelay) {
-        this.creature = creature;
-        this.target = target;
-        this.skillId = skillId;
-        this.skillLevel = skillLevel;
-        this.hitTime = hitTime;
-        this.reuseDelay = reuseDelay;
-        groundLocation = creature.isPlayer() ? creature.asPlayer().getCurrentSkillWorldPosition() : null;
+        wire = app.l2nx.protocol.game.p267.serverpackets.MagicSkillUse.builder()
+                .objectId(creature.getObjectId())
+                .targetObjectId(target.getObjectId())
+                .skillId(skillId)
+                .skillLevel(skillLevel)
+                .hitTime(hitTime)
+                .reuseDelay(reuseDelay)
+                .x(creature.getX())
+                .y(creature.getY())
+                .z(creature.getZ())
+                .groundLocations(groundLocations(creature))
+                .targetX(target.getX())
+                .targetY(target.getY())
+                .targetZ(target.getZ())
+                .build();
     }
 
     public MagicSkillUse(Creature creature, int skillId, int skillLevel, int hitTime, int reuseDelay) {
@@ -56,28 +60,20 @@ public class MagicSkillUse extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.MAGIC_SKILL_USE.writeId(this, buffer);
-        buffer.writeInt(creature.getObjectId());
-        buffer.writeInt(target.getObjectId());
-        buffer.writeInt(skillId);
-        buffer.writeInt(skillLevel);
-        buffer.writeInt(hitTime);
-        buffer.writeInt(reuseDelay);
-        buffer.writeInt(creature.getX());
-        buffer.writeInt(creature.getY());
-        buffer.writeInt(creature.getZ());
-        buffer.writeShort(0); // isGroundTargetSkill ? 65535 : 0
-        if (groundLocation == null) {
-            buffer.writeShort(0);
-        } else {
-            buffer.writeShort(1);
-            buffer.writeInt(groundLocation.getX());
-            buffer.writeInt(groundLocation.getY());
-            buffer.writeInt(groundLocation.getZ());
-        }
+        ServerPackets.MAGIC_SKILL_USE.debug(this);
+        wire.write(buffer.buffer());
+    }
 
-        buffer.writeInt(target.getX());
-        buffer.writeInt(target.getY());
-        buffer.writeInt(target.getZ());
+    private static List<GroundLocation> groundLocations(Creature creature) {
+        final Location groundLocation =
+                creature.isPlayer() ? creature.asPlayer().getCurrentSkillWorldPosition() : null;
+        if (groundLocation == null) {
+            return List.of();
+        }
+        return List.of(GroundLocation.builder()
+                .x(groundLocation.getX())
+                .y(groundLocation.getY())
+                .z(groundLocation.getZ())
+                .build());
     }
 }

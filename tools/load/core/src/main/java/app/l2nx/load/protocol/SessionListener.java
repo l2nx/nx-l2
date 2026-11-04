@@ -17,11 +17,18 @@ public interface SessionListener {
 
     void observed(Observation observation);
 
-    /** Acknowledgements are FIFO per kind. */
     void acknowledged(IntentKind kind);
+
+    /**
+     * An answer matching no pending intent is dropped: its intent is gone, or it is a repeat nobody waits for.
+     */
+    void acknowledged(IntentKind kind, Object correlation);
 
     /** Refuses the oldest pending intent of {@code kind}: an error, not a latency sample. */
     void rejected(IntentKind kind);
 
     void failed(Throwable cause);
+
+    /** One inbound frame was handled, {@code nanos} after {@code channelRead} of the bytes that carried it. */
+    default void frameHandled(long nanos) {}
 }

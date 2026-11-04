@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Isolated
 class LoadRunTest {
     private static final Instant STARTED_AT = Instant.parse("2026-10-21T08:15:30Z");
+    private static final Instant SERVER_STARTED_AT = Instant.parse("2026-10-21T08:10:00Z");
     private static final Duration INTERVAL = Duration.ofMillis(10);
     private static final RunSettings SETTINGS = RunSettings.withDefaults()
             .scenario("load-fake")
@@ -164,6 +165,27 @@ class LoadRunTest {
         }
 
         @Test
+        void execute_shouldFailBeforeAnyLoadBotStarts_whenTheRunIdIsRefused() {
+            final List<String> claimed = new CopyOnWriteArrayList<>();
+
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> run.execute(
+                            SETTINGS,
+                            new FakeScenario(INTERVAL, Duration.ZERO),
+                            protocol,
+                            IDENTITIES,
+                            latencies,
+                            null,
+                            runId -> {
+                                claimed.add(runId);
+                                throw new IllegalStateException("The report directory already exists");
+                            }))
+                    .withMessageContaining("already exists");
+            assertThat(claimed).containsExactly("load-fake-20261021-081530-42");
+            assertThat(protocol.sessions()).isEmpty();
+        }
+
+        @Test
         void execute_shouldFailBeforeAnyLoadBotStarts_whenServerMetersAreNotReady() {
             final RecordingMeterWindow meters = new RecordingMeterWindow().notReady();
 
@@ -195,8 +217,13 @@ class LoadRunTest {
             assertThat(actual.server()).isNull();
             assertThat(actual.stoppedShare()).isZero();
             assertThat(actual.reachedFinalState()).isEqualTo(8);
+            assertThat(actual.notAtFinalStateShare()).isZero();
             assertThat(actual.timeoutShare()).isZero();
             assertThat(actual.rejectedShare()).isZero();
+            assertThat(actual.intentTimeout()).isEqualTo(SETTINGS.intentTimeout());
+            assertThat(actual.lifecycleTimeout()).isEqualTo(SETTINGS.lifecycleTimeout());
+            assertThat(actual.environment().logicalCores()).isPositive();
+            assertThat(actual.environment().jvm()).isNotBlank();
             assertThat(actual.measuredPhase()).isEqualTo(MeasuredPhase.STEADY);
             assertThat(actual.finalState()).isEqualTo(LoadBotState.IN_GAME);
             assertThat(actual.steps()).as("the lifecycle ran in the ramp").isEmpty();
@@ -257,7 +284,7 @@ class LoadRunTest {
         }
 
         @Test
-        void execute_shouldMarkRunInvalid_whenLoadBotsStopOnErrors() throws InterruptedException {
+        void execute_shouldStayValidAndReportTheShares_whenLoadBotsStopOnErrors() throws InterruptedException {
             protocol.failOnEnter(index -> index % 4 == 0);
             final RunSettings settings = SETTINGS.toBuilder()
                     .maxGeneratorLagP99(Duration.ofMillis(100))
@@ -265,12 +292,44 @@ class LoadRunTest {
 
             final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null);
 
-            assertThat(actual.validity()).isEqualTo(RunValidity.INVALID);
-            assertThat(actual.invalidReasons()).containsExactly(InvalidReason.LOAD_BOTS_STOPPED);
+            assertThat(actual.validity())
+                    .as("a server that drops load bots fails the gate, it does not invalidate the generator's run")
+                    .isEqualTo(RunValidity.VALID);
+            assertThat(actual.invalidReasons()).isEmpty();
             assertThat(actual.stoppedShare()).isEqualTo(0.25);
             assertThat(actual.reachedFinalState())
                     .as("the load bots that entered the game")
                     .isEqualTo(6);
+            assertThat(actual.notAtFinalStateShare()).isEqualTo(0.25);
+        }
+
+        @Test
+        void execute_shouldCountALoadBotStuckBeforeItsFinalState_whenTheServerNeverAnswers()
+                throws InterruptedException {
+            protocol.neverAcknowledge(IntentKind.LOGIN);
+            final RunSettings settings = SETTINGS.toBuilder()
+                    .lifecycleTimeout(Duration.ofMillis(250))
+                    .maxGeneratorLagP99(Duration.ofMillis(100))
+                    .build();
+
+            final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null);
+
+            assertThat(actual.validity()).isEqualTo(RunValidity.VALID);
+            assertThat(actual.stoppedShare()).isEqualTo(1);
+            assertThat(actual.notAtFinalStateShare()).isEqualTo(1);
+            assertThat(actual.timeoutShare())
+                    .as("every login timed out in the ramp, before the steady window")
+                    .isEqualTo(1);
+            assertThat(actual.steps().get(LoadBotState.LOGIN_AUTH).timeouts()).isEqualTo(8);
+        }
+
+        @Test
+        void execute_shouldRecordTheServerStartTimes_whenTheServerMetersAreRead() throws InterruptedException {
+            final RunSummary actual = execute(
+                    SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), new RecordingMeterWindow().unreadable());
+
+            assertThat(actual.server()).isNull();
+            assertThat(actual.serverStartedAt()).isEqualTo(Map.of("game", SERVER_STARTED_AT));
         }
 
         @Test
@@ -290,7 +349,11 @@ class LoadRunTest {
             assertThat(Math.abs(moves.errors() - moves.acknowledged()))
                     .as("alternating answers differ by at most one per load bot")
                     .isLessThanOrEqualTo(SETTINGS.injection().bots());
-            assertThat(actual.rejectedShare()).isEqualTo((double) moves.errors() / moves.sent());
+            // Over all kinds: on a cold JVM the event loops start late, so arrival intents land in the measured phase.
+            final long sent = actual.intents().values().stream()
+                    .mapToLong(IntentStats::sent)
+                    .sum();
+            assertThat(actual.rejectedShare()).isEqualTo((double) moves.errors() / sent);
             assertThat(actual.timeoutShare()).isZero();
         }
 
@@ -430,11 +493,12 @@ class LoadRunTest {
         }
 
         @Override
-        public void checkReady() {
+        public Map<String, Instant> checkReady() {
             calls.add("checkReady");
             if (!ready) {
                 throw new IllegalStateException("Prometheus is not ready");
             }
+            return Map.of("game", SERVER_STARTED_AT);
         }
 
         @Override

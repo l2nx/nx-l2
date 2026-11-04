@@ -7,16 +7,12 @@ package app.l2nx.load.bot.observation;
 import app.l2nx.load.bot.model.Position;
 import lombok.Builder;
 
-/**
- * A world object came into view, or was sent again with fresh state.
- *
- * @param team PvP team of a character as the server shows it, 0 for none
- */
+/** @param dead a repeated sighting never revives an object: {@link Revived} does */
 @Builder(toBuilder = true)
 public record ObjectSeen(int objectId, Kind kind, Position position, int team, boolean dead) implements Observation {
     public enum Kind {
         CHARACTER,
         NPC,
-        ITEM
+        MONSTER
     }
 }

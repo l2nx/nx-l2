@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 L2NX contributors -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- The address login-server hands a client, by the client's source address; the first match wins. Fixed addresses also
+     spare the game server its automatic detection, which asks an external service at every start. -->
+<gameserver address="10.89.7.10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../data/xsd/ipconfig.xsd">
+	<!-- A client on the host arrives through a published port (docker/compose.client.yaml), from the network gateway. -->
+	<define subnet="10.89.7.1/32" address="127.0.0.1" />
+	<define subnet="10.89.7.0/24" address="10.89.7.10" />
+</gameserver>

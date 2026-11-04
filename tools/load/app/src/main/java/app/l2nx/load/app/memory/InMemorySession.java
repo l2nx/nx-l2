@@ -5,6 +5,7 @@
 package app.l2nx.load.app.memory;
 
 import app.l2nx.load.app.LoadProperties;
+import app.l2nx.load.bot.intent.AdminTeleport;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.MoveTo;
@@ -82,12 +83,17 @@ final class InMemorySession implements ClientSession {
         listener.stateChanged(LoadBotState.IN_GAME);
     }
 
-    // The echo of the own movement is what confirms a MoveTo on a real server; the other intents just confirm.
+    // The echo of the own movement is what confirms a move on a real server; the other intents just confirm.
     private void answer(Intent intent) {
-        if (intent instanceof MoveTo move) {
+        final Position destination = switch (intent) {
+            case MoveTo move -> move.destination();
+            case AdminTeleport teleport -> teleport.destination();
+            default -> null;
+        };
+        if (destination != null) {
             listener.observed(ObjectMoved.builder()
                     .objectId(OBJECT_ID_BASE + identity.index())
-                    .position(move.destination())
+                    .position(destination)
                     .build());
         }
         listener.acknowledged(intent.kind());

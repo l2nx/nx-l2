@@ -89,7 +89,7 @@ public abstract class IncomingPacket<C> implements Runnable {
         return frame().readableBytes();
     }
 
-    private ByteBuf frame() {
+    protected ByteBuf frame() {
         if (frame == null) {
             throw new IllegalStateException(getClass().getSimpleName() + " read outside decode");
         }

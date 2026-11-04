@@ -56,7 +56,8 @@ public class RequestRestartPoint extends ClientPacket {
 
     @Override
     protected void readImpl() {
-        requestedPointType = readInt();
+        requestedPointType = app.l2nx.protocol.game.p267.clientpackets.RequestRestartPoint.decode(frame())
+                .pointType();
     }
 
     class DeathTask implements Runnable {

@@ -8,6 +8,7 @@ import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.Login;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.protocol.SessionListener;
+import app.l2nx.load.protocol.p267.game.GameTicket;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.channel.PipelineNames;
@@ -35,6 +36,9 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.function.Consumer;
@@ -53,19 +57,21 @@ public final class LoginExchange extends ChannelInboundHandlerAdapter {
     private final LoginFrameCipher cipher = LoginFrameCipher.client();
     private final int serverId;
     private final SessionListener listener;
-    private final Consumer<PlayOk> onPlayOk;
+    private final Consumer<GameTicket> onPlayOk;
     private Channel channel;
     private Phase phase = Phase.AWAIT_INIT;
     private int sessionId;
     private PublicKey credentialsKey;
     private int loginOk1;
     private int loginOk2;
+    private String account;
+    private InetSocketAddress gameServer;
     private boolean detached;
 
     /**
      * @param onPlayOk takes over once the login server let the load bot in; the login connection is closed by then
      */
-    public LoginExchange(int serverId, SessionListener listener, Consumer<PlayOk> onPlayOk) {
+    public LoginExchange(int serverId, SessionListener listener, Consumer<GameTicket> onPlayOk) {
         this.serverId = serverId;
         this.listener = listener;
         this.onPlayOk = onPlayOk;
@@ -97,6 +103,7 @@ public final class LoginExchange extends ChannelInboundHandlerAdapter {
             fail(e);
             return;
         }
+        account = intent.account();
         phase = Phase.AWAIT_LOGIN_OK;
         write(packet::encode);
     }
@@ -263,9 +270,19 @@ public final class LoginExchange extends ChannelInboundHandlerAdapter {
     }
 
     private void serverList(ServerList serverList) {
-        if (serverList.servers().stream().noneMatch(server -> server.id() == serverId)) {
+        final ServerList.Server server = serverList.servers().stream()
+                .filter(listed -> listed.id() == serverId)
+                .findFirst()
+                .orElse(null);
+        if (server == null) {
             fail(new IllegalStateException("Game server " + serverId + " is not in the server list "
                     + serverList.servers().stream().map(ServerList.Server::id).toList()));
+            return;
+        }
+        try {
+            gameServer = new InetSocketAddress(InetAddress.getByAddress(server.ip()), server.port());
+        } catch (UnknownHostException e) {
+            fail(e);
             return;
         }
         phase = Phase.SERVER_LIST;
@@ -279,7 +296,14 @@ public final class LoginExchange extends ChannelInboundHandlerAdapter {
             return;
         }
         detach();
-        onPlayOk.accept(playOk);
+        onPlayOk.accept(GameTicket.builder()
+                .account(account)
+                .gameServer(gameServer)
+                .loginOk1(loginOk1)
+                .loginOk2(loginOk2)
+                .playOk1(playOk.playOk1())
+                .playOk2(playOk.playOk2())
+                .build());
     }
 
     /** The login server answers a refusal and closes, so the load bot stops as on a dropped connection. */

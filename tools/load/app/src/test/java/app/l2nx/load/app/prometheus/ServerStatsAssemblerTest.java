@@ -25,14 +25,12 @@ class ServerStatsAssemblerTest {
     @Nested
     class Loops {
         @Test
-        void assemble_shouldGiveEveryLoopWithPassesItsValuesInMillis() {
+        void assemble_shouldGiveEveryLoopWithAPassTimerItsValuesInMillis() {
             final Map<ServerMeterQuery, List<Sample>> results = loopResults();
 
             final ServerStats actual = ServerStatsAssembler.assemble(results);
 
-            assertThat(actual.loops())
-                    .as("the drain counts failures but has no passes")
-                    .containsOnlyKeys(WORLD, "world-1");
+            assertThat(actual.loops()).containsOnlyKeys(WORLD, "world-1", DRAIN);
             assertThat(actual.loops().get(WORLD))
                     .isEqualTo(LoopStats.builder()
                             .passes(6_000)
@@ -42,10 +40,28 @@ class ServerStatsAssemblerTest {
                             .overBudget(3)
                             .failures(1)
                             .timersOverdue(2)
+                            .ownershipViolations(1)
                             .jdbcOnLoop(4)
+                            .jdbcOnLoopSeconds(0.25)
+                            .jdbcOnLoopShare(0.02)
                             .phaseMeanMillis(Map.of("input", 0.5, "tick", 2.5))
                             .inboxDepthMax(12.0)
                             .inboxDepthP99(4.0)
+                            .build());
+        }
+
+        @Test
+        void assemble_shouldReportTheFailuresOfALoopWithoutAPassTimer_whenOnlyItsFailureSeriesExists() {
+            final Map<ServerMeterQuery, List<Sample>> results = loopResults();
+
+            final LoopStats actual =
+                    ServerStatsAssembler.assemble(results).loops().get(DRAIN);
+
+            assertThat(actual)
+                    .isEqualTo(LoopStats.builder()
+                            .untimed(true)
+                            .failures(2)
+                            .phaseMeanMillis(Map.of())
                             .build());
         }
 
@@ -89,10 +105,14 @@ class ServerStatsAssemblerTest {
         void assemble_shouldCountNoJdbcCall_whenTheLoopHasNoJdbcSeries() {
             final Map<ServerMeterQuery, List<Sample>> results = loopResults();
             results.remove(ServerMeterQuery.JDBC_ON_LOOP);
+            results.remove(ServerMeterQuery.JDBC_ON_LOOP_SECONDS);
+            results.remove(ServerMeterQuery.JDBC_ON_LOOP_SHARE);
 
             final ServerStats actual = ServerStatsAssembler.assemble(results);
 
             assertThat(actual.loops().get(WORLD).jdbcOnLoop()).isZero();
+            assertThat(actual.loops().get(WORLD).jdbcOnLoopSeconds()).isNull();
+            assertThat(actual.loops().get(WORLD).jdbcOnLoopShare()).isNull();
         }
 
         @Test
@@ -103,6 +123,16 @@ class ServerStatsAssemblerTest {
             final ServerStats actual = ServerStatsAssembler.assemble(results);
 
             assertThat(actual.loops().get(WORLD).passP99Millis()).isEqualTo(Double.POSITIVE_INFINITY);
+        }
+
+        @Test
+        void assemble_shouldFail_whenALoopHasPassesButNoOwnershipCounter() {
+            final Map<ServerMeterQuery, List<Sample>> results = loopResults();
+            results.remove(ServerMeterQuery.OWNERSHIP_VIOLATIONS);
+
+            assertThatIllegalStateException()
+                    .isThrownBy(() -> ServerStatsAssembler.assemble(results))
+                    .withMessageContaining(ServerMeterQuery.OWNERSHIP_VIOLATIONS.name());
         }
 
         @Test
@@ -244,7 +274,10 @@ class ServerStatsAssemblerTest {
         results.put(ServerMeterQuery.OVER_BUDGET, List.of(loop(WORLD, 3.2), loop("world-1", 0)));
         results.put(ServerMeterQuery.FAILURES, List.of(loop(WORLD, 1), loop("world-1", 0), loop(DRAIN, 2)));
         results.put(ServerMeterQuery.TIMERS_OVERDUE, List.of(loop(WORLD, 1.6), loop("world-1", 0)));
+        results.put(ServerMeterQuery.OWNERSHIP_VIOLATIONS, List.of(loop(WORLD, 1), loop("world-1", 0)));
         results.put(ServerMeterQuery.JDBC_ON_LOOP, List.of(loop(WORLD, 4)));
+        results.put(ServerMeterQuery.JDBC_ON_LOOP_SECONDS, List.of(loop(WORLD, 0.25)));
+        results.put(ServerMeterQuery.JDBC_ON_LOOP_SHARE, List.of(loop(WORLD, 0.02)));
         results.put(ServerMeterQuery.INBOX_DEPTH_MAX, List.of(loop(WORLD, 12), loop("world-1", 0)));
         results.put(ServerMeterQuery.INBOX_DEPTH_P99, List.of(loop(WORLD, 4), loop("world-1", 0)));
         return results;

@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class Revive extends ServerPacket {
-    private final int objectId;
+    private final app.l2nx.protocol.game.p267.serverpackets.Revive wire;
 
     public Revive(WorldObject obj) {
-        objectId = obj.getObjectId();
+        wire = new app.l2nx.protocol.game.p267.serverpackets.Revive(obj.getObjectId());
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.REVIVE.writeId(this, buffer);
-        buffer.writeInt(objectId);
+        ServerPackets.REVIVE.debug(this);
+        wire.write(buffer.buffer());
     }
 }

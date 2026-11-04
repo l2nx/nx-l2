@@ -48,12 +48,16 @@ public final class LoginServerSide {
     }
 
     public static ServerList serverList(int... ids) {
+        return serverListOn(7777, ids);
+    }
+
+    public static ServerList serverListOn(int gamePort, int... ids) {
         return ServerList.builder()
                 .servers(Arrays.stream(ids)
                         .mapToObj(id -> ServerList.Server.builder()
                                 .id(id)
                                 .ip(new byte[] {127, 0, 0, 1})
-                                .port(7777)
+                                .port(gamePort)
                                 .maxPlayers(100)
                                 .up(true)
                                 .serverType(1)

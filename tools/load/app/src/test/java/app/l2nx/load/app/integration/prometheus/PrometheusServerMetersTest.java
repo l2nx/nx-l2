@@ -6,21 +6,20 @@ package app.l2nx.load.app.integration.prometheus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.within;
 import static org.awaitility.Awaitility.await;
 
 import app.l2nx.load.app.LoadProperties;
 import app.l2nx.load.app.prometheus.PrometheusClient;
 import app.l2nx.load.app.prometheus.PrometheusServerMeters;
-import app.l2nx.load.app.prometheus.ServerMeterQuery;
 import app.l2nx.load.app.prometheus.model.Sample;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.report.model.ServerWindow;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -81,10 +80,12 @@ class PrometheusServerMetersTest {
     @Nested
     class CheckReady {
         @Test
-        void checkReady_shouldPass_whenTheTargetIsUp() {
+        void checkReady_shouldReadTheServerStartTime_whenTheTargetIsUp() {
             awaitFirstScrape();
 
-            assertThatNoException().isThrownBy(() -> meters(target("game")).checkReady());
+            final Map<String, Instant> actual = meters(target("game")).checkReady();
+
+            assertThat(actual).isEqualTo(Map.of("game", Instant.ofEpochSecond(MetricsStub.START_TIME_SECONDS)));
         }
 
         @Test
@@ -96,11 +97,14 @@ class PrometheusServerMetersTest {
 
         @Test
         void checkReady_shouldFail_whenPrometheusIsDown() throws IOException {
-            final PrometheusClient down = new PrometheusClient(RestClient.builder(), closedPort());
+            try (Socket closed = closedPort()) {
+                final PrometheusClient down = new PrometheusClient(
+                        RestClient.builder(), URI.create("http://127.0.0.1:" + closed.getLocalPort()));
 
-            assertThatIllegalStateException()
-                    .isThrownBy(() -> new PrometheusServerMeters(down, settings(down, target("game"))).checkReady())
-                    .withMessageContaining("not ready");
+                assertThatIllegalStateException()
+                        .isThrownBy(() -> new PrometheusServerMeters(down, settings(down, target("game"))).checkReady())
+                        .withMessageContaining("not ready");
+            }
         }
     }
 
@@ -145,8 +149,11 @@ class PrometheusServerMetersTest {
             assertThat(meters.snapshots())
                     .containsOnlyKeys("server-metrics-game-start.prom", "server-metrics-game-end.prom")
                     .allSatisfy((file, text) -> assertThat(text).contains("l2nx_engine_pass_seconds_bucket"));
-            final List<Sample> dashboard =
-                    client.query(ServerMeterQuery.PASS_P99.expression(window.rangeMillis()), window.end());
+            final long range = window.rangeMillis();
+            final List<Sample> dashboard = client.query(
+                    "histogram_quantile(0.99, sum by (le, loop) (l2nx_engine_pass_seconds_bucket"
+                            + " - l2nx_engine_pass_seconds_bucket offset " + range + "ms))",
+                    window.end());
             assertThat(dashboard)
                     .singleElement()
                     .satisfies(sample -> assertThat(sample.value() * Sample.MILLIS_PER_SECOND)
@@ -199,10 +206,10 @@ class PrometheusServerMetersTest {
         return new LoadProperties.Target(job, stub.metricsUrl());
     }
 
-    private static URI closedPort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-            return URI.create("http://127.0.0.1:" + socket.getLocalPort());
-        }
+    private static Socket closedPort() throws IOException {
+        final Socket socket = new Socket();
+        socket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+        return socket;
     }
 
     private static String config(int port) {

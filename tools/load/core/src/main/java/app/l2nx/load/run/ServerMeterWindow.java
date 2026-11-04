@@ -6,6 +6,8 @@ package app.l2nx.load.run;
 
 import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.report.model.ServerWindow;
+import java.time.Instant;
+import java.util.Map;
 
 /**
  * Server meters over the measured phase of one run, read from a metrics store after the fact. Only
@@ -13,8 +15,11 @@ import app.l2nx.load.report.model.ServerWindow;
  * {@code null} and the run keeps its client results.
  */
 public interface ServerMeterWindow {
-    /** @throws IllegalStateException when the meters could not be read: the run must not start */
-    void checkReady();
+    /**
+     * @return the start time of each server process by its name, which the gate checks for stale processes
+     * @throws IllegalStateException when the meters could not be read: the run must not start
+     */
+    Map<String, Instant> checkReady();
 
     void start();
 

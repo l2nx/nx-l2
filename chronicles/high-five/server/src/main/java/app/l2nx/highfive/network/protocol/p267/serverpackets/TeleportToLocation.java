@@ -27,28 +27,21 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class TeleportToLocation extends ServerPacket {
-    private final int targetObjId;
-    private final int x;
-    private final int y;
-    private final int z;
-    private final int heading;
+    private final app.l2nx.protocol.game.p267.serverpackets.TeleportToLocation wire;
 
     public TeleportToLocation(WorldObject obj, int x, int y, int z, int heading) {
-        targetObjId = obj.getObjectId();
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.heading = heading;
+        wire = app.l2nx.protocol.game.p267.serverpackets.TeleportToLocation.builder()
+                .objectId(obj.getObjectId())
+                .x(x)
+                .y(y)
+                .z(z)
+                .heading(heading)
+                .build();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.TELEPORT_TO_LOCATION.writeId(this, buffer);
-        buffer.writeInt(targetObjId);
-        buffer.writeInt(x);
-        buffer.writeInt(y);
-        buffer.writeInt(z);
-        buffer.writeInt(0); // Fade 0, Instant 1.
-        buffer.writeInt(heading);
+        ServerPackets.TELEPORT_TO_LOCATION.debug(this);
+        wire.write(buffer.buffer());
     }
 }

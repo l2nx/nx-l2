@@ -37,10 +37,9 @@ public class SendBypassBuildCmd extends ClientPacket {
 
     @Override
     protected void readImpl() {
-        command = readString();
-        if (command != null) {
-            command = command.trim();
-        }
+        command = app.l2nx.protocol.game.p267.clientpackets.SendBypassBuildCmd.decode(frame())
+                .command()
+                .trim();
     }
 
     @Override

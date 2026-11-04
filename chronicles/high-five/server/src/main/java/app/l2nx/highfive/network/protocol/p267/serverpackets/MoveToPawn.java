@@ -28,39 +28,25 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class MoveToPawn extends ServerPacket {
-    private final int objectId;
-    private final int targetId;
-    private final int distance;
-    private final int x;
-    private final int y;
-    private final int z;
-    private final int tx;
-    private final int ty;
-    private final int tz;
+    private final app.l2nx.protocol.game.p267.serverpackets.MoveToPawn wire;
 
     public MoveToPawn(Creature creature, WorldObject target, int distance) {
-        objectId = creature.getObjectId();
-        targetId = target.getObjectId();
-        this.distance = distance;
-        x = creature.getX();
-        y = creature.getY();
-        z = creature.getZ();
-        tx = target.getX();
-        ty = target.getY();
-        tz = target.getZ();
+        wire = app.l2nx.protocol.game.p267.serverpackets.MoveToPawn.builder()
+                .objectId(creature.getObjectId())
+                .targetObjectId(target.getObjectId())
+                .distance(distance)
+                .x(creature.getX())
+                .y(creature.getY())
+                .z(creature.getZ())
+                .targetX(target.getX())
+                .targetY(target.getY())
+                .targetZ(target.getZ())
+                .build();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.MOVE_TO_PAWN.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeInt(targetId);
-        buffer.writeInt(distance);
-        buffer.writeInt(x);
-        buffer.writeInt(y);
-        buffer.writeInt(z);
-        buffer.writeInt(tx);
-        buffer.writeInt(ty);
-        buffer.writeInt(tz);
+        ServerPackets.MOVE_TO_PAWN.debug(this);
+        wire.write(buffer.buffer());
     }
 }

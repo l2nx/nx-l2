@@ -33,7 +33,13 @@ class GateThresholdsTest {
                     Arguments.of("NaN share", (UnaryOperator<GateThresholds.GateThresholdsBuilder>)
                             b -> b.maxOverBudgetShare(Double.NaN)),
                     Arguments.of("zero client ratio", (UnaryOperator<GateThresholds.GateThresholdsBuilder>)
-                            b -> b.maxClientP99Ratio(0)));
+                            b -> b.maxClientP99Ratio(0)),
+                    Arguments.of("no client floor", (UnaryOperator<GateThresholds.GateThresholdsBuilder>)
+                            b -> b.clientP99Floor(null)),
+                    Arguments.of("negative client floor", (UnaryOperator<GateThresholds.GateThresholdsBuilder>)
+                            b -> b.clientP99Floor(Duration.ofMillis(-1))),
+                    Arguments.of("not-at-final share above 1", (UnaryOperator<GateThresholds.GateThresholdsBuilder>)
+                            b -> b.maxNotAtFinalStateShare(1.5)));
         }
 
         @ParameterizedTest(name = "{0}")

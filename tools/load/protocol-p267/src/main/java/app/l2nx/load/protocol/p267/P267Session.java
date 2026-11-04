@@ -10,15 +10,16 @@ import app.l2nx.load.bot.intent.SelectServer;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.protocol.ClientSession;
 import app.l2nx.load.protocol.SessionListener;
+import app.l2nx.load.protocol.p267.game.GameExchange;
+import app.l2nx.load.protocol.p267.game.GameTicket;
 import app.l2nx.network.bootstrap.NetworkClient;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.transport.ResolvedTransport;
-import app.l2nx.protocol.login.c621.serverpackets.PlayOk;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoop;
 
-/** One load bot through the login server; confined to its event loop. */
+/** One load bot through the login and game servers; confined to its event loop. */
 final class P267Session implements ClientSession {
     private final P267Settings settings;
     private final ResolvedTransport transport;
@@ -26,6 +27,7 @@ final class P267Session implements ClientSession {
     private final EventLoop loop;
     private final SessionListener listener;
     private final LoginExchange login;
+    private GameExchange game;
     private boolean closed;
 
     P267Session(
@@ -55,8 +57,14 @@ final class P267Session implements ClientSession {
         switch (intent) {
             case Login loginIntent -> login.login(loginIntent);
             case SelectServer _ -> login.selectServer();
-            default ->
-                fail(new IllegalStateException("Protocol " + P267Protocol.ID + " cannot express " + intent.kind()));
+            default -> {
+                if (game == null) {
+                    fail(new IllegalStateException("Protocol " + P267Protocol.ID + " cannot send " + intent.kind()
+                            + " before the game server"));
+                } else {
+                    game.send(intent);
+                }
+            }
         }
     }
 
@@ -64,6 +72,9 @@ final class P267Session implements ClientSession {
     public void close() {
         closed = true;
         login.close();
+        if (game != null) {
+            game.close();
+        }
     }
 
     private void connect() {
@@ -86,13 +97,27 @@ final class P267Session implements ClientSession {
                 });
     }
 
-    private void loggedIn(PlayOk keys) {
+    private void loggedIn(GameTicket ticket) {
         listener.stateChanged(LoadBotState.GAME_CONNECT);
-        // A load bot whose scenario ends here has closed the session by now; one that goes on needs the game part.
-        if (!closed) {
-            fail(new UnsupportedOperationException("Protocol " + P267Protocol.ID + " has no game part yet: "
-                    + P267Protocol.LAST_STATE + " is the last state it reaches"));
+        // A load bot whose scenario ends here has closed the session by now.
+        if (closed) {
+            return;
         }
+        final GameExchange exchange = new GameExchange(ticket, listener, System::nanoTime);
+        game = exchange;
+        NetworkClient.connect(
+                        ticket.gameServer(),
+                        loop,
+                        transport,
+                        settings.connectTimeout(),
+                        network,
+                        NetworkMetrics.noop(),
+                        exchange::install)
+                .addListener((ChannelFuture future) -> {
+                    if (!future.isSuccess()) {
+                        exchange.connectFailed(future.cause());
+                    }
+                });
     }
 
     private void fail(Throwable cause) {

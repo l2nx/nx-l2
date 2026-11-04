@@ -22,22 +22,20 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
-import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
-import app.l2nx.highfive.entity.actor.holders.creature.Hit;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.protocol.game.p267.serverpackets.Attack.Hit;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class Attack extends ServerPacket {
-    private final int attackerObjId;
     private final boolean soulshot;
     private final int ssGrade;
-    private final Location attackerLoc;
-    private final Location targetLoc;
-    private final List<Hit> hits = new ArrayList<>();
+    private final app.l2nx.protocol.game.p267.serverpackets.Attack.AttackBuilder wire;
+    private final List<Hit> extraHits = new ArrayList<>();
+    private Hit firstHit;
+    private app.l2nx.protocol.game.p267.serverpackets.Attack packet;
 
     /**
      * @param attacker
@@ -46,11 +44,16 @@ public class Attack extends ServerPacket {
      * @param ssGrade
      */
     public Attack(Creature attacker, Creature target, boolean useShots, int ssGrade) {
-        attackerObjId = attacker.getObjectId();
         soulshot = useShots;
         this.ssGrade = ssGrade;
-        attackerLoc = new Location(attacker);
-        targetLoc = new Location(target);
+        wire = app.l2nx.protocol.game.p267.serverpackets.Attack.builder()
+                .attackerObjectId(attacker.getObjectId())
+                .x(attacker.getX())
+                .y(attacker.getY())
+                .z(attacker.getZ())
+                .targetX(target.getX())
+                .targetY(target.getY())
+                .targetZ(target.getZ());
     }
 
     /**
@@ -62,14 +65,26 @@ public class Attack extends ServerPacket {
      * @param shld
      */
     public void addHit(Creature target, int damage, boolean miss, boolean crit, byte shld) {
-        hits.add(new Hit(target, damage, miss, crit, shld, soulshot, ssGrade));
+        final app.l2nx.highfive.entity.actor.holders.creature.Hit hit =
+                new app.l2nx.highfive.entity.actor.holders.creature.Hit(
+                        target, damage, miss, crit, shld, soulshot, ssGrade);
+        final Hit wireHit = Hit.builder()
+                .targetObjectId(hit.getTargetId())
+                .damage(hit.getDamage())
+                .flags(hit.getFlags())
+                .build();
+        if (firstHit == null) {
+            firstHit = wireHit;
+        } else {
+            extraHits.add(wireHit);
+        }
     }
 
     /**
      * @return {@code true} if current attack contains at least 1 hit.
      */
     public boolean hasHits() {
-        return !hits.isEmpty();
+        return firstHit != null;
     }
 
     /**
@@ -79,33 +94,13 @@ public class Attack extends ServerPacket {
         return soulshot;
     }
 
-    /**
-     * Writes current hit
-     * @param hit
-     * @param buffer
-     */
-    private void writeHit(Hit hit, PacketWriter buffer) {
-        buffer.writeInt(hit.getTargetId());
-        buffer.writeInt(hit.getDamage());
-        buffer.writeByte(hit.getFlags());
-    }
-
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        final Iterator<Hit> it = hits.iterator();
-        ServerPackets.ATTACK.writeId(this, buffer);
-        buffer.writeInt(attackerObjId);
-        writeHit(it.next(), buffer);
-        buffer.writeInt(attackerLoc.getX());
-        buffer.writeInt(attackerLoc.getY());
-        buffer.writeInt(attackerLoc.getZ());
-        buffer.writeShort(hits.size() - 1);
-        while (it.hasNext()) {
-            writeHit(it.next(), buffer);
+        ServerPackets.ATTACK.debug(this);
+        // A broadcast writes it once per receiver, and every hit is in by the first write.
+        if (packet == null) {
+            packet = wire.hit(firstHit).extraHits(extraHits).build();
         }
-
-        buffer.writeInt(targetLoc.getX());
-        buffer.writeInt(targetLoc.getY());
-        buffer.writeInt(targetLoc.getZ());
+        packet.write(buffer.buffer());
     }
 }

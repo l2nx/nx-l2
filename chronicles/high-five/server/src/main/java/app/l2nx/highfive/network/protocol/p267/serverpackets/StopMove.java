@@ -27,11 +27,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class StopMove extends ServerPacket {
-    private final int objectId;
-    private final int x;
-    private final int y;
-    private final int z;
-    private final int heading;
+    private final app.l2nx.protocol.game.p267.serverpackets.StopMove wire;
 
     public StopMove(Creature creature) {
         this(creature.getObjectId(), creature.getX(), creature.getY(), creature.getZ(), creature.getHeading());
@@ -45,20 +41,18 @@ public class StopMove extends ServerPacket {
      * @param heading
      */
     public StopMove(int objectId, int x, int y, int z, int heading) {
-        this.objectId = objectId;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.heading = heading;
+        wire = app.l2nx.protocol.game.p267.serverpackets.StopMove.builder()
+                .objectId(objectId)
+                .x(x)
+                .y(y)
+                .z(z)
+                .heading(heading)
+                .build();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.STOP_MOVE.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeInt(x);
-        buffer.writeInt(y);
-        buffer.writeInt(z);
-        buffer.writeInt(heading);
+        ServerPackets.STOP_MOVE.debug(this);
+        wire.write(buffer.buffer());
     }
 }

@@ -58,15 +58,13 @@ class P267ProtocolTest {
     @Nested
     class Describe {
         @Test
-        void capabilities_shouldCoverTheLoginExchange() {
+        void capabilities_shouldCoverEveryIntent_upToTheGame() {
             final P267Protocol protocol = protocol(new InetSocketAddress(InetAddress.getLoopbackAddress(), 1));
 
             assertThat(protocol.id()).isEqualTo("p267");
-            assertThat(protocol.capabilities())
-                    .isUnmodifiable()
-                    .containsExactlyInAnyOrder(IntentKind.LOGIN, IntentKind.SELECT_SERVER);
+            assertThat(protocol.capabilities()).isUnmodifiable().containsExactlyInAnyOrder(IntentKind.values());
             assertThat(protocol.ioHandlerFactory()).isNotNull();
-            assertThat(protocol.lastState()).isEqualTo(LoadBotState.GAME_CONNECT);
+            assertThat(protocol.lastState()).isEqualTo(LoadBotState.IN_GAME);
         }
     }
 
@@ -163,16 +161,19 @@ class P267ProtocolTest {
         }
 
         @Test
-        void open_shouldFail_whenTheLoadBotGoesOnPastGameConnect() {
-            server = new FakeLoginServer("load0", "secret", false);
+        void open_shouldFail_whenTheGameServerRefusesTheConnection() throws IOException {
+            final int closedPort;
+            try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+                closedPort = socket.getLocalPort();
+            }
+            server = new FakeLoginServer("load0", "secret", false, closedPort);
 
             final Run run = run(server.address(), false);
 
             assertThat(run.events()).endsWith("ack SELECT_SERVER", "state GAME_CONNECT", "failed");
             assertThat(run.listener().failures())
                     .singleElement(InstanceOfAssertFactories.THROWABLE)
-                    .isInstanceOf(UnsupportedOperationException.class)
-                    .hasMessageContaining("no game part");
+                    .isInstanceOf(IOException.class);
         }
 
         @Test
@@ -191,7 +192,7 @@ class P267ProtocolTest {
         }
 
         @Test
-        void send_shouldFail_whenTheIntentIsBeyondTheLoginExchange() {
+        void send_shouldFail_whenTheIntentNeedsTheGameServer() {
             server = new FakeLoginServer("load0", "secret", false);
 
             final Run run = run(server.address(), true, new EnterWorld());
@@ -200,7 +201,7 @@ class P267ProtocolTest {
             assertThat(run.listener().failures())
                     .singleElement(InstanceOfAssertFactories.THROWABLE)
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("cannot express ENTER_WORLD");
+                    .hasMessageContaining("cannot send ENTER_WORLD before the game server");
         }
     }
 

@@ -39,9 +39,11 @@ public class RequestMagicSkillUse extends ClientPacket {
 
     @Override
     protected void readImpl() {
-        magicId = readInt(); // Identifier of the used skill.
-        ctrlPressed = readInt() != 0; // True if it's a ForceAttack : Ctrl pressed.
-        shiftPressed = readByte() != 0; // True if Shift pressed.
+        final app.l2nx.protocol.game.p267.clientpackets.RequestMagicSkillUse packet =
+                app.l2nx.protocol.game.p267.clientpackets.RequestMagicSkillUse.decode(frame());
+        magicId = packet.skillId();
+        ctrlPressed = packet.ctrlPressed();
+        shiftPressed = packet.shiftPressed();
     }
 
     @Override

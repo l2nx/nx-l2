@@ -6,7 +6,10 @@ package app.l2nx.load.bot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.within;
 
+import app.l2nx.load.bot.intent.Attack;
+import app.l2nx.load.bot.intent.CreateCharacter;
 import app.l2nx.load.bot.intent.EnterWorld;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
@@ -15,12 +18,16 @@ import app.l2nx.load.bot.intent.Logout;
 import app.l2nx.load.bot.intent.MoveTo;
 import app.l2nx.load.bot.intent.SelectCharacter;
 import app.l2nx.load.bot.intent.SelectServer;
+import app.l2nx.load.bot.intent.UseSkill;
 import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
+import app.l2nx.load.bot.observation.CastStarted;
+import app.l2nx.load.bot.observation.Died;
 import app.l2nx.load.bot.observation.ObjectGone;
 import app.l2nx.load.bot.observation.ObjectMoved;
 import app.l2nx.load.bot.observation.ObjectSeen;
+import app.l2nx.load.bot.observation.Revived;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.injection.InjectionProfile;
 import app.l2nx.load.injection.RunTimeline;
@@ -33,7 +40,9 @@ import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.load.report.model.IntentStats;
 import app.l2nx.load.report.model.StepStats;
 import app.l2nx.load.scenario.FakeScenario;
+import app.l2nx.load.scenario.LoadBehaviour;
 import app.l2nx.load.scenario.LoadScenario;
+import app.l2nx.load.scenario.model.ActionSchedule;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import io.netty.channel.EventLoop;
 import io.netty.channel.IoHandlerFactory;
@@ -41,11 +50,14 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.MockTicker;
 import io.netty.util.concurrent.Ticker;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.random.RandomGenerator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,6 +74,7 @@ class LoadBotTest {
     private static final Duration STEADY = Duration.ofSeconds(5);
     private static final long STEADY_INTENTS = STEADY.toMillis() / INTERVAL.toMillis();
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration DEFAULT_LIFECYCLE_TIMEOUT = Duration.ofSeconds(30);
     // The warm-up holds the first ten scenario intents, so this one and its neighbours fall in the steady window.
     private static final int STEADY_ORDINAL = 20;
 
@@ -473,6 +486,114 @@ class LoadBotTest {
     }
 
     @Nested
+    class LifecycleDeadline {
+        @Test
+        void lifecycleExpired_shouldRecordAStepTimeoutAndStopOnError_whenTheServerGoesSilentInTheMeasuredRamp() {
+            final Harness harness = new Harness().ramp(RAMP).lifecycleTimeout(Duration.ofSeconds(2));
+            harness.protocol.connectDelay(Duration.ofMinutes(1));
+            final LoadBot bot = harness.start(
+                    new FakeScenario(INTERVAL, Duration.ZERO).measuredPhase(MeasuredPhase.RAMP), Duration.ofSeconds(1));
+
+            harness.runToEnd();
+
+            assertThat(bot.stoppedOnError()).isTrue();
+            assertThat(bot.reachedFinalState()).isFalse();
+            assertThat(harness.stops).isEqualTo(1);
+            final StepStats actual = harness.latencies.stepStats().get(LoadBotState.LOGIN_CONNECT);
+            assertThat(actual.timeouts()).isEqualTo(1);
+            assertThat(actual.count()).isEqualTo(1);
+            assertThat(actual.maxMillis()).isCloseTo(2_000.0, within(2.0));
+        }
+
+        @Test
+        void lifecycleExpired_shouldCountTheTimeoutWithoutASample_whenTheStateLiesOutsideTheSteadyWindow() {
+            final Harness harness = new Harness().lifecycleTimeout(Duration.ofMillis(500));
+            harness.protocol.connectDelay(Duration.ofMinutes(1));
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO), Duration.ofMillis(100));
+
+            harness.runToEnd();
+
+            assertThat(bot.stoppedOnError()).isTrue();
+            final StepStats actual = harness.latencies.stepStats().get(LoadBotState.LOGIN_CONNECT);
+            assertThat(actual.timeouts()).isEqualTo(1);
+            assertThat(actual.count()).isZero();
+        }
+
+        @Test
+        void stateChanged_shouldRestartTheDeadline_whenTheLoadBotMovesOn() {
+            final Harness harness = new Harness().lifecycleTimeout(Duration.ofSeconds(1));
+            harness.protocol.connectDelay(Duration.ofMillis(900)).neverAcknowledge(IntentKind.LOGIN);
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO), Duration.ofMillis(100));
+
+            harness.runFor(Duration.ofMillis(1_500));
+
+            assertThat(bot.state())
+                    .as("900 ms in the first state, 600 ms in the second")
+                    .isEqualTo(LoadBotState.LOGIN_AUTH);
+            assertThat(bot.stoppedOnError()).isFalse();
+
+            harness.runFor(Duration.ofMillis(500));
+
+            assertThat(bot.stoppedOnError()).isTrue();
+        }
+
+        @Test
+        void stateChanged_shouldHoldNoDeadline_whenTheLoadBotStaysAtItsFinalState() {
+            final Harness harness = new Harness().lifecycleTimeout(Duration.ofSeconds(1));
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO).idle(), Duration.ofMillis(100));
+
+            harness.runToEnd();
+
+            assertThat(bot.reachedFinalState()).isTrue();
+            assertThat(bot.stoppedOnError()).isFalse();
+            assertThat(harness.latencies.stepStats()).isEmpty();
+        }
+    }
+
+    @Nested
+    class ArrivalFailures {
+        @Test
+        void expire_shouldCountAnArrivalTimeoutWithoutASample_whenItFallsOutsideTheSteadyWindow() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.LOGIN);
+            harness.start(new FakeScenario(INTERVAL, Duration.ZERO), Duration.ofMillis(500));
+
+            harness.runToEnd();
+
+            final IntentStats actual = harness.latencies.stats().get(IntentKind.LOGIN);
+            assertThat(actual.sent()).isEqualTo(1);
+            assertThat(actual.timeouts()).isEqualTo(1);
+            assertThat(actual.acknowledged()).isZero();
+            assertThat(harness.latencies.histogram(IntentKind.LOGIN).getTotalCount())
+                    .as("the steady window measures no arrival")
+                    .isZero();
+        }
+
+        @Test
+        void failed_shouldCountAPendingArrivalIntentAsAnError_whenItFallsOutsideTheSteadyWindow() {
+            final Harness harness = new Harness();
+            harness.protocol.failOnEnter(index -> true);
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+
+            harness.runToEnd();
+
+            assertThat(bot.stoppedOnError()).isTrue();
+            assertThat(harness.latencies.sent(IntentKind.ENTER_WORLD)).isEqualTo(1);
+            assertThat(harness.latencies.errors(IntentKind.ENTER_WORLD)).isEqualTo(1);
+        }
+
+        @Test
+        void acknowledged_shouldCountNothing_whenAnArrivalSucceedsOutsideTheSteadyWindow() {
+            final Harness harness = new Harness();
+            harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+
+            harness.runToEnd();
+
+            assertThat(harness.latencies.stats()).doesNotContainKeys(IntentKind.LOGIN, IntentKind.ENTER_WORLD);
+        }
+    }
+
+    @Nested
     class Timeout {
         @Test
         void expire_shouldCountTimeouts_whenServerNeverAcknowledges() {
@@ -486,6 +607,9 @@ class LoadBotTest {
             assertThat(actual.sent()).isEqualTo(STEADY_INTENTS);
             assertThat(actual.acknowledged()).isZero();
             assertThat(actual.timeouts()).isEqualTo(STEADY_INTENTS);
+            assertThat(actual.p99Millis())
+                    .as("a hanging tail enters the histogram at the timeout")
+                    .isCloseTo(500.0, within(1.0));
             assertThat(harness.session().sent().getLast()).isEqualTo(new Logout());
             assertThat(bot.stoppedOnError()).isFalse();
         }
@@ -502,8 +626,8 @@ class LoadBotTest {
             assertThat(actual.timeouts()).isEqualTo(1);
             assertThat(actual.acknowledged()).isEqualTo(STEADY_INTENTS - 1);
             assertThat(actual.maxMillis())
-                    .as("the next intent waited behind the slow one")
-                    .isBetween(199.0, 203.0);
+                    .as("the slow intent at the timeout, above the next one waiting behind it")
+                    .isCloseTo(250.0, within(1.0));
             assertThat(harness.latencies.histogram(IntentKind.MOVE_TO).getMinValue())
                     .as("no acknowledgement credited to a younger intent")
                     .isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(10));
@@ -629,6 +753,232 @@ class LoadBotTest {
     }
 
     @Nested
+    class Correlation {
+        @Test
+        void acknowledged_shouldConfirmTheIntentOfThatContent_whenAnAnswerArrivesOutOfOrder() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.MOVE_TO);
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+            harness.runUntil(harness.timeline.measuredStart() + TimeUnit.MILLISECONDS.toNanos(350));
+            final MoveTo second = harness.sentMoves().get(harness.sentMoves().size() - 2);
+            final int pending = bot.pendingCount();
+
+            harness.listener.acknowledged(IntentKind.MOVE_TO, second.destination());
+
+            assertThat(bot.pendingCount()).isEqualTo(pending - 1);
+            assertThat(harness.latencies.histogram(IntentKind.MOVE_TO).getMaxValue())
+                    .as("measured from the intent it answers, one action interval ago")
+                    .isCloseTo(TimeUnit.MILLISECONDS.toNanos(150), within(TimeUnit.MILLISECONDS.toNanos(60)));
+        }
+
+        @Test
+        void acknowledged_shouldNotCreditTheNextIntent_whenALateAnswerOutlivedItsIntent() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.MOVE_TO);
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO), Duration.ofMillis(200));
+            harness.runUntil(harness.timeline.measuredStart() + TimeUnit.MILLISECONDS.toNanos(50));
+            final MoveTo late = harness.sentMoves().getLast();
+            // Twice the timeout: the expired intent is purged, so nothing is left for this answer to land on.
+            harness.runFor(Duration.ofMillis(600));
+            final int pending = bot.pendingCount();
+
+            harness.listener.acknowledged(IntentKind.MOVE_TO, late.destination());
+
+            assertThat(bot.pendingCount()).isEqualTo(pending);
+            assertThat(harness.latencies.histogram(IntentKind.MOVE_TO).getTotalCount())
+                    .as("only the timeouts sit in the histogram, at the timeout")
+                    .isEqualTo(harness.latencies.timeouts(IntentKind.MOVE_TO));
+            assertThat(harness.latencies.histogram(IntentKind.MOVE_TO).getMinValue())
+                    .isCloseTo(TimeUnit.MILLISECONDS.toNanos(200), within(TimeUnit.MILLISECONDS.toNanos(1)));
+        }
+
+        @Test
+        void acknowledged_shouldDropARepeat_whenNoIntentWaitsForTheContent() {
+            final Harness harness = new Harness();
+            final ScriptedScenario scenario = new ScriptedScenario(new Attack(77));
+            harness.protocol.neverAcknowledge(IntentKind.ATTACK);
+            final LoadBot bot = harness.start(scenario);
+            harness.runFor(Duration.ofMillis(150));
+
+            harness.listener.acknowledged(IntentKind.ATTACK, 77);
+            assertThat(bot.pendingCount()).isZero();
+            harness.listener.acknowledged(IntentKind.ATTACK, 77);
+
+            assertThat(bot.pendingCount()).as("the server repeats its hits").isZero();
+            assertThat(bot.state()).isEqualTo(LoadBotState.IN_GAME);
+        }
+
+        @Test
+        void acknowledged_shouldTakeTheOldest_whenTheAnswerHasNoContent() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.MOVE_TO);
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+            harness.runUntil(harness.timeline.measuredStart() + TimeUnit.MILLISECONDS.toNanos(150));
+            final int pending = bot.pendingCount();
+
+            harness.listener.acknowledged(IntentKind.MOVE_TO);
+
+            assertThat(bot.pendingCount()).isEqualTo(pending - 1);
+        }
+    }
+
+    @Nested
+    class Cast {
+        @Test
+        void casting_shouldLastTheHitTime() {
+            final Harness harness = new Harness();
+            final LoadBot bot = harness.start(new ScriptedScenario(new Attack(77)), Duration.ofMillis(500));
+            harness.runFor(Duration.ofMillis(150));
+
+            harness.session().emit(new CastStarted(Duration.ofMillis(300)));
+            harness.runFor(Duration.ofMillis(200));
+            final boolean during = bot.casting();
+            harness.runFor(Duration.ofMillis(200));
+
+            assertThat(during).isTrue();
+            assertThat(bot.casting()).isFalse();
+        }
+    }
+
+    @Nested
+    class Death {
+        @Test
+        void died_shouldEndWhatTheLoadBotWasDoing_withoutATimeout() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.ATTACK);
+            final LoadBot bot = harness.start(new ScriptedScenario(new Attack(77)), Duration.ofMillis(500));
+            harness.runFor(Duration.ofMillis(150));
+
+            harness.session().emit(new Died(bot.selfObjectId()));
+            harness.runFor(Duration.ofSeconds(1));
+
+            assertThat(bot.dead()).isTrue();
+            assertThat(bot.failedIntents(IntentKind.ATTACK)).isZero();
+        }
+
+        @Test
+        void revived_shouldBringTheLoadBotBack() {
+            final Harness harness = new Harness();
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+            harness.runFor(Duration.ofMillis(10));
+
+            harness.session().emit(new Died(bot.selfObjectId()));
+            harness.session().emit(new Revived(bot.selfObjectId()));
+            harness.runFor(Duration.ofMillis(1));
+
+            assertThat(bot.dead()).isFalse();
+        }
+
+        @Test
+        void died_shouldEndTheAttackOnTheTarget_whenAnotherKilledIt() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.ATTACK);
+            final LoadBot bot = harness.start(new ScriptedScenario(new Attack(77)), Duration.ofMillis(500));
+            harness.runFor(Duration.ofMillis(150));
+
+            harness.session().emit(new Died(77));
+            harness.runFor(Duration.ofSeconds(1));
+
+            assertThat(bot.failedIntents(IntentKind.ATTACK)).isZero();
+        }
+
+        @Test
+        void died_shouldEndTheCastOnTheTarget_whenAnotherKilledIt() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.USE_SKILL);
+            final LoadBot bot =
+                    harness.start(new ScriptedScenario(new Attack(77), new UseSkill(190)), Duration.ofMillis(500));
+            harness.runFor(Duration.ofMillis(250));
+
+            harness.session().emit(new Died(77));
+            harness.runFor(Duration.ofSeconds(1));
+
+            assertThat(bot.failedIntents(IntentKind.USE_SKILL)).isZero();
+        }
+
+        @Test
+        void objectSeen_shouldNotReviveAnObject_whenItIsSentAgain() {
+            final Harness harness = new Harness();
+            final LoadBot bot = harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+            harness.runFor(Duration.ofMillis(10));
+            final ObjectSeen seen = ObjectSeen.builder()
+                    .objectId(2_000)
+                    .kind(ObjectSeen.Kind.MONSTER)
+                    .position(FakeProtocol.SPAWN)
+                    .build();
+
+            harness.session().emit(seen);
+            harness.session().emit(new Died(2_000));
+            harness.session().emit(seen);
+            harness.runFor(Duration.ofMillis(1));
+            assertThat(bot.visibleObject(2_000).dead()).isTrue();
+
+            harness.session().emit(new Revived(2_000));
+            harness.runFor(Duration.ofMillis(1));
+            assertThat(bot.visibleObject(2_000).dead()).isFalse();
+        }
+    }
+
+    @Nested
+    class Failures {
+        @Test
+        void failedIntents_shouldCountTimeoutsAndRejections() {
+            final Harness harness = new Harness();
+            harness.protocol.neverAcknowledge(IntentKind.ATTACK);
+            final LoadBot bot = harness.start(new ScriptedScenario(new Attack(77)), Duration.ofMillis(200));
+            harness.runFor(Duration.ofMillis(350));
+
+            assertThat(bot.failedIntents(IntentKind.ATTACK)).isEqualTo(1);
+            assertThat(bot.failedIntents(IntentKind.MOVE_TO)).isZero();
+        }
+    }
+
+    @Nested
+    class Seeding {
+        @Test
+        void chooseCharacter_shouldCreateFirst_thenSelect_whenTheScenarioNamesACharacter() {
+            final Harness harness = new Harness();
+            final CreateCharacter character =
+                    CreateCharacter.builder().name("load0").classId(10).build();
+            harness.start(new ScriptedScenario().creating(character));
+
+            harness.runFor(Duration.ofMillis(50));
+
+            assertThat(harness.session().sent().subList(2, 5))
+                    .containsExactly(character, new SelectCharacter(2), new EnterWorld());
+        }
+
+        @Test
+        void act_shouldLogOutAheadOfTheRampDown_whenTheBehaviourSaysLogout() {
+            final Harness harness = new Harness();
+            final LoadBot bot = harness.start(new ScriptedScenario(new Logout()));
+
+            harness.runUntil(harness.timeline.measuredStart());
+
+            assertThat(harness.session().sent().getLast()).isEqualTo(new Logout());
+            assertThat(bot.state()).isEqualTo(LoadBotState.STOPPED);
+            assertThat(bot.stoppedOnError()).isFalse();
+            assertThat(bot.logoutConfirmed()).isTrue();
+        }
+    }
+
+    @Nested
+    class Frames {
+        @Test
+        void frameHandled_shouldRecordTheMeasuredPhaseOnly() {
+            final Harness harness = new Harness();
+            harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+            harness.runFor(Duration.ofMillis(10));
+
+            harness.listener.frameHandled(1_000);
+            harness.runUntil(harness.timeline.measuredStart());
+            harness.listener.frameHandled(1_000);
+
+            assertThat(harness.latencies.frameStats().frames()).isEqualTo(1);
+        }
+    }
+
+    @Nested
     class Determinism {
         @Test
         void act_shouldSendTheSameIntents_whenSeedAndIndexAreTheSame() {
@@ -658,6 +1008,53 @@ class LoadBotTest {
         return LoadBotState.values()[state.ordinal() - 1];
     }
 
+    private static final class ScriptedScenario implements LoadScenario {
+        private final ArrayDeque<Intent> intents = new ArrayDeque<>();
+        private CreateCharacter character;
+
+        private ScriptedScenario(Intent... intents) {
+            this.intents.addAll(List.of(intents));
+        }
+
+        private ScriptedScenario creating(CreateCharacter value) {
+            character = value;
+            return this;
+        }
+
+        @Override
+        public String id() {
+            return "load-scripted";
+        }
+
+        @Override
+        public Set<IntentKind> requires() {
+            return Set.of();
+        }
+
+        @Override
+        public CreateCharacter characterToCreate(LoadBotIdentity identity) {
+            return character;
+        }
+
+        @Override
+        public LoadBehaviour behaviour(LoadBotView bot) {
+            return new LoadBehaviour() {
+                @Override
+                public Optional<ActionSchedule> schedule() {
+                    return Optional.of(ActionSchedule.builder()
+                            .interval(INTERVAL)
+                            .jitter(Duration.ZERO)
+                            .build());
+                }
+
+                @Override
+                public Intent next(LoadBotView view, RandomGenerator random) {
+                    return intents.pollFirst();
+                }
+            };
+        }
+    }
+
     private static final class Harness {
         private final MockTicker ticker = Ticker.newMockTicker();
         private final EmbeddedChannel channel =
@@ -666,12 +1063,18 @@ class LoadBotTest {
         private final LatencyRecorder latencies = new LatencyRecorder();
         private final GeneratorLagMonitor lag = new GeneratorLagMonitor();
         private Duration ramp = Duration.ZERO;
+        private Duration lifecycleTimeout = DEFAULT_LIFECYCLE_TIMEOUT;
         private RunTimeline timeline;
         private SessionListener listener;
         private int stops;
 
         Harness ramp(Duration value) {
             ramp = value;
+            return this;
+        }
+
+        Harness lifecycleTimeout(Duration value) {
+            lifecycleTimeout = value;
             return this;
         }
 
@@ -708,6 +1111,7 @@ class LoadBotTest {
                     latencies,
                     lag,
                     intentTimeout,
+                    lifecycleTimeout,
                     () -> stops++);
             bot.start();
             return bot;
@@ -715,6 +1119,13 @@ class LoadBotTest {
 
         FakeProtocol.Session session() {
             return protocol.sessions().getFirst();
+        }
+
+        List<MoveTo> sentMoves() {
+            return session().sent().stream()
+                    .filter(MoveTo.class::isInstance)
+                    .map(MoveTo.class::cast)
+                    .toList();
         }
 
         void runFor(Duration duration) {

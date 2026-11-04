@@ -29,21 +29,21 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class MyTargetSelected extends ServerPacket {
-    private final int objectId;
-    private final int color;
+    private final app.l2nx.protocol.game.p267.serverpackets.MyTargetSelected wire;
 
     public MyTargetSelected(Player player, Creature target) {
-        objectId = (target instanceof ControllableAirShip)
-                ? ((ControllableAirShip) target).getHelmObjectId()
-                : target.getObjectId();
-        color = target.isAutoAttackable(player) ? (player.getLevel() - target.getLevel()) : 0;
+        wire = app.l2nx.protocol.game.p267.serverpackets.MyTargetSelected.builder()
+                .objectId(
+                        (target instanceof ControllableAirShip)
+                                ? ((ControllableAirShip) target).getHelmObjectId()
+                                : target.getObjectId())
+                .color(target.isAutoAttackable(player) ? (player.getLevel() - target.getLevel()) : 0)
+                .build();
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.MY_TARGET_SELECTED.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeShort(color);
-        buffer.writeInt(0);
+        ServerPackets.MY_TARGET_SELECTED.debug(this);
+        wire.write(buffer.buffer());
     }
 }

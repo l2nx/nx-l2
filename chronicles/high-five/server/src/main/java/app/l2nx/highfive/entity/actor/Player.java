@@ -6476,7 +6476,8 @@ public class Player extends Playable {
                 .fame(fame)
                 .pvpKills(pvpKills)
                 .pkKills(pkKills)
-                .accessLevel(getAccessLevel().getLevel())
+                // Persists the character's own level, not the server-wide EverybodyHasAdminRights override.
+                .accessLevel(accessLevel == null ? 0 : accessLevel.getLevel())
                 .onlineStatus(getOnlineStatus())
                 .onlineTimeSeconds(offlineStartTime > 0 ? onlineTime : totalOnlineTime)
                 .newbie(newbie)

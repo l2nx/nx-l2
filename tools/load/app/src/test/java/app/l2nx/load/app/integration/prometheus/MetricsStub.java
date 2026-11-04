@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final class MetricsStub implements AutoCloseable {
     static final String PATH = "/actuator/prometheus";
     static final long JDBC_CALLS = 7;
+    static final long START_TIME_SECONDS = 1_790_000_000;
 
     private static final String JDBC_ON_LOOP = """
             # TYPE l2nx_engine_jdbc_on_loop_seconds summary
@@ -108,8 +109,12 @@ final class MetricsStub implements AutoCloseable {
             l2nx_engine_failures_total{loop="world",phase="inbox"} 0
             # TYPE l2nx_engine_timers_overdue_total counter
             l2nx_engine_timers_overdue_total{loop="world"} 0
+            # TYPE l2nx_engine_ownership_violations_total counter
+            l2nx_engine_ownership_violations_total{loop="world"} 0
             # TYPE l2nx_engine_inbox_depth gauge
             l2nx_engine_inbox_depth{loop="world"} 3
-            """.formatted(90 * n, 99 * n, 100 * n, 100 * n, 100 * n, (0.09 + 0.063 + 0.02) * n);
+            # TYPE process_start_time_seconds gauge
+            process_start_time_seconds %d
+            """.formatted(90 * n, 99 * n, 100 * n, 100 * n, 100 * n, (0.09 + 0.063 + 0.02) * n, START_TIME_SECONDS);
     }
 }

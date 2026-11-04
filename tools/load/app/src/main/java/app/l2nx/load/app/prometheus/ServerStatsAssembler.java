@@ -33,7 +33,7 @@ public final class ServerStatsAssembler {
 
     /**
      * @param results a query without an entry counts as an empty result
-     * @throws IllegalStateException when a loop exposes passes without the counters the engine registers with them, a
+     * @throws IllegalStateException when a loop has a pass timer without the counters the engine registers with it, a
      *     server this harness does not know
      */
     public static ServerStats assemble(Map<ServerMeterQuery, List<Sample>> results) {
@@ -50,29 +50,41 @@ public final class ServerStatsAssembler {
                 .build();
     }
 
+    /** The union of the pass and failure series: the session drain counts failures but has no pass timer. */
     private static Map<String, LoopStats> loops(Map<ServerMeterQuery, List<Sample>> results) {
-        final Map<String, LoopStats> loops = new TreeMap<>();
-        for (Sample count : result(results, ServerMeterQuery.PASS_COUNT)) {
-            final String loop = count.labels().get(LOOP);
-            if (loop == null) {
-                continue;
+        final Set<String> names = new TreeSet<>();
+        for (ServerMeterQuery query : List.of(ServerMeterQuery.PASS_COUNT, ServerMeterQuery.FAILURES)) {
+            for (Sample sample : result(results, query)) {
+                if (sample.labels().get(LOOP) != null) {
+                    names.add(sample.labels().get(LOOP));
+                }
             }
+        }
+        final Map<String, LoopStats> loops = new TreeMap<>();
+        for (String loop : names) {
             final Predicate<Sample> ofLoop =
                     sample -> loop.equals(sample.labels().get(LOOP));
+            final Double passes = value(results, ServerMeterQuery.PASS_COUNT, ofLoop);
+            final boolean timed = passes != null;
             final Double jdbcOnLoop = value(results, ServerMeterQuery.JDBC_ON_LOOP, ofLoop);
             loops.put(
                     loop,
                     LoopStats.builder()
-                            .passes(Math.round(count.value()))
+                            .untimed(!timed)
+                            .passes(timed ? Math.round(passes) : 0)
                             .passP50Millis(millis(value(results, ServerMeterQuery.PASS_P50, ofLoop)))
                             .passP99Millis(millis(value(results, ServerMeterQuery.PASS_P99, ofLoop)))
                             .passMaxMillis(millis(boundedMax(
                                     results, ServerMeterQuery.PASS_MAX, ServerMeterQuery.PASS_BUCKETS, ofLoop)))
-                            .overBudget(required(results, ServerMeterQuery.OVER_BUDGET, loop, ofLoop))
-                            .failures(required(results, ServerMeterQuery.FAILURES, loop, ofLoop))
-                            .timersOverdue(required(results, ServerMeterQuery.TIMERS_OVERDUE, loop, ofLoop))
+                            .overBudget(count(results, ServerMeterQuery.OVER_BUDGET, loop, ofLoop, timed))
+                            .failures(count(results, ServerMeterQuery.FAILURES, loop, ofLoop, timed))
+                            .timersOverdue(count(results, ServerMeterQuery.TIMERS_OVERDUE, loop, ofLoop, timed))
+                            .ownershipViolations(
+                                    count(results, ServerMeterQuery.OWNERSHIP_VIOLATIONS, loop, ofLoop, timed))
                             // The timer registers on a loop's first JDBC call: no series means no call.
                             .jdbcOnLoop(jdbcOnLoop == null ? 0 : Math.round(jdbcOnLoop))
+                            .jdbcOnLoopSeconds(value(results, ServerMeterQuery.JDBC_ON_LOOP_SECONDS, ofLoop))
+                            .jdbcOnLoopShare(value(results, ServerMeterQuery.JDBC_ON_LOOP_SHARE, ofLoop))
                             .phaseMeanMillis(millisBy(results, ServerMeterQuery.PHASE_MEAN, PHASE, ofLoop))
                             .inboxDepthMax(value(results, ServerMeterQuery.INBOX_DEPTH_MAX, ofLoop))
                             .inboxDepthP99(value(results, ServerMeterQuery.INBOX_DEPTH_P99, ofLoop))
@@ -127,16 +139,20 @@ public final class ServerStatsAssembler {
         return processes;
     }
 
-    private static long required(
+    private static long count(
             Map<ServerMeterQuery, List<Sample>> results,
             ServerMeterQuery query,
             String loop,
-            Predicate<Sample> ofLoop) {
+            Predicate<Sample> ofLoop,
+            boolean timed) {
         final Double value = value(results, query, ofLoop);
-        if (value == null) {
+        if (value != null) {
+            return Math.round(value);
+        }
+        if (timed) {
             throw new IllegalStateException("Loop " + loop + " exposes passes but no " + query + " series");
         }
-        return Math.round(value);
+        return 0;
     }
 
     /**

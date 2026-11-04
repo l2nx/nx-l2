@@ -17,7 +17,7 @@ public interface LoadBehaviour {
 
     /**
      * @param random the load bot's own generator: the only source of randomness, so a seed reproduces the inputs
-     * @return {@code null} to skip this slot
+     * @return {@code null} to skip this slot; a {@code Logout} ends the load bot's play ahead of the ramp-down
      */
     Intent next(LoadBotView bot, RandomGenerator random);
 

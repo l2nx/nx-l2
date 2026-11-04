@@ -4,6 +4,8 @@
  */
 package app.l2nx.load.bot;
 
+import app.l2nx.load.bot.intent.Attack;
+import app.l2nx.load.bot.intent.CreateCharacter;
 import app.l2nx.load.bot.intent.EnterWorld;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
@@ -14,11 +16,14 @@ import app.l2nx.load.bot.intent.SelectServer;
 import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
+import app.l2nx.load.bot.observation.CastStarted;
+import app.l2nx.load.bot.observation.Died;
 import app.l2nx.load.bot.observation.Entered;
 import app.l2nx.load.bot.observation.ObjectGone;
 import app.l2nx.load.bot.observation.ObjectMoved;
 import app.l2nx.load.bot.observation.ObjectSeen;
 import app.l2nx.load.bot.observation.Observation;
+import app.l2nx.load.bot.observation.Revived;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.injection.RunTimeline;
 import app.l2nx.load.latency.GeneratorLagMonitor;
@@ -38,7 +43,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
@@ -46,9 +53,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * One simulated player. Everything but {@link #start()} and {@link #close()} runs on its session's event loop, so it
- * holds no locks. Latency counts from an intent's intended time and the bot enters {@code LOGIN_CONNECT} at its
- * intended start (coordinated omission). Acknowledgements carry no correlation: an intent the server drops silently
- * absorbs the next acknowledgement and overstates latency.
+ * holds no locks. Latency counts from an intent's intended time (coordinated omission). An intent without a
+ * correlation takes the next answer of its kind, so a silently dropped one absorbs that answer and overstates latency.
  */
 @Slf4j
 public final class LoadBot implements LoadBotView {
@@ -61,6 +67,10 @@ public final class LoadBot implements LoadBotView {
 
     private static final long GOLDEN_GAMMA = 0x9E3779B97F4A7C15L;
 
+    // What a dead load bot was doing has no answer to come: the death ends these intents, not the server's silence.
+    private static final Set<IntentKind> ENDED_BY_DEATH = Collections.unmodifiableSet(
+            EnumSet.of(IntentKind.MOVE_TO, IntentKind.SAY, IntentKind.ATTACK, IntentKind.USE_SKILL));
+
     private final LoadBotIdentity identity;
     private final EventLoop loop;
     private final ClientProtocol protocol;
@@ -71,11 +81,13 @@ public final class LoadBot implements LoadBotView {
     private final LatencyRecorder latencies;
     private final GeneratorLagMonitor lag;
     private final long intentTimeoutNanos;
+    private final long lifecycleTimeoutNanos;
     private final Runnable onStopped;
     private final SplittableRandom random;
     private final Map<IntentKind, ArrayDeque<Pending>> pending = new EnumMap<>(IntentKind.class);
     private final Int2ObjectOpenHashMap<ObjectSeen> visible = new Int2ObjectOpenHashMap<>();
     private final Collection<ObjectSeen> visibleView = Collections.unmodifiableCollection(visible.values());
+    private final long[] failedIntents = new long[IntentKind.values().length];
 
     private LoadBotState state = LoadBotState.LOGIN_CONNECT;
     private ClientSession session;
@@ -85,10 +97,13 @@ public final class LoadBot implements LoadBotView {
     private ScheduledFuture<?> nextAction;
     private ScheduledFuture<?> leaveTask;
     private ScheduledFuture<?> expiry;
+    private ScheduledFuture<?> lifecycleDeadline;
     private long expiryDeadline;
     private long enteredAt;
     private boolean leaving;
     private boolean loggedOut;
+    private long castEnd;
+    private boolean logoutConfirmed;
     private boolean finished;
     private boolean stoppedOnError;
     private boolean reachedFinalState;
@@ -97,6 +112,8 @@ public final class LoadBot implements LoadBotView {
     private Position position;
     private int hp;
     private int mp;
+    private boolean dead;
+    private int attackTarget;
 
     /** @param onStopped called once, on the event loop, when the load bot reached {@code STOPPED} */
     public LoadBot(
@@ -109,6 +126,7 @@ public final class LoadBot implements LoadBotView {
             LatencyRecorder latencies,
             GeneratorLagMonitor lag,
             Duration intentTimeout,
+            Duration lifecycleTimeout,
             Runnable onStopped) {
         this.identity = identity;
         this.loop = loop;
@@ -120,6 +138,7 @@ public final class LoadBot implements LoadBotView {
         this.latencies = latencies;
         this.lag = lag;
         intentTimeoutNanos = intentTimeout.toNanos();
+        lifecycleTimeoutNanos = lifecycleTimeout.toNanos();
         this.onStopped = onStopped;
         random = new SplittableRandom(seedOf(seed, identity.index()));
         enteredAt = timeline.startAt(identity.index());
@@ -178,6 +197,10 @@ public final class LoadBot implements LoadBotView {
         return stoppedOnError;
     }
 
+    public boolean logoutConfirmed() {
+        return logoutConfirmed;
+    }
+
     /** Whether the load bot ever reached its final state; read once its event loop is done. */
     public boolean reachedFinalState() {
         return reachedFinalState;
@@ -214,8 +237,28 @@ public final class LoadBot implements LoadBotView {
     }
 
     @Override
+    public boolean dead() {
+        return dead;
+    }
+
+    @Override
     public Collection<ObjectSeen> visibleObjects() {
         return visibleView;
+    }
+
+    @Override
+    public ObjectSeen visibleObject(int objectId) {
+        return visible.get(objectId);
+    }
+
+    @Override
+    public boolean casting() {
+        return timeline.now() < castEnd;
+    }
+
+    @Override
+    public long failedIntents(IntentKind kind) {
+        return failedIntents[kind.ordinal()];
     }
 
     private ScheduledFuture<?> schedule(long intended, Runnable task) {
@@ -238,6 +281,7 @@ public final class LoadBot implements LoadBotView {
         if (finished) {
             return;
         }
+        armLifecycleDeadline();
         try {
             session = protocol.open(identity, loop, new Listener());
         } catch (RuntimeException e) {
@@ -258,6 +302,7 @@ public final class LoadBot implements LoadBotView {
         }
         left(state, next);
         state = next;
+        armLifecycleDeadline();
         if (next != LoadBotState.IN_GAME) {
             cancelActions();
         }
@@ -279,11 +324,22 @@ public final class LoadBot implements LoadBotView {
                         .password(identity.password())
                         .build());
             case SERVER_LIST -> sendArrival(new SelectServer());
-            case CHARACTER_SELECT -> sendArrival(new SelectCharacter(identity.characterSlot()));
+            case CHARACTER_SELECT -> chooseCharacter();
             case ENTERING -> sendArrival(new EnterWorld());
             case IN_GAME -> enterGame();
             default -> {}
         }
+    }
+
+    private void chooseCharacter() {
+        final CreateCharacter character;
+        try {
+            character = scenario.characterToCreate(identity);
+        } catch (RuntimeException e) {
+            fail(e);
+            return;
+        }
+        sendArrival(character != null ? character : new SelectCharacter(identity.characterSlot()));
     }
 
     private void left(LoadBotState left, LoadBotState next) {
@@ -295,6 +351,38 @@ public final class LoadBot implements LoadBotView {
             latencies.recordStep(left, now - enteredAt);
         }
         enteredAt = now;
+    }
+
+    /** Counts from entering the state, so {@code LOGIN_CONNECT} runs from the intended start like its step does. */
+    private void armLifecycleDeadline() {
+        cancelLifecycleDeadline();
+        if (state.compareTo(finalState) < 0) {
+            lifecycleDeadline = loop.schedule(
+                    this::lifecycleExpired,
+                    Math.max(0, enteredAt + lifecycleTimeoutNanos - timeline.now()),
+                    TimeUnit.NANOSECONDS);
+        }
+    }
+
+    private void cancelLifecycleDeadline() {
+        if (lifecycleDeadline != null) {
+            lifecycleDeadline.cancel(false);
+            lifecycleDeadline = null;
+        }
+    }
+
+    private void lifecycleExpired() {
+        lifecycleDeadline = null;
+        if (finished) {
+            return;
+        }
+        if (timeline.countsArrival(identity.index(), enteredAt)) {
+            latencies.recordStepTimeout(state, lifecycleTimeoutNanos);
+        } else {
+            latencies.recordStepTimeout(state);
+        }
+        fail(new IllegalStateException(
+                "No progress out of " + state + " within " + Duration.ofNanos(lifecycleTimeoutNanos)));
     }
 
     /** A state past the final one counts as reaching it: an adapter may report several steps at once. */
@@ -347,8 +435,12 @@ public final class LoadBot implements LoadBotView {
             fail(e);
             return;
         }
+        if (intent instanceof Logout) {
+            leave();
+            return;
+        }
         if (intent != null) {
-            send(intent, intended, timeline.countsAction(intended));
+            send(intent, intended, timeline.countsAction(intended), false);
         }
         if (!finished && !leaving && state == LoadBotState.IN_GAME) {
             nextIntended = intended + schedule.nextDelayNanos(random);
@@ -365,11 +457,14 @@ public final class LoadBot implements LoadBotView {
 
     private void sendArrival(Intent intent) {
         final long now = timeline.now();
-        send(intent, now, timeline.countsArrival(identity.index(), now));
+        send(intent, now, timeline.countsArrival(identity.index(), now), true);
     }
 
-    /** @param counted whether the measured phase counts the intent, judged once for its whole life */
-    private void send(Intent intent, long intended, boolean counted) {
+    /**
+     * @param arrival a lifecycle intent: its failure counts even outside the measured phase, since the load bot it
+     *     loses is missing from every later sample
+     */
+    private void send(Intent intent, long intended, boolean counted, boolean arrival) {
         final IntentKind kind = intent.kind();
         if (!capabilities.contains(kind)) {
             fail(new IllegalStateException("Protocol " + protocol.id() + " cannot express " + kind));
@@ -382,25 +477,40 @@ public final class LoadBot implements LoadBotView {
         if (counted) {
             latencies.recordSent(kind);
         }
+        if (intent instanceof Attack attack) {
+            attackTarget = attack.targetObjectId();
+        }
         // Pending before the send: an adapter may acknowledge synchronously inside it.
-        pending.computeIfAbsent(kind, k -> new ArrayDeque<>()).addLast(new Pending(intended, counted));
+        pending.computeIfAbsent(kind, k -> new ArrayDeque<>())
+                .addLast(new Pending(intended, counted, arrival, intent.correlation()));
         armExpiry(intended + intentTimeoutNanos);
         session.send(intent);
     }
 
     private void acknowledged(IntentKind kind) {
-        final Pending head = takeOldest(kind);
-        if (head == null) {
+        confirmed(kind, takeOldest(kind));
+    }
+
+    private void acknowledged(IntentKind kind, Object correlation) {
+        confirmed(kind, takeMatching(kind, correlation));
+    }
+
+    private void confirmed(IntentKind kind, Pending answered) {
+        if (answered == null) {
             return;
         }
-        if (!head.expired && head.counted) {
-            final long latency = timeline.now() - head.intended;
+        logoutConfirmed |= kind == IntentKind.LOGOUT;
+        if (!answered.expired) {
+            final long latency = timeline.now() - answered.intended;
             if (latency >= intentTimeoutNanos) {
                 // The expiry task has not run yet: the intent is late all the same.
-                latencies.recordTimeout(kind);
-            } else {
+                countTimeout(kind, answered);
+            } else if (answered.counted) {
                 latencies.recordAcknowledged(kind, latency);
             }
+        }
+        if (kind == IntentKind.CREATE_CHARACTER && !finished && state == LoadBotState.CHARACTER_SELECT) {
+            sendArrival(new SelectCharacter(identity.characterSlot()));
         }
         departWhenDrained();
     }
@@ -411,10 +521,30 @@ public final class LoadBot implements LoadBotView {
             return;
         }
         // An expired intent has already counted as a timeout.
-        if (!head.expired && head.counted) {
-            latencies.recordError(kind);
+        if (!head.expired) {
+            countError(kind, head);
         }
         departWhenDrained();
+    }
+
+    private void countTimeout(IntentKind kind, Pending waiting) {
+        failedIntents[kind.ordinal()]++;
+        if (waiting.counted) {
+            latencies.recordTimeout(kind, intentTimeoutNanos);
+        } else if (waiting.arrival) {
+            latencies.recordSent(kind);
+            latencies.recordTimeout(kind);
+        }
+    }
+
+    private void countError(IntentKind kind, Pending waiting) {
+        failedIntents[kind.ordinal()]++;
+        if (waiting.counted) {
+            latencies.recordError(kind);
+        } else if (waiting.arrival) {
+            latencies.recordSent(kind);
+            latencies.recordError(kind);
+        }
     }
 
     /** The oldest pending intent of {@code kind}, expired or not; {@code null} when none is pending. */
@@ -424,6 +554,24 @@ public final class LoadBot implements LoadBotView {
         }
         final ArrayDeque<Pending> queue = pending.get(kind);
         return queue == null ? null : queue.pollFirst();
+    }
+
+    private Pending takeMatching(IntentKind kind, Object correlation) {
+        if (finished) {
+            return null;
+        }
+        final ArrayDeque<Pending> queue = pending.get(kind);
+        if (queue == null) {
+            return null;
+        }
+        for (Iterator<Pending> waiting = queue.iterator(); waiting.hasNext(); ) {
+            final Pending candidate = waiting.next();
+            if (Objects.equals(candidate.correlation, correlation)) {
+                waiting.remove();
+                return candidate;
+            }
+        }
+        return null;
     }
 
     private void armExpiry(long deadline) {
@@ -465,9 +613,7 @@ public final class LoadBot implements LoadBotView {
                     break;
                 }
                 waiting.expired = true;
-                if (waiting.counted) {
-                    latencies.recordTimeout(entry.getKey());
-                }
+                countTimeout(entry.getKey(), waiting);
             }
             if (!queue.isEmpty() && queue.peekFirst().expired) {
                 final long purgeAt = queue.peekFirst().intended + purgeAge;
@@ -511,7 +657,7 @@ public final class LoadBot implements LoadBotView {
         if (state == LoadBotState.IN_GAME) {
             loggedOut = true;
             final long now = timeline.now();
-            send(new Logout(), now, timeline.countsAction(now));
+            send(new Logout(), now, timeline.countsAction(now), false);
         } else {
             finish(false);
         }
@@ -523,7 +669,12 @@ public final class LoadBot implements LoadBotView {
                 selfObjectId = entered.selfObjectId();
                 position = entered.position();
             }
-            case ObjectSeen seen -> visible.put(seen.objectId(), seen);
+            case ObjectSeen seen -> {
+                final ObjectSeen known = visible.get(seen.objectId());
+                final boolean stillDead = known != null && known.dead();
+                visible.put(
+                        seen.objectId(), stillDead ? seen.toBuilder().dead(true).build() : seen);
+            }
             case ObjectGone gone -> visible.remove(gone.objectId());
             case ObjectMoved moved -> {
                 if (moved.objectId() == selfObjectId) {
@@ -539,6 +690,57 @@ public final class LoadBot implements LoadBotView {
                 hp = status.hp();
                 mp = status.mp();
             }
+            case CastStarted cast -> castEnd = timeline.now() + cast.hitTime().toNanos();
+            case Died died -> died(died.objectId());
+            case Revived revived -> revived(revived.objectId());
+        }
+    }
+
+    private void died(int objectId) {
+        if (objectId == selfObjectId) {
+            dead = true;
+            ENDED_BY_DEATH.forEach(this::abandon);
+        } else {
+            markDead(objectId, true);
+            abandonAttackOn(objectId);
+            if (objectId == attackTarget) {
+                abandon(IntentKind.USE_SKILL);
+            }
+        }
+        departWhenDrained();
+    }
+
+    private void revived(int objectId) {
+        if (objectId == selfObjectId) {
+            dead = false;
+        } else {
+            markDead(objectId, false);
+        }
+    }
+
+    private void markDead(int objectId, boolean value) {
+        visible.computeIfPresent(
+                objectId, (id, seen) -> seen.toBuilder().dead(value).build());
+    }
+
+    private void abandon(IntentKind kind) {
+        final ArrayDeque<Pending> queue = pending.get(kind);
+        if (queue != null) {
+            queue.clear();
+        }
+    }
+
+    private void abandonAttackOn(int target) {
+        final ArrayDeque<Pending> queue = pending.get(IntentKind.ATTACK);
+        if (queue != null) {
+            final Object correlation = target;
+            queue.removeIf(waiting -> correlation.equals(waiting.correlation));
+        }
+    }
+
+    private void frameHandled(long nanos) {
+        if (timeline.countsLag(timeline.now())) {
+            latencies.recordFrame(nanos);
         }
     }
 
@@ -566,13 +768,14 @@ public final class LoadBot implements LoadBotView {
             expiry.cancel(false);
             expiry = null;
         }
+        cancelLifecycleDeadline();
         for (Map.Entry<IntentKind, ArrayDeque<Pending>> entry : pending.entrySet()) {
             for (Pending waiting : entry.getValue()) {
-                if (!waiting.expired && waiting.counted) {
+                if (!waiting.expired) {
                     if (onError) {
-                        latencies.recordError(entry.getKey());
+                        countError(entry.getKey(), waiting);
                     } else {
-                        latencies.recordTimeout(entry.getKey());
+                        countTimeout(entry.getKey(), waiting);
                     }
                 }
             }
@@ -603,6 +806,11 @@ public final class LoadBot implements LoadBotView {
         }
 
         @Override
+        public void acknowledged(IntentKind kind, Object correlation) {
+            LoadBot.this.acknowledged(kind, correlation);
+        }
+
+        @Override
         public void rejected(IntentKind kind) {
             LoadBot.this.rejected(kind);
         }
@@ -611,17 +819,26 @@ public final class LoadBot implements LoadBotView {
         public void failed(Throwable cause) {
             fail(cause);
         }
+
+        @Override
+        public void frameHandled(long nanos) {
+            LoadBot.this.frameHandled(nanos);
+        }
     }
 
     /** An intent waiting for its acknowledgement; an expired one only stays to absorb a late acknowledgement. */
     private static final class Pending {
         private final long intended;
         private final boolean counted;
+        private final boolean arrival;
+        private final Object correlation;
         private boolean expired;
 
-        private Pending(long intended, boolean counted) {
+        private Pending(long intended, boolean counted, boolean arrival, Object correlation) {
             this.intended = intended;
             this.counted = counted;
+            this.arrival = arrival;
+            this.correlation = correlation;
         }
     }
 }

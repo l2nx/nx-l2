@@ -4,8 +4,7 @@
  */
 package app.l2nx.load.report.model;
 
-/** Why a run is invalid; an invalid run is neither a pass nor a fail. */
+/** Why a run is invalid; an invalid run is neither a pass nor a fail, so only the generator's own faults belong here. */
 public enum InvalidReason {
-    GENERATOR_LAG,
-    LOAD_BOTS_STOPPED
+    GENERATOR_LAG
 }

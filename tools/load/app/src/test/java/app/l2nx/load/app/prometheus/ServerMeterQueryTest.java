@@ -30,6 +30,19 @@ class ServerMeterQueryTest {
         }
 
         @Test
+        void expression_shouldDivideTheJdbcTimeByThePassTime() {
+            final String actual = ServerMeterQuery.JDBC_ON_LOOP_SHARE.expression(1_000);
+
+            assertThat(actual)
+                    .isEqualTo("sum by (loop) (l2nx_engine_jdbc_on_loop_seconds_sum"
+                            + " - ((l2nx_engine_jdbc_on_loop_seconds_sum offset 1000ms)"
+                            + " or (l2nx_engine_jdbc_on_loop_seconds_sum * 0)))"
+                            + " / sum by (loop) (l2nx_engine_pass_seconds_sum"
+                            + " - ((l2nx_engine_pass_seconds_sum offset 1000ms)"
+                            + " or (l2nx_engine_pass_seconds_sum * 0)))");
+        }
+
+        @Test
         void expression_shouldWriteTheRangeOfAGaugeInMilliseconds() {
             final String actual = ServerMeterQuery.PASS_MAX.expression(61_250);
 
@@ -69,6 +82,13 @@ class ServerMeterQueryTest {
             final String actual = ServerMeterQuery.upThroughout("game", 61_250, Duration.ofMillis(1_500));
 
             assertThat(actual).isEqualTo("min_over_time(up{job=\"game\"}[62750ms])");
+        }
+
+        @Test
+        void processStart_shouldSelectTheJob() {
+            final String actual = ServerMeterQuery.processStart("game");
+
+            assertThat(actual).isEqualTo("process_start_time_seconds{job=\"game\"}");
         }
 
         @Test

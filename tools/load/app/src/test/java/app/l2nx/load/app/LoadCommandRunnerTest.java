@@ -24,18 +24,17 @@ import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.load.protocol.p267.P267Protocol;
 import app.l2nx.load.report.ReportWriter;
 import app.l2nx.load.report.model.IntentStats;
-import app.l2nx.load.report.model.InvalidReason;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
-import app.l2nx.load.run.RunSettings;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import io.netty.channel.EventLoop;
 import io.netty.channel.IoHandlerFactory;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -49,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -58,23 +58,9 @@ import org.springframework.boot.SpringApplication;
 
 // Each test boots the application, and Boot sets up logging for the whole JVM: the boots must not overlap.
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("spring-boot-logging")
 class LoadCommandRunnerTest {
     private static final Instant STARTED_AT = Instant.parse("2026-10-21T08:00:00Z");
-    // The limit every run takes: LoadCommandRunner keeps the default.
-    private static final double MAX_GENERATOR_LAG_P99_MILLIS = RunSettings.withDefaults()
-                    .scenario(RoamLoadScenario.ID)
-                    .protocol(InMemoryProtocol.ID)
-                    .injection(InjectionProfile.builder()
-                            .bots(1)
-                            .ramp(Duration.ZERO)
-                            .warmUp(Duration.ZERO)
-                            .steady(Duration.ofSeconds(1))
-                            .rampDown(Duration.ZERO)
-                            .build())
-                    .build()
-                    .maxGeneratorLagP99()
-                    .toNanos()
-            / 1_000_000.0;
 
     private final ReportWriter reportWriter = new ReportWriter();
 
@@ -98,22 +84,22 @@ class LoadCommandRunnerTest {
                     "--l2nx.load.ramp-down=200ms",
                     "--l2nx.load.seed=42",
                     "--l2nx.load.event-loop-threads=2",
+                    // A 15.6 ms Windows timer tick alone can exceed the default limit, with about 30 samples p99 is the
+                    // max.
+                    "--l2nx.load.max-generator-lag-p99=100ms",
                     "--l2nx.load.output-dir=" + root);
 
             final List<Path> summaries = summaries(root);
             assertThat(exitCode).isZero();
             assertThat(summaries).hasSize(1);
             final RunSummary actual = reportWriter.readSummary(summaries.getFirst());
+            assertThat(actual.validity())
+                    .as("lag p99 %s ms", actual.generatorLagP99Millis())
+                    .isEqualTo(RunValidity.VALID);
             assertThat(actual.reachedFinalState()).isEqualTo(20);
             assertThat(actual.stoppedShare()).isZero();
             assertThat(actual.timeoutShare()).isZero();
             assertThat(actual.rejectedShare()).isZero();
-            // Generator lag is the machine's timer resolution, not the harness's; the limit is tested in LoadRunTest.
-            final boolean lagged = actual.generatorLagP99Millis() > MAX_GENERATOR_LAG_P99_MILLIS;
-            assertThat(actual.invalidReasons())
-                    .as("lag p99 %s ms", actual.generatorLagP99Millis())
-                    .isEqualTo(lagged ? List.of(InvalidReason.GENERATOR_LAG) : List.of());
-            assertThat(actual.validity()).isEqualTo(lagged ? RunValidity.INVALID : RunValidity.VALID);
             assertThat(actual.serverWindow())
                     .as("no server behind the in-memory protocol")
                     .isNull();
@@ -126,18 +112,20 @@ class LoadCommandRunnerTest {
 
         @Test
         void run_shouldFailBeforeAnyLoadBotStarts_whenPrometheusIsNotReady() throws IOException {
-            final int closedPort = closedPort();
+            try (Socket closed = closedPort()) {
+                final int closedPort = closed.getLocalPort();
 
-            assertThatThrownBy(() -> execute(
-                            LoadCommandRunner.RUN,
-                            "--l2nx.load.scenario=" + LoginStormLoadScenario.ID,
-                            "--l2nx.load.login-storm.final-state=" + LoadBotState.GAME_CONNECT,
-                            "--l2nx.load.protocol=" + P267Protocol.ID,
-                            "--l2nx.load.bots=1",
-                            "--l2nx.load.prometheus.url=http://127.0.0.1:" + closedPort,
-                            "--l2nx.load.p267.login-port=" + closedPort,
-                            "--l2nx.load.output-dir=" + root))
-                    .hasStackTraceContaining("Prometheus at http://127.0.0.1:" + closedPort + " is not ready");
+                assertThatThrownBy(() -> execute(
+                                LoadCommandRunner.RUN,
+                                "--l2nx.load.scenario=" + LoginStormLoadScenario.ID,
+                                "--l2nx.load.login-storm.final-state=" + LoadBotState.GAME_CONNECT,
+                                "--l2nx.load.protocol=" + P267Protocol.ID,
+                                "--l2nx.load.bots=1",
+                                "--l2nx.load.prometheus.url=http://127.0.0.1:" + closedPort,
+                                "--l2nx.load.p267.login-port=" + closedPort,
+                                "--l2nx.load.output-dir=" + root))
+                        .hasStackTraceContaining("Prometheus at http://127.0.0.1:" + closedPort + " is not ready");
+            }
             assertThat(summaries(root)).isEmpty();
         }
     }
@@ -190,27 +178,26 @@ class LoadCommandRunnerTest {
     @Execution(ExecutionMode.SAME_THREAD)
     class Seed {
         @Test
-        void seed_shouldLogEveryLoadBotInUpToTheServerListWithoutAReport() throws IOException {
+        void seed_shouldSetUpEveryLoadBotWithoutAReport() throws IOException {
             final int exitCode = execute(
                     LoadCommandRunner.SEED,
                     "--l2nx.load.protocol=" + InMemoryProtocol.ID,
                     "--l2nx.load.bots=10",
                     "--l2nx.load.ramp=200ms",
                     "--l2nx.load.warm-up=0s",
-                    // Room for the last load bot to log in; the run ends once every load bot is done.
                     "--l2nx.load.steady=5s",
                     "--l2nx.load.ramp-down=0s",
                     "--l2nx.load.event-loop-threads=1",
                     "--l2nx.load.output-dir=" + root);
 
-            assertThat(exitCode).as("every load bot reached the server list").isZero();
+            assertThat(exitCode).as("every load bot was set up and logged out").isZero();
             assertThat(summaries(root))
                     .as("nothing a gate could take for a run")
                     .isEmpty();
         }
 
         @Test
-        void seed_shouldFail_whenALoadBotDoesNotLogIn() {
+        void seed_shouldFail_whenALoadBotIsNotSetUp() {
             // Steps slower than the whole run: the run closes every load bot before its login is answered.
             assertThatThrownBy(() -> execute(
                             LoadCommandRunner.SEED,
@@ -225,7 +212,7 @@ class LoadCommandRunnerTest {
                             "--l2nx.load.event-loop-threads=1",
                             "--l2nx.load.output-dir=" + root))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("2 of 2 load bots did not log in");
+                    .hasMessageContaining("2 of 2 load bots were not seeded with ARENA");
         }
 
         @Test
@@ -313,6 +300,8 @@ class LoadCommandRunnerTest {
                     .rampDown(Duration.ZERO)
                     .eventLoopThreads(1)
                     .intentTimeout(Duration.ofSeconds(1))
+                    .lifecycleTimeout(Duration.ofSeconds(30))
+                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .outputDir(root)
                     .accounts(LoadProperties.Accounts.builder()
                             .prefix("load")
@@ -394,15 +383,14 @@ class LoadCommandRunnerTest {
     @Execution(ExecutionMode.SAME_THREAD)
     class Gate {
         @ParameterizedTest(name = "client p99 {0} ms against 10 ms -> exit code {1}")
-        @CsvSource({"10.5, 0", "15.0, " + LoadCommandRunner.GATE_FAILED})
-        void gate_shouldExitWithTheVerdict_whenGivenThreeReportsAndABaseline(double clientP99Millis, int expected)
-                throws IOException {
-            final Path baseline = reportWriter
-                    .write(root.resolve("baseline"), summary(0, 10.0), Map.of(), Map.of(), Map.of())
-                    .resolve(ReportWriter.SUMMARY_FILE);
+        @CsvSource({"19.5, 0", "25.0, " + LoadCommandRunner.GATE_FAILED})
+        void gate_shouldExitWithTheVerdict_whenGivenThreeReportsAndABaselineOfThree(
+                double clientP99Millis, int expected) throws IOException {
+            final Path baseline = root.resolve("baseline");
             final Path reports = root.resolve("reports");
             for (int run = 1; run <= 3; run++) {
-                reportWriter.write(reports, summary(run, clientP99Millis), Map.of(), Map.of(), Map.of());
+                reportWriter.write(baseline, summary(run, 10.0), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, summary(run + 3, clientP99Millis), Map.of(), Map.of(), Map.of());
             }
 
             // No l2nx.load.protocol: the gate connects no load bot.
@@ -413,16 +401,80 @@ class LoadCommandRunnerTest {
 
             assertThat(actual).isEqualTo(expected);
         }
+
+        @Test
+        void gate_shouldTakeTheFloorFromTheSettings_whenOneIsGiven() throws IOException {
+            final Path baseline = root.resolve("baseline");
+            final Path reports = root.resolve("reports");
+            for (int run = 1; run <= 3; run++) {
+                reportWriter.write(baseline, summary(run, 10.0), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, summary(run + 3, 15.0), Map.of(), Map.of(), Map.of());
+            }
+
+            final int actual = execute(
+                    LoadCommandRunner.GATE,
+                    "--" + LoadCommandRunner.BASELINE + "=" + baseline,
+                    "--" + LoadCommandRunner.REPORTS + "=" + reports,
+                    "--l2nx.load.gate.client-p99-floor=1ms");
+
+            assertThat(actual).isEqualTo(LoadCommandRunner.GATE_FAILED);
+        }
+
+        @Test
+        void gate_shouldNotCountABaselineFileAsARun_whenTheReportsDirectoryHoldsBoth() throws IOException {
+            final Path reports = root.resolve("reports");
+            final StringBuilder baseline = new StringBuilder();
+            for (int run = 1; run <= 3; run++) {
+                final Path directory = reportWriter.write(reports, summary(run, 10.0), Map.of(), Map.of(), Map.of());
+                baseline.append(directory.resolve(ReportWriter.SUMMARY_FILE)).append(',');
+                reportWriter.write(reports, summary(run + 3, 100.0), Map.of(), Map.of(), Map.of());
+            }
+
+            final int actual = execute(
+                    LoadCommandRunner.GATE,
+                    "--" + LoadCommandRunner.BASELINE + "=" + baseline,
+                    "--" + LoadCommandRunner.REPORTS + "=" + reports);
+
+            assertThat(actual)
+                    .as("the slow runs alone are measured against the baseline")
+                    .isEqualTo(LoadCommandRunner.GATE_FAILED);
+        }
+
+        @Test
+        void gate_shouldPassOnTheAbsoluteCriteria_whenNoBaselineIsGiven() throws IOException {
+            final Path reports = root.resolve("reports");
+            for (int run = 1; run <= 3; run++) {
+                reportWriter.write(reports, summary(run, 100.0), Map.of(), Map.of(), Map.of());
+            }
+
+            final int actual = execute(LoadCommandRunner.GATE, "--" + LoadCommandRunner.REPORTS + "=" + reports);
+
+            assertThat(actual).isZero();
+        }
+
+        @Test
+        void gate_shouldFail_whenTheBaselineIsGivenButHoldsNoReport() throws IOException {
+            final Path reports = root.resolve("reports");
+            reportWriter.write(reports, summary(1, 10.0), Map.of(), Map.of(), Map.of());
+            final Path empty = Files.createDirectory(root.resolve("empty"));
+
+            assertThatThrownBy(() -> execute(
+                            LoadCommandRunner.GATE,
+                            "--" + LoadCommandRunner.BASELINE + "=" + empty,
+                            "--" + LoadCommandRunner.REPORTS + "=" + reports))
+                    .hasStackTraceContaining("No " + ReportWriter.SUMMARY_FILE);
+        }
     }
 
     private static int execute(String... args) {
         return SpringApplication.exit(SpringApplication.run(LoadApplication.class, args));
     }
 
-    private static int closedPort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-            return socket.getLocalPort();
-        }
+    /** Bound but not listening: a connect is refused, and nothing else can take the port while the socket is held. */
+    private static Socket closedPort() throws IOException {
+        final Socket socket = new Socket();
+        socket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+        return socket;
     }
 
     private static List<Path> summaries(Path directory) throws IOException {

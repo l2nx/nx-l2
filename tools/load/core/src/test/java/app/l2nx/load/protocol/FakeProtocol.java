@@ -200,12 +200,14 @@ public final class FakeProtocol implements ClientProtocol {
             sent.add(intent);
             final IntentKind kind = intent.kind();
             switch (kind) {
-                case LOGIN -> respond(() -> acknowledge(kind, LoadBotState.SERVER_LIST));
+                case LOGIN -> answerLifecycle(kind, () -> acknowledge(kind, LoadBotState.SERVER_LIST));
                 case SELECT_SERVER ->
-                    respond(() -> acknowledge(kind, LoadBotState.GAME_CONNECT, LoadBotState.CHARACTER_SELECT));
-                case SELECT_CHARACTER -> respond(() -> acknowledge(kind, LoadBotState.ENTERING));
-                case ENTER_WORLD -> respond(this::enter);
-                case LOGOUT -> respond(() -> acknowledge(kind, LoadBotState.CLOSING, LoadBotState.STOPPED));
+                    answerLifecycle(
+                            kind, () -> acknowledge(kind, LoadBotState.GAME_CONNECT, LoadBotState.CHARACTER_SELECT));
+                case SELECT_CHARACTER -> answerLifecycle(kind, () -> acknowledge(kind, LoadBotState.ENTERING));
+                case ENTER_WORLD -> answerLifecycle(kind, this::enter);
+                case LOGOUT ->
+                    answerLifecycle(kind, () -> acknowledge(kind, LoadBotState.CLOSING, LoadBotState.STOPPED));
                 default -> {
                     final int ordinal = scenarioIntents++;
                     if (!unacknowledged.contains(kind)) {
@@ -218,6 +220,12 @@ public final class FakeProtocol implements ClientProtocol {
         @Override
         public void close() {
             open = false;
+        }
+
+        private void answerLifecycle(IntentKind kind, Runnable answer) {
+            if (!unacknowledged.contains(kind)) {
+                respond(answer);
+            }
         }
 
         private void enter() {

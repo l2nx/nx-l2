@@ -50,6 +50,8 @@ class PrometheusServerMetersTest {
     private static final long RANGE_MILLIS = 120_000;
     private static final String LAST_SCRAPE = ServerMeterQuery.lastScrape(List.of("game", "login"));
     private static final Instant NOW = Instant.parse("2026-10-31T10:00:00Z");
+    private static final Instant GAME_STARTED_AT = Instant.parse("2026-10-31T09:58:00Z");
+    private static final Instant LOGIN_STARTED_AT = Instant.parse("2026-10-31T09:57:30Z");
     private static final Duration MAX_CLOCK_SKEW = Duration.ofSeconds(1);
     private static final Duration INGEST_WAIT = Duration.ofMillis(100);
     private static final Duration POLL_TIME = Duration.ofMillis(40);
@@ -143,12 +145,34 @@ class PrometheusServerMetersTest {
         }
 
         @Test
-        void checkReady_shouldPass_whenEveryTargetIsUp() {
+        void checkReady_shouldReturnTheStartTimeOfEachServer_whenEveryTargetIsUp() {
             stubReady();
 
-            meters.checkReady();
+            final Map<String, Instant> actual = meters.checkReady();
 
-            verify(client).query(ServerMeterQuery.up("login"), null);
+            assertThat(actual).isEqualTo(Map.of("game", GAME_STARTED_AT, "login", LOGIN_STARTED_AT));
+        }
+
+        @Test
+        void checkReady_shouldTakeTheEarliestStart_whenAJobRunsSeveralProcesses() {
+            stubReady();
+            when(client.query(ServerMeterQuery.processStart("game"), null))
+                    .thenReturn(List.of(scrapedAt(GAME_STARTED_AT), scrapedAt(GAME_STARTED_AT.minusSeconds(60))));
+
+            final Map<String, Instant> actual = meters.checkReady();
+
+            assertThat(actual.get("game")).isEqualTo(GAME_STARTED_AT.minusSeconds(60));
+        }
+
+        @Test
+        void checkReady_shouldFail_whenAServerExposesNoStartTime() {
+            stubReady();
+            when(client.query(ServerMeterQuery.processStart("login"), null)).thenReturn(List.of());
+
+            assertThatIllegalStateException()
+                    .isThrownBy(meters::checkReady)
+                    .withMessageContaining("The login server exposes no process_start_time_seconds")
+                    .withMessageContaining(LOGIN_METRICS.toString());
         }
     }
 
@@ -314,6 +338,9 @@ class PrometheusServerMetersTest {
         when(client.scrapeIntervals()).thenReturn(SCRAPE_INTERVALS);
         when(client.query(ServerMeterQuery.up("game"), null)).thenReturn(List.of(up("game", 1)));
         when(client.query(ServerMeterQuery.up("login"), null)).thenReturn(List.of(up("login", 1)));
+        when(client.query(ServerMeterQuery.processStart("game"), null)).thenReturn(List.of(scrapedAt(GAME_STARTED_AT)));
+        when(client.query(ServerMeterQuery.processStart("login"), null))
+                .thenReturn(List.of(scrapedAt(LOGIN_STARTED_AT)));
     }
 
     private void ready() {

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 L2NX contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# Servers run on the host (bootRun or the distribution), not in compose.
+# Servers of the compose profile load; prometheus-host.yml is the same for servers started on the host.
 # Job names equal l2nx.load.prometheus.targets[].job of the load harness.
 global:
   scrape_interval: 1s
@@ -11,8 +11,8 @@ scrape_configs:
   - job_name: game
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["host.docker.internal:8777"]
+      - targets: ["game-server:8777"]
   - job_name: login
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["host.docker.internal:8106"]
+      - targets: ["login-server:8106"]

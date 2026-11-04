@@ -11,4 +11,9 @@ public record MoveTo(Position destination) implements Intent {
     public IntentKind kind() {
         return IntentKind.MOVE_TO;
     }
+
+    @Override
+    public Object correlation() {
+        return destination;
+    }
 }

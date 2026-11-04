@@ -7,9 +7,16 @@ package app.l2nx.load.bot.intent;
 public enum IntentKind {
     LOGIN,
     SELECT_SERVER,
+    CREATE_CHARACTER,
     SELECT_CHARACTER,
     ENTER_WORLD,
     MOVE_TO,
     SAY,
+    ATTACK,
+    USE_SKILL,
+    RESURRECT_AT_RESTART_POINT,
+    RESURRECT_IN_PLACE,
+    ADMIN_COMMAND,
+    ADMIN_TELEPORT,
     LOGOUT
 }

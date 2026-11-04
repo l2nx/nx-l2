@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# Lets a real game client on the host into the profile load, for the trust check of spec 009 §9. An override because
+# these ports collide with servers started on the host. Both sit on login-server, whose network game-server shares.
+#   docker compose -f compose.yaml -f docker/compose.client.yaml --profile load up -d --wait login-server game-server
+
+services:
+  login-server:
+    ports:
+      - "127.0.0.1:2106:2106"
+      - "127.0.0.1:7777:7777"

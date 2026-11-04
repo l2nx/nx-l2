@@ -11,14 +11,21 @@ import app.l2nx.load.protocol.SessionListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public final class RecordingListener implements SessionListener {
     private final List<String> events = new CopyOnWriteArrayList<>();
     private final List<Throwable> failures = new CopyOnWriteArrayList<>();
     private Consumer<String> reaction = event -> {};
+    private LongConsumer timing = nanos -> {};
 
     public RecordingListener reacting(Consumer<String> reaction) {
         this.reaction = reaction;
+        return this;
+    }
+
+    public RecordingListener timing(LongConsumer timing) {
+        this.timing = timing;
         return this;
     }
 
@@ -46,6 +53,11 @@ public final class RecordingListener implements SessionListener {
     }
 
     @Override
+    public void acknowledged(IntentKind kind, Object correlation) {
+        record("ack " + kind + " " + correlation);
+    }
+
+    @Override
     public void rejected(IntentKind kind) {
         record("reject " + kind);
     }
@@ -54,6 +66,11 @@ public final class RecordingListener implements SessionListener {
     public void failed(Throwable cause) {
         failures.add(cause);
         record("failed");
+    }
+
+    @Override
+    public void frameHandled(long nanos) {
+        timing.accept(nanos);
     }
 
     private void record(String event) {

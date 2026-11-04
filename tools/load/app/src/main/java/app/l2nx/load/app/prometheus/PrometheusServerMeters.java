@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.HttpServerErrorException;
@@ -60,15 +61,17 @@ public final class PrometheusServerMeters implements ServerMeterWindow {
         this.ingestPoll = ingestPoll;
     }
 
+    /** @return the start time of each job's server; of a job's several processes the earliest, the one to go stale */
     @Override
-    public void checkReady() {
+    public Map<String, Instant> checkReady() {
         if (!client.ready()) {
             throw new IllegalStateException("Prometheus at " + client.url()
-                    + " is not ready; start it with docker compose --profile load up -d");
+                    + " is not ready; start it with docker compose --profile load up -d --wait prometheus");
         }
         checkClock();
         final Map<String, Duration> scraped = query(client::scrapeIntervals);
         final Map<String, Duration> intervals = new HashMap<>();
+        final Map<String, Instant> startTimes = new TreeMap<>();
         for (LoadProperties.Target target : targets) {
             final Duration interval = scraped.get(target.job());
             if (interval == null) {
@@ -84,8 +87,18 @@ public final class PrometheusServerMeters implements ServerMeterWindow {
                         "The " + target.job() + " server is down for Prometheus (" + target.metricsUrl() + ")");
             }
             intervals.put(target.job(), interval);
+            startTimes.put(target.job(), startTime(target));
         }
         scrapeIntervals = Map.copyOf(intervals);
+        return startTimes;
+    }
+
+    private Instant startTime(LoadProperties.Target target) {
+        return query(() -> client.query(ServerMeterQuery.processStart(target.job()), null)).stream()
+                .map(Sample::unixTime)
+                .min(Instant::compareTo)
+                .orElseThrow(() -> new IllegalStateException("The " + target.job()
+                        + " server exposes no process_start_time_seconds (" + target.metricsUrl() + ")"));
     }
 
     @Override

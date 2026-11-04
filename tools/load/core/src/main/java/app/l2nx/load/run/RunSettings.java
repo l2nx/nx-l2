@@ -10,6 +10,8 @@ import lombok.Builder;
 
 /**
  * @param intentTimeout an intent not acknowledged within it from its intended time counts as a timeout
+ * @param lifecycleTimeout a load bot that stays this long in a state before its final state stops on an error; not
+ *     below {@code intentTimeout}, or a lifecycle intent would fail as an error before it could time out
  */
 @Builder(toBuilder = true)
 public record RunSettings(
@@ -19,8 +21,8 @@ public record RunSettings(
         long seed,
         int eventLoopThreads,
         Duration intentTimeout,
+        Duration lifecycleTimeout,
         Duration maxGeneratorLagP99,
-        double maxStoppedShare,
         String serverCommit,
         String cpuAffinity) {
     public RunSettings {
@@ -33,10 +35,12 @@ public record RunSettings(
             throw new IllegalArgumentException("Event loop threads must be positive: " + eventLoopThreads);
         }
         requirePositive("intent timeout", intentTimeout);
-        requirePositive("maximum generator lag p99", maxGeneratorLagP99);
-        if (!(maxStoppedShare >= 0 && maxStoppedShare <= 1)) {
-            throw new IllegalArgumentException("The maximum stopped share must be within [0, 1]: " + maxStoppedShare);
+        requirePositive("lifecycle timeout", lifecycleTimeout);
+        if (lifecycleTimeout.compareTo(intentTimeout) < 0) {
+            throw new IllegalArgumentException("The lifecycle timeout " + lifecycleTimeout
+                    + " must not be below the intent timeout " + intentTimeout);
         }
+        requirePositive("maximum generator lag p99", maxGeneratorLagP99);
         if (serverCommit != null) {
             requireText("server commit", serverCommit);
         }
@@ -49,8 +53,8 @@ public record RunSettings(
         return builder()
                 .eventLoopThreads(Runtime.getRuntime().availableProcessors())
                 .intentTimeout(Duration.ofSeconds(5))
-                .maxGeneratorLagP99(Duration.ofMillis(10))
-                .maxStoppedShare(0.01);
+                .lifecycleTimeout(Duration.ofSeconds(30))
+                .maxGeneratorLagP99(Duration.ofMillis(10));
     }
 
     private static void requireText(String name, String value) {

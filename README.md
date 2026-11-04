@@ -35,7 +35,9 @@ port bound to `127.0.0.1`: `8106` for login, `8777` for game. Docker images are 
 docker build -t l2nx/game-server chronicles/high-five/boot   # login: :login:boot:installDist, login/boot
 ```
 
-Operator guide: [docs/public/en/operations.md](docs/public/en/operations.md).
+Operator guide: [docs/public/en/operations.md](docs/public/en/operations.md). A load-test stack (login, game, database,
+Prometheus and the harness in containers) is the Compose profile `load`; see
+[docs/runbooks/load-baseline.md](docs/runbooks/load-baseline.md).
 
 ## Goals
 

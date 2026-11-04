@@ -15,7 +15,7 @@ class LoadBotIdentitiesTest {
     class Apply {
         @Test
         void apply_shouldNameTheAccountByPrefixAndIndex() {
-            final LoadBotIdentities identities = new LoadBotIdentities(accounts("load", "secret"));
+            final LoadBotIdentities identities = new LoadBotIdentities(accounts("load", "secret"), 1);
 
             final LoadBotIdentity actual = identities.apply(42);
 
@@ -24,7 +24,7 @@ class LoadBotIdentitiesTest {
                             .index(42)
                             .account("load42")
                             .password("secret")
-                            .characterSlot(0)
+                            .characterSlot(1)
                             .build());
         }
     }

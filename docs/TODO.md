@@ -5,6 +5,7 @@ lists what is open.
 
 ## Open
 
+- [#190](https://github.com/l2nx/nx-l2/issues/190) OutboundQueueConcurrencyTest loses frames or times out on CI
 - [#154](https://github.com/l2nx/nx-l2/issues/154) Hide Receive and Cancel on a settled mail with a client patch
 - [#155](https://github.com/l2nx/nx-l2/issues/155) Move the remaining item and adena transfers onto value transactions
 - [#151](https://github.com/l2nx/nx-l2/issues/151) Engine core performance: regressions and improvements left for later

@@ -37,24 +37,14 @@ import lombok.extern.slf4j.Slf4j;
 public class Action extends ClientPacket {
     private int objectId;
 
-    @SuppressWarnings("unused")
-    private int originX;
-
-    @SuppressWarnings("unused")
-    private int originY;
-
-    @SuppressWarnings("unused")
-    private int originZ;
-
     private int actionId;
 
     @Override
     protected void readImpl() {
-        objectId = readInt(); // Target object Identifier
-        originX = readInt();
-        originY = readInt();
-        originZ = readInt();
-        actionId = readByte(); // Action identifier : 0-Simple click, 1-Shift click.
+        final app.l2nx.protocol.game.p267.clientpackets.Action packet =
+                app.l2nx.protocol.game.p267.clientpackets.Action.decode(frame());
+        objectId = packet.objectId();
+        actionId = packet.actionId();
     }
 
     @Override

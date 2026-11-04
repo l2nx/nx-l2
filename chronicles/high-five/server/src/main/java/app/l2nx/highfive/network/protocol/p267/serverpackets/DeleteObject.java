@@ -27,20 +27,19 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.network.codec.PacketWriter;
 
 public class DeleteObject extends ServerPacket {
-    private final int objectId;
+    private final app.l2nx.protocol.game.p267.serverpackets.DeleteObject wire;
 
     public DeleteObject(WorldObject obj) {
-        objectId = obj.getObjectId();
+        this(obj.getObjectId());
     }
 
     public DeleteObject(int objectId) {
-        this.objectId = objectId;
+        wire = new app.l2nx.protocol.game.p267.serverpackets.DeleteObject(objectId);
     }
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.DELETE_OBJECT.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeInt(1); // C2 - If the object is mounted, with 0 it will be dismounted, with 1 it will disappear.
+        ServerPackets.DELETE_OBJECT.debug(this);
+        wire.write(buffer.buffer());
     }
 }

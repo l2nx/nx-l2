@@ -9,6 +9,7 @@ import io.netty.buffer.ByteBuf;
 /** Writes its opcode and body; the frame header in front of it is the caller's. */
 public sealed interface GameServerPacket
         permits ActionFailed,
+                Attack,
                 CharCreateFail,
                 CharCreateOk,
                 CharDeleteFail,
@@ -16,6 +17,8 @@ public sealed interface GameServerPacket
                 CharSelected,
                 CharSelectionInfo,
                 CreatureSay,
+                DeleteObject,
+                Die,
                 ExChangePostState,
                 ExNoticePostArrived,
                 ExNoticePostSent,
@@ -27,9 +30,17 @@ public sealed interface GameServerPacket
                 KeyPacket,
                 LeaveWorld,
                 LoginFail,
+                MagicSkillUse,
+                MoveToLocation,
+                MoveToPawn,
+                MyTargetSelected,
                 RestartResponse,
+                Revive,
                 ServerClose,
+                StatusUpdate,
+                StopMove,
                 SystemMessage,
+                TeleportToLocation,
                 ValidateLocation {
     void write(ByteBuf out);
 }

@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# The profiling run of spec 009 §7, separate from the gate runs: the same image with JFR on from the start and
+# async-profiler mounted, so the release image stays as it is. Commands: docs/runbooks/load-baseline.md.
+#   docker compose -f compose.yaml -f docker/compose.profiling.yaml --profile load up -d --wait login-server game-server
+
+services:
+  game-server:
+    environment:
+      # Without DebugNonSafepoints both profilers place samples on the nearest safepoint, not on the running line.
+      JAVA_OPTS: >-
+        -XX:+UnlockDiagnosticVMOptions
+        -XX:+DebugNonSafepoints
+        -XX:+EnableDynamicAgentLoading
+        -XX:StartFlightRecording=filename=/opt/game-server/profiling/game-server.jfr,settings=${L2NX_LOAD_JFR_SETTINGS:-profile},dumponexit=true
+    volumes:
+      - ./build/load/profiling:/opt/game-server/profiling
+      - ./build/async-profiler:/opt/async-profiler:ro

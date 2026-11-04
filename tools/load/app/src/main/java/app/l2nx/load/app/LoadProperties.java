@@ -35,6 +35,9 @@ import org.springframework.validation.annotation.Validated;
  * @param protocol id of the client protocol {@code run} and {@code seed} connect with; {@code null} is allowed for the
  *     commands that connect no load bot
  * @param eventLoopThreads {@code null} takes every core the process may use
+ * @param lifecycleTimeout a load bot that stays this long in a state before its final state stops on an error; not
+ *     below {@code intentTimeout}
+ * @param maxGeneratorLagP99 a run with more generator lag is invalid
  * @param serverCommit commit of the server under load, {@code null} when not given
  * @param cpuAffinity CPU affinity of the processes as the start script set it, {@code null} when not given
  */
@@ -52,6 +55,8 @@ public record LoadProperties(
         long seed,
         @Positive Integer eventLoopThreads,
         @NotNull @DurationMin(nanos = 0, inclusive = false) Duration intentTimeout,
+        @NotNull @DurationMin(nanos = 0, inclusive = false) Duration lifecycleTimeout,
+        @NotNull @DurationMin(nanos = 0, inclusive = false) Duration maxGeneratorLagP99,
         @NotNull Path outputDir,
         String serverCommit,
         String cpuAffinity,
@@ -81,8 +86,6 @@ public record LoadProperties(
     }
 
     /**
-     * The seeded accounts: load bot {@code i} logs in as {@code <prefix><i>} and plays the character in slot 0.
-     *
      * @param prefix lowercase ASCII, so an account name takes one byte per character on the wire
      * @param password the password every seeded account shares, as given
      */
@@ -231,8 +234,11 @@ public record LoadProperties(
      * @param runs valid runs the gate needs
      * @param passBudget limit of the engine pass p99 of every loop
      * @param maxOverBudgetShare limit of the passes over budget over all passes of a loop, a fraction
-     * @param maxClientP99Ratio limit of the client p99 of an intent kind over its baseline p99
-     * @param maxTimeoutAndErrorShare limit of the timed-out intents and of the stopped load bots, each a fraction
+     * @param maxClientP99Ratio limit of the client p99 of an intent kind or lifecycle step over its baseline p99
+     * @param clientP99Floor the client p99 may always exceed its baseline by this much
+     * @param maxTimeoutAndErrorShare limit of the timed-out intents, of the rejected intents and of the stopped load
+     *     bots, each a fraction
+     * @param maxNotAtFinalStateShare limit of the load bots that did not reach the final state, a fraction
      */
     @Builder(toBuilder = true)
     public record Gate(
@@ -240,5 +246,7 @@ public record LoadProperties(
             @DurationMin(nanos = 0, inclusive = false) Duration passBudget,
             @DecimalMin("0") @DecimalMax("1") Double maxOverBudgetShare,
             @DecimalMin(value = "0", inclusive = false) Double maxClientP99Ratio,
-            @DecimalMin("0") @DecimalMax("1") Double maxTimeoutAndErrorShare) {}
+            @DurationMin(nanos = 0) Duration clientP99Floor,
+            @DecimalMin("0") @DecimalMax("1") Double maxTimeoutAndErrorShare,
+            @DecimalMin("0") @DecimalMax("1") Double maxNotAtFinalStateShare) {}
 }

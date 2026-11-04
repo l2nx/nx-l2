@@ -11,6 +11,9 @@ public enum GateCriterion {
     /** Together with {@link #OVER_BUDGET_SHARE}, applies only to runs whose final state is {@code IN_GAME}. */
     ENGINE_PASS_P99,
     OVER_BUDGET_SHARE,
+    /** Intents and lifecycle steps; not applicable while there is no baseline yet. */
     CLIENT_LATENCY_P99,
-    TIMEOUTS_AND_ERRORS
+    TIMEOUTS_AND_ERRORS,
+    NOT_AT_FINAL_STATE,
+    OWNERSHIP_VIOLATIONS
 }

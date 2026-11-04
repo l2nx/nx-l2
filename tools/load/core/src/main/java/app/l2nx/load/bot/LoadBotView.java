@@ -4,6 +4,7 @@
  */
 package app.l2nx.load.bot;
 
+import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
@@ -26,6 +27,15 @@ public interface LoadBotView {
 
     int mp();
 
+    boolean dead();
+
+    boolean casting();
+
     /** Visible world objects with their latest position and state; a live, unmodifiable view. */
     Collection<ObjectSeen> visibleObjects();
+
+    /** @return {@code null} when the object is out of view */
+    ObjectSeen visibleObject(int objectId);
+
+    long failedIntents(IntentKind kind);
 }

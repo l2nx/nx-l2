@@ -6,7 +6,10 @@ package app.l2nx.load.report.model;
 
 import lombok.Builder;
 
-/** Latencies in milliseconds from the intended time. */
+/**
+ * Latencies in milliseconds from the intended time; a timed-out intent of the measured phase enters them at the intent
+ * timeout. An arrival intent that failed outside the measured phase counts in {@code sent} and in its failure only.
+ */
 @Builder(toBuilder = true)
 public record IntentStats(
         long sent,

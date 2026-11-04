@@ -3,7 +3,8 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/l2nx_load
+    # The published port of load-db, for a server started on the host; the compose service sets its own address.
+    url: jdbc:postgresql://localhost:5433/l2nx_load
 
 l2nx:
   network:

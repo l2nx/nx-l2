@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.LongSupplier;
 import lombok.extern.slf4j.Slf4j;
@@ -56,12 +57,6 @@ public final class LoadRun {
         this.wallClock = wallClock;
     }
 
-    /**
-     * @param serverMeters {@code null} reads no server meters, such as on the in-memory protocol
-     * @throws IllegalArgumentException before anything starts, when the protocol, identities, settings or injection
-     *     profile do not fit the scenario
-     * @throws IllegalStateException before anything starts, when the server meters could not be read
-     */
     public RunSummary execute(
             RunSettings settings,
             LoadScenario scenario,
@@ -70,14 +65,33 @@ public final class LoadRun {
             LatencyRecorder latencies,
             ServerMeterWindow serverMeters)
             throws InterruptedException {
+        return execute(settings, scenario, protocol, identities, latencies, serverMeters, runId -> {});
+    }
+
+    /**
+     * @param serverMeters {@code null} reads no server meters, such as on the in-memory protocol
+     * @param claimRunId takes the run id before any load bot starts and throws to refuse a run whose report could not
+     *     be written; the id is known only at the start
+     * @throws IllegalArgumentException before anything starts, when the inputs do not fit the scenario
+     * @throws IllegalStateException before anything starts, when the server meters could not be read
+     */
+    public RunSummary execute(
+            RunSettings settings,
+            LoadScenario scenario,
+            ClientProtocol protocol,
+            IntFunction<LoadBotIdentity> identities,
+            LatencyRecorder latencies,
+            ServerMeterWindow serverMeters,
+            Consumer<String> claimRunId)
+            throws InterruptedException {
         check(settings, scenario, protocol);
         final int bots = settings.injection().bots();
         final List<LoadBotIdentity> botIdentities = identities(bots, protocol, identities);
-        if (serverMeters != null) {
-            // Before any load bot exists: a run whose server meters cannot be read is not worth starting.
-            serverMeters.checkReady();
-        }
+        // Before any load bot exists: a run whose server meters cannot be read is not worth starting.
+        final Map<String, Instant> serverStartedAt = serverMeters == null ? null : serverMeters.checkReady();
         final Instant startedAt = wallClock.instant();
+        final String runId = ReportWriter.runId(scenario.id(), startedAt, settings.seed());
+        claimRunId.accept(runId);
         final RunTimeline timeline = new RunTimeline(settings.injection(), scenario.measuredPhase(), clock);
         final GeneratorLagMonitor lag = new GeneratorLagMonitor();
         final CountDownLatch stopped = new CountDownLatch(bots);
@@ -105,6 +119,7 @@ public final class LoadRun {
                         latencies,
                         lag,
                         settings.intentTimeout(),
+                        settings.lifecycleTimeout(),
                         stopped::countDown);
                 loadBots.add(bot);
                 bot.start();
@@ -143,8 +158,18 @@ public final class LoadRun {
                 failure.addSuppressed(e);
             }
         }
-        final RunSummary summary =
-                summarize(settings, scenario, protocol, startedAt, latencies, lag, loadBots, serverWindow, server);
+        final RunSummary summary = summarize(
+                runId,
+                settings,
+                scenario,
+                protocol,
+                startedAt,
+                latencies,
+                lag,
+                loadBots,
+                serverStartedAt,
+                serverWindow,
+                server);
         log.info("Load run {} done: {} {}", summary.runId(), summary.validity(), summary.invalidReasons());
         return summary;
     }
@@ -211,6 +236,7 @@ public final class LoadRun {
     }
 
     private static RunSummary summarize(
+            String runId,
             RunSettings settings,
             LoadScenario scenario,
             ClientProtocol protocol,
@@ -218,6 +244,7 @@ public final class LoadRun {
             LatencyRecorder latencies,
             GeneratorLagMonitor lag,
             List<LoadBot> loadBots,
+            Map<String, Instant> serverStartedAt,
             ServerWindow serverWindow,
             ServerStats server) {
         final Map<IntentKind, IntentStats> intents = latencies.stats();
@@ -236,19 +263,19 @@ public final class LoadRun {
         if (lagP99 > settings.maxGeneratorLagP99().toNanos()) {
             reasons.add(InvalidReason.GENERATOR_LAG);
         }
-        if (stoppedShare > settings.maxStoppedShare()) {
-            reasons.add(InvalidReason.LOAD_BOTS_STOPPED);
-        }
         return RunSummary.builder()
-                .runId(ReportWriter.runId(scenario.id(), startedAt, settings.seed()))
+                .runId(runId)
                 .scenario(scenario.id())
                 .protocol(protocol.id())
                 .seed(settings.seed())
                 .injection(settings.injection())
                 .measuredPhase(scenario.measuredPhase())
                 .finalState(scenario.finalState())
+                .intentTimeout(settings.intentTimeout())
+                .lifecycleTimeout(settings.lifecycleTimeout())
                 .startedAt(startedAt)
                 .serverCommit(settings.serverCommit())
+                .environment(EnvironmentProbe.collect())
                 .cpuAffinity(settings.cpuAffinity())
                 .validity(reasons.isEmpty() ? RunValidity.VALID : RunValidity.INVALID)
                 .invalidReasons(List.copyOf(reasons))
@@ -259,6 +286,11 @@ public final class LoadRun {
                 .rejectedShare(sent == 0 ? 0 : (double) errors / sent)
                 .stoppedShare(stoppedShare)
                 .reachedFinalState(reachedFinalState)
+                .notAtFinalStateShare((double) (loadBots.size() - reachedFinalState) / loadBots.size())
+                .loggedOut(
+                        (int) loadBots.stream().filter(LoadBot::logoutConfirmed).count())
+                .inboundFrames(latencies.frameStats())
+                .serverStartedAt(serverStartedAt)
                 .serverWindow(serverWindow)
                 .server(server)
                 .build();

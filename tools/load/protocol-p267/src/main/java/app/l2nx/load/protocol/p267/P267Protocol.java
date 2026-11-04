@@ -26,11 +26,9 @@ import java.util.Set;
 public final class P267Protocol implements ClientProtocol {
     public static final String ID = "p267";
 
-    private static final Set<IntentKind> CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(IntentKind.LOGIN, IntentKind.SELECT_SERVER));
+    private static final Set<IntentKind> CAPABILITIES = Collections.unmodifiableSet(EnumSet.allOf(IntentKind.class));
 
-    // TODO: the game part takes the lifecycle on to IN_GAME.
-    static final LoadBotState LAST_STATE = LoadBotState.GAME_CONNECT;
+    static final LoadBotState LAST_STATE = LoadBotState.IN_GAME;
 
     private final P267Settings settings;
     private final ResolvedTransport transport;

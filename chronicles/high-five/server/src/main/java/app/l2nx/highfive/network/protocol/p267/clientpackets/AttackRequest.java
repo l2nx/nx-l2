@@ -35,25 +35,10 @@ public class AttackRequest extends ClientPacket {
     // cddddc
     private int objectId;
 
-    @SuppressWarnings("unused")
-    private int originX;
-
-    @SuppressWarnings("unused")
-    private int originY;
-
-    @SuppressWarnings("unused")
-    private int originZ;
-
-    @SuppressWarnings("unused")
-    private int attackId;
-
     @Override
     protected void readImpl() {
-        objectId = readInt();
-        originX = readInt();
-        originY = readInt();
-        originZ = readInt();
-        attackId = readByte(); // 0 for simple click 1 for shift-click.
+        objectId = app.l2nx.protocol.game.p267.clientpackets.AttackRequest.decode(frame())
+                .objectId();
     }
 
     @Override

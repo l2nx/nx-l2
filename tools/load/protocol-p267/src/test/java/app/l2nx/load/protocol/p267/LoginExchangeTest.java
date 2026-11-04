@@ -7,6 +7,7 @@ package app.l2nx.load.protocol.p267;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.load.bot.intent.Login;
+import app.l2nx.load.protocol.p267.game.GameTicket;
 import app.l2nx.network.codec.PacketDecodeException;
 import app.l2nx.protocol.login.c621.clientpackets.AuthGameGuard;
 import app.l2nx.protocol.login.c621.clientpackets.LoginClientOpcode;
@@ -27,6 +28,7 @@ import app.l2nx.protocol.login.c621.serverpackets.reason.PlayFailReason;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -46,8 +48,8 @@ class LoginExchangeTest {
             Login.builder().account("load42").password("secret").build();
 
     private final RecordingListener listener = new RecordingListener();
-    private final List<PlayOk> playOks = new ArrayList<>();
-    private final LoginExchange exchange = new LoginExchange(LoginServerSide.SERVER_ID, listener, playOks::add);
+    private final List<GameTicket> tickets = new ArrayList<>();
+    private final LoginExchange exchange = new LoginExchange(LoginServerSide.SERVER_ID, listener, tickets::add);
     private final EmbeddedChannel client = connect();
     private final EmbeddedChannel server = new EmbeddedChannel();
 
@@ -244,14 +246,21 @@ class LoginExchangeTest {
             exchange.selectServer();
             sent(LoginClientOpcode.REQUEST_SERVER_LOGIN, RequestServerLogin::decode);
 
-            final PlayOk expected = PlayOk.builder()
+            deliver(PlayOk.builder()
                     .playOk1(LoginServerSide.PLAY_OK_1)
                     .playOk2(LoginServerSide.PLAY_OK_2)
-                    .build();
-            deliver(expected);
+                    .build());
 
             assertThat(listener.events()).endsWith("state SERVER_LIST", "ack SELECT_SERVER");
-            assertThat(playOks).containsExactly(expected);
+            assertThat(tickets)
+                    .containsExactly(GameTicket.builder()
+                            .account("load42")
+                            .gameServer(new InetSocketAddress("127.0.0.1", 7777))
+                            .loginOk1(LoginServerSide.LOGIN_OK_1)
+                            .loginOk2(LoginServerSide.LOGIN_OK_2)
+                            .playOk1(LoginServerSide.PLAY_OK_1)
+                            .playOk2(LoginServerSide.PLAY_OK_2)
+                            .build());
             assertThat(client.isOpen()).isFalse();
         }
 
@@ -265,7 +274,7 @@ class LoginExchangeTest {
             deliver(refusal);
 
             assertThat(listener.events()).endsWith("state SERVER_LIST", "reject SELECT_SERVER", "state STOPPED");
-            assertThat(playOks).isEmpty();
+            assertThat(tickets).isEmpty();
             assertThat(client.isOpen()).isFalse();
         }
     }

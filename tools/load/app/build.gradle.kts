@@ -30,3 +30,20 @@ application {
     applicationName = "load"
     mainClass = "app.l2nx.load.app.LoadApplication"
 }
+
+// The integration test starts the real servers from their test distributions; -Pchronicles may leave the game out.
+tasks.withType<Test>().configureEach {
+    val distributions = mapOf(
+        "login" to ":login:boot",
+        "game" to ":chronicles:high-five:boot",
+    ).mapValues { findProject(it.value) }
+    distributions.forEach { (name, server) ->
+        if (server != null) {
+            dependsOn("${server.path}:testDistribution")
+            systemProperty(
+                "l2nx.load.test.$name-distribution",
+                server.layout.buildDirectory.dir("test-distribution").get().asFile.absolutePath,
+            )
+        }
+    }
+}

@@ -27,6 +27,9 @@ l2nx:
     ramp-down: 10s
     seed: 1
     intent-timeout: 5s
+    # Above the slowest healthy step under load: a load bot over it stops on an error.
+    lifecycle-timeout: 30s
+    max-generator-lag-p99: 10ms
     output-dir: build/load
     accounts:
       prefix: load
@@ -41,7 +44,8 @@ l2nx:
       login-port: 2106
       server-id: 1
       connect-timeout: 5s
-    # The Prometheus of `docker compose --profile load up -d`; jobs as in docker/prometheus/prometheus.yml.
+    # As the host reaches them, for a harness and servers started there; the harness service of compose.yaml replaces
+    # the addresses with its service names. Jobs as in docker/prometheus/prometheus.yml.
     prometheus:
       url: http://127.0.0.1:9090
       # One 1 s scrape: a smaller skew moves each window edge by at most one scrape, the resolution the window has anyway.
@@ -51,9 +55,9 @@ l2nx:
           metrics-url: http://127.0.0.1:8777/actuator/prometheus
         - job: login
           metrics-url: http://127.0.0.1:8106/actuator/prometheus
-    # The l2nx-db container of compose.yaml; the server roles come from docker/postgres-init.sql.
+    # The published port of load-db in compose.yaml; the server roles come from docker/postgres-init.sql.
     database:
-      admin-url: jdbc:postgresql://localhost:5432/postgres
+      admin-url: jdbc:postgresql://localhost:5433/postgres
       user: postgres
       password: postgres
       name: l2nx_load

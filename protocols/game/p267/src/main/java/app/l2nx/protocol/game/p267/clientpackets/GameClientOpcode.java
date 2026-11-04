@@ -13,12 +13,18 @@ public enum GameClientOpcode {
     MOVE_TO_LOCATION(0x0F),
     ENTER_WORLD(0x11),
     CHARACTER_SELECT(0x12),
+    ACTION(0x1F),
     AUTH_LOGIN(0x2B),
+    ATTACK_REQUEST(0x32),
+    REQUEST_MAGIC_SKILL_USE(0x39),
+    APPEARING(0x3A),
     CANNOT_MOVE_ANYMORE(0x47),
     SAY2(0x49),
     REQUEST_RESTART(0x57),
     VALIDATE_POSITION(0x59),
-    CHARACTER_RESTORE(0x7B);
+    SEND_BYPASS_BUILD_CMD(0x74),
+    CHARACTER_RESTORE(0x7B),
+    REQUEST_RESTART_POINT(0x7D);
 
     private static final CodeTable<GameClientOpcode> BY_OPCODE = new CodeTable<>(values(), GameClientOpcode::opcode);
 

@@ -14,40 +14,57 @@ import app.l2nx.load.report.model.IntentStats;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Compares the runs of a scenario with its baseline on the median over the valid runs, so one outlier cannot decide.
- * A missing meter fails its criterion; engine criteria pass as not applicable when load bots stop before
- * {@code IN_GAME}.
+ * Compares runs with the baseline on the median of the valid runs, so one outlier cannot decide. A missing meter fails
+ * its criterion; engine criteria are not applicable below {@code IN_GAME}, client latency without a baseline.
  */
 public final class Gate {
 
     static final String TIMEOUTS = "timeouts";
     static final String REJECTED = "rejected intents";
     static final String STOPPED_LOAD_BOTS = "stopped load bots";
+    static final String NO_BASELINE = "not applicable: no baseline, these runs may become it";
+
+    private static final double NO_OWNERSHIP_VIOLATIONS = 0;
 
     private Gate() {}
 
-    /** @param runs the runs of one scenario and final state, invalid ones included (they are ignored) */
-    public static GateVerdict evaluate(List<RunSummary> runs, RunSummary baseline, GateThresholds thresholds) {
-        var incomparable = incomparableReason(runs, baseline);
+    /**
+     * Invalid runs in both lists are ignored; {@code baselines} is empty before a baseline exists.
+     *
+     * @throws IllegalArgumentException when there is neither a run nor a baseline
+     */
+    public static GateVerdict evaluate(List<RunSummary> runs, List<RunSummary> baselines, GateThresholds thresholds) {
+        var all = Stream.concat(baselines.stream(), runs.stream()).toList();
+        if (all.isEmpty()) {
+            throw new IllegalArgumentException("The gate needs at least one run");
+        }
+        var reference = all.getFirst();
+        var validBaselines = valid(baselines);
+        var incomparable = incomparableReason(all, reference);
         if (incomparable != null) {
             return verdict(
-                    runs,
-                    baseline,
+                    reference,
+                    all,
+                    validBaselines,
                     List.of(),
                     List.of(missing(GateCriterion.COMPARABLE_RUNS, null, null, incomparable)));
         }
-        var valid =
-                runs.stream().filter(run -> run.validity() == RunValidity.VALID).toList();
-        var engineNotApplicable = engineNotApplicableReason(baseline);
+        var valid = valid(runs);
+        var engineNotApplicable = engineNotApplicableReason(reference);
         var results = new ArrayList<CriterionResult>();
         results.add(CriterionResult.builder()
                 .criterion(GateCriterion.VALID_RUNS)
@@ -71,48 +88,108 @@ public final class Gate {
             results.add(missing(GateCriterion.CLIENT_LATENCY_P99, null, null, noValidRuns));
             results.add(missing(
                     GateCriterion.TIMEOUTS_AND_ERRORS, null, thresholds.maxTimeoutAndErrorShare(), noValidRuns));
+            results.add(
+                    missing(GateCriterion.NOT_AT_FINAL_STATE, null, thresholds.maxNotAtFinalStateShare(), noValidRuns));
+            results.add(missing(GateCriterion.OWNERSHIP_VIOLATIONS, null, NO_OWNERSHIP_VIOLATIONS, noValidRuns));
         } else {
-            results.addAll(clientLatency(valid, baseline, thresholds));
+            results.addAll(clientLatency(valid, baselines, validBaselines, thresholds));
             results.addAll(timeoutsAndErrors(valid, thresholds));
+            results.add(measured(
+                    GateCriterion.NOT_AT_FINAL_STATE,
+                    null,
+                    median(valid, RunSummary::notAtFinalStateShare),
+                    thresholds.maxNotAtFinalStateShare()));
+            results.addAll(ownershipViolations(valid, engineNotApplicable));
         }
-        return verdict(runs, baseline, valid, results);
+        return verdict(reference, all, validBaselines, valid, results);
+    }
+
+    private static List<RunSummary> valid(List<RunSummary> runs) {
+        return runs.stream().filter(run -> run.validity() == RunValidity.VALID).toList();
     }
 
     private static GateVerdict verdict(
-            List<RunSummary> runs, RunSummary baseline, List<RunSummary> valid, List<CriterionResult> results) {
+            RunSummary reference,
+            List<RunSummary> all,
+            List<RunSummary> validBaselines,
+            List<RunSummary> valid,
+            List<CriterionResult> results) {
         return GateVerdict.builder()
-                .scenario(baseline.scenario())
-                .baselineRunId(baseline.runId())
-                .validRunIds(valid.stream().map(RunSummary::runId).toList())
-                .invalidRunIds(runs.stream()
-                        .filter(run -> run.validity() != RunValidity.VALID)
-                        .map(RunSummary::runId)
-                        .toList())
+                .scenario(reference.scenario())
+                .baselineRunIds(runIds(validBaselines.stream()))
+                .validRunIds(runIds(valid.stream()))
+                .invalidRunIds(runIds(all.stream().filter(run -> run.validity() != RunValidity.VALID)))
                 .results(results)
                 .build();
     }
 
-    /** {@code null} when every run is of the baseline's scenario and final state. */
-    private static String incomparableReason(List<RunSummary> runs, RunSummary baseline) {
+    /** {@code null} when every run can be compared with {@code reference} and ran on fresh server processes. */
+    private static String incomparableReason(List<RunSummary> all, RunSummary reference) {
         var reasons = new ArrayList<String>();
-        var otherScenario = runIds(runs.stream().filter(run -> !Objects.equals(run.scenario(), baseline.scenario())));
-        if (!otherScenario.isEmpty()) {
-            reasons.add("runs %s are of another scenario than baseline %s (%s)"
-                    .formatted(otherScenario, baseline.runId(), baseline.scenario()));
-        }
-        var otherFinalState = runIds(runs.stream()
-                .filter(run -> Objects.equals(run.scenario(), baseline.scenario())
-                        && run.finalState() != baseline.finalState()));
-        if (!otherFinalState.isEmpty()) {
-            reasons.add("runs %s stop at another final state than baseline %s (%s)"
-                    .formatted(otherFinalState, baseline.runId(), baseline.finalState()));
-        }
+        addDifference(reasons, all, reference, "scenario", RunSummary::scenario);
+        addDifference(reasons, all, reference, "final state", RunSummary::finalState);
+        addDifference(reasons, all, reference, "injection", RunSummary::injection);
+        addDifference(reasons, all, reference, "protocol", RunSummary::protocol);
+        addDifference(reasons, all, reference, "intent timeout", RunSummary::intentTimeout);
+        addDifference(reasons, all, reference, "lifecycle timeout", RunSummary::lifecycleTimeout);
+        addDifference(reasons, all, reference, "measured phase", RunSummary::measuredPhase);
+        addDifference(reasons, all, reference, "environment", RunSummary::environment);
+        addDifference(reasons, all, reference, "CPU affinity", RunSummary::cpuAffinity);
+        addStaleServers(reasons, all);
         return reasons.isEmpty() ? null : String.join("; ", reasons);
     }
 
+    private static void addDifference(
+            List<String> reasons,
+            List<RunSummary> all,
+            RunSummary reference,
+            String name,
+            Function<RunSummary, Object> value) {
+        var expected = value.apply(reference);
+        var other = runIds(all.stream().filter(run -> !Objects.equals(value.apply(run), expected)));
+        if (!other.isEmpty()) {
+            reasons.add("runs %s differ from %s in the %s (%s)".formatted(other, reference.runId(), name, expected));
+        }
+    }
+
+    /**
+     * A server left running from the previous run keeps its state (accounts still logged in); a run on no server has
+     * nothing to check.
+     */
+    private static void addStaleServers(List<String> reasons, List<RunSummary> all) {
+        var measured = all.stream()
+                .filter(run -> run.serverWindow() != null)
+                .sorted(Comparator.comparing(RunSummary::startedAt))
+                .toList();
+        var unknown = runIds(measured.stream().filter(run -> startTimes(run).isEmpty()));
+        if (!unknown.isEmpty()) {
+            reasons.add("runs %s recorded no server start time".formatted(unknown));
+        }
+        for (int index = 1; index < measured.size(); index++) {
+            var run = measured.get(index);
+            var previous = measured.get(index - 1);
+            var stale = staleJobs(run, previous.startedAt());
+            if (!stale.isEmpty()) {
+                reasons.add("run %s used the %s servers started before the previous run %s"
+                        .formatted(run.runId(), stale, previous.runId()));
+            }
+        }
+    }
+
+    private static List<String> staleJobs(RunSummary run, Instant previousStart) {
+        return startTimes(run).entrySet().stream()
+                .filter(start -> start.getValue().isBefore(previousStart))
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    private static Map<String, Instant> startTimes(RunSummary run) {
+        return run.serverStartedAt() == null ? Map.of() : run.serverStartedAt();
+    }
+
     /** {@code null} when the load bots play in the game, so the engine criteria apply. */
-    private static String engineNotApplicableReason(RunSummary baseline) {
-        var finalState = baseline.finalState();
+    private static String engineNotApplicableReason(RunSummary reference) {
+        var finalState = reference.finalState();
         if (finalState == LoadBotState.IN_GAME) {
             return null;
         }
@@ -170,58 +247,128 @@ public final class Gate {
         return null;
     }
 
-    private static List<CriterionResult> clientLatency(
-            List<RunSummary> runs, RunSummary baseline, GateThresholds thresholds) {
-        if (baseline.validity() != RunValidity.VALID) {
-            return List.of(missing(
-                    GateCriterion.CLIENT_LATENCY_P99, null, null, "baseline " + baseline.runId() + " is invalid"));
+    private static List<CriterionResult> ownershipViolations(List<RunSummary> runs, String engineNotApplicable) {
+        var withoutLoops = runIds(runs.stream().filter(run -> loops(run).isEmpty()));
+        if (!withoutLoops.isEmpty()) {
+            return List.of(
+                    engineNotApplicable != null
+                            ? notApplicable(
+                                    GateCriterion.OWNERSHIP_VIOLATIONS, NO_OWNERSHIP_VIOLATIONS, engineNotApplicable)
+                            : missing(
+                                    GateCriterion.OWNERSHIP_VIOLATIONS,
+                                    null,
+                                    NO_OWNERSHIP_VIOLATIONS,
+                                    "no engine loop meters in runs " + withoutLoops));
         }
-        var baselineIntents = intents(baseline);
-        if (baselineIntents.isEmpty()) {
+        var loopNames = new TreeSet<String>();
+        runs.forEach(run -> loopNames.addAll(loops(run).keySet()));
+        var results = new ArrayList<CriterionResult>();
+        for (var loop : loopNames) {
+            var absent = runIds(runs.stream().filter(run -> !loops(run).containsKey(loop)));
+            results.add(
+                    absent.isEmpty()
+                            ? measured(
+                                    GateCriterion.OWNERSHIP_VIOLATIONS,
+                                    loop,
+                                    runs.stream()
+                                            .mapToDouble(
+                                                    run -> loops(run).get(loop).ownershipViolations())
+                                            .max()
+                                            .orElseThrow(),
+                                    NO_OWNERSHIP_VIOLATIONS)
+                            : missing(
+                                    GateCriterion.OWNERSHIP_VIOLATIONS,
+                                    loop,
+                                    NO_OWNERSHIP_VIOLATIONS,
+                                    "no meters of loop %s in runs %s".formatted(loop, absent)));
+        }
+        return results;
+    }
+
+    private static List<CriterionResult> clientLatency(
+            List<RunSummary> runs,
+            List<RunSummary> baselines,
+            List<RunSummary> validBaselines,
+            GateThresholds thresholds) {
+        if (baselines.isEmpty()) {
+            return List.of(notApplicable(GateCriterion.CLIENT_LATENCY_P99, null, NO_BASELINE));
+        }
+        if (validBaselines.size() < thresholds.runs()) {
             return List.of(missing(
-                    GateCriterion.CLIENT_LATENCY_P99, null, null, "baseline " + baseline.runId() + " has no intents"));
+                    GateCriterion.CLIENT_LATENCY_P99,
+                    null,
+                    null,
+                    "the baseline has %d valid runs %s of %d needed"
+                            .formatted(validBaselines.size(), runIds(validBaselines.stream()), thresholds.runs())));
         }
         var results = new ArrayList<CriterionResult>();
         for (var kind : IntentKind.values()) {
-            var base = baselineIntents.get(kind);
-            if (base == null) {
-                var withKind = runIds(runs.stream().filter(run -> intents(run).containsKey(kind)));
-                if (!withKind.isEmpty()) {
-                    results.add(missing(
-                            GateCriterion.CLIENT_LATENCY_P99,
-                            kind.name(),
-                            null,
-                            "no %s intents in baseline %s, present in runs %s"
-                                    .formatted(kind, baseline.runId(), withKind)));
-                }
-                continue;
-            }
-            if (base.acknowledged() == 0) {
-                results.add(missing(
-                        GateCriterion.CLIENT_LATENCY_P99,
-                        kind.name(),
-                        null,
-                        "no acknowledged %s intents in baseline %s".formatted(kind, baseline.runId())));
-                continue;
-            }
-            var threshold = base.p99Millis() * thresholds.maxClientP99Ratio();
-            var unacknowledged = runIds(runs.stream().filter(run -> {
-                var stats = intents(run).get(kind);
-                return stats == null || stats.acknowledged() == 0;
-            }));
-            if (!unacknowledged.isEmpty()) {
-                results.add(missing(
-                        GateCriterion.CLIENT_LATENCY_P99,
-                        kind.name(),
-                        threshold,
-                        "no acknowledged %s intents in runs %s".formatted(kind, unacknowledged)));
-                continue;
-            }
-            var stats = runs.stream().map(run -> intents(run).get(kind)).toList();
-            results.add(measured(
-                    GateCriterion.CLIENT_LATENCY_P99, kind.name(), median(stats, IntentStats::p99Millis), threshold));
+            latency(
+                    results,
+                    kind.name(),
+                    "acknowledged " + kind + " intents",
+                    runs,
+                    validBaselines,
+                    thresholds,
+                    run -> {
+                        var stats = intents(run).get(kind);
+                        return stats == null || stats.acknowledged() == 0 ? null : stats.p99Millis();
+                    });
+        }
+        for (var state : LoadBotState.values()) {
+            latency(results, "step " + state, state + " steps", runs, validBaselines, thresholds, run -> {
+                var stats = run.steps().get(state);
+                return stats == null || stats.count() == 0 ? null : stats.p99Millis();
+            });
         }
         return results;
+    }
+
+    /** @param p99 of a run, {@code null} when it has no measured sample of the subject */
+    private static void latency(
+            List<CriterionResult> results,
+            String subject,
+            String samples,
+            List<RunSummary> runs,
+            List<RunSummary> baselines,
+            GateThresholds thresholds,
+            Function<RunSummary, Double> p99) {
+        var baselinesWithout = runIds(baselines.stream().filter(run -> p99.apply(run) == null));
+        var runsWithout = runIds(runs.stream().filter(run -> p99.apply(run) == null));
+        if (baselinesWithout.size() == baselines.size()) {
+            if (runsWithout.size() < runs.size()) {
+                var present = runIds(runs.stream().filter(run -> p99.apply(run) != null));
+                results.add(missing(
+                        GateCriterion.CLIENT_LATENCY_P99,
+                        subject,
+                        null,
+                        "no %s in the baseline, present in runs %s".formatted(samples, present)));
+            }
+            return;
+        }
+        if (!baselinesWithout.isEmpty()) {
+            results.add(missing(
+                    GateCriterion.CLIENT_LATENCY_P99,
+                    subject,
+                    null,
+                    "no %s in baseline runs %s".formatted(samples, baselinesWithout)));
+            return;
+        }
+        var threshold = latencyLimit(median(baselines, p99::apply), thresholds);
+        if (!runsWithout.isEmpty()) {
+            results.add(missing(
+                    GateCriterion.CLIENT_LATENCY_P99,
+                    subject,
+                    threshold,
+                    "no %s in runs %s".formatted(samples, runsWithout)));
+            return;
+        }
+        results.add(measured(GateCriterion.CLIENT_LATENCY_P99, subject, median(runs, p99::apply), threshold));
+    }
+
+    private static double latencyLimit(double baselineMillis, GateThresholds thresholds) {
+        return Math.max(
+                baselineMillis * thresholds.maxClientP99Ratio(), baselineMillis + millis(thresholds.clientP99Floor()));
     }
 
     private static List<CriterionResult> timeoutsAndErrors(List<RunSummary> runs, GateThresholds thresholds) {
@@ -273,13 +420,21 @@ public final class Gate {
     }
 
     private static double passBudgetMillis(GateThresholds thresholds) {
-        return thresholds.passBudget().toNanos() / 1_000_000.0;
+        return millis(thresholds.passBudget());
     }
 
+    private static double millis(Duration duration) {
+        return duration.toNanos() / 1_000_000.0;
+    }
+
+    /** Only timed loops: the session drain reports failures and has no passes to judge. */
     private static Map<String, LoopStats> loops(RunSummary run) {
-        return run.server() == null || run.server().loops() == null
-                ? Map.of()
-                : run.server().loops();
+        if (run.server() == null || run.server().loops() == null) {
+            return Map.of();
+        }
+        return run.server().loops().entrySet().stream()
+                .filter(loop -> !loop.getValue().untimed())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static Map<IntentKind, IntentStats> intents(RunSummary run) {

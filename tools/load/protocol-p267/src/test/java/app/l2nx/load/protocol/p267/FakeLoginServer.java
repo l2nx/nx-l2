@@ -38,13 +38,19 @@ final class FakeLoginServer implements AutoCloseable {
     private final String account;
     private final String password;
     private final boolean refusePlay;
+    private final int gamePort;
     private final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
     private final Channel serverChannel;
 
     FakeLoginServer(String account, String password, boolean refusePlay) {
+        this(account, password, refusePlay, 7777);
+    }
+
+    FakeLoginServer(String account, String password, boolean refusePlay, int gamePort) {
         this.account = account;
         this.password = password;
         this.refusePlay = refusePlay;
+        this.gamePort = gamePort;
         serverChannel = new ServerBootstrap()
                 .group(group)
                 .channel(NioServerSocketChannel.class)
@@ -97,7 +103,7 @@ final class FakeLoginServer implements AutoCloseable {
                 }
                 case REQUEST_SERVER_LIST -> {
                     RequestServerList.decode(payload);
-                    send(ctx, LoginServerSide.serverList(LoginServerSide.SERVER_ID));
+                    send(ctx, LoginServerSide.serverListOn(gamePort, LoginServerSide.SERVER_ID));
                 }
                 case REQUEST_SERVER_LOGIN -> {
                     RequestServerLogin.decode(payload);
@@ -116,7 +122,7 @@ final class FakeLoginServer implements AutoCloseable {
             }
         }
 
-        private static void send(ChannelHandlerContext ctx, LoginServerPacket packet) {
+        private void send(ChannelHandlerContext ctx, LoginServerPacket packet) {
             ctx.writeAndFlush(LoginServerSide.frame(ctx.alloc(), packet::write));
         }
 

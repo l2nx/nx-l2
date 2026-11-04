@@ -8,6 +8,8 @@ import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateVerdict;
+import app.l2nx.load.report.model.FrameStats;
+import app.l2nx.load.report.model.RunEnvironment;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.report.model.ServerWindow;
@@ -16,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -54,6 +57,19 @@ public final class ReportWriter {
 
     public static String runId(String scenario, Instant startedAt, long seed) {
         return scenario + "-" + RUN_ID_TIME.format(startedAt) + "-" + seed;
+    }
+
+    /**
+     * Run ids have one-second resolution; a duplicate found only at {@link #write} would throw a finished run away.
+     */
+    public Path claim(Path root, String runId) throws IOException {
+        Files.createDirectories(root);
+        var directory = root.resolve(runId);
+        try {
+            return Files.createDirectory(directory);
+        } catch (FileAlreadyExistsException e) {
+            throw new IllegalStateException("The report directory " + directory + " already exists", e);
+        }
     }
 
     /**
@@ -114,28 +130,34 @@ public final class ReportWriter {
                 summary.seed(),
                 text(summary.serverCommit()),
                 text(summary.cpuAffinity()));
+        appendEnvironment(out, summary.environment());
         if (summary.injection() != null) {
             var injection = summary.injection();
             line(
                     out,
-                    "%d load bots, ramp %s, warm-up %s, steady %s, ramp-down %s, measured %s",
+                    "%d load bots, ramp %s, warm-up %s, steady %s, ramp-down %s, measured %s,"
+                            + " intent timeout %s, lifecycle timeout %s",
                     injection.bots(),
                     injection.ramp(),
                     injection.warmUp(),
                     injection.steady(),
                     injection.rampDown(),
-                    summary.measuredPhase());
+                    summary.measuredPhase(),
+                    summary.intentTimeout(),
+                    summary.lifecycleTimeout());
         }
         line(
                 out,
                 "generator lag p99 %.2f ms, timeouts %.3f%%, rejected %.3f%%, stopped load bots %.3f%%,"
-                        + " load bots at the final state %s: %s",
+                        + " load bots at the final state %s: %s, not at it %.3f%%",
                 summary.generatorLagP99Millis(),
                 summary.timeoutShare() * 100,
                 summary.rejectedShare() * 100,
                 summary.stoppedShare() * 100,
                 summary.finalState(),
-                summary.reachedFinalState());
+                summary.reachedFinalState(),
+                summary.notAtFinalStateShare() * 100);
+        appendInboundFrames(out, summary.inboundFrames());
         out.append('\n');
         line(
                 out,
@@ -166,6 +188,9 @@ public final class ReportWriter {
         }
         out.append('\n');
         appendSteps(out, summary.steps());
+        if (summary.serverStartedAt() != null) {
+            line(out, "server started %s", summary.serverStartedAt());
+        }
         appendServer(out, summary.serverWindow(), summary.server());
         return out.toString();
     }
@@ -176,14 +201,14 @@ public final class ReportWriter {
                 out,
                 "Gate %s against baseline %s: %s",
                 verdict.scenario(),
-                verdict.baselineRunId(),
+                verdict.baselineRunIds(),
                 verdict.passed() ? "PASS" : "FAIL");
         line(out, "valid runs %s, ignored invalid runs %s", verdict.validRunIds(), verdict.invalidRunIds());
-        line(out, "%-20s %-18s %12s %12s %-6s %s", "criterion", "subject", "measured", "threshold", "result", "reason");
+        line(out, "%-20s %-22s %12s %12s %-6s %s", "criterion", "subject", "measured", "threshold", "result", "reason");
         for (CriterionResult result : verdict.results()) {
             line(
                     out,
-                    "%-20s %-18s %12s %12s %-6s %s",
+                    "%-20s %-22s %12s %12s %-6s %s",
                     result.criterion(),
                     text(result.subject()),
                     number(result.measured()),
@@ -194,17 +219,54 @@ public final class ReportWriter {
         return out.toString();
     }
 
+    private static void appendEnvironment(StringBuilder out, RunEnvironment environment) {
+        if (environment != null) {
+            line(
+                    out,
+                    "%s, kernel %s, CPU %s, %d logical cores, cpuset %s, JVM %s",
+                    text(environment.operatingSystem()),
+                    text(environment.kernel()),
+                    text(environment.cpuModel()),
+                    environment.logicalCores(),
+                    text(environment.cpuset()),
+                    text(environment.jvm()));
+        }
+    }
+
+    private static void appendInboundFrames(StringBuilder out, FrameStats frames) {
+        if (frames != null) {
+            line(
+                    out,
+                    "inbound frames %d, channelRead to handling p50 %.3f ms, p99 %.3f ms, p99.9 %.3f ms, max %.3f ms",
+                    frames.frames(),
+                    frames.p50Millis(),
+                    frames.p99Millis(),
+                    frames.p999Millis(),
+                    frames.maxMillis());
+        }
+    }
+
     private static void appendSteps(StringBuilder out, Map<LoadBotState, StepStats> steps) {
         if (steps.isEmpty()) {
             return;
         }
-        line(out, "%-16s %10s %9s %9s %9s %9s", "lifecycle step", "count", "p50 ms", "p99 ms", "p99.9 ms", "max ms");
+        line(
+                out,
+                "%-16s %10s %9s %9s %9s %9s %9s",
+                "lifecycle step",
+                "count",
+                "timeouts",
+                "p50 ms",
+                "p99 ms",
+                "p99.9 ms",
+                "max ms");
         new TreeMap<>(steps)
                 .forEach((state, stats) -> line(
                         out,
-                        "%-16s %10d %9.2f %9.2f %9.2f %9.2f",
+                        "%-16s %10d %9d %9.2f %9.2f %9.2f %9.2f",
                         state,
                         stats.count(),
+                        stats.timeouts(),
                         stats.p50Millis(),
                         stats.p99Millis(),
                         stats.p999Millis(),
@@ -222,7 +284,7 @@ public final class ReportWriter {
         }
         line(
                 out,
-                "%-16s %10s %9s %9s %9s %11s %9s %9s %9s %9s",
+                "%-20s %10s %9s %9s %9s %11s %9s %9s %9s %9s %9s %9s %9s",
                 "loop",
                 "passes",
                 "p50 ms",
@@ -231,13 +293,16 @@ public final class ReportWriter {
                 "over budget",
                 "failures",
                 "overdue",
+                "ownership",
                 "jdbc",
+                "jdbc s",
+                "jdbc %",
                 "inbox max");
         if (server.loops() != null) {
             new TreeMap<>(server.loops())
                     .forEach((loop, stats) -> line(
                             out,
-                            "%-16s %10d %9s %9s %9s %11d %9d %9d %9d %9s",
+                            "%-20s %10d %9s %9s %9s %11d %9d %9d %9d %9d %9s %9s %9s",
                             loop,
                             stats.passes(),
                             number(stats.passP50Millis()),
@@ -246,7 +311,10 @@ public final class ReportWriter {
                             stats.overBudget(),
                             stats.failures(),
                             stats.timersOverdue(),
+                            stats.ownershipViolations(),
                             stats.jdbcOnLoop(),
+                            number(stats.jdbcOnLoopSeconds()),
+                            number(stats.jdbcOnLoopShare() == null ? null : stats.jdbcOnLoopShare() * 100),
                             number(stats.inboxDepthMax())));
         }
         line(

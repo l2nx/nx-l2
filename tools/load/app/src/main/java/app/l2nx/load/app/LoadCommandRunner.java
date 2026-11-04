@@ -7,7 +7,8 @@ package app.l2nx.load.app;
 import app.l2nx.load.app.database.DatabaseCommands;
 import app.l2nx.load.app.prometheus.PrometheusClient;
 import app.l2nx.load.app.prometheus.PrometheusServerMeters;
-import app.l2nx.load.app.scenario.LoginStormLoadScenario;
+import app.l2nx.load.app.seed.SeedLoadScenario;
+import app.l2nx.load.app.seed.model.CharacterPlan;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.Gate;
@@ -22,6 +23,7 @@ import app.l2nx.load.run.LoadRun;
 import app.l2nx.load.run.RunSettings;
 import app.l2nx.load.scenario.LoadScenario;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -59,9 +61,6 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
     static final String REPORTS = "reports";
     // Boot exits with 1 when a command fails; a failed gate is a verdict, not a failure of the harness.
     static final int GATE_FAILED = 2;
-
-    // The login server creates an account on its first login, which ends at the server list.
-    static final LoadBotState SEED_FINAL_STATE = LoadBotState.SERVER_LIST;
 
     private static final int REPORT_SEARCH_DEPTH = 2;
 
@@ -108,26 +107,51 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         final LatencyRecorder latencies = new LatencyRecorder();
         final PrometheusServerMeters meters =
                 protocol.hasServer() ? new PrometheusServerMeters(prometheus, properties.prometheus()) : null;
-        final RunSummary summary = new LoadRun().execute(settings, scenario, protocol, identities(), latencies, meters);
+        final RunSummary summary = new LoadRun()
+                .execute(settings, scenario, protocol, identities(scenario), latencies, meters, this::claimReport);
         final Path directory = write(summary, latencies, meters == null ? Map.of() : meters.snapshots());
         System.out.print(reportWriter.consoleTable(summary));
         log.info("Report of run {} written to {}", summary.runId(), directory);
     }
 
-    /** @throws IllegalStateException when a load bot did not log in */
+    private void claimReport(String runId) {
+        try {
+            reportWriter.claim(properties.outputDir(), runId);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to create the report directory of run " + runId, e);
+        }
+    }
+
+    /** @throws IllegalStateException when a load bot's character was not set up and stored */
     private void seed() throws InterruptedException {
-        final LoadScenario scenario = new LoginStormLoadScenario(SEED_FINAL_STATE);
+        for (CharacterPlan plan : CharacterPlan.values()) {
+            seed(plan);
+        }
+        log.info("{} accounts seeded with the characters of {}", properties.bots(), List.of(CharacterPlan.values()));
+    }
+
+    /** The login server creates an account on its first login, so the first plan's pass makes the accounts too. */
+    private void seed(CharacterPlan plan) throws InterruptedException {
+        final SeedLoadScenario scenario =
+                new SeedLoadScenario(plan, properties.accounts().prefix(), properties.bots());
         final ClientProtocol protocol = protocol(SEED);
         // Seeding is not measured: the servers run with the profile load-seed.
         final RunSummary summary = new LoadRun()
-                .execute(settings(scenario, protocol), scenario, protocol, identities(), new LatencyRecorder(), null);
+                .execute(
+                        settings(scenario, protocol),
+                        scenario,
+                        protocol,
+                        identities(scenario),
+                        new LatencyRecorder(),
+                        null);
         System.out.print(reportWriter.consoleTable(summary));
-        final int failed = properties.bots() - summary.reachedFinalState();
+        final int failed = properties.bots() - Math.min(scenario.seeded(), summary.loggedOut());
         if (failed > 0) {
-            throw new IllegalStateException(failed + " of " + properties.bots()
-                    + " load bots did not log in; is the login server up with the profiles load and load-seed?");
+            throw new IllegalStateException(
+                    failed + " of " + properties.bots() + " load bots were not seeded with "
+                            + plan + " (" + scenario.seeded() + " set up, " + summary.loggedOut()
+                            + " logged out); are the servers up with the profiles load and load-seed, on an unseeded database?");
         }
-        log.info("{} accounts seeded", properties.bots());
     }
 
     private ClientProtocol protocol(String command) {
@@ -140,8 +164,8 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
                 .get();
     }
 
-    private LoadBotIdentities identities() {
-        return new LoadBotIdentities(properties.accounts());
+    private LoadBotIdentities identities(LoadScenario scenario) {
+        return new LoadBotIdentities(properties.accounts(), scenario.characterSlot());
     }
 
     private RunSettings settings(LoadScenario scenario, ClientProtocol protocol) {
@@ -157,6 +181,8 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
                         .build())
                 .seed(properties.seed())
                 .intentTimeout(properties.intentTimeout())
+                .lifecycleTimeout(properties.lifecycleTimeout())
+                .maxGeneratorLagP99(properties.maxGeneratorLagP99())
                 .serverCommit(properties.serverCommit())
                 .cpuAffinity(properties.cpuAffinity());
         if (properties.eventLoopThreads() != null) {
@@ -167,11 +193,6 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
 
     private Path write(RunSummary summary, LatencyRecorder latencies, Map<String, String> metricsSnapshots)
             throws IOException {
-        final Path directory = properties.outputDir().resolve(summary.runId());
-        // The run id has a one-second resolution: a second run of the same seed within it would overwrite the first.
-        if (Files.exists(directory)) {
-            throw new IllegalStateException("The report directory " + directory + " already exists");
-        }
         final Map<IntentKind, Histogram> histograms = new EnumMap<>(IntentKind.class);
         for (IntentKind kind : summary.intents().keySet()) {
             histograms.put(kind, latencies.histogram(kind));
@@ -184,27 +205,28 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
     }
 
     private void gate(ApplicationArguments args) throws IOException {
-        final List<String> baselines = args.getOptionValues(BASELINE);
-        if (baselines == null || baselines.size() != 1) {
-            throw new IllegalArgumentException("The gate needs one --" + BASELINE + "=<summary.json>");
-        }
         final List<String> reports = args.getOptionValues(REPORTS);
         if (reports == null || reports.isEmpty()) {
             throw new IllegalArgumentException("The gate needs --" + REPORTS + "=<dir or summary.json>[,...]");
         }
-        final Path baselineFile = Path.of(baselines.getFirst());
-        final RunSummary baseline = reportWriter.readSummary(baselineFile);
-        final List<RunSummary> runs = new ArrayList<>();
-        for (Path file : reportFiles(reports, baselineFile)) {
-            runs.add(reportWriter.readSummary(file));
-        }
-        final GateVerdict verdict = Gate.evaluate(runs, baseline, thresholds());
+        final List<String> baselineValues = args.getOptionValues(BASELINE);
+        final Set<Path> baselineFiles = baselineValues == null ? Set.of() : reportFiles(baselineValues, Set.of());
+        final List<RunSummary> baselines = summaries(baselineFiles);
+        final List<RunSummary> runs = summaries(reportFiles(reports, baselineFiles));
+        final GateVerdict verdict = Gate.evaluate(runs, baselines, thresholds());
         System.out.print(reportWriter.verdictTable(verdict));
         exitCode = verdict.passed() ? 0 : GATE_FAILED;
     }
 
-    private static Set<Path> reportFiles(List<String> values, Path baselineFile) throws IOException {
-        final Path baseline = baselineFile.toAbsolutePath().normalize();
+    private List<RunSummary> summaries(Set<Path> files) {
+        final List<RunSummary> summaries = new ArrayList<>();
+        for (Path file : files) {
+            summaries.add(reportWriter.readSummary(file));
+        }
+        return summaries;
+    }
+
+    private static Set<Path> reportFiles(List<String> values, Set<Path> excluded) throws IOException {
         final Set<Path> files = new LinkedHashSet<>();
         for (String value : values) {
             for (String part : value.split(",")) {
@@ -224,7 +246,7 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
                 }
             }
         }
-        files.remove(baseline);
+        files.removeAll(excluded);
         if (files.isEmpty()) {
             throw new IllegalArgumentException("No " + ReportWriter.SUMMARY_FILE + " in " + values);
         }
@@ -246,8 +268,14 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         if (gate.maxClientP99Ratio() != null) {
             thresholds.maxClientP99Ratio(gate.maxClientP99Ratio());
         }
+        if (gate.clientP99Floor() != null) {
+            thresholds.clientP99Floor(gate.clientP99Floor());
+        }
         if (gate.maxTimeoutAndErrorShare() != null) {
             thresholds.maxTimeoutAndErrorShare(gate.maxTimeoutAndErrorShare());
+        }
+        if (gate.maxNotAtFinalStateShare() != null) {
+            thresholds.maxNotAtFinalStateShare(gate.maxNotAtFinalStateShare());
         }
         return thresholds.build();
     }

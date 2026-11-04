@@ -65,9 +65,7 @@ public class Die extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
-        ServerPackets.DIE.writeId(this, buffer);
-        buffer.writeInt(objectId);
-        buffer.writeInt(canTeleport);
+        ServerPackets.DIE.debug(this);
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
             if (!OlympiadManager.getInstance().isRegistered(player) && !player.isOnEvent()) {
@@ -80,6 +78,12 @@ public class Die extends ServerPacket {
             }
         }
 
+        final app.l2nx.protocol.game.p267.serverpackets.Die.DieBuilder wire =
+                app.l2nx.protocol.game.p267.serverpackets.Die.builder()
+                        .objectId(objectId)
+                        .canTeleport(canTeleport)
+                        .sweepable(sweepable)
+                        .toFixed(staticRes);
         if (canTeleport && (clan != null) && !jailed) {
             boolean isInCastleDefense = false;
             boolean isInFortDefense = false;
@@ -101,27 +105,20 @@ public class Die extends ServerPacket {
                 }
             }
 
-            buffer.writeInt(clan.getHideoutId() > 0); // 6d 01 00 00 00 - to hide away
-            buffer.writeInt((clan.getCastleId() > 0) || isInCastleDefense); // 6d 02 00 00 00 - to castle
-            buffer.writeInt((TerritoryWarManager.getInstance().getHQForClan(clan) != null)
-                    || ((siegeClan != null)
-                            && !isInCastleDefense
-                            && !isInFortDefense
-                            && !siegeClan.getFlag().isEmpty())
-                    || ((hall != null)
-                            && (hall.getSiege() != null)
-                            && hall.getSiege().checkIsAttacker(clan))); // siege HQ
-            buffer.writeInt(sweepable); // sweepable (blue glow)
-            buffer.writeInt(staticRes); // 6d 04 00 00 00 - to FIXED
-            buffer.writeInt((clan.getFortId() > 0) || isInFortDefense); // 6d 05 00 00 00 - to fortress
-        } else {
-            buffer.writeInt(0); // 6d 01 00 00 00 - to hide away
-            buffer.writeInt(0); // 6d 02 00 00 00 - to castle
-            buffer.writeInt(0); // 6d 03 00 00 00 - to siege HQ
-            buffer.writeInt(sweepable); // sweepable (blue glow)
-            buffer.writeInt(staticRes); // 6d 04 00 00 00 - to FIXED
-            buffer.writeInt(0); // 6d 05 00 00 00 - to fortress
+            wire.toClanHall(clan.getHideoutId() > 0)
+                    .toCastle((clan.getCastleId() > 0) || isInCastleDefense)
+                    .toSiegeFlag((TerritoryWarManager.getInstance().getHQForClan(clan) != null)
+                            || ((siegeClan != null)
+                                    && !isInCastleDefense
+                                    && !isInFortDefense
+                                    && !siegeClan.getFlag().isEmpty())
+                            || ((hall != null)
+                                    && (hall.getSiege() != null)
+                                    && hall.getSiege().checkIsAttacker(clan)))
+                    .toFortress((clan.getFortId() > 0) || isInFortDefense);
         }
+
+        wire.build().write(buffer.buffer());
 
         // TODO: protocol 152
         // buffer.writeByte(0); // show die animation

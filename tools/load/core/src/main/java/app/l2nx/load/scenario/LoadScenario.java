@@ -5,7 +5,9 @@
 package app.l2nx.load.scenario;
 
 import app.l2nx.load.bot.LoadBotView;
+import app.l2nx.load.bot.intent.CreateCharacter;
 import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.util.Set;
@@ -26,6 +28,15 @@ public interface LoadScenario {
      */
     default LoadBotState finalState() {
         return LoadBotState.IN_GAME;
+    }
+
+    default int characterSlot() {
+        return 0;
+    }
+
+    /** @return the character a load bot creates before selecting one; {@code null} when it already exists */
+    default CreateCharacter characterToCreate(LoadBotIdentity identity) {
+        return null;
     }
 
     /** The behaviour of one load bot, created when it first reaches {@code IN_GAME}. */

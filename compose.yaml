@@ -32,12 +32,169 @@ services:
     # Docker Desktop resolves the name itself; on Linux it maps to the host gateway.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # A throttled Prometheus misses the 1 s scrape timeout, and one failed scrape costs a run its server values.
+    cpuset: ${L2NX_LOAD_SHARED_CPUSET:-10-11}
+    cpus: 1
+    mem_limit: 2g
+    networks:
+      - load
     volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # prometheus.yml scrapes the compose services; prometheus-host.yml scrapes servers started on the host.
+      - ./docker/prometheus/${L2NX_PROMETHEUS_CONFIG:-prometheus.yml}:/etc/prometheus/prometheus.yml:ro
       - l2nx-prometheus-data:/prometheus
+
+  # The load services take their cores by SMT sibling pairs, so no two groups share a physical core: game-server 0-5,
+  # harness 6-9, and load-db, login-server and prometheus 10-11, since login and Prometheus are idle in the steady
+  # phase. `cpus` equals the cpuset where a quota would only add throttling stalls (game-server, harness, load-db), and
+  # is below it where a neighbour must keep cores for load-db (login-server during a login storm, prometheus).
+  load-db:
+    image: postgres:18.6
+    container_name: l2nx-load-db
+    profiles: [load]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    # Durability stays at the defaults: JDBC on the world loop waits for the commit, which is part of what a run measures.
+    # db-reset forces a checkpoint, so these limits keep the next one out of the run instead of in some repeats only.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - checkpoint_timeout=30min
+      - -c
+      - max_wal_size=4GB
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    cpuset: ${L2NX_LOAD_SHARED_CPUSET:-10-11}
+    cpus: 2
+    mem_limit: 2g
+    memswap_limit: 2g
+    networks:
+      - load
+    volumes:
+      - l2nx-load-db-data:/var/lib/postgresql
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/nx-l2.sql:ro
+
+  login-server:
+    image: l2nx/login-server
+    build: login/boot
+    container_name: l2nx-login-server
+    profiles: [load]
+    environment:
+      SPRING_PROFILES_ACTIVE: ${L2NX_LOAD_SPRING_PROFILES:-load}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://load-db:5432/l2nx_load
+      # Reaches no other host: the GS-link stays on the loopback game-server shares with this service.
+      L2NX_GSLINK_SECRET: ${L2NX_GSLINK_SECRET:-load-harness-only-secret-never-for-production}
+    depends_on:
+      load-db:
+        condition: service_healthy
+    stop_grace_period: 30s
+    cpuset: ${L2NX_LOAD_SHARED_CPUSET:-10-11}
+    cpus: 1.5
+    mem_limit: 768m
+    networks:
+      load:
+        ipv4_address: 10.89.7.10
+        aliases:
+          - game-server
+
+  game-server:
+    image: l2nx/game-server
+    build: chronicles/high-five/boot
+    container_name: l2nx-game-server
+    profiles: [load]
+    # The GS-link is plaintext on loopback only, so the two servers share one network namespace, as on one host: no TLS
+    # bundle to generate for a throwaway stack. Its ports and its address are those of login-server.
+    network_mode: service:login-server
+    # hexid.txt is a fixed path in config/, which the image owns, so the file becomes a link into the volume. A new
+    # volume belongs to root, hence the start as root and the drop to the image's user.
+    user: root
+    entrypoint:
+      - bash
+      - -c
+      - |
+        chown l2nx:l2nx state
+        ln -sf ../state/hexid.txt config/hexid.txt
+        exec setpriv --reuid=l2nx --regid=l2nx --clear-groups bin/game-server
+    environment:
+      SPRING_PROFILES_ACTIVE: ${L2NX_LOAD_SPRING_PROFILES:-load}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://load-db:5432/l2nx_load
+      L2NX_GSLINK_SECRET: ${L2NX_GSLINK_SECRET:-load-harness-only-secret-never-for-production}
+    depends_on:
+      load-db:
+        condition: service_healthy
+      login-server:
+        condition: service_healthy
+    stop_grace_period: 120s
+    cpuset: ${L2NX_LOAD_GAME_CPUSET:-0-5}
+    cpus: ${L2NX_LOAD_GAME_CPUS:-6}
+    # -Xmx4g of the image plus metaspace, code cache, direct buffers and thread stacks.
+    mem_limit: 6g
+    memswap_limit: 6g
+    volumes:
+      - l2nx-load-game-state:/opt/game-server/state
+      - ./docker/game-server/ipconfig.xml:/opt/game-server/config/ipconfig.xml:ro
+      # A missing directory must fail the start: a server without geodata runs, but its numbers compare to nothing.
+      - type: bind
+        source: ${L2NX_GEODATA_DIR:-./geodata}
+        target: /opt/game-server/data/geodata
+        read_only: true
+        bind:
+          create_host_path: false
+
+  harness:
+    image: l2nx/load
+    build: tools/load/app
+    profiles: [load]
+    # On demand: `up` starts no replica, `docker compose run harness <command>` does. No depends_on, since db-create and
+    # db-reset must run with the servers down.
+    scale: 0
+    environment:
+      # A collector pause of the generator would count as generator lag.
+      JAVA_OPTS: -XX:+UseZGC -Xms1g -Xmx2g
+      L2NX_LOAD_CPUAFFINITY: >-
+        game-server=${L2NX_LOAD_GAME_CPUSET:-0-5}
+        harness=${L2NX_LOAD_HARNESS_CPUSET:-6-9}
+        load-db,login-server,prometheus=${L2NX_LOAD_SHARED_CPUSET:-10-11}
+      L2NX_LOAD_P267_LOGINHOST: login-server
+      L2NX_LOAD_PROMETHEUS_URL: http://prometheus:9090
+      L2NX_LOAD_PROMETHEUS_TARGETS_0_JOB: game
+      L2NX_LOAD_PROMETHEUS_TARGETS_0_METRICSURL: http://game-server:8777/actuator/prometheus
+      L2NX_LOAD_PROMETHEUS_TARGETS_1_JOB: login
+      L2NX_LOAD_PROMETHEUS_TARGETS_1_METRICSURL: http://login-server:8106/actuator/prometheus
+      L2NX_LOAD_DATABASE_ADMINURL: jdbc:postgresql://load-db:5432/postgres
+    cpuset: ${L2NX_LOAD_HARNESS_CPUSET:-6-9}
+    cpus: ${L2NX_LOAD_HARNESS_CPUS:-4}
+    mem_limit: 3g
+    memswap_limit: 3g
+    networks:
+      - load
+    volumes:
+      - ./build/load:/opt/load/build/load
+
+# Its own network with a fixed subnet: docker/game-server/ipconfig.xml names these addresses, and changing the default
+# network would take l2nx-db down with it.
+networks:
+  load:
+    name: l2nx-load
+    ipam:
+      config:
+        - subnet: 10.89.7.0/24
+          gateway: 10.89.7.1
 
 volumes:
   l2nx-db-data:
     name: l2nx-db-pg-data
   l2nx-prometheus-data:
     name: l2nx-prometheus-data
+  l2nx-load-db-data:
+    name: l2nx-load-db-data
+  l2nx-load-game-state:
+    name: l2nx-load-game-state
