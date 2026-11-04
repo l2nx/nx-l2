@@ -67,15 +67,19 @@ public class PlayerRefund extends ItemContainer {
     @Override
     protected void addItem(Item item) {
         super.addItem(item);
+        if (liveItems().size() <= LIMIT) {
+            return;
+        }
+
+        final Item removedItem = liveItems().iterator().next();
         try {
-            if (liveItems().size() > LIMIT) {
-                final Item removedItem = liveItems().iterator().next();
-                removeItem(removedItem);
-                ItemManager.destroyItem(ItemProcessType.REFUND, removedItem, owner, null);
-                removedItem.updateDatabase(true);
-            }
-        } catch (Exception e) {
-            log.error("addItem()", e);
+            removeItem(removedItem);
+            ItemManager.destroyItem(ItemProcessType.REFUND, removedItem, owner, null);
+            removedItem.updateDatabase(true);
+        } catch (RuntimeException e) {
+            log.error("Could not destroy evicted refund item {}", removedItem.getObjectId(), e);
+            // A failed destroy may stop before the registry removal; the item must not outlive the refund.
+            World.removeObject(removedItem);
         }
     }
 

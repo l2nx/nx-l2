@@ -663,7 +663,7 @@ public class FortSiege implements Siegable {
      *         0 - Player don't have clan.<br>
      *         1 - Player don't have enough adena to register.<br>
      *         2 - Is not right time to register Fortress now.<br>
-     *         3 - Players clan is already registered to siege.<br>
+     *         3 - Players clan is already registered to siege, or the registration failed.<br>
      *         4 - Players clan is successfully registered to siege.
      */
     public int addAttacker(Player player, boolean checkConditions) {
@@ -699,12 +699,22 @@ public class FortSiege implements Siegable {
             }
         }
 
+        // The first attacker pays before registering, so a fee that cannot be taken registers nothing.
+        final boolean paid = checkConditions && attackerClans.isEmpty();
+        if (paid && !player.reduceAdena(ItemProcessType.FEE, 250000, null, true)) {
+            return 1;
+        }
+
         saveSiegeClan(clan);
-        if (attackerClans.size() == 1) {
-            if (checkConditions) {
-                player.reduceAdena(ItemProcessType.FEE, 250000, null, true);
+        if (getAttackerClan(clan.getId()) == null) {
+            if (paid) {
+                player.addAdena(ItemProcessType.REFUND, 250000, null, true);
             }
 
+            return 3;
+        }
+
+        if (attackerClans.size() == 1) {
             startAutoTask(true);
         }
 

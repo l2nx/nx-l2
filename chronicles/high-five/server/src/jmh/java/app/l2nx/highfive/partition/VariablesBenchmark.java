@@ -13,6 +13,8 @@ import app.l2nx.highfive.mechanics.variables.AbstractVariables;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -50,7 +52,15 @@ public class VariablesBenchmark {
         previous = WorldPartition.swap(loop);
 
         // The concrete variables restore from the database; the base keeps the map, the change tracking and the API.
-        variables = new AbstractVariables() {};
+        variables = new AbstractVariables() {
+            @Override
+            protected void persist(Set<String> deleted, Map<String, String> changed) {}
+
+            @Override
+            protected String variablesKey() {
+                return "benchmark";
+            }
+        };
         keys = new String[KEYS];
         for (int i = 0; i < KEYS; i++) {
             keys[i] = "VAR_" + i;
@@ -75,7 +85,7 @@ public class VariablesBenchmark {
 
     @Benchmark
     public void write() {
-        variables.set(keys[cursor++ % KEYS], cursor);
+        variables.set(keys[Math.floorMod(cursor++, KEYS)], cursor);
     }
 
     @Benchmark

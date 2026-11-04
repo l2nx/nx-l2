@@ -184,9 +184,4 @@ public class CommandChannel extends AbstractPlayerGroup {
 
         return (memberCount() >= PlayerConfig.LOOT_RAIDS_PRIVILEGE_CC_SIZE);
     }
-
-    /** Channels are equal when they share a leader. */
-    public boolean equals(CommandChannel cc) {
-        return (cc != null) && (getLeaderObjectId() == cc.getLeaderObjectId());
-    }
 }

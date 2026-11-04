@@ -29,7 +29,8 @@ package app.l2nx.highfive.mechanics.variables;
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.partition.WorldPartition;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
@@ -40,13 +41,9 @@ import org.springframework.dao.DataAccessException;
 @SingleWriter
 public class ItemVariables extends AbstractVariables {
 
-    private static final long SAVE_INTERVAL = 60000; // 1 minute.
-    private static final boolean ASYNC_SAVE_ENABLED = true;
-
     public static final String TRANSMOG_ID = "transmogId";
 
     private final int objectId;
-    private boolean saveScheduled;
 
     public ItemVariables(int objectId) {
         this.objectId = objectId;
@@ -77,42 +74,14 @@ public class ItemVariables extends AbstractVariables {
         return true;
     }
 
-    public boolean storeMe() {
-        WorldPartition.checkOwner();
-        if (!hasChanges()) {
-            return false;
-        }
-
-        if (ASYNC_SAVE_ENABLED && !saveScheduled) {
-            saveScheduled = true;
-            WorldPartition.loop()
-                    .schedule(
-                            () -> {
-                                saveScheduled = false;
-                                saveNow();
-                            },
-                            SAVE_INTERVAL,
-                            TimeUnit.MILLISECONDS);
-            return true;
-        }
-
-        return saveNow();
+    @Override
+    protected void persist(Set<String> deleted, Map<String, String> changed) {
+        ItemManager.getInstance().saveVariables(objectId, deleted, changed);
     }
 
-    public boolean saveNow() {
-        WorldPartition.checkOwner();
-        if (!hasChanges()) {
-            return false;
-        }
-
-        try {
-            ItemManager.getInstance().saveVariables(objectId, deletedNames(), changedValues());
-            markSaved();
-            return true;
-        } catch (DataAccessException e) {
-            log.warn("Could not update variables for: {}", objectId, e);
-            return false;
-        }
+    @Override
+    protected String variablesKey() {
+        return String.valueOf(objectId);
     }
 
     public boolean deleteMe() {

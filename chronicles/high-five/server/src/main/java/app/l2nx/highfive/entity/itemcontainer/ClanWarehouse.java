@@ -68,20 +68,6 @@ public class ClanWarehouse extends Warehouse {
         return ItemLocation.CLANWH;
     }
 
-    public String getLocationId() {
-        WorldPartition.checkOwner();
-        return "0";
-    }
-
-    public int getLocationId(boolean dummy) {
-        WorldPartition.checkOwner();
-        return 0;
-    }
-
-    public void setLocationId(Player dummy) {
-        WorldPartition.checkOwner();
-    }
-
     @Override
     public boolean validateCapacity(long slots) {
         WorldPartition.checkOwner();

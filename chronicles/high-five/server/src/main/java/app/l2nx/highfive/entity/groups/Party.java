@@ -934,9 +934,4 @@ public class Party extends AbstractPlayerGroup {
         WorldPartition.checkOwner();
         ucState = uc;
     }
-
-    /** Parties are equal when they share a leader. */
-    public boolean equals(Party party) {
-        return (party != null) && (getLeaderObjectId() == party.getLeaderObjectId());
-    }
 }

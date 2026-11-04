@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -99,7 +100,7 @@ class AccountVariablesTest {
         }
 
         @Test
-        void storeMe_shouldSaveAtOnce_whenASaveIsAlreadyScheduled() {
+        void storeMe_shouldRideOnTheScheduledSave_whenASaveIsAlreadyScheduled() {
             final AccountVariables variables = load(Map.of());
 
             WorldLoopExtension.runInPass(() -> {
@@ -109,7 +110,9 @@ class AccountVariablesTest {
                 variables.storeMe();
             });
 
-            verify(repository).saveChanges(ACCOUNT_ID, Set.of(), Map.of("FIRST", "1", "SECOND", "2"));
+            verify(repository, never()).saveChanges(eq(ACCOUNT_ID), any(), anyMap());
+            WorldLoopExtension.passAfter(Duration.ofMinutes(1));
+            verify(repository, times(1)).saveChanges(ACCOUNT_ID, Set.of(), Map.of("FIRST", "1", "SECOND", "2"));
         }
 
         @Test

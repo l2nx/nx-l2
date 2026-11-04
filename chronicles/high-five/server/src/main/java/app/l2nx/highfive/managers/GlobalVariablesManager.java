@@ -31,6 +31,7 @@ import app.l2nx.highfive.mechanics.variables.AbstractVariables;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.world.GlobalVariableRepository;
 import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
@@ -57,7 +58,7 @@ public class GlobalVariablesManager extends AbstractVariables {
         try {
             variableRepository.findAll().forEach((name, value) -> set(name, value, false));
         } catch (DataAccessException e) {
-            log.warn("Couldn't restore global variables.");
+            log.warn("Couldn't restore global variables.", e);
             return false;
         }
 
@@ -65,20 +66,24 @@ public class GlobalVariablesManager extends AbstractVariables {
         return true;
     }
 
-    // Replaces every row, so the change tracking only resets.
+    /**
+     * Saves at once instead of scheduling: the callers include shutdown, after which a scheduled save never runs.
+     */
+    @Override
     public boolean storeMe() {
         WorldPartition.checkOwner();
-        final Map<String, Object> values = allValues();
-        try {
-            variableRepository.replaceAll(values);
-        } catch (DataAccessException e) {
-            log.warn("Couldn't save global variables to database.", e);
-            return false;
-        }
+        return saveNow();
+    }
 
-        markSaved();
-        log.info("Stored {} variables.", values.size());
-        return true;
+    // Replaces every row, whatever the tracked changes are.
+    @Override
+    protected void persist(Set<String> deleted, Map<String, String> changed) {
+        variableRepository.replaceAll(allValues());
+    }
+
+    @Override
+    protected String variablesKey() {
+        return "global";
     }
 
     public boolean deleteMe() {

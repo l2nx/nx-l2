@@ -176,6 +176,41 @@ class PartyMatchRoomTest {
 
             assertThat(actual).containsExactly(third, second, owner);
         }
+
+        @Test
+        void changeLeader_shouldChangeNothing_whenTheNewLeaderAlreadyOwnsTheRoom() {
+            final PartyMatchRoom room = roomOfThree();
+
+            final List<Player> actual = WorldLoopExtension.callInPass(() -> {
+                room.changeLeader(owner);
+                return room.getPartyMembers();
+            });
+
+            assertThat(actual).containsExactly(owner, second, third);
+        }
+
+        @Test
+        void changeLeader_shouldChangeNothing_whenTheNewLeaderIsNotInTheRoom() {
+            final PartyMatchRoom room = roomOfThree();
+
+            final List<Player> actual = WorldLoopExtension.callInPass(() -> {
+                room.changeLeader(player("Stranger"));
+                return room.getPartyMembers();
+            });
+
+            assertThat(actual).containsExactly(owner, second, third);
+        }
+
+        @Test
+        void changeLeader_shouldNotThrow_whenTheOwnerIsTheOnlyMember() {
+            final List<Player> actual = WorldLoopExtension.callInPass(() -> {
+                final PartyMatchRoom room = new PartyMatchRoom(7, "Title", 0, 1, 85, 9, owner);
+                room.changeLeader(owner);
+                return room.getPartyMembers();
+            });
+
+            assertThat(actual).containsExactly(owner);
+        }
     }
 
     @Nested

@@ -8,8 +8,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -23,13 +26,33 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 @ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(WorldLoopExtension.LOCK)
 class AbstractVariablesTest {
-    private static AbstractVariables variables() {
-        return new AbstractVariables() {};
+    private static final class RecordingVariables extends AbstractVariables {
+        final List<Map<String, String>> persisted = new ArrayList<>();
+        boolean failing;
+
+        @Override
+        protected void persist(Set<String> deleted, Map<String, String> changed) {
+            if (failing) {
+                throw new DataAccessResourceFailureException("save failed");
+            }
+
+            persisted.add(changed);
+        }
+
+        @Override
+        protected String variablesKey() {
+            return "test";
+        }
+    }
+
+    private static RecordingVariables variables() {
+        return new RecordingVariables();
     }
 
     private static AbstractVariables saved(Map<String, String> stored) {
@@ -39,6 +62,73 @@ class AbstractVariablesTest {
             variables.markSaved();
         });
         return variables;
+    }
+
+    @Nested
+    class SaveNow {
+        @Test
+        void saveNow_shouldPersistTheChangesOnce_whenTheSaveSucceeds() {
+            final RecordingVariables variables = variables();
+
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                variables.set("a", 1);
+                final boolean first = variables.saveNow();
+                return first && !variables.saveNow();
+            });
+
+            assertThat(actual).isTrue();
+            assertThat(variables.persisted).containsExactly(Map.of("a", "1"));
+        }
+
+        @Test
+        void saveNow_shouldKeepTheChangesPending_whenThePersistFails() {
+            final RecordingVariables variables = variables();
+            variables.failing = true;
+
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                variables.set("a", 1);
+                return variables.saveNow();
+            });
+            variables.failing = false;
+            final boolean retried = WorldLoopExtension.callInPass(variables::saveNow);
+
+            assertThat(actual).isFalse();
+            assertThat(retried).isTrue();
+            assertThat(variables.persisted).containsExactly(Map.of("a", "1"));
+        }
+    }
+
+    @Nested
+    class StoreMe {
+        @Test
+        void storeMe_shouldPersistNothingAtOnce_whenASaveIsAlreadyScheduled() {
+            final RecordingVariables variables = variables();
+
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                variables.set("a", 1);
+                variables.storeMe();
+                variables.set("b", 2);
+                return variables.storeMe();
+            });
+
+            assertThat(actual).isTrue();
+            assertThat(variables.persisted).isEmpty();
+        }
+
+        @Test
+        void storeMe_shouldPersistTheLaterChangesWithTheScheduledSave_whenASaveIsAlreadyScheduled() {
+            final RecordingVariables variables = variables();
+            WorldLoopExtension.runInPass(() -> {
+                variables.set("a", 1);
+                variables.storeMe();
+                variables.set("b", 2);
+                variables.storeMe();
+            });
+
+            WorldLoopExtension.passAfter(Duration.ofMinutes(1));
+
+            assertThat(variables.persisted).containsExactly(Map.of("a", "1", "b", "2"));
+        }
     }
 
     @Nested

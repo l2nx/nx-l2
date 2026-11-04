@@ -83,7 +83,6 @@ class PartyTest {
             return Stream.of(
                     Named.of("getMembers", Party::getMembers),
                     Named.of("collectMembers", p -> p.collectMembers(new ArrayList<>())),
-                    Named.of("getMembersObjectId", Party::getMembersObjectId),
                     Named.of("getMemberCount", Party::getMemberCount),
                     Named.of("getMember", p -> p.getMember(0)),
                     Named.of("containsPlayer", p -> p.containsPlayer(null)),
@@ -143,15 +142,6 @@ class PartyTest {
 
             assertThat(actual).containsExactly(leader, third, second);
             assertThatThrownBy(() -> actual.add(leader)).isInstanceOf(UnsupportedOperationException.class);
-        }
-
-        @Test
-        void getMembersObjectId_shouldListTheIdsInJoiningOrder() {
-            final Party party = partyOfThree();
-
-            final List<Integer> actual = WorldLoopExtension.callInPass(party::getMembersObjectId);
-
-            assertThat(actual).containsExactly(268_200_001, 268_200_002, 268_200_003);
         }
     }
 

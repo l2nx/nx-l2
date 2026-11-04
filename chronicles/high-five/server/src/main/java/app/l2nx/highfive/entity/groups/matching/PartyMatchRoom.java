@@ -160,6 +160,9 @@ public class PartyMatchRoom {
     public void changeLeader(Player newLeader) {
         WorldPartition.checkOwner();
         final Player oldLeader = partyMembers.get(0);
+        if ((newLeader == oldLeader) || !partyMembers.contains(newLeader)) {
+            return;
+        }
 
         partyMembers.remove(newLeader);
 

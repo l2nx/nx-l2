@@ -35,7 +35,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * Persistent variables with change tracking, so a save writes only what changed since the last load or save.
@@ -44,14 +47,18 @@ import java.util.stream.Collectors;
  * {@code StatSet}, so its public methods cannot carry the ownership check.
  * @author UnAfraid, Mobius
  */
+@Slf4j
 @SingleWriter
 public abstract class AbstractVariables {
+    private static final long SAVE_INTERVAL = TimeUnit.MINUTES.toMillis(1);
+
     // Insertion order, so a save writes its rows in the same order on every run.
     private final StatSet values = new StatSet(LinkedHashMap::new);
     private final Set<String> added = new LinkedHashSet<>(4);
     private final Set<String> modified = new LinkedHashSet<>(4);
     private final Set<String> deleted = new LinkedHashSet<>(4);
     private boolean changed;
+    private boolean saveScheduled;
 
     public boolean getBoolean(String name) {
         WorldPartition.checkOwner();
@@ -193,6 +200,55 @@ public abstract class AbstractVariables {
         WorldPartition.checkOwner();
         return values.contains(name);
     }
+
+    /**
+     * Schedules one delayed save on the world loop; changes made before it runs ride along.
+     * @return false when there was nothing to save
+     */
+    public boolean storeMe() {
+        WorldPartition.checkOwner();
+        if (!hasChanges()) {
+            return false;
+        }
+
+        if (saveScheduled) {
+            return true;
+        }
+
+        saveScheduled = true;
+        WorldPartition.loop()
+                .schedule(
+                        () -> {
+                            saveScheduled = false;
+                            saveNow();
+                        },
+                        SAVE_INTERVAL,
+                        TimeUnit.MILLISECONDS);
+        return true;
+    }
+
+    public boolean saveNow() {
+        WorldPartition.checkOwner();
+        if (!hasChanges()) {
+            return false;
+        }
+
+        try {
+            persist(deletedNames(), changedValues());
+            markSaved();
+            return true;
+        } catch (DataAccessException e) {
+            log.warn("Could not update variables for: {}", variablesKey(), e);
+            return false;
+        }
+    }
+
+    /**
+     * @throws DataAccessException when the write fails; the changes stay pending
+     */
+    protected abstract void persist(Set<String> deleted, Map<String, String> changed);
+
+    protected abstract String variablesKey();
 
     public boolean hasChanges() {
         WorldPartition.checkOwner();

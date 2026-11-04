@@ -32,7 +32,6 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -68,19 +67,6 @@ public abstract class AbstractPlayerGroup {
     public final void collectMembers(List<? super Player> target) {
         WorldPartition.checkOwner();
         addMembersTo(target);
-    }
-
-    public final List<Integer> getMembersObjectId() {
-        WorldPartition.checkOwner();
-        final List<Integer> ids = new ArrayList<>(memberCount());
-        try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
-            addMembersTo(members);
-            for (Player member : members) {
-                ids.add(member.getObjectId());
-            }
-        }
-
-        return ids;
     }
 
     public final Player getLeader() {
