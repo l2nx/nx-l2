@@ -102,7 +102,10 @@ public class AutoUseTaskManager {
 
                             final Item item = player.getInventory().getItemByItemId(itemId);
                             if (item == null) {
-                                player.getAutoUseSettings().removeAutoSupplyItem(itemId);
+                                if (player.getInventory().getItemByItemIdIncludingPending(itemId) == null) {
+                                    player.getAutoUseSettings().removeAutoSupplyItem(itemId);
+                                }
+
                                 continue ITEMS;
                             }
 
@@ -153,7 +156,9 @@ public class AutoUseTaskManager {
                     if (itemId > 0) {
                         final Item item = player.getInventory().getItemByItemId(itemId);
                         if (item == null) {
-                            player.getAutoUseSettings().setAutoPotionItem(0);
+                            if (player.getInventory().getItemByItemIdIncludingPending(itemId) == null) {
+                                player.getAutoUseSettings().setAutoPotionItem(0);
+                            }
                         } else {
                             final int reuseDelay = item.getReuseDelay();
                             if ((reuseDelay <= 0) || (player.getItemRemainingReuseTime(item.getObjectId()) <= 0)) {

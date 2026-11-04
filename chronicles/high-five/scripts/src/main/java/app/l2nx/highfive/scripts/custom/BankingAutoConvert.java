@@ -64,7 +64,11 @@ public class BankingAutoConvert {
         }
 
         final PlayerInventory inventory = player.getInventory();
-        inventory.reduceAdena(ItemProcessType.COMPENSATE, BankingConfig.BANKING_SYSTEM_ADENA_COUNT, player, null);
+        if (!inventory.reduceAdena(
+                ItemProcessType.COMPENSATE, BankingConfig.BANKING_SYSTEM_ADENA_COUNT, player, null)) {
+            return;
+        }
+
         inventory.addItem(ItemProcessType.COMPENSATE, 3470, BankingConfig.BANKING_SYSTEM_GOLDBAR_COUNT, player, null);
         inventory.updateDatabase();
 

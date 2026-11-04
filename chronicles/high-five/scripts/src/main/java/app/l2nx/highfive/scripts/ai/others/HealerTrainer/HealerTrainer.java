@@ -126,10 +126,17 @@ public class HealerTrainer extends Script {
                     // Come back when you have used all transfer skill items for this class.
                     htmltext = "cleanse-no_skills.html";
                 } else {
-                    boolean hasSkills = false;
                     final Collection<SkillLearn> skills = SkillTreeData.getInstance()
                             .getTransferSkillTree(player.getPlayerClass())
                             .values();
+                    final boolean hasSkills = skills.stream()
+                            .anyMatch(skillLearn -> player.getKnownSkill(skillLearn.getSkillId()) != null);
+                    if (!hasSkills
+                            || !player.reduceAdena(
+                                    ItemProcessType.FEE, PlayerConfig.FEE_DELETE_TRANSFER_SKILLS, npc, true)) {
+                        break;
+                    }
+
                     for (SkillLearn skillLearn : skills) {
                         final Skill skill = player.getKnownSkill(skillLearn.getSkillId());
                         if (skill != null) {
@@ -137,14 +144,7 @@ public class HealerTrainer extends Script {
                             for (ItemHolder item : skillLearn.getRequiredItems()) {
                                 player.addItem(ItemProcessType.REFUND, item.getId(), item.getCount(), npc, true);
                             }
-
-                            hasSkills = true;
                         }
-                    }
-
-                    // Adena gets reduced once.
-                    if (hasSkills) {
-                        player.reduceAdena(ItemProcessType.FEE, PlayerConfig.FEE_DELETE_TRANSFER_SKILLS, npc, true);
                     }
                 }
                 break;

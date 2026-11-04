@@ -37,7 +37,7 @@ public class ItemList extends AbstractItemPacket {
     public ItemList(Player player, boolean showWindow) {
         this.player = player;
         this.showWindow = showWindow;
-        player.getInventory().collectItems(items, item -> !item.isQuestItem());
+        player.getInventory().collectItemsIncludingPending(items, item -> !item.isQuestItem());
     }
 
     @Override

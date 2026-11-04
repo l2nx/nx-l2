@@ -28,6 +28,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
@@ -571,7 +572,8 @@ public class TradeList {
                     PunishmentManager.handleIllegalPlayerAction(
                             player,
                             "[TradeList.privateStoreBuy()] " + player
-                                    + " tried to cheat the package sell and buy only a part of the package! Ban this player for bot usage!",
+                                    + " tried to cheat the package sell and buy only a part of the package! Ban this"
+                                    + " player for bot usage!",
                             GeneralConfig.DEFAULT_PUNISH);
                     return 2;
                 }
@@ -632,16 +634,13 @@ public class TradeList {
             return 1;
         }
 
-        if (!playerInventory.reduceAdena(ItemProcessType.BUY, totalPrice, player, owner)) {
+        final InventoryUpdate ownerIU = new InventoryUpdate();
+        final InventoryUpdate playerIU = new InventoryUpdate();
+        if (!takeAdena(playerInventory, totalPrice, player, owner, playerIU)) {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
             return 1;
         }
 
-        // Prepare inventory update packets.
-        final InventoryUpdate ownerIU = new InventoryUpdate();
-        final InventoryUpdate playerIU = new InventoryUpdate();
-        final Item adenaItem = playerInventory.getAdenaInstance();
-        playerIU.addItem(adenaItem);
         ownerInventory.addAdena(ItemProcessType.SELL, totalPrice, owner, player);
 
         // ownerIU.addItem(ownerInventory.getAdenaInstance());
@@ -859,16 +858,13 @@ public class TradeList {
 
         if (totalPrice > 0) {
             // Transfer adena
-            if (totalPrice > ownerInventory.getAdena()) {
+            if (!takeAdena(ownerInventory, totalPrice, owner, player, ownerIU)) {
                 // should not happens, just a precaution
                 return false;
             }
 
-            final Item adenaItem = ownerInventory.getAdenaInstance();
-            ownerInventory.reduceAdena(ItemProcessType.BUY, totalPrice, owner, player);
-            ownerIU.addItem(adenaItem);
             playerInventory.addAdena(ItemProcessType.SELL, totalPrice, player, owner);
-            playerIU.addItem(playerInventory.getAdenaInstance());
+            playerIU.addItem(playerInventory.getAdenaInstanceIncludingPending());
         }
 
         if (ok) {
@@ -878,5 +874,23 @@ public class TradeList {
         }
 
         return ok;
+    }
+
+    // Spending all adena destroys the stack, which the client must then see removed, not left at its old count.
+    private static boolean takeAdena(
+            PlayerInventory inventory, long count, Player actor, Player reference, InventoryUpdate update) {
+        final Item adena =
+                inventory.destroyItemByItemId(ItemProcessType.BUY, Inventory.ADENA_ID, count, actor, reference);
+        if (adena == null) {
+            return false;
+        }
+
+        if (adena.getCount() > 0) {
+            update.addModifiedItem(adena);
+        } else {
+            update.addRemovedItem(adena);
+        }
+
+        return true;
     }
 }

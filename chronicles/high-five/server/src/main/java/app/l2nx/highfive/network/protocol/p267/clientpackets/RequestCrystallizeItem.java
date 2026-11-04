@@ -197,6 +197,10 @@ public class RequestCrystallizeItem extends ClientPacket {
         // remove from inventory
         final Item removedItem =
                 player.getInventory().destroyItem(ItemProcessType.DESTROY, objectId, count, player, null);
+        if (removedItem == null) {
+            return;
+        }
+
         final InventoryUpdate iu = new InventoryUpdate();
         iu.addRemovedItem(removedItem);
         player.sendPacket(iu); // Sent inventory update for destruction instantly.

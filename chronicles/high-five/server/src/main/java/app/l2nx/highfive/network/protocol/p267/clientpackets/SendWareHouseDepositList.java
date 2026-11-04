@@ -36,6 +36,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.EnchantResult;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -115,18 +117,26 @@ public class SendWareHouseDepositList extends ClientPacket {
             return;
         }
 
-        // Freight price from config or normal price per item slot (30).
-        final long fee = items.size() * 30;
+        if (player.getActiveTradeList() != null) {
+            return;
+        }
+
+        final List<ItemHolder> deposits = new ArrayList<>(items.size());
+        final IntSet handles = new IntOpenHashSet(items.size());
         long currentAdena = player.getAdena();
         int slots = 0;
         for (ItemHolder itemHolder : items) {
             final Item item = player.checkItemManipulation(itemHolder.getId(), itemHolder.getCount(), "deposit");
-            if (item == null) {
+            if ((item == null) || !handles.add(itemHolder.getId())) {
                 log.warn("Error depositing a warehouse object for char {} (validity check)", player.getName());
                 return;
             }
 
-            // Calculate needed adena and slots.
+            if (!item.isDepositable(isPrivate) || !item.isAvailable(player, true, isPrivate)) {
+                continue;
+            }
+
+            deposits.add(itemHolder);
             if (item.getId() == ADENA_ID) {
                 currentAdena -= itemHolder.getCount();
             }
@@ -138,37 +148,24 @@ public class SendWareHouseDepositList extends ClientPacket {
             }
         }
 
-        // Item Max Limit Check.
+        if (deposits.isEmpty()) {
+            return;
+        }
+
         if (!warehouse.validateCapacity(slots)) {
             player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_QUANTITY_THAT_CAN_BE_INPUTTED);
             return;
         }
 
-        // Check if enough adena and charge the fee.
+        final long fee = deposits.size() * 30L;
         if ((currentAdena < fee) || !player.reduceAdena(ItemProcessType.FEE, fee, manager, false)) {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
             return;
         }
 
-        // Get current tradelist if any.
-        if (player.getActiveTradeList() != null) {
-            return;
-        }
-
-        // Proceed to the transfer.
         final InventoryUpdate playerIU = new InventoryUpdate();
-        for (ItemHolder itemHolder : items) {
-            // Check validity of requested item.
-            final Item oldItem = player.checkItemManipulation(itemHolder.getId(), itemHolder.getCount(), "deposit");
-            if (oldItem == null) {
-                log.warn("Error depositing a warehouse object for char {} (olditem == null)", player.getName());
-                return;
-            }
-
-            if (!oldItem.isDepositable(isPrivate) || !oldItem.isAvailable(player, true, isPrivate)) {
-                continue;
-            }
-
+        for (ItemHolder itemHolder : deposits) {
+            final Item oldItem = player.getInventory().getItemByObjectId(itemHolder.getId());
             final Item newItem = player.getInventory()
                     .transferItem(
                             ItemProcessType.TRANSFER,
@@ -178,7 +175,7 @@ public class SendWareHouseDepositList extends ClientPacket {
                             player,
                             manager);
             if (newItem == null) {
-                log.warn("Error depositing a warehouse object for char {} (newitem == null)", player.getName());
+                log.error("Paid deposit of item {} for char {} moved nothing", itemHolder.getId(), player.getName());
                 continue;
             }
 

@@ -58,6 +58,7 @@ import app.l2nx.highfive.entity.item.holders.DropProtection;
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.item.type.EtcItemType;
 import app.l2nx.highfive.entity.item.type.ItemType;
+import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
@@ -1174,8 +1175,8 @@ public class Item extends WorldObject {
     }
 
     /**
-     * Whether a value transaction in flight reserved the item, or awaits a new row of its stackable template. A pending
-     * item is refused by every mutating container operation and by saves, which would undo the commit.
+     * Whether a value transaction in flight reserved the item or awaits a new stackable row; see
+     * {@link ItemContainer} for how pending items are treated.
      */
     public boolean isPending() {
         WorldPartition.checkOwner();

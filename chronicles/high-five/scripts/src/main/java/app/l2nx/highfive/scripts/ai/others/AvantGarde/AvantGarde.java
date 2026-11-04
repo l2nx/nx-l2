@@ -163,6 +163,9 @@ public class AvantGarde extends Script {
 
                     if (activeCertifications == 0) {
                         htmltext = "32323-10no.html";
+                    } else if (!player.reduceAdena(
+                            ItemProcessType.FEE, PlayerConfig.FEE_DELETE_SUBCLASS_SKILLS, npc, true)) {
+                        htmltext = "32323-08no.html";
                     } else {
                         for (String varName : QUEST_VAR_NAMES) {
                             for (int i = 1; i <= PlayerConfig.MAX_SUBCLASS; i++) {
@@ -213,7 +216,6 @@ public class AvantGarde extends Script {
                             }
                         }
 
-                        player.reduceAdena(ItemProcessType.FEE, PlayerConfig.FEE_DELETE_SUBCLASS_SKILLS, npc, true);
                         htmltext = "32323-09no.html";
                         player.sendSkillList();
                     }

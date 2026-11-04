@@ -633,11 +633,11 @@ public class SavingSanta extends LongTimeEvent {
                 return htmltext;
             } else if (event.equalsIgnoreCase("buySavingHat")) {
                 playSound(player, QuestSound.ITEMSOUND_QUEST_MIDDLE);
-                if (player.getInventory().getAdena() < 50000) {
+                if ((player.getInventory().getAdena() < 50000)
+                        || !player.reduceAdena(ItemProcessType.FEE, 50000, player, true)) {
                     return null;
                 }
 
-                player.reduceAdena(ItemProcessType.FEE, 50000, player, true);
                 player.addItem(ItemProcessType.BUY, BR_XMAS_GAWIBAWIBO_CAP, 1, player, true);
             } else if (event.equalsIgnoreCase("HolidayFestival")) {
                 if (santaFree) {

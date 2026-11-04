@@ -79,14 +79,16 @@ class WorldMailItems implements MailItems {
         final List<AttachmentSnapshot> snapshots = new ArrayList<>(items.size());
         long attachedAdena = 0;
         for (ItemCount attached : items) {
+            // Asked first: the manipulation check does not see a pending item, which would answer it as not mailable.
+            final Item held = player.getInventory().getItemIncludingPending(attached.itemHandle());
+            if ((held != null) && held.isPending()) {
+                return new ReserveResult.Refused<>(MailRefusal.BUSY);
+            }
             final Item item = (attached.count() < 1)
                     ? null
                     : player.checkItemManipulation(attached.itemHandle(), attached.count(), "attach");
             if ((item == null) || !mailable(player, item) || !handles.add(item.getObjectId())) {
                 return new ReserveResult.Refused<>(MailRefusal.ITEM_NOT_MAILABLE);
-            }
-            if (item.isPending()) {
-                return new ReserveResult.Refused<>(MailRefusal.BUSY);
             }
             if (item.getId() == Inventory.ADENA_ID) {
                 attachedAdena += attached.count();
@@ -97,7 +99,7 @@ class WorldMailItems implements MailItems {
 
         Item fee = null;
         if (adena > 0) {
-            fee = player.getInventory().getAdenaInstance();
+            fee = player.getInventory().getAdenaInstanceIncludingPending();
             if ((fee == null) || ((fee.getCount() - attachedAdena) < adena)) {
                 return new ReserveResult.Refused<>(MailRefusal.NOT_ENOUGH_ADENA);
             }
@@ -148,7 +150,7 @@ class WorldMailItems implements MailItems {
         final List<Item> changed = new ArrayList<>();
         for (Int2LongMap.Entry entry : leaving.int2LongEntrySet()) {
             final ItemRowState row = rows.get(entry.getIntKey());
-            final Item item = inventory.getItemByObjectId(row.itemHandle());
+            final Item item = inventory.getItemIncludingPending(row.itemHandle());
             if (item == null) {
                 log.error("Item {} of a committed mail move is no longer in {}", row, inventory);
                 continue;
@@ -200,7 +202,7 @@ class WorldMailItems implements MailItems {
                 slots += snapshot.count();
                 continue;
             }
-            final Item stack = container.getItemByItemId(template.getId());
+            final Item stack = container.getItemByItemIdIncludingPending(template.getId());
             if (stack == null) {
                 if (newStacks.add(template.getId())) {
                     slots++;
@@ -221,7 +223,7 @@ class WorldMailItems implements MailItems {
         if (!inventory.validateWeight(weight)) {
             return new ReserveResult.Refused<>(MailRefusal.WEIGHT_LIMIT);
         }
-        final Item adenaItem = inventory.getAdenaInstance();
+        final Item adenaItem = inventory.getAdenaInstanceIncludingPending();
         final long balance = adenaItem == null ? 0 : adenaItem.getCount();
         // The transaction pays before it moves the attachments, so attached adena cannot pay.
         if (balance < -adena) {
@@ -343,7 +345,9 @@ class WorldMailItems implements MailItems {
     }
 
     private static void rowStored(ItemContainer container, Item item, ItemRowState row) {
-        if ((row != null) && (row.unstoredRow() != null) && (container.getItemByObjectId(item.getObjectId()) == item)) {
+        if ((row != null)
+                && (row.unstoredRow() != null)
+                && (container.getItemIncludingPending(item.getObjectId()) == item)) {
             item.markRowStored();
         }
     }
@@ -378,7 +382,7 @@ class WorldMailItems implements MailItems {
             return;
         }
         final boolean inventory = container == player.getInventory();
-        final Item unsaved = item.isStackable() ? container.getItemByItemId(item.getId()) : null;
+        final Item unsaved = item.isStackable() ? container.getItemByItemIdIncludingPending(item.getId()) : null;
         if ((unsaved != null) && !unsaved.hasRow()) {
             // A stack that arrived mid-flight stays unsaved: the committed row absorbs it and the next save stores the
             // sum.
@@ -420,11 +424,11 @@ class WorldMailItems implements MailItems {
     }
 
     private static Held held(Player player, int handle) {
-        final Item inInventory = player.getInventory().getItemByObjectId(handle);
+        final Item inInventory = player.getInventory().getItemIncludingPending(handle);
         if (inInventory != null) {
             return new Held(player.getInventory(), inInventory);
         }
-        final Item inWarehouse = player.getWarehouse().getItemByObjectId(handle);
+        final Item inWarehouse = player.getWarehouse().getItemIncludingPending(handle);
         return inWarehouse == null ? null : new Held(player.getWarehouse(), inWarehouse);
     }
 

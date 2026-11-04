@@ -37,7 +37,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.item.recipe.ManufactureItem;
 import app.l2nx.highfive.entity.item.recipe.RecipeItemInfo;
 import app.l2nx.highfive.entity.item.recipe.RecipeList;
-import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Stat;
@@ -53,6 +53,8 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import it.unimi.dsi.fastutil.objects.Reference2LongLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -232,7 +234,7 @@ public class RecipeManager {
                 }
             }
 
-            items = listItems(false);
+            items = listItems(new Reference2LongLinkedOpenHashMap<>());
             if (items == null) {
                 abort();
                 return;
@@ -318,50 +320,51 @@ public class RecipeManager {
                 calculateStatUse(false, true);
             }
 
-            if ((target != player)
-                    && (price > 0)
-                    && (target.transferItem(
-                                    ItemProcessType.TRANSFER,
-                                    target.getInventory().getAdenaInstance().getObjectId(),
-                                    price,
-                                    player.getInventory(),
-                                    player)
-                            == null)) {
+            // The materials and the price are checked before either moves, so a refusal of either takes nothing.
+            final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
+            final List<RecipeItemInfo> materials = listItems(plan);
+            if (materials == null) {
+                return;
+            }
+
+            if (!payPrice(plan)) {
                 target.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
                 abort();
                 return;
             }
 
-            items = listItems(true); // This line actually takes materials from inventory.
-            if (items != null) {
-                final boolean success = ClockBridge.random().nextInt(100) < recipeList.getSuccessRate();
-                if (success) {
-                    rewardPlayer();
-                } else {
-                    if (target != player) {
-                        SystemMessage msg = new SystemMessage(
-                                SystemMessageId.YOUR_ATTEMPT_TO_CREATE_S2_FOR_C1_AT_THE_PRICE_OF_S3_ADENA_HAS_FAILED);
-                        msg.addString(target.getName());
-                        msg.addItemName(recipeList.getItemId());
-                        msg.addLong(price);
-                        player.sendPacket(msg);
-                        msg = new SystemMessage(SystemMessageId.C1_HAS_FAILED_TO_CREATE_S2_AT_THE_PRICE_OF_S3_ADENA);
-                        msg.addString(player.getName());
-                        msg.addItemName(recipeList.getItemId());
-                        msg.addLong(price);
-                        target.sendPacket(msg);
-                    } else {
-                        target.sendPacket(SystemMessageId.YOU_FAILED_AT_MIXING_THE_ITEM);
-                    }
-                }
-
-                // Craft window counts come from the client inventory, so it is sent directly, sendItemList is delayed.
-                // The pending item added update goes first, otherwise it arrives after the list and duplicates the
-                // item.
-                target.flushInventoryUpdate();
-                target.sendPacket(new ItemList(target, false));
-                updateMakeInfo(success);
+            if (!takeMaterials(plan, materials)) {
+                abort();
+                return;
             }
+
+            final boolean success = ClockBridge.random().nextInt(100) < recipeList.getSuccessRate();
+            if (success) {
+                rewardPlayer();
+            } else {
+                if (target != player) {
+                    SystemMessage msg = new SystemMessage(
+                            SystemMessageId.YOUR_ATTEMPT_TO_CREATE_S2_FOR_C1_AT_THE_PRICE_OF_S3_ADENA_HAS_FAILED);
+                    msg.addString(target.getName());
+                    msg.addItemName(recipeList.getItemId());
+                    msg.addLong(price);
+                    player.sendPacket(msg);
+                    msg = new SystemMessage(SystemMessageId.C1_HAS_FAILED_TO_CREATE_S2_AT_THE_PRICE_OF_S3_ADENA);
+                    msg.addString(player.getName());
+                    msg.addItemName(recipeList.getItemId());
+                    msg.addLong(price);
+                    target.sendPacket(msg);
+                } else {
+                    target.sendPacket(SystemMessageId.YOU_FAILED_AT_MIXING_THE_ITEM);
+                }
+            }
+
+            // Craft window counts come from the client inventory, so it is sent directly, sendItemList is delayed.
+            // The pending item added update goes first, otherwise it arrives after the list and duplicates the
+            // item.
+            target.flushInventoryUpdate();
+            target.sendPacket(new ItemList(target, false));
+            updateMakeInfo(success);
 
             updateCurMp();
             updateCurLoad();
@@ -475,47 +478,73 @@ public class RecipeManager {
             return ret;
         }
 
-        private List<RecipeItemInfo> listItems(boolean remove) {
-            final RecipeHolder[] recipes = recipeList.getRecipes();
-            final Inventory inv = target.getInventory();
+        /**
+         * Plans only unequipped free items, the ones the craft consumes; {@code null} once the customer is told what is
+         * missing.
+         */
+        private List<RecipeItemInfo> listItems(Reference2LongMap<Item> plan) {
+            final PlayerInventory inv = target.getInventory();
             final List<RecipeItemInfo> materials = new ArrayList<>();
-            SystemMessage sm;
-            for (RecipeHolder recipe : recipes) {
+            for (RecipeHolder recipe : recipeList.getRecipes()) {
                 if (recipe.quantity() > 0) {
-                    final Item item = inv.getItemByItemId(recipe.itemId());
-                    final long itemQuantityAmount = item == null ? 0 : item.getCount();
-
-                    if (itemQuantityAmount < recipe.quantity()) {
-                        sm = new SystemMessage(SystemMessageId.YOU_ARE_MISSING_S2_S1_REQUIRED_TO_CREATE_THAT);
+                    final long missing = inv.planTake(recipe.itemId(), recipe.quantity(), false, plan);
+                    if (missing > 0) {
+                        final SystemMessage sm =
+                                new SystemMessage(SystemMessageId.YOU_ARE_MISSING_S2_S1_REQUIRED_TO_CREATE_THAT);
                         sm.addItemName(recipe.itemId());
-                        sm.addLong(recipe.quantity() - itemQuantityAmount);
+                        sm.addLong(missing);
                         target.sendPacket(sm);
 
                         abort();
                         return null;
                     }
 
-                    materials.add(new RecipeItemInfo(item, recipe.quantity()));
-                }
-            }
-
-            if (remove) {
-                for (RecipeItemInfo tmp : materials) {
-                    inv.destroyItemByItemId(ItemProcessType.FEE, tmp.getItemId(), tmp.getQuantity(), target, player);
-                    if (tmp.getQuantity() > 1) {
-                        sm = new SystemMessage(SystemMessageId.S2_S1_HAS_DISAPPEARED);
-                        sm.addItemName(tmp.getItemId());
-                        sm.addLong(tmp.getQuantity());
-                    } else {
-                        sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
-                        sm.addItemName(tmp.getItemId());
-                    }
-
-                    target.sendPacket(sm);
+                    materials.add(new RecipeItemInfo(inv.getItemByItemId(recipe.itemId()), recipe.quantity()));
                 }
             }
 
             return materials;
+        }
+
+        // In full or not at all: the transfer caps at the stack, and the customer may have spent adena meanwhile.
+        private boolean payPrice(Reference2LongMap<Item> plan) {
+            if ((target == player) || (price <= 0)) {
+                return true;
+            }
+
+            final Item adena = target.getInventory().getAdenaInstance();
+            return (adena != null)
+                    && ((adena.getCount() - plan.getLong(adena)) >= price)
+                    && (target.transferItem(
+                                    ItemProcessType.TRANSFER, adena.getObjectId(), price, player.getInventory(), player)
+                            != null);
+        }
+
+        private boolean takeMaterials(Reference2LongMap<Item> plan, List<RecipeItemInfo> materials) {
+            final PlayerInventory inv = target.getInventory();
+            for (Reference2LongMap.Entry<Item> taken : plan.reference2LongEntrySet()) {
+                if (inv.destroyItem(ItemProcessType.FEE, taken.getKey(), taken.getLongValue(), target, player)
+                        == null) {
+                    log.error("The inventory of {} refused a planned material take of {}", target, taken.getKey());
+                    return false;
+                }
+            }
+
+            for (RecipeItemInfo tmp : materials) {
+                final SystemMessage sm;
+                if (tmp.getQuantity() > 1) {
+                    sm = new SystemMessage(SystemMessageId.S2_S1_HAS_DISAPPEARED);
+                    sm.addItemName(tmp.getItemId());
+                    sm.addLong(tmp.getQuantity());
+                } else {
+                    sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
+                    sm.addItemName(tmp.getItemId());
+                }
+
+                target.sendPacket(sm);
+            }
+
+            return true;
         }
 
         private void abort() {

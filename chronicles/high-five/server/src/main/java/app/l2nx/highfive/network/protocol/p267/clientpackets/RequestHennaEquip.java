@@ -27,7 +27,6 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -69,13 +68,10 @@ public class RequestHennaEquip extends ClientPacket {
         final long count = player.getInventory().getInventoryItemCount(henna.getDyeItemId(), -1);
         if (henna.isAllowedClass(player.getPlayerClass())
                 && (count >= henna.getWearCount())
-                && (player.getAdena() >= henna.getWearFee())
-                && player.addHenna(henna)) {
+                && (player.getAdena() >= henna.getWearFee())) {
             player.destroyItemByItemId(ItemProcessType.FEE, henna.getDyeItemId(), henna.getWearCount(), player, true);
-            player.getInventory().reduceAdena(ItemProcessType.FEE, henna.getWearFee(), player, player.getLastFolkNPC());
-            final InventoryUpdate iu = new InventoryUpdate();
-            iu.addModifiedItem(player.getInventory().getAdenaInstance());
-            player.sendInventoryUpdate(iu);
+            player.reduceAdena(ItemProcessType.FEE, henna.getWearFee(), player.getLastFolkNPC(), false);
+            player.addHenna(henna);
             player.sendPacket(SystemMessageId.THE_SYMBOL_HAS_BEEN_ADDED);
         } else {
             player.sendPacket(SystemMessageId.THE_SYMBOL_CANNOT_BE_DRAWN);

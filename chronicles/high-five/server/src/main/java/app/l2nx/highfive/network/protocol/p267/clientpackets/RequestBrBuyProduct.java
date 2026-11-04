@@ -103,10 +103,12 @@ public class RequestBrBuyProduct extends ClientPacket {
         // Pay for Item
         if (GeneralConfig.PRIME_SHOP_ITEM_ID == -1) {
             player.setGamePoints(player.getGamePoints() - totalPoints);
-        } else {
-            player.getInventory()
-                    .destroyItemByItemId(
-                            ItemProcessType.FEE, GeneralConfig.PRIME_SHOP_ITEM_ID, totalPoints, player, null);
+        } else if (player.getInventory()
+                        .destroyItemByItemId(
+                                ItemProcessType.FEE, GeneralConfig.PRIME_SHOP_ITEM_ID, totalPoints, player, null)
+                == null) {
+            player.sendPacket(new ExBrBuyProduct(ExBrBuyProduct.RESULT_NOT_ENOUGH_POINTS));
+            return;
         }
 
         // Buy Item

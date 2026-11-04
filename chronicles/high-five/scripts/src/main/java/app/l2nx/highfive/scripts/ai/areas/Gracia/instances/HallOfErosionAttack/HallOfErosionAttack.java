@@ -471,7 +471,10 @@ public class HallOfErosionAttack extends Script {
                     world.addDeadTumors(victim);
                 }
 
-                player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true);
+                if (!player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true)) {
+                    return null;
+                }
+
                 final Location loc = world.getDeadTumorsAt(getRandom(world.getDeadTumorsCount()))
                         .getLocation();
                 if (loc != null) {
@@ -494,7 +497,7 @@ public class HallOfErosionAttack extends Script {
             }
         }
 
-        return "";
+        return null;
     }
 
     @Override

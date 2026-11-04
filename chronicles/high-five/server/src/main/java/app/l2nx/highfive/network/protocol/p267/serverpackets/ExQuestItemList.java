@@ -32,7 +32,7 @@ public class ExQuestItemList extends AbstractItemPacket {
 
     public ExQuestItemList(Player player) {
         this.player = player;
-        player.getInventory().collectItems(items, Item::isQuestItem);
+        player.getInventory().collectItemsIncludingPending(items, Item::isQuestItem);
     }
 
     @Override

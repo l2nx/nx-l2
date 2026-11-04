@@ -124,7 +124,11 @@ public class PetInventory extends Inventory {
     public void transferItemsToOwner() {
         WorldPartition.checkOwner();
         final Player master = owner.getOwner();
-        try (Snapshot<Item> items = ScratchBuffers.snapshot(liveItems())) {
+        try (Snapshot<Item> items = ScratchBuffers.empty()) {
+            for (Item item : freeItems()) {
+                items.add(item);
+            }
+
             for (Item item : items) {
                 owner.transferItem(
                         ItemProcessType.TRANSFER,

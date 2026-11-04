@@ -593,7 +593,7 @@ public abstract class Inventory extends ItemContainer {
 
     public Item dropItem(ItemProcessType process, Item item, Player actor, Object reference) {
         WorldPartition.checkOwner();
-        if ((item == null) || (getItemByObjectId(item.getObjectId()) == null) || item.isPending()) {
+        if ((item == null) || (getItemByObjectId(item.getObjectId()) == null)) {
             return null;
         }
 
@@ -610,7 +610,7 @@ public abstract class Inventory extends ItemContainer {
     public Item dropItem(ItemProcessType process, int objectId, long count, Player actor, Object reference) {
         WorldPartition.checkOwner();
         final Item item = getItemByObjectId(objectId);
-        if ((item == null) || item.isPending()) {
+        if (item == null) {
             return null;
         }
 
@@ -1105,12 +1105,10 @@ public abstract class Inventory extends ItemContainer {
     }
 
     private Item findAmmunition(ItemTemplate weapon, EtcItemType type) {
-        for (Item item : liveItems()) {
-            if (item.isEtcItem()
-                    && (item.getTemplate().getCrystalTypePlus() == weapon.getCrystalTypePlus())
-                    && (item.getEtcItem().getItemType() == type)) {
-                return item;
-            }
+        for (Item item : freeItems(item -> item.isEtcItem()
+                && (item.getTemplate().getCrystalTypePlus() == weapon.getCrystalTypePlus())
+                && (item.getEtcItem().getItemType() == type))) {
+            return item;
         }
 
         return null;
@@ -1136,7 +1134,7 @@ public abstract class Inventory extends ItemContainer {
 
                 World.addObject(item);
 
-                if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
+                if (item.isStackable() && (getItemByItemIdIncludingPending(item.getId()) != null)) {
                     addItem(ItemProcessType.RESTORE, item, getOwner().asPlayer(), null);
                 } else {
                     addItem(item);

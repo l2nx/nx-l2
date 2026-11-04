@@ -36,6 +36,10 @@ public final class AwaitedStacks {
         return counts.containsKey(key(ownerHandle, itemTemplateId));
     }
 
+    public boolean isEmpty() {
+        return counts.isEmpty();
+    }
+
     private static long key(int ownerHandle, int itemTemplateId) {
         return ((long) ownerHandle << Integer.SIZE) | (itemTemplateId & 0xFFFF_FFFFL);
     }

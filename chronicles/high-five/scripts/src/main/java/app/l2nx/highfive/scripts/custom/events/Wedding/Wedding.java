@@ -103,11 +103,14 @@ public class Wedding extends Script {
                 } else if ((player.getAdena() < WeddingConfig.WEDDING_PRICE)
                         || (partner.getAdena() < WeddingConfig.WEDDING_PRICE)) {
                     htmltext = sendHtml(partner, "Adena.html", "%fee%", String.valueOf(WeddingConfig.WEDDING_PRICE));
+                } else if (!player.reduceAdena(
+                        ItemProcessType.FEE, WeddingConfig.WEDDING_PRICE, player.getLastFolkNPC(), true)) {
+                    htmltext = sendHtml(partner, "Adena.html", "%fee%", String.valueOf(WeddingConfig.WEDDING_PRICE));
+                } else if (!partner.reduceAdena(
+                        ItemProcessType.FEE, WeddingConfig.WEDDING_PRICE, player.getLastFolkNPC(), true)) {
+                    player.addAdena(ItemProcessType.REFUND, WeddingConfig.WEDDING_PRICE, player.getLastFolkNPC(), true);
+                    htmltext = sendHtml(partner, "Adena.html", "%fee%", String.valueOf(WeddingConfig.WEDDING_PRICE));
                 } else {
-                    player.reduceAdena(ItemProcessType.FEE, WeddingConfig.WEDDING_PRICE, player.getLastFolkNPC(), true);
-                    partner.reduceAdena(
-                            ItemProcessType.FEE, WeddingConfig.WEDDING_PRICE, player.getLastFolkNPC(), true);
-
                     // Accept the wedding request.
                     player.setMarryAccepted(true);
                     final Couple couple = CoupleManager.getInstance().getCouple(player.getCoupleId());

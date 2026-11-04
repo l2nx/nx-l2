@@ -9,6 +9,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,8 +104,13 @@ class ItemContainerTest {
                     Named.of("getSize", ItemContainer::getSize),
                     Named.of("getItems", ItemContainer::getItems),
                     Named.of("collectItems", bag -> bag.collectItems(new ArrayList<>(), _ -> true)),
+                    Named.of(
+                            "collectItemsIncludingPending",
+                            bag -> bag.collectItemsIncludingPending(new ArrayList<>(), _ -> true)),
                     Named.of("getItemByObjectId", bag -> bag.getItemByObjectId(1)),
+                    Named.of("getItemIncludingPending", bag -> bag.getItemIncludingPending(1)),
                     Named.of("getItemByItemId", bag -> bag.getItemByItemId(SWORD_ID)),
+                    Named.of("getItemByItemIdIncludingPending", bag -> bag.getItemByItemIdIncludingPending(SWORD_ID)),
                     Named.of("getAllItemsByItemId", bag -> bag.getAllItemsByItemId(SWORD_ID)),
                     Named.of("getInventoryItemCount", bag -> bag.getInventoryItemCount(SWORD_ID, -1)),
                     Named.of("getAdena", ItemContainer::getAdena),
@@ -552,12 +561,38 @@ class ItemContainerTest {
                 final Item arrows = stack(10);
                 bag.put(arrows);
                 result[0] = whilePending(arrows, () -> mutation.apply(bag, arrows));
-                return bag.getInventoryItemCount(ARROW_ID, -1);
+                return arrows.getCount();
             });
 
             assertThat(result[0]).isNull();
             assertThat(actual).isEqualTo(10);
             verifyNoInteractions(items);
+        }
+
+        @Test
+        void getInventoryItemCount_shouldLeaveOutThePendingStack_untilItsReservationEnds() {
+            final Bag bag = new Bag();
+            final long[] actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                final long during = whilePending(arrows, () -> bag.getInventoryItemCount(ARROW_ID, -1));
+                return new long[] {during, bag.getInventoryItemCount(ARROW_ID, -1)};
+            });
+
+            assertThat(actual).containsExactly(0, 10);
+        }
+
+        @Test
+        void getInventoryItemCount_shouldCountOnlyTheFreeItems_whenOneOfSeveralIsPending() {
+            final Bag bag = new Bag();
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                final Item pending = item(single);
+                bag.put(pending);
+                bag.put(item(single));
+                return whilePending(pending, () -> bag.getInventoryItemCount(SWORD_ID, -1));
+            });
+
+            assertThat(actual).isOne();
         }
 
         static Stream<Named<BiFunction<Bag, Item, Item>>> mutations() {
@@ -579,25 +614,175 @@ class ItemContainerTest {
         }
 
         @Test
-        void transferItem_shouldMoveNothing_whenTheTargetStackIsPending() {
+        void transferItem_shouldMergeIntoTheTargetStack_whenItIsPending() {
             final Bag source = new Bag();
             final Bag target = new Bag();
+            final Item[] held = new Item[1];
             final Item[] transferred = new Item[1];
             final long[] actual = WorldLoopExtension.callInPass(() -> {
                 final Item arrows = stack(10);
-                final Item held = stack(5);
+                held[0] = stack(5);
                 source.put(arrows);
-                target.put(held);
+                target.put(held[0]);
                 transferred[0] = whilePending(
-                        held,
+                        held[0],
                         () -> source.transferItem(ItemProcessType.NONE, arrows.getObjectId(), 4, target, null, null));
                 return new long[] {
                     source.getInventoryItemCount(ARROW_ID, -1), target.getInventoryItemCount(ARROW_ID, -1)
                 };
             });
 
-            assertThat(transferred[0]).isNull();
-            assertThat(actual).containsExactly(10, 5);
+            assertThat(transferred[0]).isSameAs(held[0]);
+            assertThat(actual).containsExactly(6, 9);
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("gameplayLookups")
+        void gameplayLookup_shouldNotFindThePendingItem(BiFunction<Bag, Item, Item> lookup) {
+            final Bag bag = new Bag();
+            final Item actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                return whilePending(arrows, () -> lookup.apply(bag, arrows));
+            });
+
+            assertThat(actual).isNull();
+        }
+
+        static Stream<Named<BiFunction<Bag, Item, Item>>> gameplayLookups() {
+            return Stream.of(
+                    Named.of("getItemByObjectId", (bag, item) -> bag.getItemByObjectId(item.getObjectId())),
+                    Named.of("getItemByItemId", (bag, item) -> bag.getItemByItemId(ARROW_ID)),
+                    Named.of("getItemByItemId ignoring", (bag, item) -> bag.getItemByItemId(ARROW_ID, null)));
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("gameplayLists")
+        void gameplayList_shouldLeaveOutThePendingItem(Function<Bag, List<Item>> list) {
+            final Bag bag = new Bag();
+            final Item[] free = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                final Item pending = stack(10);
+                free[0] = item(single);
+                bag.put(pending);
+                bag.put(free[0]);
+                return whilePending(pending, () -> list.apply(bag));
+            });
+
+            assertThat(actual).containsExactly(free[0]);
+        }
+
+        static Stream<Named<Function<Bag, List<Item>>>> gameplayLists() {
+            return Stream.of(
+                    Named.of("getItems", ItemContainer::getItems),
+                    Named.of("collectItems", bag -> {
+                        final List<Item> into = new ArrayList<>();
+                        bag.collectItems(into, _ -> true);
+                        return into;
+                    }),
+                    Named.of("getAllItemsByItemId of both", bag -> {
+                        final List<Item> into = new ArrayList<>(bag.getAllItemsByItemId(ARROW_ID));
+                        into.addAll(bag.getAllItemsByItemId(SWORD_ID));
+                        return into;
+                    }));
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("heldLists")
+        void includingPendingQuery_shouldSeeThePendingItem(Function<Bag, List<Item>> list) {
+            final Bag bag = new Bag();
+            final Item[] pending = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                pending[0] = stack(10);
+                bag.put(pending[0]);
+                return whilePending(pending[0], () -> list.apply(bag));
+            });
+
+            assertThat(actual).containsExactly(pending[0]);
+        }
+
+        static Stream<Named<Function<Bag, List<Item>>>> heldLists() {
+            return Stream.of(
+                    Named.of("getItemIncludingPending", bag -> List.of(bag.getItemIncludingPending(handleOf(bag)))),
+                    Named.of(
+                            "getItemByItemIdIncludingPending",
+                            bag -> List.of(bag.getItemByItemIdIncludingPending(ARROW_ID))),
+                    Named.of("collectItemsIncludingPending", ItemContainerTest::heldItems));
+        }
+
+        @Test
+        void getSize_shouldCountThePendingItem() {
+            final Bag bag = new Bag();
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                final Item arrows = stack(10);
+                bag.put(arrows);
+                return whilePending(arrows, bag::getSize);
+            });
+
+            assertThat(actual).isOne();
+        }
+
+        @Test
+        void addItem_shouldMergeIntoThePendingStack() {
+            final Bag bag = new Bag();
+            final Item[] pending = new Item[1];
+            final Item[] added = new Item[1];
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                pending[0] = stack(10);
+                bag.put(pending[0]);
+                added[0] = whilePending(pending[0], () -> bag.addItem(ItemProcessType.NONE, ARROW_ID, 5, null, null));
+                return pending[0].getCount();
+            });
+
+            assertThat(added[0]).isSameAs(pending[0]);
+            assertThat(actual).isEqualTo(15);
+        }
+
+        @Test
+        void destroyItemByItemId_shouldDestroyAFreeInstance_whenAnotherIsPending() {
+            final Bag bag = new Bag();
+            final Item[] pending = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                pending[0] = item(single);
+                bag.put(pending[0]);
+                bag.put(item(single));
+                return whilePending(pending[0], () -> {
+                    bag.destroyItemByItemId(ItemProcessType.NONE, SWORD_ID, 1, null, null);
+                    return heldItems(bag);
+                });
+            });
+
+            assertThat(actual).containsExactly(pending[0]);
+        }
+
+        @Test
+        void gameplayWalk_shouldSkipThePendingCheck_whenNothingIsPending() {
+            final Bag bag = new Bag();
+            final Item[] free = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                free[0] = spy(stack(10));
+                bag.put(free[0]);
+                return bag.getItems();
+            });
+
+            assertThat(actual).containsExactly(free[0]);
+            verify(free[0], never()).isPending();
+        }
+
+        @Test
+        void gameplayWalk_shouldTestTheFilterBeforeThePendingCheck_whenAnItemIsPending() {
+            final Bag bag = new Bag();
+            final Item[] free = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                final Item pending = item(single);
+                free[0] = spy(stack(10));
+                bag.put(pending);
+                bag.put(free[0]);
+                return whilePending(pending, () -> bag.getAllItemsByItemId(SWORD_ID));
+            });
+
+            assertThat(actual).isEmpty();
+            verify(free[0], never()).isPending();
         }
 
         @Test
@@ -610,7 +795,7 @@ class ItemContainerTest {
                 bag.put(stack(3));
                 return whilePending(pending[0], () -> {
                     bag.destroyAllItems(ItemProcessType.NONE, null, null);
-                    return bag.getItems();
+                    return heldItems(bag);
                 });
             });
 
@@ -694,6 +879,16 @@ class ItemContainerTest {
 
     private Item item(EtcItem template) {
         return new Item(registry.allocateTransient(), template);
+    }
+
+    private static int handleOf(Bag bag) {
+        return heldItems(bag).getFirst().getObjectId();
+    }
+
+    static List<Item> heldItems(ItemContainer container) {
+        final List<Item> into = new ArrayList<>();
+        container.collectItemsIncludingPending(into, _ -> true);
+        return into;
     }
 
     static <T> T whilePending(Item item, Supplier<T> body) {

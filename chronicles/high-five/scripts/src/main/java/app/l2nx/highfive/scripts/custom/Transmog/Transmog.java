@@ -107,14 +107,14 @@ public class Transmog extends Script {
                     final int transmogId = item.getTransmogId();
                     if (transmogId > 0) {
                         if (TransmogConfig.TRANSMOG_REMOVE_COST > 0) {
-                            if (player.getAdena() < TransmogConfig.TRANSMOG_REMOVE_COST) {
+                            if ((player.getAdena() < TransmogConfig.TRANSMOG_REMOVE_COST)
+                                    || !player.reduceAdena(
+                                            ItemProcessType.FEE, TransmogConfig.TRANSMOG_REMOVE_COST, player, true)) {
                                 player.getInventory().equipItem(item);
                                 player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
                                 onEvent(slot + "!" + page, npc, player);
                                 return null;
                             }
-
-                            player.reduceAdena(ItemProcessType.FEE, TransmogConfig.TRANSMOG_REMOVE_COST, player, true);
                         }
 
                         item.removeTransmog();
@@ -147,15 +147,17 @@ public class Transmog extends Script {
                                 playerTransmogs.getOrDefault(bodypart.getMask(), Collections.emptySet());
                         if (itemIds.contains(transmogId)) {
                             if (TransmogConfig.TRANSMOG_APPLY_COST > 0) {
-                                if (player.getAdena() < TransmogConfig.TRANSMOG_APPLY_COST) {
+                                if ((player.getAdena() < TransmogConfig.TRANSMOG_APPLY_COST)
+                                        || !player.reduceAdena(
+                                                ItemProcessType.FEE,
+                                                TransmogConfig.TRANSMOG_APPLY_COST,
+                                                player,
+                                                true)) {
                                     player.getInventory().equipItem(item);
                                     player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
                                     onEvent(slot + "!" + page, npc, player);
                                     return null;
                                 }
-
-                                player.reduceAdena(
-                                        ItemProcessType.FEE, TransmogConfig.TRANSMOG_APPLY_COST, player, true);
                             }
 
                             item.setTransmogId(transmogId);

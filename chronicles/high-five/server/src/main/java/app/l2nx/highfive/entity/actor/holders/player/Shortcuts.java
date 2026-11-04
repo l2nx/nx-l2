@@ -69,7 +69,7 @@ public class Shortcuts {
 
         if ((sc != null)
                 && (sc.getType() == ShortcutType.ITEM)
-                && (owner.getInventory().getItemByObjectId(sc.getId()) == null)) {
+                && (owner.getInventory().getItemIncludingPending(sc.getId()) == null)) {
             deleteShortcut(sc.getSlot(), sc.getPage());
             sc = null;
         }
@@ -80,7 +80,7 @@ public class Shortcuts {
     public void registerShortcut(Shortcut shortcut) {
         WorldPartition.checkOwner();
         if (shortcut.getType() == ShortcutType.ITEM) {
-            final Item item = owner.getInventory().getItemByObjectId(shortcut.getId());
+            final Item item = owner.getInventory().getItemIncludingPending(shortcut.getId());
             if (item == null) {
                 return;
             }
@@ -121,7 +121,7 @@ public class Shortcuts {
 
         deleteShortcutFromDb(old);
         if (old.getType() == ShortcutType.ITEM) {
-            final Item item = owner.getInventory().getItemByObjectId(old.getId());
+            final Item item = owner.getInventory().getItemIncludingPending(old.getId());
             if ((item != null) && (item.getItemType() == EtcItemType.SHOT) && owner.removeAutoSoulShot(item.getId())) {
                 owner.sendPacket(new ExAutoSoulShot(item.getId(), 0));
             }
@@ -176,7 +176,7 @@ public class Shortcuts {
         try (ScratchBuffers.Snapshot<Shortcut> restored = ScratchBuffers.snapshot(shortcuts.values())) {
             for (Shortcut sc : restored) {
                 if (sc.getType() == ShortcutType.ITEM) {
-                    final Item item = owner.getInventory().getItemByObjectId(sc.getId());
+                    final Item item = owner.getInventory().getItemIncludingPending(sc.getId());
                     if (item == null) {
                         deleteShortcut(sc.getSlot(), sc.getPage());
                     } else if (item.isEtcItem()) {

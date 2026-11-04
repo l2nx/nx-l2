@@ -603,7 +603,10 @@ public class HeartInfinityDefence extends Script {
                     }
                 }
             } else if (event.startsWith("reenterechmus")) {
-                player.destroyItemByItemId(ItemProcessType.FEE, 13797, 3, player, true);
+                if (!player.destroyItemByItemId(ItemProcessType.FEE, 13797, 3, player, true)) {
+                    return null;
+                }
+
                 try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
                     player.getParty().collectMembers(members);
                     for (Player partyMember : members) {
@@ -619,7 +622,10 @@ public class HeartInfinityDefence extends Script {
                     world.addDeadTumors(victim);
                 }
 
-                player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true);
+                if (!player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true)) {
+                    return null;
+                }
+
                 final Location loc = world.getDeadTumorsAt(getRandom(world.getDeadTumorsCount()))
                         .getLocation();
                 if (loc != null) {
@@ -642,7 +648,7 @@ public class HeartInfinityDefence extends Script {
             }
         }
 
-        return "";
+        return null;
     }
 
     @Override

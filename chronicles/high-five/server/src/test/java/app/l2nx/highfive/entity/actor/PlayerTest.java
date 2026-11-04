@@ -6,13 +6,19 @@ package app.l2nx.highfive.entity.actor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.holders.SellBuffHolder;
 import app.l2nx.highfive.entity.actor.holders.player.SubClassHolder;
 import app.l2nx.highfive.entity.item.EtcItem;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.item.type.ActionType;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
@@ -224,6 +230,31 @@ class PlayerTest {
             assertThat(actual).isEmpty();
         }
 
+        @Test
+        void chargeAutoShots_shouldKeepAShotAndUseNone_whenItsStackIsPending() {
+            install("autoSoulShot", new IntLinkedOpenHashSet());
+            final PlayerInventory inventory = mock(PlayerInventory.class);
+            install("inventory", inventory);
+            final Item soulshot = shot(ActionType.SOULSHOT);
+            when(inventory.getItemByItemIdIncludingPending(1835)).thenReturn(soulshot);
+            final RecordingShotHandler handler = new RecordingShotHandler();
+            ItemHandler.getInstance().registerHandler(handler);
+
+            final Set<Integer> actual;
+            try {
+                actual = WorldLoopExtension.callInPass(() -> {
+                    player.addAutoSoulShot(1835);
+                    player.chargeAutoShots(ActionType.SOULSHOT, null);
+                    return player.getAutoSoulShot();
+                });
+            } finally {
+                ItemHandler.getInstance().removeHandler(handler);
+            }
+
+            assertThat(actual).containsExactly(1835);
+            assertThat(handler.used).isEmpty();
+        }
+
         private static Item shot(ActionType action) {
             final EtcItem template = mock(EtcItem.class);
             when(template.getDefaultAction()).thenReturn(action);
@@ -232,6 +263,26 @@ class PlayerTest {
             when(item.getTemplate()).thenReturn(template);
             when(item.getEtcItem()).thenReturn(template);
             return item;
+        }
+    }
+
+    @Nested
+    class AddAdena {
+        @Test
+        void addAdena_shouldAddNothing_whenAPendingStackHoldsTheLimit() {
+            final PlayerInventory inventory = mock(PlayerInventory.class);
+            install("inventory", inventory);
+            final long maxAdena = PlayerConfig.MAX_ADENA;
+            PlayerConfig.MAX_ADENA = 1_000;
+            when(inventory.getAdenaIncludingPending()).thenReturn(1_000L);
+
+            try {
+                WorldLoopExtension.runInPass(() -> player.addAdena(ItemProcessType.SELL, 50, null, false));
+            } finally {
+                PlayerConfig.MAX_ADENA = maxAdena;
+            }
+
+            verify(inventory, never()).addAdena(any(), anyLong(), any(), any());
         }
     }
 

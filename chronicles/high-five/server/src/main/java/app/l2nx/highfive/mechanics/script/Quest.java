@@ -160,6 +160,8 @@ import app.l2nx.highfive.scripting.ScriptEngine;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.objects.Reference2LongLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -4523,47 +4525,39 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * Take an amount of a specified item from player's inventory.
      * @param player the player whose item to take
      * @param itemId the ID of the item to take
-     * @param amount the amount to take
-     * @return {@code true} if any items were taken, {@code false} otherwise
+     * @param amount the amount to take, negative for all of it
+     * @return {@code true} if the whole amount was taken; nothing is taken when the player holds less
      */
     public static boolean takeItems(Player player, int itemId, long amount) {
-        final Collection<Item> items = player.getInventory().getAllItemsByItemId(itemId);
-        if (amount < 0) {
-            items.forEach(i -> takeItem(player, i, i.getCount()));
-        } else {
-            long currentCount = 0;
-            for (Item i : items) {
-                long toDelete = i.getCount();
-                if ((currentCount + toDelete) > amount) {
-                    toDelete = amount - currentCount;
-                }
-
-                if (toDelete > 0) {
-                    takeItem(player, i, toDelete);
-                }
-
-                currentCount += toDelete;
-            }
+        final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
+        if (player.getInventory().planTake(itemId, amount, true, plan) > 0) {
+            return false;
         }
 
+        takePlanned(player, plan);
         return true;
     }
 
-    private static boolean takeItem(Player player, Item item, long toDelete) {
-        if (item.isEquipped()) {
-            final InventoryUpdate iu = new InventoryUpdate();
-            for (Item itm : player.getInventory()
-                    .unEquipItemInBodySlotAndRecord(item.getTemplate().getBodyPart())) {
-                iu.addModifiedItem(itm);
+    private static void takePlanned(Player player, Reference2LongMap<Item> plan) {
+        for (Reference2LongMap.Entry<Item> taken : plan.reference2LongEntrySet()) {
+            final Item item = taken.getKey();
+            if (item.isEquipped()) {
+                final InventoryUpdate iu = new InventoryUpdate();
+                for (Item itm : player.getInventory().unEquipItemInSlotAndRecord(item.getLocationSlot())) {
+                    iu.addModifiedItem(itm);
+                }
+
+                // Sent on its own, the removal of the same item would replace the unequip and leave it shown as
+                // equipped.
+                player.flushInventoryUpdate();
+                player.sendPacket(iu);
+                player.broadcastUserInfo();
             }
 
-            // Sent on its own, the removal of the same item would replace the unequip and leave it shown as equipped.
-            player.flushInventoryUpdate();
-            player.sendPacket(iu);
-            player.broadcastUserInfo();
+            if (!player.destroyItem(ItemProcessType.QUEST, item, taken.getLongValue(), player, true)) {
+                throw new IllegalStateException("The inventory refused a planned take of " + item);
+            }
         }
-
-        return player.destroyItemByItemId(ItemProcessType.QUEST, item.getId(), toDelete, player, true);
     }
 
     /**
@@ -4587,18 +4581,15 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return false;
         }
 
-        // First check if the player has all items to avoid taking half the items from the list.
-        if (!hasAllItems(player, true, itemList)) {
-            return false;
-        }
-
+        // Planned as one take, so the list is taken whole or not at all, even when it names a template twice.
+        final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
         for (ItemHolder item : itemList) {
-            // This should never be false, but just in case.
-            if (!takeItem(player, item)) {
+            if ((item == null) || (player.getInventory().planTake(item.getId(), item.getCount(), true, plan) > 0)) {
                 return false;
             }
         }
 
+        takePlanned(player, plan);
         return true;
     }
 

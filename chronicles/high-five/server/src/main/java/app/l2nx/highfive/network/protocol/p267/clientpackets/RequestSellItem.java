@@ -138,6 +138,11 @@ public class RequestSellItem extends ClientPacket {
         }
 
         long totalPrice = 0;
+        // Checked before each item goes, since the payment clamps at the limit only after all of them are gone. A
+        // pending stack counts, as the payment merges into it.
+        long adenaRoom = MerchantZeroSellPriceConfig.MERCHANT_ZERO_SELL_PRICE
+                ? Long.MAX_VALUE
+                : PlayerConfig.MAX_ADENA - player.getInventory().getAdenaIncludingPending();
 
         // Proceed the sell
         for (UniqueItemHolder i : items) {
@@ -147,24 +152,25 @@ public class RequestSellItem extends ClientPacket {
             }
 
             final long price = item.getReferencePrice() / 2;
-            totalPrice += price * i.getCount();
-            if (((PlayerConfig.MAX_ADENA / i.getCount()) < price) || (totalPrice > PlayerConfig.MAX_ADENA)) {
+            if ((adenaRoom / i.getCount()) < price) {
                 player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_YOUR_OUT_OF_POCKET_ADENA_LIMIT);
-                return;
+                break;
             }
 
-            if (GeneralConfig.ALLOW_REFUND) {
-                player.getInventory()
-                        .transferItem(
-                                ItemProcessType.TRANSFER,
-                                i.getObjectId(),
-                                i.getCount(),
-                                player.getRefund(),
-                                player,
-                                merchant);
-            } else {
-                player.getInventory()
-                        .destroyItem(ItemProcessType.SELL, i.getObjectId(), i.getCount(), player, merchant);
+            final Item sold = GeneralConfig.ALLOW_REFUND
+                    ? player.getInventory()
+                            .transferItem(
+                                    ItemProcessType.TRANSFER,
+                                    i.getObjectId(),
+                                    i.getCount(),
+                                    player.getRefund(),
+                                    player,
+                                    merchant)
+                    : player.getInventory()
+                            .destroyItem(ItemProcessType.SELL, i.getObjectId(), i.getCount(), player, merchant);
+            if (sold != null) {
+                totalPrice += price * i.getCount();
+                adenaRoom -= price * i.getCount();
             }
         }
 

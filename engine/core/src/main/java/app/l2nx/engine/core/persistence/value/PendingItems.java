@@ -33,4 +33,8 @@ public final class PendingItems {
     public boolean isPending(int handle) {
         return pending.contains(handle);
     }
+
+    public boolean isEmpty() {
+        return pending.isEmpty();
+    }
 }

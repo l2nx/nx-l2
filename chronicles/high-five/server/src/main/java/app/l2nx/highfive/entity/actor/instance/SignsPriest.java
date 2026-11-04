@@ -587,7 +587,11 @@ public class SignsPriest extends Npc {
                         break;
                     }
 
-                    player.reduceAncientAdena(ItemProcessType.SELL, ancientAdenaConvert, this, true);
+                    if (!player.reduceAncientAdena(ItemProcessType.SELL, ancientAdenaConvert, this, true)) {
+                        showChatWindow(player, SevenSigns.SEVEN_SIGNS_HTML_PATH + "blkmrkt_4.htm");
+                        break;
+                    }
+
                     player.addAdena(ItemProcessType.BUY, ancientAdenaConvert, this, true);
                     showChatWindow(player, SevenSigns.SEVEN_SIGNS_HTML_PATH + "blkmrkt_5.htm");
                     break;
@@ -673,19 +677,15 @@ public class SignsPriest extends Npc {
                             break;
                         }
                         case 4: {
-                            final Item blueStonesAll =
-                                    player.getInventory().getItemByItemId(SevenSigns.SEAL_STONE_BLUE_ID);
-                            final Item greenStonesAll =
-                                    player.getInventory().getItemByItemId(SevenSigns.SEAL_STONE_GREEN_ID);
-                            final Item redStonesAll =
-                                    player.getInventory().getItemByItemId(SevenSigns.SEAL_STONE_RED_ID);
-                            final long blueStoneCountAll = blueStonesAll == null ? 0 : blueStonesAll.getCount();
-                            final long greenStoneCountAll = greenStonesAll == null ? 0 : greenStonesAll.getCount();
-                            final long redStoneCountAll = redStonesAll == null ? 0 : redStonesAll.getCount();
-                            long ancientAdenaRewardAll = 0;
-                            ancientAdenaRewardAll = SevenSigns.calcAncientAdenaReward(
-                                    blueStoneCountAll, greenStoneCountAll, redStoneCountAll);
-                            if (ancientAdenaRewardAll == 0) {
+                            final long blueStoneCountAll =
+                                    player.getInventory().getInventoryItemCount(SevenSigns.SEAL_STONE_BLUE_ID, -1);
+                            final long greenStoneCountAll =
+                                    player.getInventory().getInventoryItemCount(SevenSigns.SEAL_STONE_GREEN_ID, -1);
+                            final long redStoneCountAll =
+                                    player.getInventory().getInventoryItemCount(SevenSigns.SEAL_STONE_RED_ID, -1);
+                            if (SevenSigns.calcAncientAdenaReward(
+                                            blueStoneCountAll, greenStoneCountAll, redStoneCountAll)
+                                    == 0) {
                                 if (this instanceof DawnPriest) {
                                     showChatWindow(player, 18, "dawn_no_stones", false);
                                 } else {
@@ -694,33 +694,10 @@ public class SignsPriest extends Npc {
                                 return;
                             }
 
-                            if (blueStoneCountAll > 0) {
-                                player.destroyItemByItemId(
-                                        ItemProcessType.FEE,
-                                        SevenSigns.SEAL_STONE_BLUE_ID,
-                                        blueStoneCountAll,
-                                        this,
-                                        true);
-                            }
-
-                            if (greenStoneCountAll > 0) {
-                                player.destroyItemByItemId(
-                                        ItemProcessType.FEE,
-                                        SevenSigns.SEAL_STONE_GREEN_ID,
-                                        greenStoneCountAll,
-                                        this,
-                                        true);
-                            }
-
-                            if (redStoneCountAll > 0) {
-                                player.destroyItemByItemId(
-                                        ItemProcessType.FEE,
-                                        SevenSigns.SEAL_STONE_RED_ID,
-                                        redStoneCountAll,
-                                        this,
-                                        true);
-                            }
-
+                            final long ancientAdenaRewardAll = SevenSigns.calcAncientAdenaReward(
+                                    takeStones(player, SevenSigns.SEAL_STONE_BLUE_ID, blueStoneCountAll),
+                                    takeStones(player, SevenSigns.SEAL_STONE_GREEN_ID, greenStoneCountAll),
+                                    takeStones(player, SevenSigns.SEAL_STONE_RED_ID, redStoneCountAll));
                             player.addAncientAdena(ItemProcessType.REWARD, ancientAdenaRewardAll, this, true);
                             if (this instanceof DawnPriest) {
                                 showChatWindow(player, 18, "dawn", false);
@@ -837,7 +814,8 @@ public class SignsPriest extends Npc {
                                 "<html><body>Priest of Dawn:<br><font color=\"LEVEL\">[ Seal Status ]</font><br>");
                     } else {
                         contentBuffer.append(
-                                "<html><body>Dusk Priestess:<br><font color=\"LEVEL\">[ Status of the Seals ]</font><br>");
+                                "<html><body>Dusk Priestess:<br><font color=\"LEVEL\">[ Status of the Seals"
+                                        + " ]</font><br>");
                     }
 
                     for (int i = 1; i < 4; i++) {
@@ -866,6 +844,10 @@ public class SignsPriest extends Npc {
         } else {
             super.onBypassFeedback(player, command);
         }
+    }
+
+    private long takeStones(Player player, int stoneId, long count) {
+        return (count > 0) && player.destroyItemByItemId(ItemProcessType.FEE, stoneId, count, this, true) ? count : 0;
     }
 
     private void showChatWindow(Player player, int value, String suffix, boolean isDescription) {

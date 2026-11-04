@@ -13,6 +13,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.identity.WireHandleAllocator;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.EtcItem;
+import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.IdManager;
@@ -23,6 +24,8 @@ import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.item.ItemVariableRepository;
 import app.l2nx.highfive.util.StatSet;
+import it.unimi.dsi.fastutil.objects.Reference2LongLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -49,8 +52,8 @@ class PlayerInventoryTest {
             new IdentityRegistry(new WireHandleAllocator(Clock.systemUTC(), Duration.ofMinutes(5)));
     private final EtcItem questItem =
             new EtcItem(new StatSet(Map.of("item_id", QUEST_ITEM_ID, "name", "Quest", "is_questitem", true)));
-    private final EtcItem adena =
-            new EtcItem(new StatSet(Map.of("item_id", Inventory.ADENA_ID, "name", "Adena", "is_stackable", true)));
+    private final EtcItem adena = new EtcItem(
+            new StatSet(Map.of("item_id", Inventory.ADENA_ID, "name", "Adena", "is_stackable", true, "weight", 1)));
     private final EtcItem ring = new EtcItem(new StatSet(Map.of("item_id", RING_ID, "name", "Ring")));
 
     @BeforeEach
@@ -140,7 +143,7 @@ class PlayerInventoryTest {
                 inventory.addItem(item(ring));
                 return ItemContainerTest.whilePending(pending[0], () -> {
                     inventory.destroyItemByItemId(ItemProcessType.NONE, RING_ID, 2, null, null);
-                    return inventory.getItems();
+                    return ItemContainerTest.heldItems(inventory);
                 });
             });
 
@@ -162,6 +165,129 @@ class PlayerInventoryTest {
 
             assertThat(destroyed[0]).isNull();
             assertThat(actual).isEqualTo(2);
+        }
+    }
+
+    @Nested
+    class PlanTake {
+        @Test
+        void planTake_shouldPlanTheUnequippedItemsFirst_whenWornOnesMayBeTaken() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] unequipped = new Item[1];
+            final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                inventory.addItem(worn(item(ring)));
+                unequipped[0] = item(ring);
+                inventory.addItem(unequipped[0]);
+                return inventory.planTake(RING_ID, 1, true, plan);
+            });
+
+            assertThat(actual).isZero();
+            assertThat(plan).containsExactly(Map.entry(unequipped[0], 1L));
+        }
+
+        @Test
+        void planTake_shouldReturnTheShortfallAndLeaveThePlan_whenOnlyWornOrPendingItemsCouldCoverIt() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                final Item pending = item(ring);
+                inventory.addItem(pending);
+                inventory.addItem(worn(item(ring)));
+                inventory.addItem(item(ring));
+                return ItemContainerTest.whilePending(pending, () -> inventory.planTake(RING_ID, 3, false, plan));
+            });
+
+            assertThat(actual).isEqualTo(2);
+            assertThat(plan).isEmpty();
+        }
+
+        @Test
+        void planTake_shouldPlanOnTopOfThePlan_whenATemplateIsPlannedTwice() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] stack = new Item[1];
+            final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
+            final long[] actual = WorldLoopExtension.callInPass(() -> {
+                stack[0] = stack(adena, 10);
+                inventory.addItem(stack[0]);
+                return new long[] {
+                    inventory.planTake(Inventory.ADENA_ID, 6, false, plan),
+                    inventory.planTake(Inventory.ADENA_ID, 6, false, plan),
+                    inventory.planTake(Inventory.ADENA_ID, 4, false, plan)
+                };
+            });
+
+            assertThat(actual).containsExactly(0, 2, 0);
+            assertThat(plan).containsExactly(Map.entry(stack[0], 10L));
+        }
+
+        @Test
+        void planTake_shouldPlanEveryFreeItem_whenTheCountIsNegative() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] held = new Item[2];
+            final Reference2LongMap<Item> plan = new Reference2LongLinkedOpenHashMap<>();
+            final long actual = WorldLoopExtension.callInPass(() -> {
+                held[0] = worn(item(ring));
+                held[1] = item(ring);
+                inventory.addItem(held[0]);
+                inventory.addItem(held[1]);
+                return inventory.planTake(RING_ID, -1, true, plan);
+            });
+
+            assertThat(actual).isZero();
+            assertThat(plan).containsExactly(Map.entry(held[1], 1L), Map.entry(held[0], 1L));
+        }
+    }
+
+    @Nested
+    class Pending {
+        @Test
+        void adenaQueries_shouldLeaveOutThePendingStack_whileTheIncludingOnesSeeIt() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] stack = new Item[1];
+            final Object[] actual = WorldLoopExtension.callInPass(() -> {
+                stack[0] = stack(adena, 100);
+                inventory.addItem(ItemProcessType.NONE, stack[0], null, null);
+                return ItemContainerTest.whilePending(stack[0], () -> new Object[] {
+                    inventory.getAdena(),
+                    inventory.getAdenaInstance(),
+                    inventory.getAdenaIncludingPending(),
+                    inventory.getAdenaInstanceIncludingPending()
+                });
+            });
+
+            assertThat(actual).containsExactly(0L, null, 100L, stack[0]);
+        }
+
+        @Test
+        void getTotalWeight_shouldCountThePendingStack() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                final Item stack = stack(adena, 100);
+                inventory.addItem(ItemProcessType.NONE, stack, null, null);
+                return ItemContainerTest.whilePending(stack, () -> {
+                    inventory.refreshWeight();
+                    return inventory.getTotalWeight();
+                });
+            });
+
+            assertThat(actual).isEqualTo(100);
+        }
+
+        @Test
+        void getUniqueItems_shouldLeaveOutThePendingItem() {
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+            final Item[] free = new Item[1];
+            final List<Item> actual = WorldLoopExtension.callInPass(() -> {
+                final Item pending = item(ring);
+                free[0] = stack(adena, 100);
+                inventory.addItem(pending);
+                inventory.addItem(free[0]);
+                return ItemContainerTest.whilePending(
+                        pending, () -> inventory.getUniqueItems(true, true, false, false));
+            });
+
+            assertThat(actual).containsExactly(free[0]);
         }
     }
 
@@ -208,6 +334,11 @@ class PlayerInventoryTest {
 
     private Item item(EtcItem template) {
         return new Item(registry.allocateTransient(), template);
+    }
+
+    private static Item worn(Item item) {
+        item.setItemLocation(ItemLocation.PAPERDOLL, Inventory.PAPERDOLL_RFINGER, false);
+        return item;
     }
 
     private Item stack(EtcItem template, long count) {

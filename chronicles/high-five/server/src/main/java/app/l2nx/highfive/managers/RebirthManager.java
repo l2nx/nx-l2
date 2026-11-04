@@ -1244,8 +1244,7 @@ public final class RebirthManager {
             return false;
         }
 
-        player.getInventory().destroyItem(processType, item, (int) amount, player, null);
-        return true;
+        return player.getInventory().destroyItem(processType, item, amount, player, null) != null;
     }
 
     /**

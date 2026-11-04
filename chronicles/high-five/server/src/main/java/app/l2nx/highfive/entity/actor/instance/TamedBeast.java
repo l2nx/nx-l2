@@ -387,8 +387,7 @@ public class TamedBeast extends FeedableBeast {
             Item item = null;
             if (tamedBeast.freyaBeast) {
                 item = owner.getInventory().getItemByItemId(foodTypeSkillId);
-                if ((item != null) && (item.getCount() >= 1)) {
-                    owner.destroyItem(ItemProcessType.DESTROY, item, 1, tamedBeast, true);
+                if ((item != null) && owner.destroyItem(ItemProcessType.DESTROY, item, 1, tamedBeast, true)) {
                     tamedBeast.broadcastPacket(new SocialAction(tamedBeast.getObjectId(), 3));
                 } else {
                     tamedBeast.deleteMe();

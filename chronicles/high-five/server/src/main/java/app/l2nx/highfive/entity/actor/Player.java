@@ -3597,7 +3597,7 @@ public class Player extends Playable {
 
     public void addAdena(ItemProcessType process, long count, WorldObject reference, boolean sendMessage) {
         WorldPartition.checkOwner();
-        final long currentAdena = inventory.getAdena();
+        final long currentAdena = inventory.getAdenaIncludingPending();
         final long limitRemaining = PlayerConfig.MAX_ADENA - currentAdena;
         final long amountToAdd = count;
 
@@ -3620,16 +3620,16 @@ public class Player extends Playable {
         if (count > 0) {
             inventory.addAdena(process, count, this, reference);
 
-            if (count == getAdena()) {
+            if (count == inventory.getAdenaIncludingPending()) {
                 sendItemList(false);
             } else {
                 final InventoryUpdate iu = new InventoryUpdate();
-                iu.addModifiedItem(inventory.getAdenaInstance());
+                iu.addModifiedItem(inventory.getAdenaInstanceIncludingPending());
                 sendInventoryUpdate(iu);
             }
         }
 
-        if ((inventory.getAdena() == PlayerConfig.MAX_ADENA) && sendMessage) {
+        if ((inventory.getAdenaIncludingPending() == PlayerConfig.MAX_ADENA) && sendMessage) {
             sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_YOUR_OUT_OF_POCKET_ADENA_LIMIT);
         }
     }
@@ -3686,7 +3686,7 @@ public class Player extends Playable {
         inventory.addAncientAdena(process, count, this, reference);
 
         final InventoryUpdate iu = new InventoryUpdate();
-        iu.addItem(inventory.getAncientAdenaInstance());
+        iu.addItem(inventory.getAncientAdenaInstanceIncludingPending());
         sendInventoryUpdate(iu);
     }
 
@@ -8304,7 +8304,10 @@ public class Player extends Playable {
                 final int itemId = shots.getInt(i);
                 final Item item = inventory.getItemByItemId(itemId);
                 if (item == null) {
-                    autoSoulShot.remove(itemId);
+                    if (inventory.getItemByItemIdIncludingPending(itemId) == null) {
+                        autoSoulShot.remove(itemId);
+                    }
+
                     continue;
                 }
 

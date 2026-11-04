@@ -143,7 +143,12 @@ class WorldMailItemsTest {
         when(player.checkItemManipulation(anyInt(), anyLong(), anyString())).thenAnswer(call -> {
             final Item item = inventory.getItemByObjectId(call.getArgument(0));
             final long count = call.getArgument(1);
-            return ((item == null) || (count > item.getCount()) || ((count > 1) && !item.isStackable())) ? null : item;
+            return ((item == null)
+                            || item.isPending()
+                            || (count > item.getCount())
+                            || ((count > 1) && !item.isStackable()))
+                    ? null
+                    : item;
         });
         world = mockStatic(World.class);
         world.when(() -> World.getPlayer(handle)).thenReturn(player);
@@ -168,7 +173,7 @@ class WorldMailItemsTest {
     @Nested
     class Mailable {
         @Test
-        void mailable_shouldListTradeableItems_andThePendingOnesThatReserveAnswersBusy() {
+        void mailable_shouldListFreeTradeableItems_whileReserveAnswersBusyForAPendingOne() {
             final int[] expected = new int[3];
             final Object[] actual = WorldLoopExtension.callInPass(() -> {
                 expected[0] = stored(SWORD_ID, 1).getObjectId();
@@ -182,7 +187,7 @@ class WorldMailItemsTest {
                 };
             });
 
-            assertThat((List<Integer>) actual[0]).containsExactly(expected[0], expected[1], expected[2]);
+            assertThat((List<Integer>) actual[0]).containsExactly(expected[0], expected[1]);
             assertThat(actual[1]).isEqualTo(new ReserveResult.Refused<>(MailRefusal.BUSY));
         }
     }
@@ -469,7 +474,7 @@ class WorldMailItemsTest {
                         handle, HolderType.WAREHOUSE, List.of(snapshot(ARROW_ID, 5), snapshot(SWORD_ID, 1)), 0);
                 final Item withdrawn = warehouse.transferItem(
                         ItemProcessType.TRANSFER, stack[0].getObjectId(), 7, inventory, player, null);
-                return new Object[] {targets, withdrawn, warehouse.getInventoryItemCount(ARROW_ID, -1)};
+                return new Object[] {targets, withdrawn, stack[0].getCount()};
             });
 
             assertThat(actual[0])

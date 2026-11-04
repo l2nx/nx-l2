@@ -46,7 +46,9 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
 import it.unimi.dsi.fastutil.objects.ObjectCollections;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -54,6 +56,19 @@ import org.springframework.dao.DataAccessException;
 /**
  * Items keyed by object id in insertion order, the order the client lists them in and replay relies on. Every walk
  * that calls out (destroys, saves, packets) runs over a copy, since the call may add or remove an item.
+ *
+ * <p>A pending item ({@link Item#isPending()}) does not exist for gameplay. Lookups by object or template id, the item
+ * lists, the counts and the adena balance leave it out, so a destroy or move by template id takes a free instance and
+ * a check before a mutation sees what the mutation can take. Handed a pending item anyway, {@code transferItem},
+ * {@code destroyItem}, {@code dropItem} and {@code equipItem} refuse it with {@code null} or no effect.
+ *
+ * <p>What has to see the memory as held reads it internally or through the {@code ...IncludingPending} accessors:
+ * the stackable merge of {@code addItem} and of a {@code transferItem} target (the commit keeps what a pending stack
+ * took in meanwhile as a delta), the mail SPI that reserves, releases and applies, the size and weight, the adena
+ * limit and the inventory window, which shows the item until the commit moves it. Whether a new item needs a slot is
+ * answered from the gameplay view: an outgoing commit turns what merged into a pending stack into a new one. The
+ * paperdoll keeps a worn pending stack (ammunition a mail adds to) with its stats. Saves skip a pending item, as
+ * writing the pre-commit memory would undo the commit.
  * @author Advi
  */
 @Slf4j
@@ -74,6 +89,29 @@ public abstract class ItemContainer {
         return liveItems;
     }
 
+    /** The gameplay view of {@link #liveItems()}, under the same walk rule: the items less the pending ones. */
+    protected final Iterable<Item> freeItems() {
+        return anyPending() ? items(_ -> true, true) : liveItems;
+    }
+
+    /**
+     * The gameplay view of {@link #liveItems()}, under the same walk rule: the items {@code filter} accepts, less the
+     * pending ones. The filter runs first, since the pending check costs two lookups.
+     */
+    protected final Iterable<Item> freeItems(Predicate<? super Item> filter) {
+        return items(filter, anyPending());
+    }
+
+    // A value transaction in flight is rare: while none holds an item, no walk pays the per-item pending check.
+    private static boolean anyPending() {
+        return !WorldPartition.pendingItems().isEmpty()
+                || !WorldPartition.awaitedStacks().isEmpty();
+    }
+
+    private Iterable<Item> items(Predicate<? super Item> filter, boolean skipPending) {
+        return () -> new FilteredItems(liveItems.iterator(), filter, skipPending);
+    }
+
     public String getName() {
         WorldPartition.checkOwner();
         return "ItemContainer";
@@ -92,17 +130,30 @@ public abstract class ItemContainer {
 
     public List<Item> getItems() {
         WorldPartition.checkOwner();
-        return byObjectId.isEmpty()
-                ? ObjectLists.emptyList()
-                : ObjectLists.unmodifiable(new ObjectArrayList<>(byObjectId.values()));
+        final ObjectArrayList<Item> result = new ObjectArrayList<>(byObjectId.size());
+        for (Item item : freeItems()) {
+            result.add(item);
+        }
+
+        return result.isEmpty() ? ObjectLists.emptyList() : ObjectLists.unmodifiable(result);
     }
 
     public void collectItems(List<? super Item> into, Predicate<Item> filter) {
         WorldPartition.checkOwner();
+        collect(into, filter, false);
+    }
+
+    public void collectItemsIncludingPending(List<? super Item> into, Predicate<Item> filter) {
+        WorldPartition.checkOwner();
+        collect(into, filter, true);
+    }
+
+    private void collect(List<? super Item> into, Predicate<Item> filter, boolean includePending) {
+        final boolean skipPending = !includePending && anyPending();
         // The filter is the caller's code and may add or remove an item, so it runs over a copy.
         try (Snapshot<Item> snapshot = ScratchBuffers.snapshot(byObjectId.values())) {
             for (Item item : snapshot) {
-                if (filter.test(item)) {
+                if (filter.test(item) && !(skipPending && item.isPending())) {
                     into.add(item);
                 }
             }
@@ -111,27 +162,26 @@ public abstract class ItemContainer {
 
     public Item getItemByItemId(int itemId) {
         WorldPartition.checkOwner();
-        return findByItemId(itemId, null);
+        return findByItemId(itemId, null, false);
+    }
+
+    public Item getItemByItemIdIncludingPending(int itemId) {
+        WorldPartition.checkOwner();
+        return findByItemId(itemId, null, true);
     }
 
     public boolean haveItemForSelfResurrection() {
         WorldPartition.checkOwner();
-        for (Item item : byObjectId.values()) {
-            if (item.getTemplate().isAllowSelfResurrection()) {
-                return true;
-            }
-        }
-
-        return false;
+        return freeItems(item -> item.getTemplate().isAllowSelfResurrection())
+                .iterator()
+                .hasNext();
     }
 
     public List<Item> getAllItemsByItemId(int itemId) {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : byObjectId.values()) {
-            if (itemId == item.getId()) {
-                result.add(item);
-            }
+        for (Item item : freeItems(item -> item.getId() == itemId)) {
+            result.add(item);
         }
 
         return ObjectLists.unmodifiable(result);
@@ -139,22 +189,28 @@ public abstract class ItemContainer {
 
     public Item getItemByItemId(int itemId, Item itemToIgnore) {
         WorldPartition.checkOwner();
-        return findByItemId(itemId, itemToIgnore);
+        return findByItemId(itemId, itemToIgnore, false);
     }
 
-    private Item findByItemId(int itemId, Item itemToIgnore) {
-        for (Item item : byObjectId.values()) {
-            if ((item.getId() == itemId) && !item.equals(itemToIgnore)) {
-                return item;
-            }
-        }
-
-        return null;
+    private Item findByItemId(int itemId, Item itemToIgnore, boolean includePending) {
+        final Predicate<Item> match = item -> (item.getId() == itemId) && !item.equals(itemToIgnore);
+        final Iterator<Item> found =
+                items(match, !includePending && anyPending()).iterator();
+        return found.hasNext() ? found.next() : null;
     }
 
     public Item getItemByObjectId(int objectId) {
         WorldPartition.checkOwner();
+        return free(byObjectId.get(objectId));
+    }
+
+    public Item getItemIncludingPending(int objectId) {
+        WorldPartition.checkOwner();
         return byObjectId.get(objectId);
+    }
+
+    protected static Item free(Item item) {
+        return (item == null) || item.isPending() ? null : item;
     }
 
     /**
@@ -175,16 +231,14 @@ public abstract class ItemContainer {
 
     private long countItems(int itemId, int enchantLevel, boolean includeEquipped) {
         long count = 0;
-        for (Item item : byObjectId.values()) {
-            if ((item.getId() == itemId)
-                    && ((item.getEnchantLevel() == enchantLevel) || (enchantLevel < 0))
-                    && (includeEquipped || !item.isEquipped())) {
-                if (item.isStackable()) {
-                    return item.getCount();
-                }
-
-                count++;
+        for (Item item : freeItems(item -> (item.getId() == itemId)
+                && ((item.getEnchantLevel() == enchantLevel) || (enchantLevel < 0))
+                && (includeEquipped || !item.isEquipped()))) {
+            if (item.isStackable()) {
+                return item.getCount();
             }
+
+            count++;
         }
 
         return count;
@@ -193,7 +247,7 @@ public abstract class ItemContainer {
     public Item addItem(ItemProcessType process, Item item, Player actor, Object reference) {
         WorldPartition.checkOwner();
         Item newItem = item;
-        final Item olditem = findByItemId(newItem.getId(), null);
+        final Item olditem = findByItemId(newItem.getId(), null, true);
 
         if ((olditem != null) && olditem.isStackable()) {
             final long count = newItem.getCount();
@@ -217,7 +271,7 @@ public abstract class ItemContainer {
 
     public Item addItem(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
         WorldPartition.checkOwner();
-        Item item = findByItemId(itemId, null);
+        Item item = findByItemId(itemId, null, true);
 
         if ((item != null) && item.isStackable()) {
             item.changeCount(process, count, actor, reference);
@@ -264,7 +318,7 @@ public abstract class ItemContainer {
     /**
      * @param countValue Quantity of items to be transfered, capped at the count present
      * @return the target's item, {@code null} when the count is not positive, the container does not hold the item, or
-     *     the item or the target's stack is pending
+     *     the item is pending
      */
     public Item transferItem(
             ItemProcessType process,
@@ -283,10 +337,7 @@ public abstract class ItemContainer {
             return null;
         }
 
-        Item targetitem = sourceitem.isStackable() ? target.getItemByItemId(sourceitem.getId()) : null;
-        if ((targetitem != null) && targetitem.isPending()) {
-            return null;
-        }
+        Item targetitem = sourceitem.isStackable() ? target.findByItemId(sourceitem.getId(), null, true) : null;
 
         final long count = Math.min(countValue, sourceitem.getCount());
 
@@ -366,7 +417,7 @@ public abstract class ItemContainer {
 
     public Item destroyItemByItemId(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
         WorldPartition.checkOwner();
-        final Item item = findByItemId(itemId, null);
+        final Item item = findByItemId(itemId, null, false);
         return item == null ? null : destroyItem(process, item, count, actor, reference);
     }
 
@@ -381,7 +432,7 @@ public abstract class ItemContainer {
 
     public long getAdena() {
         WorldPartition.checkOwner();
-        final Item adena = findByItemId(Inventory.ADENA_ID, null);
+        final Item adena = findByItemId(Inventory.ADENA_ID, null, false);
         return adena == null ? 0 : adena.getCount();
     }
 
@@ -502,7 +553,7 @@ public abstract class ItemContainer {
 
                 final Player owner = getOwner() != null ? getOwner().asPlayer() : null;
 
-                if (item.isStackable() && (findByItemId(item.getId(), null) != null)) {
+                if (item.isStackable() && (findByItemId(item.getId(), null, true) != null)) {
                     addItem(ItemProcessType.RESTORE, item, owner, null);
                 } else {
                     addItem(item);
@@ -535,5 +586,41 @@ public abstract class ItemContainer {
         WorldPartition.checkOwner();
         final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
         return (template == null) || validateWeight(template.getWeight() * count);
+    }
+
+    private static final class FilteredItems implements Iterator<Item> {
+        private final Iterator<Item> items;
+        private final Predicate<? super Item> filter;
+        private final boolean skipPending;
+        private Item next;
+
+        FilteredItems(Iterator<Item> items, Predicate<? super Item> filter, boolean skipPending) {
+            this.items = items;
+            this.filter = filter;
+            this.skipPending = skipPending;
+        }
+
+        @Override
+        public boolean hasNext() {
+            while ((next == null) && items.hasNext()) {
+                final Item item = items.next();
+                if (filter.test(item) && !(skipPending && item.isPending())) {
+                    next = item;
+                }
+            }
+
+            return next != null;
+        }
+
+        @Override
+        public Item next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            final Item item = next;
+            next = null;
+            return item;
+        }
     }
 }

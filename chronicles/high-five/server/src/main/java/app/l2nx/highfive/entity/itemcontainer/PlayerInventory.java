@@ -55,6 +55,7 @@ import app.l2nx.highfive.repository.item.model.PaperdollItem;
 import app.l2nx.highfive.util.ArrayUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
+import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -88,10 +89,20 @@ public class PlayerInventory extends Inventory {
 
     public Item getAdenaInstance() {
         WorldPartition.checkOwner();
+        return free(adenaInstance);
+    }
+
+    public Item getAdenaInstanceIncludingPending() {
+        WorldPartition.checkOwner();
         return adenaInstance;
     }
 
     public Item getAncientAdenaInstance() {
+        WorldPartition.checkOwner();
+        return free(ancientAdenaInstance);
+    }
+
+    public Item getAncientAdenaInstanceIncludingPending() {
         WorldPartition.checkOwner();
         return ancientAdenaInstance;
     }
@@ -124,12 +135,19 @@ public class PlayerInventory extends Inventory {
     @Override
     public long getAdena() {
         WorldPartition.checkOwner();
+        final Item adena = free(adenaInstance);
+        return adena != null ? adena.getCount() : 0;
+    }
+
+    public long getAdenaIncludingPending() {
+        WorldPartition.checkOwner();
         return adenaInstance != null ? adenaInstance.getCount() : 0;
     }
 
     public long getAncientAdena() {
         WorldPartition.checkOwner();
-        return (ancientAdenaInstance != null) ? ancientAdenaInstance.getCount() : 0;
+        final Item ancientAdena = free(ancientAdenaInstance);
+        return (ancientAdena != null) ? ancientAdena.getCount() : 0;
     }
 
     /**
@@ -139,15 +157,8 @@ public class PlayerInventory extends Inventory {
             boolean allowAdena, boolean allowAncientAdena, boolean onlyAvailable, boolean checkSellable) {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if (!allowAdena && (item.getId() == ADENA_ID)) {
-                continue;
-            }
-
-            if (!allowAncientAdena && (item.getId() == ANCIENT_ADENA_ID)) {
-                continue;
-            }
-
+        for (Item item : freeItems(item -> (allowAdena || (item.getId() != ADENA_ID))
+                && (allowAncientAdena || (item.getId() != ANCIENT_ADENA_ID)))) {
             boolean isDuplicate = false;
             for (Item addedItem : result) {
                 if (addedItem.getId() == item.getId()) {
@@ -173,12 +184,8 @@ public class PlayerInventory extends Inventory {
             boolean allowAdena, boolean allowAncientAdena, boolean onlyAvailable) {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if ((!allowAdena && (item.getId() == ADENA_ID))
-                    || (!allowAncientAdena && (item.getId() == ANCIENT_ADENA_ID))) {
-                continue;
-            }
-
+        for (Item item : freeItems(item -> (allowAdena || (item.getId() != ADENA_ID))
+                && (allowAncientAdena || (item.getId() != ANCIENT_ADENA_ID)))) {
             boolean isDuplicate = false;
             for (Item addedItem : result) {
                 if ((addedItem.getId() == item.getId()) && (addedItem.getEnchantLevel() == item.getEnchantLevel())) {
@@ -201,10 +208,8 @@ public class PlayerInventory extends Inventory {
     public List<Item> getAllItemsByItemId(int itemId, boolean includeEquipped) {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if ((itemId == item.getId()) && (includeEquipped || !item.isEquipped())) {
-                result.add(item);
-            }
+        for (Item item : freeItems(item -> (itemId == item.getId()) && (includeEquipped || !item.isEquipped()))) {
+            result.add(item);
         }
 
         return ObjectLists.unmodifiable(result);
@@ -221,15 +226,54 @@ public class PlayerInventory extends Inventory {
     public List<Item> getAllItemsByItemId(int itemId, int enchantment, boolean includeEquipped) {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if ((itemId == item.getId())
-                    && (item.getEnchantLevel() == enchantment)
-                    && (includeEquipped || !item.isEquipped())) {
-                result.add(item);
-            }
+        for (Item item : freeItems(item -> (itemId == item.getId())
+                && (item.getEnchantLevel() == enchantment)
+                && (includeEquipped || !item.isEquipped()))) {
+            result.add(item);
         }
 
         return ObjectLists.unmodifiable(result);
+    }
+
+    /**
+     * Plans an all-or-nothing take into {@code plan}, unequipped instances first; a negative {@code count} takes
+     * everything. Returns the shortfall and leaves the plan untouched, {@code 0} once planned.
+     */
+    public long planTake(int itemId, long count, boolean includeEquipped, Reference2LongMap<Item> plan) {
+        WorldPartition.checkOwner();
+        long available = 0;
+        for (Item item : freeItems(item -> (item.getId() == itemId) && (includeEquipped || !item.isEquipped()))) {
+            available += item.getCount() - plan.getLong(item);
+        }
+
+        if ((count >= 0) && (available < count)) {
+            return count - available;
+        }
+
+        final long left = planFrom(itemId, false, count < 0 ? available : count, plan);
+        if (left > 0) {
+            planFrom(itemId, true, left, plan);
+        }
+
+        return 0;
+    }
+
+    private long planFrom(int itemId, boolean equipped, long count, Reference2LongMap<Item> plan) {
+        long left = count;
+        for (Item item : freeItems(item -> (item.getId() == itemId) && (item.isEquipped() == equipped))) {
+            if (left == 0) {
+                break;
+            }
+
+            final long planned = plan.getLong(item);
+            final long take = Math.min(left, item.getCount() - planned);
+            if (take > 0) {
+                plan.put(item, planned + take);
+                left -= take;
+            }
+        }
+
+        return left;
     }
 
     /**
@@ -238,10 +282,9 @@ public class PlayerInventory extends Inventory {
     public List<Item> getAvailableItems(boolean allowAdena, boolean allowNonTradeable, boolean feightable) {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if (!item.isAvailable(owner, allowAdena, allowNonTradeable) || !canManipulateWithItemId(item.getId())) {
-                continue;
-            } else if (feightable) {
+        for (Item item : freeItems(item ->
+                item.isAvailable(owner, allowAdena, allowNonTradeable) && canManipulateWithItemId(item.getId()))) {
+            if (feightable) {
                 if ((item.getItemLocation() == ItemLocation.INVENTORY) && item.isFreightable()) {
                     result.add(item);
                 }
@@ -257,10 +300,8 @@ public class PlayerInventory extends Inventory {
     public List<Item> getAugmentedItems() {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if (item.isAugmented()) {
-                result.add(item);
-            }
+        for (Item item : freeItems(Item::isAugmented)) {
+            result.add(item);
         }
 
         return ObjectLists.unmodifiable(result);
@@ -269,10 +310,8 @@ public class PlayerInventory extends Inventory {
     public List<Item> getElementItems() {
         WorldPartition.checkOwner();
         final ObjectArrayList<Item> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if (item.hasElementals()) {
-                result.add(item);
-            }
+        for (Item item : freeItems(Item::hasElementals)) {
+            result.add(item);
         }
 
         return ObjectLists.unmodifiable(result);
@@ -284,12 +323,10 @@ public class PlayerInventory extends Inventory {
     public List<TradeItem> getAvailableItems(TradeList tradeList) {
         WorldPartition.checkOwner();
         final ObjectArrayList<TradeItem> result = new ObjectArrayList<>();
-        for (Item item : liveItems()) {
-            if (item.isAvailable(owner, false, false)) {
-                final TradeItem adjItem = tradeList.adjustAvailableItem(item);
-                if (adjItem != null) {
-                    result.add(adjItem);
-                }
+        for (Item item : freeItems(item -> item.isAvailable(owner, false, false))) {
+            final TradeItem adjItem = tradeList.adjustAvailableItem(item);
+            if (adjItem != null) {
+                result.add(adjItem);
             }
         }
 
@@ -300,15 +337,13 @@ public class PlayerInventory extends Inventory {
         WorldPartition.checkOwner();
         final int itemId = item.getItem().getId();
         boolean notAllEquipped = false;
-        for (Item adjItem : liveItems()) {
-            if (adjItem.getId() == itemId) {
-                if (!adjItem.isEquipable()) {
-                    notAllEquipped = true;
-                    break;
-                }
-
-                notAllEquipped |= !adjItem.isEquipped();
+        for (Item adjItem : freeItems(adjItem -> adjItem.getId() == itemId)) {
+            if (!adjItem.isEquipable()) {
+                notAllEquipped = true;
+                break;
             }
+
+            notAllEquipped |= !adjItem.isEquipped();
         }
 
         if (notAllEquipped) {
@@ -478,8 +513,7 @@ public class PlayerInventory extends Inventory {
     }
 
     /**
-     * Destroys unequipped items first; several non-stackable items are destroyed one by one. Pending items are left
-     * out, so a count only they could cover destroys nothing.
+     * Destroys unequipped items first; several non-stackable items are destroyed one by one.
      */
     @Override
     public Item destroyItemByItemId(ItemProcessType process, int itemId, long count, Player actor, Object reference) {
@@ -487,16 +521,14 @@ public class PlayerInventory extends Inventory {
         try (Snapshot<Item> items = ScratchBuffers.empty()) {
             Item destroyItem = null;
             long unequipped = 0;
-            for (Item item : liveItems()) {
-                if ((item.getId() == itemId) && !item.isPending()) {
-                    items.add(item);
-                    if (!item.isEquipped()) {
-                        unequipped++;
-                    }
+            for (Item item : freeItems(item -> item.getId() == itemId)) {
+                items.add(item);
+                if (!item.isEquipped()) {
+                    unequipped++;
+                }
 
-                    if ((destroyItem == null) || destroyItem.isEquipped()) {
-                        destroyItem = item;
-                    }
+                if ((destroyItem == null) || destroyItem.isEquipped()) {
+                    destroyItem = item;
                 }
             }
 
@@ -632,8 +664,8 @@ public class PlayerInventory extends Inventory {
     public void restore() {
         WorldPartition.checkOwner();
         super.restore();
-        adenaInstance = getItemByItemId(ADENA_ID);
-        ancientAdenaInstance = getItemByItemId(ANCIENT_ADENA_ID);
+        adenaInstance = getItemByItemIdIncludingPending(ADENA_ID);
+        ancientAdenaInstance = getItemByItemIdIncludingPending(ANCIENT_ADENA_ID);
     }
 
     public static int[][] restoreVisibleInventory(int objectId) {

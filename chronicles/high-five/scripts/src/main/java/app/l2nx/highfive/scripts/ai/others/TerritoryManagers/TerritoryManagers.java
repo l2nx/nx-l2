@@ -100,6 +100,9 @@ public class TerritoryManagers extends Script {
                 } else if (player.getLevel() < 75) {
                     // If the player is not level 75 or greater, it cannot continue.
                     htmltext = "36490-06.html";
+                } else if (!player.destroyItemByItemId(
+                        ItemProcessType.FEE, itemId, TerritoryWarManager.MINTWBADGEFORNOBLESS, npc, true)) {
+                    htmltext = "36490-02.html";
                 } else {
                     // Complete the Noblesse related quests.
                     // Possessor of a Precious Soul - 1 (241)
@@ -113,10 +116,6 @@ public class TerritoryManagers extends Script {
 
                     // Possessor of a Precious Soul - 4 (247)
                     processNoblesseQuest(player, 247, null);
-
-                    // Take the Territory Badges.
-                    player.destroyItemByItemId(
-                            ItemProcessType.FEE, itemId, TerritoryWarManager.MINTWBADGEFORNOBLESS, npc, true);
 
                     // Give Noblesse Tiara to the player.
                     player.addItem(ItemProcessType.REWARD, 7694, 1, npc, true);

@@ -540,7 +540,10 @@ public class HeartInfinityAttack extends Script {
 
                 notifyEchmusEntrance(world);
             } else if (event.startsWith("reenterechmus")) {
-                player.destroyItemByItemId(ItemProcessType.FEE, 13797, 3, player, true);
+                if (!player.destroyItemByItemId(ItemProcessType.FEE, 13797, 3, player, true)) {
+                    return null;
+                }
+
                 notifyEkimusRoomEntrance(world);
                 try (ScratchBuffers.Snapshot<Player> members = ScratchBuffers.empty()) {
                     player.getParty().collectMembers(members);
@@ -557,7 +560,10 @@ public class HeartInfinityAttack extends Script {
                     world.addDeadTumors(victim);
                 }
 
-                player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true);
+                if (!player.destroyItemByItemId(ItemProcessType.FEE, 13797, 1, player, true)) {
+                    return null;
+                }
+
                 final Location loc = world.getDeadTumorsAt(getRandom(world.getDeadTumorsCount()))
                         .getLocation();
                 if (loc != null) {
@@ -580,7 +586,7 @@ public class HeartInfinityAttack extends Script {
             }
         }
 
-        return "";
+        return null;
     }
 
     @Override
