@@ -180,3 +180,4 @@ lists what is open.
 - [#184](https://github.com/l2nx/nx-l2/issues/184) Castle keeps its stale siege zone after ZoneManager.reload
 - [#185](https://github.com/l2nx/nx-l2/issues/185) transferItem takes the count off the source before the target stack exists
 - [#186](https://github.com/l2nx/nx-l2/issues/186) The last arrow of a pending stack is shot for free
+- [#189](https://github.com/l2nx/nx-l2/issues/189) Stop LoginServerLinkTest shutdown timeout test from failing intermittently
