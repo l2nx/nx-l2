@@ -22,7 +22,8 @@ package app.l2nx.highfive.entity.zone;
 import app.l2nx.engine.core.loop.SingleWriter;
 
 /**
- * Abstract class for Zone settings.
+ * Runtime state of a zone. A zone reload hands the whole object to the zone that replaces it, so datapack parameters
+ * belong to the zone itself: kept here they would survive a datapack edit.
  * @author UnAfraid
  */
 @SingleWriter

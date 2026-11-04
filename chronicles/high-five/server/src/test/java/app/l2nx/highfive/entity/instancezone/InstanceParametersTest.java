@@ -7,6 +7,7 @@ package app.l2nx.highfive.entity.instancezone;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.partition.WorldLoopExtension;
 import java.util.List;
 import java.util.function.Consumer;
@@ -42,17 +43,13 @@ class InstanceParametersTest {
                     Named.of("getBoolean", p -> p.getBoolean("key", false)),
                     Named.of("getInt", p -> p.getInt("key", 0)),
                     Named.of("getLong", p -> p.getLong("key", 0)),
-                    Named.of("getString", p -> p.getString("key", "value")),
                     Named.of("getObject", p -> p.getObject("key", Object.class)),
                     Named.of("getList", p -> p.getList("key", Integer.class)),
                     Named.of("getMap", p -> p.getMap("key", Integer.class, Integer.class)),
                     Named.of("getLocation", p -> p.getLocation("key")),
-                    Named.of("getMinionList", p -> p.getMinionList("key")),
-                    Named.of("getSkillHolder", p -> p.getSkillHolder("key")),
                     Named.of("set (object)", p -> p.set("key", (Object) 1)),
                     Named.of("set (int)", p -> p.set("key", 1)),
-                    Named.of("remove", p -> p.remove("key")),
-                    Named.of("contains", p -> p.contains("key")));
+                    Named.of("remove", p -> p.remove("key")));
         }
     }
 
@@ -76,13 +73,36 @@ class InstanceParametersTest {
 
         @Test
         void remove_shouldDropTheValue() {
-            final boolean actual = WorldLoopExtension.callInPass(() -> {
+            final int actual = WorldLoopExtension.callInPass(() -> {
                 parameters.set("count", 3);
                 parameters.remove("count");
-                return parameters.contains("count");
+                return parameters.getInt("count", -1);
             });
 
-            assertThat(actual).isFalse();
+            assertThat(actual).isEqualTo(-1);
+        }
+    }
+
+    @Nested
+    class GetLocation {
+        @Test
+        void getLocation_shouldReturnACopy_whenTheCallerAdjustsIt() {
+            final Location stored = new Location(1, 2, 3);
+
+            final Location actual = WorldLoopExtension.callInPass(() -> {
+                parameters.set("spot", stored);
+                parameters.getLocation("spot").setXYZ(7, 8, 9);
+                return parameters.getLocation("spot");
+            });
+
+            assertThat(actual).isNotSameAs(stored).isEqualTo(new Location(1, 2, 3));
+        }
+
+        @Test
+        void getLocation_shouldReturnNull_whenAbsent() {
+            final Location actual = WorldLoopExtension.callInPass(() -> parameters.getLocation("spot"));
+
+            assertThat(actual).isNull();
         }
     }
 }

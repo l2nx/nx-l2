@@ -41,6 +41,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
@@ -387,6 +388,12 @@ public abstract class ZoneType extends ListenersContainer {
     public boolean isCharacterInZone(Creature creature) {
         WorldPartition.checkOwner();
         return characters.containsKey(creature.getObjectId());
+    }
+
+    /** Whether this zone, parsed by a reload, takes over the runtime settings of {@code previous} with its id. */
+    public boolean continues(ZoneType previous) {
+        WorldPartition.checkOwner();
+        return Objects.equals(previous.getName(), getName());
     }
 
     public void setSettings(AbstractZoneSettings settings) {

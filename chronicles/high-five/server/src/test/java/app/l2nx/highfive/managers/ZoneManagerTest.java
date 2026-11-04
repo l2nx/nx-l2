@@ -116,6 +116,57 @@ class ZoneManagerTest {
         }
 
         @Test
+        void restoreSettings_shouldKeepTheFreshSiegeObjectId_whenTheDatapackChangedTheId() {
+            final int actual = WorldLoopExtension.callInPass(() -> {
+                final SiegeZone before = siege(300_001, "Giran Castle");
+                before.setParameter("castleId", "3");
+                final Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replaced = replaced(before);
+                final SiegeZone reloaded = siege(300_001, "Giran Castle");
+                reloaded.setParameter("castleId", "5");
+
+                ZoneManager.restoreSettings(reloaded, replaced);
+
+                return reloaded.getSiegeObjectId();
+            });
+
+            assertThat(actual).isEqualTo(5);
+        }
+
+        @Test
+        void restoreSettings_shouldKeepFreshSettings_whenTheDatapackGaveTheZoneToAnotherResidence() {
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                final SiegeZone before = siege(300_001, "Giran Castle");
+                before.setParameter("castleId", "3");
+                final Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replaced = replaced(before);
+                final SiegeZone reloaded = siege(300_001, "Giran Castle");
+                reloaded.setParameter("castleId", "5");
+
+                ZoneManager.restoreSettings(reloaded, replaced);
+
+                return reloaded.getSettings() == before.getSettings();
+            });
+
+            assertThat(actual).isFalse();
+        }
+
+        @Test
+        void restoreSettings_shouldCarryTheSettingsOver_whenTheResidenceStays() {
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                final SiegeZone before = siege(300_001, "Giran Castle");
+                before.setParameter("castleId", "3");
+                final Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replaced = replaced(before);
+                final SiegeZone reloaded = siege(300_001, "Giran Castle");
+                reloaded.setParameter("castleId", "3");
+
+                ZoneManager.restoreSettings(reloaded, replaced);
+
+                return reloaded.getSettings() == before.getSettings();
+            });
+
+            assertThat(actual).isTrue();
+        }
+
+        @Test
         void restoreSettings_shouldKeepFreshSettings_whenNoZoneWasReplaced() {
             final boolean actual = WorldLoopExtension.callInPass(() -> {
                 final OlympiadStadiumZone zone = stadium(300_001, "Orbis Arena");

@@ -20,14 +20,12 @@
 package app.l2nx.highfive.entity.instancezone;
 
 import app.l2nx.engine.core.loop.SingleWriter;
-import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.ScratchBuffers.IntSnapshot;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.partition.WorldPartition;
@@ -124,14 +122,8 @@ public class InstanceWorld {
      */
     public void ejectPlayer(Player player) {
         WorldPartition.checkOwner();
-        if ((player != null) && (player.getInstanceId() == instance.getId())) {
-            player.setInstanceId(0);
-            final Location exit = instance.getExitLoc();
-            if (exit != null) {
-                player.teleToLocation(exit, true);
-            } else {
-                player.teleToLocation(TeleportWhereType.TOWN);
-            }
+        if (player != null) {
+            instance.eject(player);
         }
     }
 

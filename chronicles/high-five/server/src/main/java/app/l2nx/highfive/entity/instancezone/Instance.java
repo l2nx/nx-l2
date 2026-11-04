@@ -469,18 +469,28 @@ public class Instance {
         try (IntSnapshot walk = ScratchBuffers.intSnapshot(players)) {
             for (int i = 0; i < walk.size(); i++) {
                 final Player player = World.getPlayer(walk.getInt(i));
-                if ((player != null) && (player.getInstanceId() == id)) {
-                    player.setInstanceId(0);
-                    if (exitLoc != null) {
-                        player.teleToLocation(exitLoc.clone(), true);
-                    } else {
-                        player.teleToLocation(TeleportWhereType.TOWN);
-                    }
+                if (player != null) {
+                    eject(player);
                 }
             }
         }
 
         players.clear();
+    }
+
+    /** Takes the player out to the exit location, or to town without one; a player outside this instance stays. */
+    public void eject(Player player) {
+        WorldPartition.checkOwner();
+        if (player.getInstanceId() != id) {
+            return;
+        }
+
+        player.setInstanceId(0);
+        if (exitLoc != null) {
+            player.teleToLocation(exitLoc.clone(), true);
+        } else {
+            player.teleToLocation(TeleportWhereType.TOWN);
+        }
     }
 
     public void removeNpcs() {
@@ -964,13 +974,8 @@ public class Instance {
                             .schedule(
                                     () -> {
                                         ejectDeadTasks.remove(objectId);
-                                        if (player.isDead() && (player.getInstanceId() == id)) {
-                                            player.setInstanceId(0);
-                                            if (exitLoc != null) {
-                                                player.teleToLocation(exitLoc.clone(), true);
-                                            } else {
-                                                player.teleToLocation(TeleportWhereType.TOWN);
-                                            }
+                                        if (player.isDead()) {
+                                            eject(player);
                                         }
                                     },
                                     ejectTime,

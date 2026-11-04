@@ -290,6 +290,41 @@ class SpawnTest {
     }
 
     @Nested
+    class SpawnLocation {
+        @Test
+        void getSpawnLocation_shouldBeNull_beforeTheFirstSpawn() {
+            final Spawn spawn = spawn();
+
+            final Location actual = WorldLoopExtension.callInPass(spawn::getSpawnLocation);
+
+            assertThat(actual).isNull();
+        }
+
+        @Test
+        void getSpawnLocation_shouldReturnACopy_whenTheCallerAdjustsIt() {
+            final Spawn spawn = spawn();
+            final Npc npc = mock(Npc.class);
+
+            final Location actual;
+            try (MockedStatic<GeoEngine> geoEngine = mockStatic(GeoEngine.class);
+                    MockedStatic<ZoneManager> zoneManager = mockStatic(ZoneManager.class);
+                    MockedStatic<WalkingManager> walking = mockStatic(WalkingManager.class)) {
+                geoEngine.when(GeoEngine::getInstance).thenReturn(mock(GeoEngine.class));
+                zoneManager.when(ZoneManager::getInstance).thenReturn(mock(ZoneManager.class));
+                walking.when(WalkingManager::getInstance).thenReturn(mock(WalkingManager.class));
+                actual = WorldLoopExtension.callInPass(() -> {
+                    spawn.setXYZ(83_400, 147_900, -3_400);
+                    spawn.respawnNpc(npc);
+                    spawn.getSpawnLocation().setXYZ(0, 0, 0);
+                    return spawn.getSpawnLocation();
+                });
+            }
+
+            assertThat(actual).isEqualTo(new Location(83_400, 147_900, -3_400));
+        }
+    }
+
+    @Nested
     class Equality {
         @Test
         void equals_shouldCompareByIdentity_whenTwoSpawnsShareALocation() {

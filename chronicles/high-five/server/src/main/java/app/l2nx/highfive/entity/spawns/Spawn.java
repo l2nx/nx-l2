@@ -510,9 +510,10 @@ public class Spawn extends Location {
         this.randomWalking = randomWalking;
     }
 
+    /** A copy; {@code null} until the first spawn. */
     public Location getSpawnLocation() {
         WorldPartition.checkOwner();
-        return spawnLocation;
+        return spawnLocation == null ? null : spawnLocation.clone();
     }
 
     public SpawnGroup getGroup() {

@@ -39,7 +39,7 @@ class SiegeZoneTest {
     @Nested
     class Settings {
         @Test
-        void setParameter_shouldKeepTheSiegeObjectInTheSettings() {
+        void setParameter_shouldSetTheSiegeObjectId() {
             final SiegeZone zone = zone();
 
             final int actual = WorldLoopExtension.callInPass(zone::getSiegeObjectId);
@@ -56,7 +56,7 @@ class SiegeZoneTest {
         }
 
         @Test
-        void settingsClear_shouldResetTheSiegeState() {
+        void settingsClear_shouldResetTheSiegeState_andKeepTheDatapackSiegeObjectId() {
             final SiegeZone zone = zone();
 
             final List<Object> actual = WorldLoopExtension.callInPass(() -> {
@@ -65,7 +65,7 @@ class SiegeZoneTest {
                 return List.of(zone.isActive(), zone.getSiegeObjectId());
             });
 
-            assertThat(actual).containsExactly(false, -1);
+            assertThat(actual).containsExactly(false, 3);
         }
 
         @Test

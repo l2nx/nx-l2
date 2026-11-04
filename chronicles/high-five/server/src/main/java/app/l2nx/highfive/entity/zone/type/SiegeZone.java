@@ -62,14 +62,14 @@ import lombok.extern.slf4j.Slf4j;
 public class SiegeZone extends ZoneType {
     private static final int DISMOUNT_DELAY = 5;
 
+    private int siegeableId = -1;
+
     public SiegeZone(int id) {
         super(id, new Settings());
     }
 
     @SingleWriter
     public static final class Settings extends AbstractZoneSettings {
-        private int siegeableId = -1;
-
         private Siegable siege = null;
 
         private boolean activeSiege = false;
@@ -79,7 +79,6 @@ public class SiegeZone extends ZoneType {
         @Override
         public void clear() {
             WorldPartition.checkOwner();
-            siegeableId = -1;
             siege = null;
             activeSiege = false;
         }
@@ -99,25 +98,25 @@ public class SiegeZone extends ZoneType {
     public void setParameter(String name, String value) {
         WorldPartition.checkOwner();
         if (name.equals("castleId")) {
-            if (settings().siegeableId != -1) {
+            if (siegeableId != -1) {
                 throw new IllegalArgumentException("Siege object already defined!");
             }
 
-            settings().siegeableId = Integer.parseInt(value);
+            siegeableId = Integer.parseInt(value);
         } else if (name.equals("fortId")) {
-            if (settings().siegeableId != -1) {
+            if (siegeableId != -1) {
                 throw new IllegalArgumentException("Siege object already defined!");
             }
 
-            settings().siegeableId = Integer.parseInt(value);
+            siegeableId = Integer.parseInt(value);
         } else if (name.equals("clanHallId")) {
-            if (settings().siegeableId != -1) {
+            if (siegeableId != -1) {
                 throw new IllegalArgumentException("Siege object already defined!");
             }
 
-            settings().siegeableId = Integer.parseInt(value);
+            siegeableId = Integer.parseInt(value);
             final SiegableHall hall =
-                    CHSiegeManager.getInstance().getConquerableHalls().get(settings().siegeableId);
+                    CHSiegeManager.getInstance().getConquerableHalls().get(siegeableId);
             if (hall != null) {
                 hall.setSiegeZone(this);
             } else {
@@ -143,7 +142,7 @@ public class SiegeZone extends ZoneType {
         }
 
         final Player player = creature.asPlayer();
-        if (player.isRegisteredOnThisSiegeField(settings().siegeableId)) {
+        if (player.isRegisteredOnThisSiegeField(siegeableId)) {
             player.setInSiege(true);
             if (settings().siege.giveFame() && (settings().siege.getFameFrequency() > 0)) {
                 player.startFameTask(
@@ -163,7 +162,7 @@ public class SiegeZone extends ZoneType {
             return;
         }
 
-        final Castle castle = CastleManager.getInstance().getCastleById(settings().siegeableId);
+        final Castle castle = CastleManager.getInstance().getCastleById(siegeableId);
         final boolean isCastleLord =
                 (castle != null) && player.isClanLeader() && (player.getClanId() == castle.getOwnerId());
         if (player.getMountType() == MountType.WYVERN) {
@@ -216,7 +215,7 @@ public class SiegeZone extends ZoneType {
             return;
         }
 
-        final Fort fort = FortManager.getInstance().getFortById(settings().siegeableId);
+        final Fort fort = FortManager.getInstance().getFortById(siegeableId);
         if (fort != null) {
             FortSiegeManager.getInstance().dropCombatFlag(player, fort.getResidenceId());
         } else {
@@ -239,7 +238,7 @@ public class SiegeZone extends ZoneType {
         WorldPartition.checkOwner();
         if (!settings().activeSiege
                 || !creature.isPlayer()
-                || !creature.asPlayer().isRegisteredOnThisSiegeField(settings().siegeableId)) {
+                || !creature.asPlayer().isRegisteredOnThisSiegeField(siegeableId)) {
             return;
         }
 
@@ -258,7 +257,7 @@ public class SiegeZone extends ZoneType {
     @Override
     public void onPlayerLogoutInside(Player player) {
         WorldPartition.checkOwner();
-        if (player.getClanId() != settings().siegeableId) {
+        if (player.getClanId() != siegeableId) {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
     }
@@ -303,7 +302,14 @@ public class SiegeZone extends ZoneType {
 
     public int getSiegeObjectId() {
         WorldPartition.checkOwner();
-        return settings().siegeableId;
+        return siegeableId;
+    }
+
+    /** A siege in progress belongs to its residence, so it never moves to a zone the datapack gave to another one. */
+    @Override
+    public boolean continues(ZoneType previous) {
+        WorldPartition.checkOwner();
+        return super.continues(previous) && (((SiegeZone) previous).siegeableId == siegeableId);
     }
 
     public boolean isActive() {

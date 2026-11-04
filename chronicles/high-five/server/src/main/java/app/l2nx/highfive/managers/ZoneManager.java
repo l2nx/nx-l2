@@ -75,7 +75,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -445,7 +444,7 @@ public class ZoneManager implements IXmlReader {
     static void restoreSettings(ZoneType zone, Map<Class<? extends ZoneType>, Map<Integer, ZoneType>> replaced) {
         final Map<Integer, ZoneType> ofType = replaced.get(zone.getClass());
         final ZoneType previous = ofType == null ? null : ofType.get(zone.getId());
-        if ((previous != null) && Objects.equals(previous.getName(), zone.getName()) && (zone.getSettings() != null)) {
+        if ((previous != null) && zone.continues(previous) && (zone.getSettings() != null)) {
             zone.setSettings(previous.getSettings());
         }
     }

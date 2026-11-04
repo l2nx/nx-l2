@@ -104,6 +104,7 @@ class InstanceTest {
                     Named.of("getPlayerCount", Instance::getPlayerCount),
                     Named.of("collectPlayers", i -> i.collectPlayers(new IntArrayList())),
                     Named.of("removePlayers", Instance::removePlayers),
+                    Named.of("eject", i -> i.eject(null)),
                     Named.of("addNpc", i -> i.addNpc(null)),
                     Named.of("removeNpc", i -> i.removeNpc(null)),
                     Named.of("getNpcs", Instance::getNpcs),
@@ -272,6 +273,41 @@ class InstanceTest {
 
             assertThat(actual).isEmpty();
             npcs.forEach(npc -> verify(npc).deleteMe());
+        }
+    }
+
+    @Nested
+    class Eject {
+        @Test
+        void eject_shouldTeleportToTheExitLocation_whenTheInstanceHasOne() {
+            final Player player = insidePlayer(0x7ffe_1201);
+
+            WorldLoopExtension.runInPass(() -> {
+                instance.setExitLoc(new Location(100, 200, 300));
+                instance.eject(player);
+            });
+
+            verify(player).setInstanceId(0);
+            verify(player).teleToLocation(new Location(100, 200, 300), true);
+        }
+
+        @Test
+        void eject_shouldTeleportToTown_whenTheInstanceHasNoExitLocation() {
+            final Player player = insidePlayer(0x7ffe_1202);
+
+            WorldLoopExtension.runInPass(() -> instance.eject(player));
+
+            verify(player).setInstanceId(0);
+            verify(player).teleToLocation(TeleportWhereType.TOWN);
+        }
+
+        @Test
+        void eject_shouldLeaveThePlayer_whenHeIsOutsideTheInstance() {
+            final Player player = player(0x7ffe_1203);
+
+            WorldLoopExtension.runInPass(() -> instance.eject(player));
+
+            verify(player, never()).setInstanceId(0);
         }
     }
 
