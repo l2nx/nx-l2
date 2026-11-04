@@ -63,9 +63,11 @@ What the server sends:
 - `SentBySystem` comes from `MailType`: `PLAYER` 0 (the client shows `SenderName`), `SYSTEM` 1 (the client shows its
   system sender string, or its returned-mail string when `Returnd` = 1), `BIRTHDAY` 3 (the client shows its birthday
   sender, Alegria). For 1 and 3 the client hides Return and Reply; system mail is not returnable.
-- `Title` in both lists is cut to 96 characters; the opened mail shows it whole. A list is one frame of at most 65535
-  bytes, and 240 mails with 128-character subjects and 16-character names take about 80 KB, so a full box would
-  close the connection; at 96 characters a full list of either box stays under 64 KB.
+- `Title` in a list keeps what one frame of at most 65535 bytes leaves after the fixed fields and the names of the
+  shown mails, shared evenly: 100 characters in a full box of 240 with 16-character names, whole subjects in a short
+  list; the opened mail shows it whole (240 mails with 128-character subjects and 16-character names take about
+  80 KB, which would close the connection). The adapter refuses to start with a `mailbox-limit` whose full list no
+  longer leaves 16 characters per subject (above 630).
 - `ExReplySentPost` always ends with `NotOpend`, with or without items.
 - `ExChangePostState` carries the client's states: deleted, read, and attachments taken; the last one clears the
   attachment icon in the open list.

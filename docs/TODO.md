@@ -108,7 +108,6 @@ lists what is open.
 - [#139](https://github.com/l2nx/nx-l2/issues/139) Start periodic systems on the post-startup grid and apply the deadline floor across both timer queues
 - [#140](https://github.com/l2nx/nx-l2/issues/140) Decide whether the frozen server-packet store may grow and pin its size
 - [#141](https://github.com/l2nx/nx-l2/issues/141) Send the character slice's legacy notices through view events or a listed facade
-- [#142](https://github.com/l2nx/nx-l2/issues/142) Pin the set of single-writer classes the build checks
 - [#143](https://github.com/l2nx/nx-l2/issues/143) Exit on direct memory exhaustion too, or narrow the OutOfMemoryError promise in the spec
 - [#144](https://github.com/l2nx/nx-l2/issues/144) Share the over-enchant check between entering the world and UseItem
 - [#145](https://github.com/l2nx/nx-l2/issues/145) Keep module moves buildable and drop the Spring test starter from Spring-free libs
@@ -166,3 +165,18 @@ lists what is open.
 - [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart
 - [#146](https://github.com/l2nx/nx-l2/issues/146) Cut the ownership check cost on the Creature stat path
 - [#148](https://github.com/l2nx/nx-l2/issues/148) refreshId leaves the object under its old hash in aggro lists and attacker sets
+- [#166](https://github.com/l2nx/nx-l2/issues/166) Keep JDBC off the world loop in the mail apply path and check it transitively
+- [#167](https://github.com/l2nx/nx-l2/issues/167) Harden the mail outcome handlers: release in finally, settle DESTROYED honestly, keep expiry moving
+- [#168](https://github.com/l2nx/nx-l2/issues/168) Deliver the birthday gift reliably: report the system mail outcome, retry it and scan off the loop
+- [#169](https://github.com/l2nx/nx-l2/issues/169) Serialize a character's mail value transactions and keep the High Five mail registries single-writer
+- [#170](https://github.com/l2nx/nx-l2/issues/170) Tidy the mail code: value transaction subject consumer, Spring BackOff, explicit beans, shared incoming and item row helpers, honest adapter tests
+- [#172](https://github.com/l2nx/nx-l2/issues/172) Write legacy item packets through the p267 ItemBlock codec
+- [#174](https://github.com/l2nx/nx-l2/issues/174) Record and test the behaviour changes the single-writer commits made
+- [#176](https://github.com/l2nx/nx-l2/issues/176) Write the block list to the database before memory and keep absent actor strings null
+- [#177](https://github.com/l2nx/nx-l2/issues/177) Move the static world caches and scratch buffers into the loop-scoped registries
+- [#178](https://github.com/l2nx/nx-l2/issues/178) Drop the unused written-out accessors and the hand-kept off-loop method lists
+- [#182](https://github.com/l2nx/nx-l2/issues/182) Resolve Crystal Caverns raiders by id and share one base for the Seed of Destruction mounted troops
+- [#183](https://github.com/l2nx/nx-l2/issues/183) Keep a character loaded when its logout save fails so the mail delta is not overwritten
+- [#184](https://github.com/l2nx/nx-l2/issues/184) Castle keeps its stale siege zone after ZoneManager.reload
+- [#185](https://github.com/l2nx/nx-l2/issues/185) transferItem takes the count off the source before the target stack exists
+- [#186](https://github.com/l2nx/nx-l2/issues/186) The last arrow of a pending stack is shot for free

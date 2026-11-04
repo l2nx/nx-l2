@@ -11,27 +11,27 @@ snapshots are shown in it.
 
 ## 1. Decisions
 
-| #   | Decision                                                                                                                                                                                               | Why                                                                                                                                                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Module `engine/mail` (`app.l2nx.engine.mail`), shared by every chronicle with a postbox; a chronicle implements an SPI (§3)                                                                            | the overlap is proven against the Mobius trees (below); Interlude has no postbox and does not include the module                                   |
-| D2  | The database is the source of truth; no mail is held in memory. Reads are asynchronous queries off the world loop; no JDBC on a loop thread                                                            | mail is rare and often addressed to an offline character; a cache would have to stay consistent with offline writes                                |
-| D3  | The database row serializes concurrent changes: `UPDATE ... WHERE attachments = 'ATTACHED'`                                                                                                            | a receive racing a cancel or an expiry has exactly one winner                                                                                      |
-| D4  | Mail is not a global service ([spec 003 §3](../003-engine-core/spec.md))                                                                                                                               | follows from D2 and D3: a single writer in memory would only add a cache                                                                           |
-| D5  | Every value move is a value transaction with an `idempotency_key`                                                                                                                                      | one save point, no duplication or loss; a retry with the same key answers `Replayed`                                                               |
-| D6  | Every attachment is stored as an item snapshot at send time and never changes; it is shown in the mail after the items were taken                                                                      | attachment history                                                                                                                                 |
-| D7  | Deletion and expiry only hide a mail from a mailbox; the rows stay with the time and the reason                                                                                                        | history for administration, duplication analysis and the platform                                                                                  |
-| D8  | Rules are settings (`l2nx.mail.*`) with the retail values as module defaults; a chronicle overrides only what differs (Essence: no peace-zone rule, refused in combat and when dead) | one module, rules chosen by the operator                                                                                                           |
-| D9  | `custom_mails` and its polling manager are removed; scripts and the platform send through `MailService`                                                                                                | an outside writer sends a command ([persistence.md §6](../003-engine-core/persistence.md#6-schema-rules))                                          |
-| D10 | The SPI has two sides: the world loop (live objects) and the transaction (SQL over the chronicle's tables: items, characters, block list); the module never writes a chronicle table itself            | the chronicle owns those tables                                                                                                                    |
-| D11 | An online side is written with absolute values from memory under an owner condition; an offline side by delta under `CHECK (count >= 0)`                                                               | the database lags an online character's memory until the next save                                                                                 |
-| D12 | While a value transaction is in flight for a character, its reserved items are not saved, and its world entry and logout wait; pending marks are checked in the mutating operations of item containers | a save of the pre-commit memory would undo a committed move ([persistence.md §3.1](../003-engine-core/persistence.md#31-online-and-offline-sides)) |
-| D13 | The mail id on the wire is a session-local number (a table of at most 480 entries), not a wire handle                                                                                                  | mail takes nothing from the global allocator and nothing outlives the session                                                                      |
-| D14 | Snapshots go to the client with synthetic handles `slot + 1`, below the live handle range `0x10000000`                                                                                                 | the client never sends attachment ids back and cannot confuse them with inventory items                                                            |
-| D15 | Receive on a settled mail answers system message 3382, cancel answers 3030                                                                                                                             | protocol 267 has no "already received" flag; the client shows the buttons whenever items are listed                                                |
-| D16 | Return creates a new mail to the sender with `returned_from_id` and copies of the snapshot rows                                                                                                        | the original stays in the history as `RETURNED`                                                                                                    |
-| D17 | Deleting a character returns its received `ATTACHED` player mail to the live senders, destroys the attachments nobody can get (system mail, sender gone; ledger records it, the mail settles `DESTROYED`), drops the cash on delivery of its sent mail and nulls its id in the mail rows | the names captured at send keep the history readable                                                                                               |
-| D18 | A claim that finds no live item left (destroyed outside mail) settles the mail `DESTROYED` without charging the cash on delivery                                                                       | nobody pays for an empty mail ([#57](https://github.com/l2nx/nx-l2/issues/57))                                                                     |
-| D19 | Engine modules ship their changelogs under `db/engine/<module>/`, included explicitly by the server changelog; `items.mail_id` gets its foreign key in a chronicle changeset after the include         | a module cannot know a chronicle's `includeAll` directory ([spec 006 §2](../006-database.md#2-migrations))                                         |
+| #   | Decision                                                                                                                                                                                                                                                                                                          | Why                                                                                                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Module `engine/mail` (`app.l2nx.engine.mail`), shared by every chronicle with a postbox; a chronicle implements an SPI (§3)                                                                                                                                                                                       | the overlap is proven against the Mobius trees (below); Interlude has no postbox and does not include the module                                   |
+| D2  | The database is the source of truth; no mail is held in memory. Reads are asynchronous queries off the world loop; no JDBC on a loop thread                                                                                                                                                                       | mail is rare and often addressed to an offline character; a cache would have to stay consistent with offline writes                                |
+| D3  | The database row serializes concurrent changes: `UPDATE ... WHERE attachments = 'ATTACHED'`                                                                                                                                                                                                                       | a receive racing a cancel or an expiry has exactly one winner                                                                                      |
+| D4  | Mail is not a global service ([spec 003 §3](../003-engine-core/spec.md))                                                                                                                                                                                                                                          | follows from D2 and D3: a single writer in memory would only add a cache                                                                           |
+| D5  | Every value move is a value transaction with an `idempotency_key`                                                                                                                                                                                                                                                 | one save point, no duplication or loss; a retry with the same key answers `Replayed`                                                               |
+| D6  | Every attachment is stored as an item snapshot at send time and never changes; it is shown in the mail after the items were taken                                                                                                                                                                                 | attachment history                                                                                                                                 |
+| D7  | Deletion and expiry only hide a mail from a mailbox; the rows stay with the time and the reason                                                                                                                                                                                                                   | history for administration, duplication analysis and the platform                                                                                  |
+| D8  | Rules are settings (`l2nx.mail.*`) with the retail values as module defaults; a chronicle overrides only what differs (Essence: no peace-zone rule, refused in combat and when dead)                                                                                                                              | one module, rules chosen by the operator                                                                                                           |
+| D9  | `custom_mails` and its polling manager are removed; scripts and the platform send through `MailService`                                                                                                                                                                                                           | an outside writer sends a command ([persistence.md §6](../003-engine-core/persistence.md#6-schema-rules))                                          |
+| D10 | The SPI has two sides: the world loop (live objects) and the transaction (SQL over the chronicle's tables: items, characters, block list); the module never writes a chronicle table itself                                                                                                                       | the chronicle owns those tables                                                                                                                    |
+| D11 | An online side is written with absolute values from memory under an owner condition; an offline side by delta under `CHECK (count >= 0)`                                                                                                                                                                          | the database lags an online character's memory until the next save                                                                                 |
+| D12 | While a value transaction is in flight for a character, its reserved items are not saved, and its world entry and logout wait; a pending item does not exist for gameplay: item container lookups, counts and mutations skip it, and only the mail SPI, the stackable merge, weight and the inventory list see it | a save of the pre-commit memory would undo a committed move ([persistence.md §3.1](../003-engine-core/persistence.md#31-online-and-offline-sides)) |
+| D13 | The mail id on the wire is a session-local number (a table of at most two boxes of `mailbox-limit` entries), not a wire handle                                                                                                                                                                                    | mail takes nothing from the global allocator and nothing outlives the session                                                                      |
+| D14 | Snapshots go to the client with synthetic handles `slot + 1`, below the live handle range `0x10000000`                                                                                                                                                                                                            | the client never sends attachment ids back and cannot confuse them with inventory items                                                            |
+| D15 | Receive on a settled mail answers system message 3382, cancel answers 3030                                                                                                                                                                                                                                        | protocol 267 has no "already received" flag; the client shows the buttons whenever items are listed                                                |
+| D16 | Return creates a new mail to the sender with `returned_from_id` and copies of the snapshot rows                                                                                                                                                                                                                   | the original stays in the history as `RETURNED`                                                                                                    |
+| D17 | Deleting a character returns its received `ATTACHED` player mail to the live senders, destroys the attachments nobody can get (system mail, sender gone; ledger records it, the mail settles `DESTROYED`), drops the cash on delivery of its sent mail and nulls its id in the mail rows                          | the names captured at send keep the history readable                                                                                               |
+| D18 | A claim that finds no live item left (destroyed outside mail) settles the mail `DESTROYED` without charging the cash on delivery                                                                                                                                                                                  | nobody pays for an empty mail ([#57](https://github.com/l2nx/nx-l2/issues/57))                                                                     |
+| D19 | Engine modules ship their changelogs under `db/engine/<module>/`, included explicitly by the server changelog; `items.mail_id` gets its foreign key in a chronicle changeset after the include                                                                                                                    | a module cannot know a chronicle's `includeAll` directory ([spec 006 §2](../006-database.md#2-migrations))                                         |
 
 **Overlap proof (D1).** [Spec 001 §4](../001-project-design.md#4-module-layout) moves a mechanic into `engine/` once
 the chronicles are proven identical in it. The Mobius High Five and Essence trees share the limits (name 16, subject
@@ -185,21 +185,21 @@ Essence arrives); the wire value of each type is protocol code ([client-protocol
 `l2nx.mail.*`, a `@ConfigurationProperties` record of the module with the retail values as defaults, replacing `AllowMail`, `AllowAttachments`, the
 `SendMail` flood protector and the constants of the legacy classes:
 
-| Key                           | Default           | Meaning                                                                 |
-| ----------------------------- | ----------------- | ----------------------------------------------------------------------- |
-| `enabled`                     | `true`            | the postbox at all                                                      |
-| `attachments.enabled`         | `true`            | items and cash on delivery                                              |
-| `attachments.peace-zone-only` | `true`            | attachment actions (send, receive, return, cancel) only in a peace zone |
-| `attachments.deny-in-combat`  | `false`           | attachment actions refused in combat                                    |
-| `attachments.deny-when-dead`  | `false`           | attachment actions refused while dead                                   |
-| `fee.base`                    | `100`             | adena per mail                                                          |
-| `fee.per-attachment`          | `1000`            | adena per attachment                                                    |
-| `mailbox-limit`               | `240`             | visible mails per box                                                   |
-| `expiry`                      | `360h`            | lifetime of a mail                                                      |
-| `cod-expiry`                  | `12h`             | lifetime of a mail with cash on delivery                                |
-| `max-attachments`             | `8`               | attachments per mail, 1–8 (the snapshot has 8 slots; the client shows 8)  |
-| `send-interval`               | `10s`             | minimum time between two sends of a character (10 s on retail)          |
-| `expiry-poll`                 | `1m`              | cadence of the expiry job                                               |
+| Key                           | Default | Meaning                                                                  |
+| ----------------------------- | ------- | ------------------------------------------------------------------------ |
+| `enabled`                     | `true`  | the postbox at all                                                       |
+| `attachments.enabled`         | `true`  | items and cash on delivery                                               |
+| `attachments.peace-zone-only` | `true`  | attachment actions (send, receive, return, cancel) only in a peace zone  |
+| `attachments.deny-in-combat`  | `false` | attachment actions refused in combat                                     |
+| `attachments.deny-when-dead`  | `false` | attachment actions refused while dead                                    |
+| `fee.base`                    | `100`   | adena per mail                                                           |
+| `fee.per-attachment`          | `1000`  | adena per attachment                                                     |
+| `mailbox-limit`               | `240`   | visible mails per box; protocol 267 refuses to start above 630           |
+| `expiry`                      | `360h`  | lifetime of a mail                                                       |
+| `cod-expiry`                  | `12h`   | lifetime of a mail with cash on delivery                                 |
+| `max-attachments`             | `8`     | attachments per mail, 1–8 (the snapshot has 8 slots; the client shows 8) |
+| `send-interval`               | `10s`   | minimum time between two sends of a character (10 s on retail)           |
+| `expiry-poll`                 | `1m`    | cadence of the expiry job                                                |
 
 The send interval is a per-character Bucket4j bucket (the standard rate limiter, already an `engine/core` dependency),
 not an own timer map.
@@ -218,8 +218,8 @@ app.l2nx.engine.mail
                CharacterDeletedTransaction) and MailWriter, the helpers they share
 ```
 
-The module keeps the slice layout of [wiring-layout §4](../003-engine-core/wiring-layout.md#inside-a-slice), is a
-Spring Modulith application module verified by `SliceLayoutRules`, and depends on no chronicle. Its commands enter
+The module keeps the slice layout of [wiring-layout §4](../003-engine-core/wiring-layout.md#inside-a-slice), checked
+by `SliceLayoutRules` (§6), and depends on no chronicle. Its commands enter
 through the chronicle's protocol adapter; its view events leave through `ClientPort`.
 
 ### 3.1 Commands
@@ -242,7 +242,9 @@ record DeleteSentMail(List<UUID> mailIds) implements Command {}
 ```
 
 Every handler runs in the world context. The protocol adapter resolves a wire mail number to its UUID through the
-session's table (D13); a number it does not know is dropped as a malformed request.
+session's table (D13); a number it does not know makes a single-mail request malformed (a decode error); a delete of several mails drops
+its unknown numbers one by one and deletes the known ones, since the box may have been shown again while the request
+was on its way.
 
 ### 3.2 View events
 
@@ -278,15 +280,15 @@ record MailDone(MailNotice notice, @Nullable String name, long adena) implements
 protocol mapper turns them into the client's system messages; the action lets it pick the text the client has for
 that action (a settled mail answers 3382 on receive and 3030 on cancel). `MailRefusal`:
 
-| Group    | Values                                                                                    |
-| -------- | ----------------------------------------------------------------------------------------- |
-| settings | `DISABLED`, `ATTACHMENTS_DISABLED`, `NOT_IN_PEACE_ZONE`, `IN_COMBAT`, `DEAD`              |
-| sender   | `BUSY` (trading, store, enchanting), `ACCESS_DENIED`, `JAILED`, `SEND_INTERVAL`, `NOT_ENOUGH_ADENA` |
-| content  | `TOO_MANY_ATTACHMENTS`, `ITEM_NOT_MAILABLE`, `COD_WITHOUT_ATTACHMENTS`, `COD_AMOUNT_INVALID`, `INVALID_TEXT`    |
-| receiver | `RECEIVER_NOT_FOUND`, `RECEIVER_SELF`, `RECEIVER_BLOCKED`, `RECEIVER_GM_ONLY`             |
-| limits   | `RECEIVER_MAILBOX_FULL`, `SENDER_MAILBOX_FULL`, `INVENTORY_FULL`, `WEIGHT_LIMIT`, `ADENA_LIMIT`, `SENDER_ADENA_LIMIT`          |
-| state    | `ALREADY_RECEIVED`, `NOT_RETURNABLE`, `HAS_ATTACHMENTS`                                   |
-| system   | `FAILED` (the transaction failed before its commit)                           |
+| Group    | Values                                                                                                                |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| settings | `DISABLED`, `ATTACHMENTS_DISABLED`, `NOT_IN_PEACE_ZONE`, `IN_COMBAT`, `DEAD`                                          |
+| sender   | `BUSY` (trading, store, enchanting), `ACCESS_DENIED`, `JAILED`, `SEND_INTERVAL`, `NOT_ENOUGH_ADENA`                   |
+| content  | `TOO_MANY_ATTACHMENTS`, `ITEM_NOT_MAILABLE`, `COD_WITHOUT_ATTACHMENTS`, `COD_AMOUNT_INVALID`, `INVALID_TEXT`          |
+| receiver | `RECEIVER_NOT_FOUND`, `RECEIVER_SELF`, `RECEIVER_BLOCKED`, `RECEIVER_GM_ONLY`                                         |
+| limits   | `RECEIVER_MAILBOX_FULL`, `SENDER_MAILBOX_FULL`, `INVENTORY_FULL`, `WEIGHT_LIMIT`, `ADENA_LIMIT`, `SENDER_ADENA_LIMIT` |
+| state    | `ALREADY_RECEIVED`, `NOT_RETURNABLE`, `HAS_ATTACHMENTS`                                                               |
+| system   | `FAILED` (the transaction failed before its commit)                                                                   |
 
 ### 3.3 Module API
 
@@ -326,7 +328,7 @@ public interface MailItems {
     ReserveResult<IncomingTargets> incomingTargets(
             int characterHandle, HolderType holder, List<AttachmentSnapshot> items, long adena);
     void release(IncomingTargets targets);
-    void applyIncoming(IncomingTargets targets, List<ItemRow> committedRows);
+    void applyIncoming(IncomingTargets targets, List<CommittedItemRow> committedRows);
     long adenaLimit();
 }
 
@@ -360,12 +362,12 @@ public interface MailItemStore {
     List<ItemMovement> toMail(UUID mailId, List<ReservedItem> items);
     CreatedItems createInMail(UUID mailId, List<NewItem> items);
     // online: the stacks of an online target, absolute; null: an offline target, by delta with merge
-    ItemTransfer toCharacter(UUID mailId, Holder target, List<ItemRowState> online);
+    ItemTransfer toCharacter(UUID mailId, Holder target, List<ItemRowState> online) throws ValueRefusal;
     List<ItemMovement> toMailOf(UUID fromMailId, UUID toMailId);
-    ItemTransfer adena(Holder holder, long delta, ItemRowState online);
+    ItemTransfer adena(Holder holder, long delta, ItemRowState online) throws ValueRefusal;
     int liveItemsInMail(UUID mailId);
     List<ItemMovement> destroyInMail(UUID mailId);          // a mail nobody can get any more
-    List<ItemRow> rows(List<UUID> itemIds);                 // committed rows, outside a transaction (replay)
+    List<CommittedItemRow> rows(List<UUID> itemIds);        // committed rows, outside a transaction (replay)
     void checkCreatable(List<NewItem> items);               // static data only; sendSystem validates before the transaction
 }
 ```
@@ -374,7 +376,8 @@ An item created after the character's last save has no row yet: its `ItemRowStat
 (`unstoredRow`) and the store inserts it before moving it, so a fresh item or fresh adena can be mailed at once.
 Every `ItemMovement` goes to the runner, which writes its ledger row. A replayed transaction carries its ledger rows
 (`Replayed.movements`): the module reads the rows they name through `rows` and applies them to an online character as
-after a commit. The mapping of `MailType` to the wire, the system sender name and the inventory refresh after a move
+after a commit. High Five implements the three interfaces in its `mail` slice: `WorldMailItems` and
+`WorldMailParticipants` on the loop, `MailItemRepository` in the transaction. The mapping of `MailType` to the wire, the system sender name and the inventory refresh after a move
 are protocol code of the chronicle's adapter.
 
 ### 3.5 Value transaction runner (`engine/core` persistence)
@@ -382,6 +385,9 @@ are protocol code of the chronicle's adapter.
 ```java
 public interface ValueTransactions {
     <R> void submit(ValueTransaction<R> tx, Executor resultLoop, Consumer<ValueOutcome<R>> onOutcome);
+    // resolves an Unknown outcome: Replayed when the key committed, Failed when it did not and now cannot
+    void lookup(ValueTransactionType type, UUID idempotencyKey, Executor resultLoop,
+            Consumer<ValueOutcome<Void>> onOutcome);
 }
 
 public interface ValueTransaction<R> {
@@ -486,8 +492,13 @@ the adapter; the transactions above are where they are written.
   replays; receive against cancel and receive against expiry commit exactly one; a transaction whose connection is
   killed before commit changes nothing; offline receive and expiry with stack merge; the ledger reconciles with the
   item counts.
-- **Architecture:** `SliceLayoutRules` covers `app.l2nx.engine.mail`; the module depends on no chronicle;
-  `l2nx.engine.jdbc.on.loop` stays zero in the mail flows.
+- **Architecture:** `SliceLayoutRules` runs its layout rules over `app.l2nx.engine.mail` (fixed subpackages,
+  commands and handlers, view events, ports, repositories, `engine/core` kept off the module's internals), and one
+  more rule holds every class of the chronicle root `app.l2nx.highfive` (the protocol adapter, the `mail` slice,
+  scripts) to the module's root, `command/` and `view/`: none depends on `system/`, `model/`, `template/` or
+  `repository/`. No Spring Modulith verify runs over the engine root: it holds one module, so the verify would compare
+  nothing, and the consumers live in the chronicle root. The module depends on no chronicle by its Gradle
+  dependencies; `l2nx.engine.jdbc.on.loop` stays zero in the mail flows (`MailFlowsOffLoopTest`).
 - **Real client (relay):** send with enchanted, augmented and elemental items and cash on delivery, receive, open the
   mail again and see the snapshot, press Receive on it, return, cancel, delete, expiry; screenshots for the dev portal
   page.

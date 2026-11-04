@@ -247,14 +247,13 @@ not a scan.
 
 ## 7. Threads
 
-| Thread               | Count                                                                                         | Touches                                                                   |
-| -------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Netty IO             | Netty default                                                                                 | sockets, framing, cipher, decoders, session queues; never game state      |
-| Loop threads         | one per partition and global service                                                          | the loop pinned to it                                                     |
-| Persistence executor | small pool, ordered per key                                                                   | database only; results return through inboxes                             |
-| Background tasks     | Spring Boot's auto-configured `TaskScheduler` and `applicationTaskExecutor`, platform threads | work with no game state (§7.1); results return through inboxes            |
-| Loop watchdog        | 1                                                                                             | reads only the start time of the running pass and the loop thread's stack |
-| Spring / Tomcat      | framework                                                                                     | management endpoints; reach game state only through inboxes               |
+| Thread           | Count                                                                                         | Touches                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Netty IO         | Netty default                                                                                 | sockets, framing, cipher, decoders, session queues; never game state                                                     |
+| Loop threads     | one per partition and global service                                                          | the loop pinned to it                                                                                                    |
+| Background tasks | Spring Boot's auto-configured `TaskScheduler` and `applicationTaskExecutor`, platform threads | work with no game state (§7.1) and value transactions ([persistence](persistence.md) §3); results return through inboxes |
+| Loop watchdog    | 1                                                                                             | reads only the start time of the running pass and the loop thread's stack                                                |
+| Spring / Tomcat  | framework                                                                                     | management endpoints; reach game state only through inboxes                                                              |
 
 - **A loop is pinned to one loop thread** for its lifetime, as a Netty channel is to its event loop, and the thread
   runs that loop only: it sleeps (`LockSupport.parkNanos`) until the loop's next inbox signal, deadline or periodic
@@ -278,9 +277,9 @@ A thread that is not the owner of a partition never reads or writes its mutable 
   confinement check of the UI toolkits (Android `View.checkThread`, JavaFX `checkFxUserThread`); Netty's
   `inEventLoop()` is the same test, used there to hop threads instead of failing. The check is one reference
   comparison against `Thread.currentThread()`, a JIT intrinsic; its cost is measured by JMH. An ArchUnit rule
-  checks that every public method of a migrated class calls it before any other call or field access. An abstract
-  method has no body to check: its implementations carry the check once their own classes migrate, and until then
-  an override in a subclass that is not migrated runs unchecked. A migrated class has no Lombok accessors, since a
+  reads the bytecode of every public method of a migrated class and requires the check as its first instruction,
+  before any load, branch, allocation, call or field access. An abstract method has no body to check: its
+  implementations carry it, since a subclass of a migrated class is migrated too (§7.2). A migrated class has no Lombok accessors, since a
   generated method cannot carry the check; they are written out.
 - **Debug only, on the loop's own hot path.** The loop's owner-only methods (timers, systems, deferred work) assert
   the owner with Java `assert`, enabled (`-ea`) in tests and local runs.
@@ -337,8 +336,8 @@ time or the partition RNG runs on Spring Boot's
 auto-configured `ThreadPoolTaskScheduler` for delayed and periodic work and `applicationTaskExecutor` (a
 `ThreadPoolTaskExecutor`) for immediate work, sized by `spring.task.scheduling.pool.size` and
 `spring.task.execution.pool.*`, reached by legacy code through a static bridge bound by a bean, as the clock is. A
-background task hands any result back through the inbox, so a job that needs both is split: the custom mail poll
-reads the database in the background and delivers in a world pass, the precautionary restart reads CPU and memory in
+background task hands any result back through the inbox, so a job that needs both is split: the mail expiry job
+finds due mails in the background and settles each through a value transaction, the precautionary restart reads CPU and memory in
 the background and decides on the loop, the captcha image set is drawn in the background with its own generator and
 swapped in on the loop. Saves are not background tasks until E4: each reads live state the loop mutates, so they
 stay on the loop (TODO below). The auto-configuration applies while the context has no
@@ -428,12 +427,14 @@ the getters of `Creature` that delegate to its stat and a player's level lookup 
 migration also closed holes the old code left open: only a party room's owner edits or dismisses it, a deleted room
 resets only the members still in it, command channel leadership follows the party leader who takes over when the
 leader leaves, and the server packets that listed rooms and waiting players no longer prune those lists while they
-are written (the client-packet handlers do it first). Two walks stay on the live collection on purpose, because
-their body is a pure filter on hot paths and nothing can change the collection meanwhile: a region's zone list during
-revalidation on every move (zones change only at load and reload), and the door checks of line of sight
+are written (the client-packet handlers do it first). Two walks stay on the live collection on purpose, on hot
+paths where nothing the walk calls can change the collection: a region's zone list during revalidation on every move
+(the enter and exit callbacks run zone logic, but only the zone loader adds or removes zones of a region), and the door checks of line of sight
 (`WorldRegion.anyDoor`, `Instance.anyDoor`, whose predicate only reads door state). Zone revalidation on a move came
-out about twice as fast (274 ns to 131 ns entering and leaving four zones, 99 ns to 58 ns staying inside them), since
-a region now walks a dense list instead of a concurrent map; the checks on the aggro holders cost the aggro list 7–21%
+out about 1.8 times as fast (340 ns to 186 ns entering and leaving four zones, 136 ns to 75 ns staying inside them,
+the move through the checked position setter included; the build before the step runs the same benchmark with the
+zones put into the region's map by reflection, since `ZoneRegion.addZone` came with the step), since a region now
+walks a dense list instead of a concurrent map; the checks on the aggro holders cost the aggro list 7–21%
 (84 ns to 102 ns for a hate list read), tracked in [#164](https://github.com/l2nx/nx-l2/issues/164). With `WorldObject`
 checked, its accessors carry the check too, so a region switch over 500 objects per region, about 6 000 checks, runs
 about twice as long (23 µs to 54 µs; a build with the check emptied measures as before); the same issue tracks it.
@@ -470,14 +471,24 @@ A migrated class carries the annotation `@SingleWriter`, the one list both build
 return: an ArchUnit rule over annotated classes (fields of any `java.util.concurrent` type, futures and
 synchronizers included, enums such as `TimeUnit` aside; `volatile` fields; creating or obtaining a concurrent
 object; `Collections.synchronized*` wrappers; lock calls; public non-final fields, whose writes cannot carry a
-check; and the ownership check of §7 as the first call; a `ScheduledFuture` field holding a timer handle of §4 is
-allowed) and PMD 7 (7.29.0, on the main sources of `:chronicles:high-five:server`) with
+check; and the ownership check of §7 as the first instruction of every public method; a `ScheduledFuture` field
+holding a timer handle of §4 is allowed) and PMD 7 (7.29.0, on the main sources of every module with annotated types,
+`:chronicles:high-five:server` and `:chronicles:high-five:scripts`, through the `build-logic` convention plugin
+`nx-l2.single-writer-conventions`) with
 `AvoidSynchronizedStatement` and `AvoidSynchronizedAtMethodLevel`, limited to annotated types by the standard
 `violationSuppressXPath` property on both rule references (suppress unless an enclosing class, interface, enum or
 record has the annotation; `hasAnnotation` needs the auxiliary classpath, which the PMD Gradle plugin passes). ArchUnit sees a `synchronized` modifier but not a
 `synchronized` block, which compiles to monitor instructions it does not import; PMD reads the source and covers
-both, so `synchronized` has one tool. The rest of the legacy locks (managers, scripts) go as E7 and E10 rework their
-code.
+both, so `synchronized` has one tool. The annotation is not `@Inherited` and every check reads it on the class
+itself, so one more ArchUnit rule requires it on every class that extends or implements an annotated type; otherwise
+the overrides of an unannotated subclass (a script `extends Monster`) would write the state of their parent
+unchecked. The subclasses that stay unannotated by design are an explicit list in the rules, pinned by size, that
+only shrinks: the templates (`CreatureTemplate`, `ItemTemplate` and their subclasses), static data whose inherited
+listener API keeps the check of `ListenersContainer`, and `Olympiad`, a global manager of
+[#161](https://github.com/l2nx/nx-l2/issues/161). Every rule selects by the annotation and passes an empty selection,
+so a test pins the number of annotated types: a removed annotation, which would take a class out of both checks
+silently, fails the build, and a change that annotates or deletes a class updates the pin with it. The rest of the
+legacy locks (managers, scripts) go as E7 and E10 rework their code.
 
 ## 8. Budget and metrics
 

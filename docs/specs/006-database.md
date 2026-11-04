@@ -154,7 +154,9 @@ later, together with the module that owns them.
   before Liquibase, the `Instant` ↔ `timestamptz` bridge, and the PostgreSQL test fixtures. `libs/boot` stays Spring
   Boot wiring.
 - **Repositories** are `@Repository` beans on `JdbcClient` in the server module, one per owning table or group of
-  tables, as in the login server. No SQL outside a repository; `DatabaseFactory` is removed.
+  tables, as in the login server. No SQL outside a repository; `DatabaseFactory` is removed. The one shared table is
+  `items`: `ItemRepository` owns the rows in the world, and the mail SPI (`MailItemRepository`) writes the rows that
+  sit in a mail, inside the mail value transactions ([spec 010](010-mail/spec.md), D10).
 - **A `getInstance()` singleton whose SQL moves into a repository becomes a bean in the same change.** Its
   `getInstance()` stays as a static bridge, bound in the bean's constructor; called before the context created the
   bean, it throws `IllegalStateException`. Its callers do not change; they move to constructor injection with the

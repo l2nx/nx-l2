@@ -183,6 +183,9 @@ Ports exist only at the outer edges that are a network or another process. Game 
   framework covers its whole path may use a few legacy `network` classes (the game client, its disconnection, the
   server packets it still sends). They are listed in one constant of the rules (`LEGACY_NETWORK_FACADES`), every
   entry leaves the list when the slice moves to commands and view events, and the list never grows.
+- **Engine modules** (`engine/<module>`, e.g. `engine/mail`) keep the same layout rules, and chronicle code reaches
+  them only through their root and published packages, never their internals (`system`, `model`, `template`,
+  `repository` of `engine/mail`).
 - **Legacy violations are frozen,** not allowed: a rule the imported code breaks is a `FreezingArchRule` with its
   violation store in the repository. A new violation fails the build; fixed ones leave the store, so it only
   shrinks.
