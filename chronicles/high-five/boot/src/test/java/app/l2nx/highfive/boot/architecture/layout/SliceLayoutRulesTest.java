@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -57,6 +58,26 @@ class SliceLayoutRulesTest {
         final JavaClasses classes = new ClassFileImporter().importPackages(BROKEN);
 
         final ArchRule actual = RULES.get(rule).apply(new SliceLayoutRules(BROKEN, List.of("login")));
+
+        assertThat(actual.evaluate(classes).hasViolation()).isTrue();
+    }
+
+    @Test
+    void consumersUseSliceApi_shouldPass_whenAnotherRootUsesTheSliceApi() {
+        final JavaClasses classes = new ClassFileImporter().importPackages(WELLFORMED);
+
+        final ArchRule actual =
+                new SliceLayoutRules(WELLFORMED, List.of("login")).consumersUseSliceApi(WELLFORMED + ".network");
+
+        assertThat(actual.evaluate(classes).hasViolation()).isFalse();
+    }
+
+    @Test
+    void consumersUseSliceApi_shouldReport_whenAnotherRootReachesSliceInternals() {
+        final JavaClasses classes = new ClassFileImporter().importPackages(BROKEN);
+
+        final ArchRule actual =
+                new SliceLayoutRules(BROKEN, List.of("login")).consumersUseSliceApi(BROKEN + ".network");
 
         assertThat(actual.evaluate(classes).hasViolation()).isTrue();
     }

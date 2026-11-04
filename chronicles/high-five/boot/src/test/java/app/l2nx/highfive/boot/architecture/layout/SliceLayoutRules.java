@@ -220,6 +220,19 @@ public final class SliceLayoutRules {
                 .allowEmptyShould(true);
     }
 
+    ArchRule consumersUseSliceApi(String consumerRoot) {
+        return noClasses()
+                .that()
+                .resideInAPackage(consumerRoot + "..")
+                .and()
+                .resideOutsideOfPackages(sliceTrees())
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage(internalPackages())
+                .as(consumerRoot + " uses the slices of " + root + " only through their root, command and view")
+                .allowEmptyShould(true);
+    }
+
     // Chat channel scripts are not a slice, so only this rule constrains them.
     ArchRule chatChannelsWithoutNetwork() {
         return noClasses()

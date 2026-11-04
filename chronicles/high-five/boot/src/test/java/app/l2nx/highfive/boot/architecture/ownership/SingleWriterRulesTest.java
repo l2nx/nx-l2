@@ -24,7 +24,8 @@ class SingleWriterRulesTest {
             SingleWriterRules.NO_CONCURRENT_STATE,
             SingleWriterRules.NO_LOCK_CALLS,
             SingleWriterRules.NO_PUBLIC_MUTABLE_FIELDS,
-            SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER);
+            SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER,
+            SingleWriterRules.SUBCLASSES_ARE_SINGLE_WRITERS);
 
     private static final Map<String, ArchRule> RULE_BY_FIXTURE = Map.ofEntries(
             Map.entry("ConcurrentMapField", SingleWriterRules.NO_CONCURRENT_STATE),
@@ -40,7 +41,10 @@ class SingleWriterRulesTest {
             Map.entry("UncheckedPublicMethod", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER),
             Map.entry("CheckedAfterCall", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER),
             Map.entry("CheckedAfterFieldWrite", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER),
-            Map.entry("UncheckedPublicStaticMethod", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER));
+            Map.entry("UncheckedPublicStaticMethod", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER),
+            Map.entry("CheckedAfterConstructorCall", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER),
+            Map.entry("CheckedInBranch", SingleWriterRules.PUBLIC_METHODS_CHECK_OWNER),
+            Map.entry("UnannotatedSubclass", SingleWriterRules.SUBCLASSES_ARE_SINGLE_WRITERS));
 
     static Stream<Class<?>> forbidden() {
         return Arrays.stream(ForbiddenSingleWriter.class.getDeclaredClasses());

@@ -1,5 +1,6 @@
 plugins {
     id("nx-l2.java-conventions")
+    id("nx-l2.single-writer-conventions")
 }
 
 dependencies {

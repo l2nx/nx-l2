@@ -94,8 +94,8 @@ class SliceLayoutArchitectureTest {
     @ArchTest
     static final ArchRule engineRepositories = ENGINE.repositories();
 
+    // A Modulith verify over the one-module engine root compares nothing; this rule holds its chronicle consumers to
+    // the API.
     @ArchTest
-    static void engineModules(JavaClasses classes) {
-        ENGINE.modules().verify();
-    }
+    static final ArchRule chronicleUsesEngineApi = ENGINE.consumersUseSliceApi(SliceLayoutRules.CHRONICLE_ROOT);
 }

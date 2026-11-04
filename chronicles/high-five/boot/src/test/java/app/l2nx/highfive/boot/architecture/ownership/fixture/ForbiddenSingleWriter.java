@@ -113,4 +113,32 @@ public final class ForbiddenSingleWriter {
             return List.copyOf(ITEMS);
         }
     }
+
+    @SingleWriter
+    public static final class CheckedAfterConstructorCall {
+        public Object create() {
+            final Object created = new Object();
+            WorldPartition.checkOwner();
+            return created;
+        }
+    }
+
+    @SingleWriter
+    public static final class CheckedInBranch {
+        private int value;
+
+        public void set(int next) {
+            if (next > 0) {
+                WorldPartition.checkOwner();
+            }
+            value = next;
+        }
+    }
+
+    public static final class UnannotatedSubclass extends AllowedSingleWriter.CheckedAbstract {
+        @Override
+        public int level() {
+            return 1;
+        }
+    }
 }

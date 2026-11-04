@@ -53,6 +53,15 @@ public final class AllowedSingleWriter {
         public abstract int level();
     }
 
+    @SingleWriter
+    public static final class AnnotatedSubclass extends CheckedAbstract {
+        @Override
+        public int level() {
+            WorldPartition.checkOwner();
+            return 1;
+        }
+    }
+
     public static final class Plain {
         public volatile int value;
         private final Map<Integer, Object> map = new ConcurrentHashMap<>();

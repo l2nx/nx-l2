@@ -1,7 +1,7 @@
 plugins {
     id("nx-l2.java-conventions")
+    id("nx-l2.single-writer-conventions")
     `java-test-fixtures`
-    pmd
     alias(libs.plugins.jmh)
 }
 
@@ -45,26 +45,6 @@ dependencies {
 tasks.withType<Test>().configureEach {
     maxHeapSize = "2g"
     workingDir = layout.projectDirectory.dir("../datapack").asFile
-}
-
-// Only the single-writer ruleset runs: it covers synchronized blocks, which ArchUnit cannot see.
-pmd {
-    toolVersion = libs.versions.pmd.get()
-    ruleSets = listOf()
-    ruleSetFiles = files(rootProject.file("config/pmd/single-writer.xml"))
-    isConsoleOutput = true
-}
-
-tasks.named("pmdTest") {
-    enabled = false
-}
-
-tasks.named("pmdJmh") {
-    enabled = false
-}
-
-tasks.named("pmdTestFixtures") {
-    enabled = false
 }
 
 jmh {
