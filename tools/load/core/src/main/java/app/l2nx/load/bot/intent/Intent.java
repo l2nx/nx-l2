@@ -15,7 +15,7 @@ public sealed interface Intent
                 Say,
                 Attack,
                 UseSkill,
-                ResurrectAtRestartPoint,
+                ReviveAtRestartPoint,
                 ResurrectInPlace,
                 AdminCommand,
                 AdminTeleport,

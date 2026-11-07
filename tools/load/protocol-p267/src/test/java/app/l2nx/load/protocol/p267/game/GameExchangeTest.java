@@ -14,8 +14,8 @@ import app.l2nx.load.bot.intent.EnterWorld;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.Logout;
 import app.l2nx.load.bot.intent.MoveTo;
-import app.l2nx.load.bot.intent.ResurrectAtRestartPoint;
 import app.l2nx.load.bot.intent.ResurrectInPlace;
+import app.l2nx.load.bot.intent.ReviveAtRestartPoint;
 import app.l2nx.load.bot.intent.Say;
 import app.l2nx.load.bot.intent.SelectCharacter;
 import app.l2nx.load.bot.intent.UseSkill;
@@ -523,12 +523,12 @@ class GameExchangeTest {
         }
 
         @Test
-        void revive_shouldAcknowledgeTheResurrection_afterTheObservation() {
+        void revive_shouldAcknowledgeTheRevival_afterTheObservation() {
             inWorld();
 
             deliver(new Revive(SELF));
 
-            assertThat(listener.events()).endsWith("observed " + new Revived(SELF), "ack RESURRECT_AT_RESTART_POINT");
+            assertThat(listener.events()).endsWith("observed " + new Revived(SELF), "ack REVIVE_AT_RESTART_POINT");
         }
 
         @Test
@@ -658,7 +658,7 @@ class GameExchangeTest {
                 Arguments.of(new MoveTo(position(1_500, 2_500, -300)), "0f" + destination + origin + d(1)),
                 Arguments.of(new Say("hello"), "49" + s("hello") + d(0)),
                 Arguments.of(new UseSkill(190), "39" + d(190) + d(0) + "00"),
-                Arguments.of(new ResurrectAtRestartPoint(), "7d" + d(0)),
+                Arguments.of(new ReviveAtRestartPoint(), "7d" + d(0)),
                 Arguments.of(new AdminCommand("set_level 75"), "74" + s("set_level 75")),
                 Arguments.of(new AdminTeleport(position(5, 6, -7)), "74" + s("move_to 5 6 -7")));
     }

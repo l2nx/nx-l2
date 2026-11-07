@@ -11,8 +11,8 @@ import app.l2nx.load.bot.intent.Attack;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.MoveTo;
-import app.l2nx.load.bot.intent.ResurrectAtRestartPoint;
 import app.l2nx.load.bot.intent.ResurrectInPlace;
+import app.l2nx.load.bot.intent.ReviveAtRestartPoint;
 import app.l2nx.load.bot.intent.UseSkill;
 import app.l2nx.load.bot.model.LoadBotIdentity;
 import app.l2nx.load.bot.model.LoadBotState;
@@ -141,7 +141,7 @@ class CombatBehaviourTest {
         @Test
         void next_shouldWalkAroundHome_whenTheBehaviourWanders() {
             final CombatBehaviour behaviour =
-                    new CombatBehaviour(HOME, SKILL, MONSTERS, true, new ResurrectAtRestartPoint());
+                    new CombatBehaviour(HOME, SKILL, MONSTERS, true, new ReviveAtRestartPoint());
 
             final Intent actual = behaviour.next(bot, random);
 
@@ -158,27 +158,27 @@ class CombatBehaviourTest {
     @Nested
     class Death {
         @Test
-        void next_shouldResurrectOnce_whenDead() {
+        void next_shouldReviveOnce_whenDead() {
             bot.dead = true;
             final CombatBehaviour behaviour = behaviour();
 
-            assertThat(behaviour.next(bot, random)).isEqualTo(new ResurrectAtRestartPoint());
+            assertThat(behaviour.next(bot, random)).isEqualTo(new ReviveAtRestartPoint());
             assertThat(behaviour.next(bot, random)).isNull();
         }
 
         @Test
-        void next_shouldAskAgain_whenTheResurrectionFailed() {
+        void next_shouldAskAgain_whenTheRevivalFailed() {
             bot.dead = true;
             final CombatBehaviour behaviour = behaviour();
             behaviour.next(bot, random);
 
-            bot.failed.put(IntentKind.RESURRECT_AT_RESTART_POINT, 1L);
+            bot.failed.put(IntentKind.REVIVE_AT_RESTART_POINT, 1L);
 
-            assertThat(behaviour.next(bot, random)).isEqualTo(new ResurrectAtRestartPoint());
+            assertThat(behaviour.next(bot, random)).isEqualTo(new ReviveAtRestartPoint());
         }
 
         @Test
-        void next_shouldWalkBackHome_thenWaitOutTheWalk_afterTheResurrection() {
+        void next_shouldWalkBackHome_thenWaitOutTheWalk_afterTheRevival() {
             bot.dead = true;
             final CombatBehaviour behaviour = behaviour();
             behaviour.next(bot, random);
@@ -231,7 +231,7 @@ class CombatBehaviourTest {
     }
 
     private CombatBehaviour behaviour() {
-        return new CombatBehaviour(HOME, SKILL, MONSTERS, false, new ResurrectAtRestartPoint());
+        return new CombatBehaviour(HOME, SKILL, MONSTERS, false, new ReviveAtRestartPoint());
     }
 
     private List<Intent> slots(CombatBehaviour behaviour, int count) {

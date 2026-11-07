@@ -8,7 +8,7 @@ import app.l2nx.load.app.seed.model.CharacterKit;
 import app.l2nx.load.app.seed.model.CharacterPlan;
 import app.l2nx.load.bot.LoadBotView;
 import app.l2nx.load.bot.intent.IntentKind;
-import app.l2nx.load.bot.intent.ResurrectAtRestartPoint;
+import app.l2nx.load.bot.intent.ReviveAtRestartPoint;
 import app.l2nx.load.bot.observation.ObjectSeen;
 import app.l2nx.load.scenario.LoadBehaviour;
 import app.l2nx.load.scenario.LoadScenario;
@@ -22,7 +22,7 @@ public final class PveLoadScenario implements LoadScenario {
     public static final String ID = "load-pve";
 
     private static final Set<IntentKind> REQUIRES = Collections.unmodifiableSet(EnumSet.of(
-            IntentKind.ATTACK, IntentKind.USE_SKILL, IntentKind.RESURRECT_AT_RESTART_POINT, IntentKind.MOVE_TO));
+            IntentKind.ATTACK, IntentKind.USE_SKILL, IntentKind.REVIVE_AT_RESTART_POINT, IntentKind.MOVE_TO));
 
     @Override
     public String id() {
@@ -46,6 +46,6 @@ public final class PveLoadScenario implements LoadScenario {
                 CharacterKit.of(bot.identity().index()).skillId(),
                 seen -> seen.kind() == ObjectSeen.Kind.MONSTER,
                 true,
-                new ResurrectAtRestartPoint());
+                new ReviveAtRestartPoint());
     }
 }

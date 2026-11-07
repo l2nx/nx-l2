@@ -10,8 +10,8 @@ import app.l2nx.load.bot.intent.Attack;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.MoveTo;
-import app.l2nx.load.bot.intent.ResurrectAtRestartPoint;
 import app.l2nx.load.bot.intent.ResurrectInPlace;
+import app.l2nx.load.bot.intent.ReviveAtRestartPoint;
 import app.l2nx.load.bot.intent.Say;
 import app.l2nx.load.bot.intent.UseSkill;
 import app.l2nx.load.bot.model.CharacterTeam;
@@ -83,7 +83,7 @@ final class GameWorld {
     private final OwnPosition own;
     private final ArrayDeque<Position> moves = new ArrayDeque<>();
     private Position teleport;
-    private IntentKind resurrection = IntentKind.RESURRECT_AT_RESTART_POINT;
+    private IntentKind revival = IntentKind.REVIVE_AT_RESTART_POINT;
     private int hp;
     private int mp;
     private int selectedTarget;
@@ -136,9 +136,9 @@ final class GameWorld {
             case UseSkill skill ->
                 out.accept(
                         RequestMagicSkillUse.builder().skillId(skill.skillId()).build()::encode);
-            case ResurrectAtRestartPoint _ ->
-                resurrect(IntentKind.RESURRECT_AT_RESTART_POINT, RequestRestartPoint.TO_RESTART_POINT);
-            case ResurrectInPlace _ -> resurrect(IntentKind.RESURRECT_IN_PLACE, RequestRestartPoint.IN_PLACE);
+            case ReviveAtRestartPoint _ ->
+                revive(IntentKind.REVIVE_AT_RESTART_POINT, RequestRestartPoint.TO_RESTART_POINT);
+            case ResurrectInPlace _ -> revive(IntentKind.RESURRECT_IN_PLACE, RequestRestartPoint.IN_PLACE);
             case AdminCommand admin -> {
                 out.accept(new SendBypassBuildCmd(admin.command())::encode);
                 listener.acknowledged(IntentKind.ADMIN_COMMAND);
@@ -377,8 +377,8 @@ final class GameWorld {
         listener.acknowledged(IntentKind.USE_SKILL, packet.skillId());
     }
 
-    private void resurrect(IntentKind kind, int point) {
-        resurrection = kind;
+    private void revive(IntentKind kind, int point) {
+        revival = kind;
         out.accept(new RequestRestartPoint(point)::encode);
     }
 
@@ -393,7 +393,7 @@ final class GameWorld {
     private void revived(int objectId) {
         listener.observed(new Revived(objectId));
         if (objectId == selfObjectId) {
-            listener.acknowledged(resurrection);
+            listener.acknowledged(revival);
         }
     }
 

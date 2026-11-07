@@ -9,7 +9,7 @@ import app.l2nx.load.bot.intent.Attack;
 import app.l2nx.load.bot.intent.Intent;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.intent.MoveTo;
-import app.l2nx.load.bot.intent.ResurrectAtRestartPoint;
+import app.l2nx.load.bot.intent.ReviveAtRestartPoint;
 import app.l2nx.load.bot.intent.UseSkill;
 import app.l2nx.load.bot.model.Position;
 import app.l2nx.load.bot.observation.ObjectSeen;
@@ -57,23 +57,23 @@ final class CombatBehaviour implements LoadBehaviour {
     private final int skillId;
     private final Predicate<ObjectSeen> enemy;
     private final boolean wanderWithoutEnemy;
-    private final Intent resurrection;
+    private final Intent revival;
     private int target = NO_TARGET;
     private int refusedTarget = NO_TARGET;
     private long failedActions;
-    private long failedResurrections;
-    private boolean resurrecting;
+    private long failedRevivals;
+    private boolean reviving;
     private boolean returning;
     private int walkSlots;
     private int skillWait;
 
     CombatBehaviour(
-            Position home, int skillId, Predicate<ObjectSeen> enemy, boolean wanderWithoutEnemy, Intent resurrection) {
+            Position home, int skillId, Predicate<ObjectSeen> enemy, boolean wanderWithoutEnemy, Intent revival) {
         this.home = home;
         this.skillId = skillId;
         this.enemy = enemy;
         this.wanderWithoutEnemy = wanderWithoutEnemy;
-        this.resurrection = resurrection;
+        this.revival = revival;
     }
 
     @Override
@@ -84,11 +84,11 @@ final class CombatBehaviour implements LoadBehaviour {
     @Override
     public Intent next(LoadBotView bot, RandomGenerator random) {
         if (bot.dead()) {
-            return resurrect(bot);
+            return revive(bot);
         }
-        if (resurrecting) {
-            resurrecting = false;
-            returning = resurrection instanceof ResurrectAtRestartPoint;
+        if (reviving) {
+            reviving = false;
+            returning = revival instanceof ReviveAtRestartPoint;
             target = NO_TARGET;
         }
         if (walkSlots > 0) {
@@ -104,15 +104,15 @@ final class CombatBehaviour implements LoadBehaviour {
         return fight(bot, random);
     }
 
-    private Intent resurrect(LoadBotView bot) {
-        final long failed = bot.failedIntents(resurrection.kind());
-        if (resurrecting && failed == failedResurrections) {
+    private Intent revive(LoadBotView bot) {
+        final long failed = bot.failedIntents(revival.kind());
+        if (reviving && failed == failedRevivals) {
             return null;
         }
-        resurrecting = true;
-        failedResurrections = failed;
+        reviving = true;
+        failedRevivals = failed;
         walkSlots = 0;
-        return resurrection;
+        return revival;
     }
 
     private Intent fight(LoadBotView bot, RandomGenerator random) {

@@ -71,7 +71,7 @@ CLOSING → STOPPED`, the same for every protocol; `STOPPED` without a logout is
   the next. `LOGIN_CONNECT` is entered at the load bot's intended start, so a slow connect is not hidden by a late
   start (coordinated omission); the final state has no row.
 - **Intents** (sent): `Login`, `SelectServer`, `CreateCharacter`, `SelectCharacter`, `EnterWorld`, `Logout` (lifecycle, P1–P2);
-  `MoveTo`, `Say` (`load-roam`, P2); `Attack`, `UseSkill`, `ResurrectAtRestartPoint`, `ResurrectInPlace` (P3); `AdminCommand`, `AdminTeleport` (`seed`).
+  `MoveTo`, `Say` (`load-roam`, P2); `Attack`, `UseSkill`, `ReviveAtRestartPoint`, `ResurrectInPlace` (P3); `AdminCommand`, `AdminTeleport` (`seed`).
 - **Observations** (kept): its own object id and position (`Entered`, the echo of its own `ObjectMoved`; P2); the
   visible objects as `object id → kind, position, team, dead` (`ObjectSeen`, `ObjectGone`, `ObjectMoved` of others)
   and its own HP and MP (`StatusChanged`), alive or dead (`Died`, `Revived`), its own cast (`CastStarted`), in the model for `load-pve` and

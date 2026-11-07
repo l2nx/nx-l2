@@ -4,9 +4,9 @@
  */
 package app.l2nx.load.bot.intent;
 
-public record ResurrectAtRestartPoint() implements Intent {
+public record ReviveAtRestartPoint() implements Intent {
     @Override
     public IntentKind kind() {
-        return IntentKind.RESURRECT_AT_RESTART_POINT;
+        return IntentKind.REVIVE_AT_RESTART_POINT;
     }
 }
