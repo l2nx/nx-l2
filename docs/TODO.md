@@ -9,6 +9,7 @@ lists what is open.
 - [#154](https://github.com/l2nx/nx-l2/issues/154) Hide Receive and Cancel on a settled mail with a client patch
 - [#155](https://github.com/l2nx/nx-l2/issues/155) Move the remaining item and adena transfers onto value transactions
 - [#151](https://github.com/l2nx/nx-l2/issues/151) Engine core performance: regressions and improvements left for later
+- [#194](https://github.com/l2nx/nx-l2/issues/194) Serialize a broadcast packet once and drop per-packet attribute lookups on the send path
 - [#152](https://github.com/l2nx/nx-l2/issues/152) ItemContainer.getItems copies the container on every call
 - [#156](https://github.com/l2nx/nx-l2/issues/156) Second ownership check on Creature and Player stat delegation
 - [#157](https://github.com/l2nx/nx-l2/issues/157) Remaining group and clan member copies on cold paths
