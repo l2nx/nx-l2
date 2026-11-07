@@ -192,26 +192,41 @@ L2NX_PROMETHEUS_CONFIG=prometheus-host.yml docker compose --profile load up -d l
 
 ## Results
 
-No numbers yet. Every row names the reports it comes from; the values are those of `summary.json`.
+Every row names the reports it comes from; the values are those of `summary.json`. Reports are kept outside the
+repository, under their names.
 
 **Environment**
 
-| Operating system, kernel | CPU model, logical cores | cpusets | JVM | Commit |
-| ------------------------ | ------------------------ | ------- | --- | ------ |
-|                          |                          |         |     |        |
+| Operating system, kernel             | CPU model, logical cores        | cpusets                                                      | JVM                  | Commit                                                                   |
+| ------------------------------------ | ------------------------------- | ------------------------------------------------------------ | -------------------- | ------------------------------------------------------------------------ |
+| Docker Desktop, WSL2 6.6.87.2, Linux | AMD Ryzen 5 5600X, 12 (6 + SMT) | game-server 0-5, harness 6-9, load-db login prometheus 10-11 | OpenJDK 25.0.4.1 LTS | `49143aad6` (reports carry `f3fa05794`, the same tree before the rebase) |
 
-**Baseline** (`load-crowd-pvp`, 500 load bots, seed 42)
+**Baseline** (`load-crowd-pvp`, 500 load bots, ramp 120 s, steady 120 s, seed 42; gate without `--baseline`: PASS)
 
-| Run | Valid | World pass p99 | Over budget | `Attack` p99 | `UseSkill` p99 | `MoveTo` p99 | Timeouts | Stopped | Report |
-| --- | ----- | -------------- | ----------- | ------------ | -------------- | ------------ | -------- | ------- | ------ |
-| 1   |       |                |             |              |                |              |          |         |        |
-| 2   |       |                |             |              |                |              |          |         |        |
-| 3   |       |                |             |              |                |              |          |         |        |
+| Run | Valid | World pass p99 | Over budget | `Attack` p99 | `UseSkill` p99 | `MoveTo` p99 | Timeouts | Stopped | Report                              |
+| --- | ----- | -------------- | ----------- | ------------ | -------------- | ------------ | -------- | ------- | ----------------------------------- |
+| 1   | yes   | 1.58 ms        | 0           | 954 ms       | 1,260 ms       | none sent    | 0.021%   | 0       | `load-crowd-pvp-20261104-185239-42` |
+| 2   | yes   | 2.19 ms        | 0           | 944 ms       | 1,258 ms       | none sent    | 0.052%   | 0       | `load-crowd-pvp-20261104-185834-42` |
+| 3   | yes   | 1.52 ms        | 0           | 1,060 ms     | 1,258 ms       | none sent    | 0.052%   | 0       | `load-crowd-pvp-20261107-195037-42` |
+
+`Attack` and `UseSkill` p99 are set by game timing, not by the server: an attack waits for the attack speed and the
+second click 150 ms later, a skill for its cast time (`UseSkill` p99 equals the 1.26 s hit time in every run).
+JDBC on the loop is 0 in all three steady phases.
 
 **Trust checks**
 
-| Check         | Date | Result | Reports |
-| ------------- | ---- | ------ | ------- |
-| Real client   |      |        |         |
-| Sensitivity   |      |        |         |
-| Repeatability |      |        |         |
+| Check         | Date       | Result                                                                                                                                                                           | Reports                                                                                                   |
+| ------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Real client   | 2026-11-07 | passed: account `load500` in the arena; load bots visible, run up, hit and cast; the client was killed and offered `To Village` and `Use Feather`                                | `load-crowd-pvp-20261107-205017-42` (with `client-*.png`)                                                 |
+| Sensitivity   | 2026-11-07 | **failed**: on two physical cores (`0-3`) the gate passes, world pass p99 1.11 ms; only on one physical core (`0-1`) it fails, on `ResurrectInPlace` p99 24.9 ms against 17.3 ms | `0-3`: `…20261107-195659-42`, `…200246-42`, `…200834-42`; `0-1`: `…201448-42`, `…202040-42`, `…202633-42` |
+| Repeatability | 2026-11-07 | **failed**: p99 spread over the baseline runs is `Attack` 12.1%, `UseSkill` 0.2%, `ResurrectInPlace` 176% (6.3 to 19.1 ms, under the 10 ms absolute floor), world pass 42.6%     | the baseline runs                                                                                         |
+
+**Where the world pass goes** (wall-clock profile of `l2nx-loop-world`, 5 ms interval, 500 load bots; shares of the
+loop's busy time)
+
+| Phase                   | Loop busy | Biggest parts                                                                                                                                       | Report                              |
+| ----------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `load-crowd-pvp` ramp   | 12.3%     | JDBC 31% (`SelectCharacterHandler` 25%, `EnterWorldHandler` 34% inclusive), packet sends 26%                                                        | `load-crowd-pvp-20261107-203242-42` |
+| `load-crowd-pvp` steady | 5.5%      | packet sends 46% (broadcast over visible players), per-receiver serialization 20%, client attribute and port lookups 16%, `WorldPartition.bound` 7% | `load-crowd-pvp-20261107-203242-42` |
+| `load-pve` ramp         | 12.3%     | JDBC 37%                                                                                                                                            | `load-pve-20261107-203830-42`       |
+| `load-pve` steady       | 5.9%      | movement 44% (region switch and reveal 33%), packet sends 44%, per-receiver serialization 31%                                                       | `load-pve-20261107-203830-42`       |

@@ -54,6 +54,8 @@ lists what is open.
 - [#61](https://github.com/l2nx/nx-l2/issues/61) Castle.setOwner throws for a castle without a territory
 - [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
 - [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
+- [#192](https://github.com/l2nx/nx-l2/issues/192) load-pve: 4.6% of MoveTo intents time out with no server answer
+- [#193](https://github.com/l2nx/nx-l2/issues/193) CombatBehaviour marks the wrong target as refused after a late intent failure
 - [#68](https://github.com/l2nx/nx-l2/issues/68) E0: load harness in a separate process, gate of the E6 cutover ([spec 009](specs/009-load-harness.md))
 - E0 / relay: real-client checks of the first slice that need a second client (observer movement, party, clan and
   alliance chat between players, GM snoop, kick by a second login, 20-client load): the first-slice acceptance (stage 4)
