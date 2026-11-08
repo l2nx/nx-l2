@@ -176,8 +176,20 @@ public class PlayerAI extends PlayableAI {
      */
     @Override
     public void notifyActionCancel() {
+        final ILocational savedMove = nextIntention == Intention.MOVE_TO ? savedMoveTo : null;
         clearSavedIntention();
         super.notifyActionCancel();
+
+        // A cancel (target died mid-swing) must not swallow a clicked move; death, despawn and detach also cancel.
+        if ((savedMove == null) || !canHandleAction() || actor.isAlikeDead()) {
+            return;
+        }
+        if (actor.isAttackingNow()) {
+            nextIntention = Intention.MOVE_TO;
+            savedMoveTo = savedMove;
+        } else {
+            setIntentionMoveTo(savedMove);
+        }
     }
 
     /**

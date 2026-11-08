@@ -83,7 +83,7 @@ public class CreatureAI extends AbstractAI {
      * Helper used internally to check whether the AI may handle the next action.
      * @return {@code true} if the actor is spawned (or teleporting) and currently has an AI bound to it.
      */
-    private boolean canHandleAction() {
+    protected boolean canHandleAction() {
         return (actor.isSpawned() || actor.isTeleporting()) && actor.hasAI();
     }
 
