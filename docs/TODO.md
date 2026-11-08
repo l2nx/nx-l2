@@ -9,7 +9,15 @@ lists what is open.
 - [#154](https://github.com/l2nx/nx-l2/issues/154) Hide Receive and Cancel on a settled mail with a client patch
 - [#155](https://github.com/l2nx/nx-l2/issues/155) Move the remaining item and adena transfers onto value transactions
 - [#151](https://github.com/l2nx/nx-l2/issues/151) Engine core performance: regressions and improvements left for later
+- [#202](https://github.com/l2nx/nx-l2/issues/202) LoadRunTest counts ramp lifecycle steps in the steady window under a loaded machine
 - [#194](https://github.com/l2nx/nx-l2/issues/194) Serialize a broadcast packet once and drop per-packet attribute lookups on the send path
+- [#195](https://github.com/l2nx/nx-l2/issues/195) Correct the load harness runbook, spec 009 and the run speed constant
+- [#196](https://github.com/l2nx/nx-l2/issues/196) Check every mutation result in the item handlers touched by the pending item pass
+- [#197](https://github.com/l2nx/nx-l2/issues/197) Share one residence function implementation between clan halls, castles and forts
+- [#198](https://github.com/l2nx/nx-l2/issues/198) Execute a planned item take before the payment and name the fort siege registration fee
+- [#199](https://github.com/l2nx/nx-l2/issues/199) Stop detecting the advertised game server address over plain HTTP without timeouts
+- [#200](https://github.com/l2nx/nx-l2/issues/200) Keep auto-use settings of a pending item through one inventory helper with tests
+- [#201](https://github.com/l2nx/nx-l2/issues/201) Reserve static addresses in the load network and compile the JMH sources in check
 - [#152](https://github.com/l2nx/nx-l2/issues/152) ItemContainer.getItems copies the container on every call
 - [#156](https://github.com/l2nx/nx-l2/issues/156) Second ownership check on Creature and Player stat delegation
 - [#157](https://github.com/l2nx/nx-l2/issues/157) Remaining group and clan member copies on cold paths
