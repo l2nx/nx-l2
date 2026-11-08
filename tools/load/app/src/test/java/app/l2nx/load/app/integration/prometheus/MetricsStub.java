@@ -19,7 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Fake {@code /actuator/prometheus}: each GET adds 100 loop passes (90 x 1 ms, 9 x 7 ms, 1 x 20 ms), so any window has
  * p50 in the first bucket and p99 on the 10 ms bound. The max gauge holds 30 ms, a pass before any window; the
- * JDBC-on-loop timer appears only after {@link #registerJdbcOnLoop()}.
+ * JDBC-on-loop timer appears only after {@link #registerJdbcOnLoop()}. Each GET also adds 100 inputs of {@code a.MoveTo}
+ * (90 under 0.5 ms, 9 under 1 ms, 1 under 2.5 ms), so the input p99 is 1 ms.
  */
 final class MetricsStub implements AutoCloseable {
     static final String PATH = "/actuator/prometheus";
@@ -113,8 +114,30 @@ final class MetricsStub implements AutoCloseable {
             l2nx_engine_ownership_violations_total{loop="world"} 0
             # TYPE l2nx_engine_inbox_depth gauge
             l2nx_engine_inbox_depth{loop="world"} 3
+            # TYPE l2nx_session_input_seconds histogram
+            l2nx_session_input_seconds_bucket{type="a.MoveTo",outcome="SUCCESS",exception="none",le="0.0005"} %d
+            l2nx_session_input_seconds_bucket{type="a.MoveTo",outcome="SUCCESS",exception="none",le="0.001"} %d
+            l2nx_session_input_seconds_bucket{type="a.MoveTo",outcome="SUCCESS",exception="none",le="0.0025"} %d
+            l2nx_session_input_seconds_bucket{type="a.MoveTo",outcome="SUCCESS",exception="none",le="+Inf"} %d
+            l2nx_session_input_seconds_count{type="a.MoveTo",outcome="SUCCESS",exception="none"} %d
+            l2nx_session_input_seconds_sum{type="a.MoveTo",outcome="SUCCESS",exception="none"} %s
+            # TYPE l2nx_session_input_seconds_max gauge
+            l2nx_session_input_seconds_max{type="a.MoveTo",outcome="SUCCESS",exception="none"} 0.003
             # TYPE process_start_time_seconds gauge
             process_start_time_seconds %d
-            """.formatted(90 * n, 99 * n, 100 * n, 100 * n, 100 * n, (0.09 + 0.063 + 0.02) * n, START_TIME_SECONDS);
+            """.formatted(
+                        90 * n,
+                        99 * n,
+                        100 * n,
+                        100 * n,
+                        100 * n,
+                        (0.09 + 0.063 + 0.02) * n,
+                        90 * n,
+                        99 * n,
+                        100 * n,
+                        100 * n,
+                        100 * n,
+                        (0.009 + 0.0099 + 0.0025) * n,
+                        START_TIME_SECONDS);
     }
 }

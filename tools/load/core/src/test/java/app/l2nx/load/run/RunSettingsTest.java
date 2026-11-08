@@ -7,6 +7,7 @@ package app.l2nx.load.run;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import app.l2nx.load.gate.model.GateThresholds;
 import app.l2nx.load.injection.InjectionProfile;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
@@ -34,6 +35,23 @@ class RunSettingsTest {
                     .build();
 
             assertThat(actual.lifecycleTimeout()).isEqualTo(Duration.ofSeconds(5));
+        }
+    }
+
+    @Nested
+    class Gate {
+        @Test
+        void build_shouldRefuse_whenTheGateThresholdsAreMissing() {
+            final RunSettings.RunSettingsBuilder settings = settings().gate(null);
+
+            assertThatIllegalArgumentException().isThrownBy(settings::build).withMessageContaining("gate thresholds");
+        }
+
+        @Test
+        void withDefaults_shouldTakeTheGateDefaults() {
+            final RunSettings actual = settings().build();
+
+            assertThat(actual.gate()).isEqualTo(GateThresholds.defaults());
         }
     }
 

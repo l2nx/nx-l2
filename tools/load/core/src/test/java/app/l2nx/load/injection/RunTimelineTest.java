@@ -238,4 +238,91 @@ class RunTimelineTest {
                     .withMessageContaining(message);
         }
     }
+
+    @Nested
+    class Levels {
+        private static final InjectionProfile LEVELLED = PROFILE.toBuilder()
+                .levels(InjectionProfile.Levels.builder()
+                        .increment(2)
+                        .count(3)
+                        .duration(Duration.ofSeconds(5))
+                        .ramp(Duration.ofSeconds(1))
+                        .build())
+                .build();
+
+        private final RunTimeline levelled = new RunTimeline(LEVELLED, MeasuredPhase.STEADY, () -> START);
+
+        @ParameterizedTest(name = "load bot {0} starts at {1} ms")
+        @CsvSource({"0, 0", "3, 750", "4, 6000", "5, 6500", "6, 12000", "7, 12500"})
+        void startAt_shouldStartEachLevelAfterThePreviousLevelEnds(int index, long expectedMillis) {
+            assertThat(levelled.startAt(index)).isEqualTo(at(expectedMillis));
+        }
+
+        @ParameterizedTest(name = "{0} ms -> level {1}")
+        @CsvSource({
+            "2999, -1",
+            "3000, 0",
+            "5999, 0",
+            "6000, -1",
+            "8999, -1",
+            "9000, 1",
+            "11999, 1",
+            "15000, 2",
+            "17999, 2",
+            "18000, -1"
+        })
+        void levelAt_shouldFindTheMeasuredWindowOfALevel(long millis, int expected) {
+            assertThat(levelled.levelAt(at(millis))).isEqualTo(expected);
+        }
+
+        @Test
+        void levels_shouldDescribeEveryLevel() {
+            assertThat(levelled.levels()).isEqualTo(3);
+            assertThat(Stream.of(0, 1, 2).map(levelled::levelBots)).containsExactly(4, 6, 8);
+            assertThat(levelled.levelMeasuredStart(1)).isEqualTo(at(9_000));
+            assertThat(levelled.levelEnd(2)).isEqualTo(at(18_000));
+            assertThat(levelled.measuredStart()).isEqualTo(at(3_000));
+            assertThat(levelled.measuredEnd()).isEqualTo(at(18_000));
+            assertThat(levelled.end()).isEqualTo(at(22_000));
+        }
+
+        @ParameterizedTest(name = "{0} ms measured: {1}")
+        @CsvSource({"7000, false", "9500, true"})
+        void inMeasured_shouldFollowTheLevelWindows(long millis, boolean expected) {
+            assertThat(levelled.inMeasured(at(millis))).isEqualTo(expected);
+            assertThat(levelled.countsAction(at(millis))).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "load bot {0} leaves at {1} ms")
+        @CsvSource({"0, 18000", "4, 20000", "7, 21500"})
+        void leaveAt_shouldSpreadEveryLoadBotOverTheRampDownAfterTheLastLevel(int index, long expectedMillis) {
+            assertThat(levelled.leaveAt(index)).isEqualTo(at(expectedMillis));
+        }
+
+        @Test
+        void levels_shouldBeNone_whenTheProfileHasNoLevels() {
+            assertThat(timeline.levels()).isZero();
+            assertThat(timeline.levelAt(at(5_000))).isEqualTo(-1);
+        }
+
+        @Test
+        void constructor_shouldReject_whenARunWithLevelsMeasuresTheRamp() {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> new RunTimeline(LEVELLED, MeasuredPhase.RAMP, () -> START))
+                    .withMessageContaining("measures each level like a steady window");
+        }
+
+        @Test
+        void constructor_shouldReject_whenTheWarmUpTakesTheWholeLevel() {
+            var profile = LEVELLED.toBuilder()
+                    .levels(LEVELLED.levels().toBuilder()
+                            .duration(Duration.ofSeconds(2))
+                            .build())
+                    .build();
+
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> new RunTimeline(profile, MeasuredPhase.STEADY, () -> START))
+                    .withMessageContaining("leaves nothing to measure");
+        }
+    }
 }

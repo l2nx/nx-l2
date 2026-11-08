@@ -23,6 +23,9 @@ public interface LoadBotView {
     /** Own position; {@code null} until the load bot entered the world. */
     Position position();
 
+    /** Game units per second from the load bot's own {@code UserInfo}; {@code 0} before it is in the game. */
+    double runSpeed();
+
     int hp();
 
     int mp();

@@ -13,6 +13,7 @@ import lombok.Builder;
  * @param untimed the loop has failures but no pass timer, such as the session drain: its zero passes say nothing, unlike
  *     those of a timed loop that stood still
  * @param jdbcOnLoopShare of the pass time, a fraction
+ * @param busyShare pass time over the window, a fraction
  */
 @Builder(toBuilder = true)
 public record LoopStats(
@@ -30,8 +31,14 @@ public record LoopStats(
         Double jdbcOnLoopShare,
         Map<String, Double> phaseMeanMillis,
         Double inboxDepthMax,
-        Double inboxDepthP99) {
+        Double inboxDepthP99,
+        Double busyShare) {
     public LoopStats {
         phaseMeanMillis = ServerStats.sortedCopy(phaseMeanMillis);
+    }
+
+    /** Passes over budget over all passes, a fraction; {@code null} without a pass. */
+    public Double overBudgetShare() {
+        return passes == 0 ? null : (double) overBudget / passes;
     }
 }

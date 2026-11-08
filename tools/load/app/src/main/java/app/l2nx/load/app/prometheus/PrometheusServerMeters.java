@@ -106,13 +106,16 @@ public final class PrometheusServerMeters implements ServerMeterWindow {
         snapshot(START);
     }
 
+    @Override
+    public void end() {
+        requireReady();
+        snapshot(END);
+    }
+
     /** @throws IllegalStateException when {@link #checkReady()} has not passed: the scrape intervals are unknown */
     @Override
-    public ServerStats finish(ServerWindow window) throws InterruptedException {
-        if (scrapeIntervals == null) {
-            throw new IllegalStateException("The server meters are read only after checkReady passed");
-        }
-        snapshot(END);
+    public ServerStats measure(ServerWindow window) throws InterruptedException {
+        requireReady();
         try {
             if (!awaitIngested(window.end())) {
                 log.warn(
@@ -138,6 +141,12 @@ public final class PrometheusServerMeters implements ServerMeterWindow {
         } catch (RuntimeException e) {
             log.warn("Server meters of {} could not be queried, the report has no server meters", window, e);
             return null;
+        }
+    }
+
+    private void requireReady() {
+        if (scrapeIntervals == null) {
+            throw new IllegalStateException("The server meters are read only after checkReady passed");
         }
     }
 

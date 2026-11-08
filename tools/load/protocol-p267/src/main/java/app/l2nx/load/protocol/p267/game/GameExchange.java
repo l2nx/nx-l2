@@ -293,7 +293,8 @@ public final class GameExchange extends ChannelInboundHandlerAdapter {
                 Position.builder().x(head.x()).y(head.y()).z(head.z()).build();
         final int hp = (int) selected.currentHp();
         final int mp = (int) selected.currentMp();
-        world = new GameWorld(head.objectId(), position, hp, mp, listener, this::write, channel.eventLoop(), clock);
+        world = new GameWorld(
+                head.objectId(), position, hp, mp, head.runSpeed(), listener, this::write, channel.eventLoop(), clock);
         phase = Phase.IN_WORLD;
         listener.acknowledged(IntentKind.ENTER_WORLD);
         if (detached) {
@@ -302,6 +303,7 @@ public final class GameExchange extends ChannelInboundHandlerAdapter {
         listener.observed(Entered.builder()
                 .selfObjectId(head.objectId())
                 .position(position)
+                .runSpeed(head.runSpeed())
                 .build());
         listener.observed(StatusChanged.builder().hp(hp).mp(mp).build());
         world.startValidating();

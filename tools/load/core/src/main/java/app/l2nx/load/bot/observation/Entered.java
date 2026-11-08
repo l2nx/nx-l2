@@ -8,4 +8,4 @@ import app.l2nx.load.bot.model.Position;
 import lombok.Builder;
 
 @Builder(toBuilder = true)
-public record Entered(int selfObjectId, Position position) implements Observation {}
+public record Entered(int selfObjectId, Position position, double runSpeed) implements Observation {}

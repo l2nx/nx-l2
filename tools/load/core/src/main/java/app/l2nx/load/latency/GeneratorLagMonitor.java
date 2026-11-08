@@ -16,10 +16,30 @@ public final class GeneratorLagMonitor {
 
     private final Recorder recorder = new Recorder(3);
     private final Histogram total = new Histogram(3);
+    private final Recorder[] levelRecorders;
+    private final Histogram[] levelTotals;
+
+    public GeneratorLagMonitor() {
+        this(0);
+    }
+
+    /** @param levels the levels of a capacity run, each with a lag of its own; {@code 0} without levels */
+    public GeneratorLagMonitor(int levels) {
+        levelRecorders = new Recorder[levels];
+        levelTotals = new Histogram[levels];
+        for (int level = 0; level < levels; level++) {
+            levelRecorders[level] = new Recorder(3);
+            levelTotals[level] = new Histogram(3);
+        }
+    }
 
     /** Records one task; a negative lag (clock skew between the ticker and the run clock) counts as none. */
     public void record(long lagNanos) {
         recorder.recordValue(Math.max(0, lagNanos));
+    }
+
+    public void recordLevel(int level, long lagNanos) {
+        levelRecorders[level].recordValue(Math.max(0, lagNanos));
     }
 
     /** All lag recorded so far, in nanoseconds. */
@@ -34,5 +54,11 @@ public final class GeneratorLagMonitor {
 
     public double p99Millis() {
         return p99Nanos() / NANOS_PER_MILLI;
+    }
+
+    /** The lag of one level recorded so far, in nanoseconds; empty when no task of the level ran. */
+    public Histogram levelHistogram(int level) {
+        levelTotals[level].add(levelRecorders[level].getIntervalHistogram());
+        return levelTotals[level].copy();
     }
 }

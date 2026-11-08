@@ -13,9 +13,13 @@ import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateCriterion;
 import app.l2nx.load.gate.model.GateVerdict;
 import app.l2nx.load.injection.InjectionProfile;
+import app.l2nx.load.report.model.Capacity;
+import app.l2nx.load.report.model.CapacityLimit;
 import app.l2nx.load.report.model.FrameStats;
+import app.l2nx.load.report.model.InputStats;
 import app.l2nx.load.report.model.IntentStats;
 import app.l2nx.load.report.model.InvalidReason;
+import app.l2nx.load.report.model.LevelStats;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.ProcessStats;
 import app.l2nx.load.report.model.RunEnvironment;
@@ -187,6 +191,17 @@ class ReportWriterTest {
 
             assertThat(actual).isEqualTo(expected);
         }
+
+        @Test
+        void readSummary_shouldTakeASummaryWithoutAVersionForVersionOne() throws IOException {
+            var directory = writer.write(root, summary(), Map.of(), Map.of(), Map.of());
+            var file = directory.resolve(ReportWriter.SUMMARY_FILE);
+            Files.writeString(file, Files.readString(file).replaceFirst("\\s*\"reportVersion\" : 2,", ""));
+
+            var actual = writer.readSummary(file);
+
+            assertThat(actual.reportVersion()).isEqualTo(1);
+        }
     }
 
     @Nested
@@ -209,13 +224,72 @@ class ReportWriterTest {
                     .containsPattern("lifecycle step\\s+count")
                     .containsPattern("LOGIN_AUTH\\s+20\\s+1\\s+3\\.00\\s+40\\.00\\s+60\\.00\\s+61\\.00")
                     .containsPattern("world-0\\s+6000\\s+5\\.000\\s+20\\.000\\s+-\\s+3\\s+0\\s+0\\s+2\\s+7"
-                            + "\\s+0\\.014\\s+2\\.500\\s+12\\.000")
+                            + "\\s+0\\.014\\s+2\\.500\\s+12\\.000\\s+55\\.000")
                     .containsPattern("l2nx-game-packets\\s+0\\s+-\\s+-\\s+-\\s+0\\s+4\\s+0\\s+0\\s+0\\s+-\\s+-\\s+-")
                     .contains("server window 2026-10-21T08:16:30Z .. 2026-10-21T08:21:30Z (300000 ms)")
                     .contains("game: GC pause p99 3.000 ms mean 1.200 ms max - ms, CPU mean 0.350, live threads max"
                             + " 64.000")
                     .contains("login: GC pause p99 - ms mean - ms max - ms, CPU mean 0.050, live threads max -")
-                    .contains("MoveBackwardToLocation mean 0.100 ms");
+                    .contains("MoveBackwardToLocation mean 0.100 ms")
+                    .containsPattern(
+                            "app\\.l2nx\\.highfive\\.movement\\.command\\.MoveTo\\s+1000\\s+0\\.040\\s+1\\.200\\s+2\\.500")
+                    .contains("report version 2");
+        }
+
+        @Test
+        void consoleTable_shouldListTheLevelsAndTheCapacityButNoRunWideServer_whenTheRunHasLevels() {
+            var level = LevelStats.builder()
+                    .bots(500)
+                    .window(ServerWindow.of(STARTED_AT.plusSeconds(150), STARTED_AT.plusSeconds(210)))
+                    .passP99Millis(2.5)
+                    .overBudgetShare(0.0)
+                    .busyShare(Map.of("world", 0.55))
+                    .inputP99Millis(Map.of())
+                    .timeoutShare(0.001)
+                    .notAtFinalStateShare(0.002)
+                    .generatorLagP99Millis(1.2)
+                    .valid(true)
+                    .build();
+            var unmeasured = level.toBuilder()
+                    .bots(1_000)
+                    .window(null)
+                    .passP99Millis(null)
+                    .overBudgetShare(null)
+                    .busyShare(Map.of())
+                    .generatorLagP99Millis(null)
+                    .valid(false)
+                    .build();
+            var levelled = summary().toBuilder()
+                    .serverWindow(null)
+                    .server(null)
+                    .levels(List.of(level, unmeasured))
+                    .capacity(Capacity.builder()
+                            .bots(500)
+                            .limitedBy(CapacityLimit.GENERATOR)
+                            .reason("level 1000 is invalid: no generator lag sample")
+                            .build())
+                    .build();
+
+            var actual = writer.consoleTable(levelled);
+
+            assertThat(actual)
+                    .containsPattern("500\\s+2026-10-21T08:19:00Z\\s+2\\.500\\s+0\\.000\\s+55\\.000\\s+0\\.100"
+                            + "\\s+0\\.000\\s+0\\.000\\s+0\\.200\\s+1\\.200\\s+yes")
+                    .containsPattern("1000\\s+-\\s+-\\s+-\\s+-\\s+0\\.100\\s+0\\.000\\s+0\\.000\\s+0\\.200\\s+-\\s+no")
+                    .contains(
+                            "capacity 500 load bots, limited by GENERATOR: level 1000 is invalid: no generator lag sample")
+                    .doesNotContain("server meters: none")
+                    .doesNotContain("server window 20")
+                    .doesNotContain("session queue depth");
+        }
+
+        @Test
+        void consoleTable_shouldSizeTheInputColumnToTheLongestClass() {
+            var actual = writer.consoleTable(summary());
+
+            assertThat(actual)
+                    .contains("\ninput" + " ".repeat(42) + "count")
+                    .contains("\napp.l2nx.highfive.movement.command.MoveTo" + " ".repeat(7) + "1000");
         }
 
         @Test
@@ -281,16 +355,50 @@ class ReportWriterTest {
             var actual = writer.verdictTable(verdict);
 
             assertThat(actual)
+                    .contains("\ncriterion" + " ".repeat(12) + "subject" + " ".repeat(5) + "measured")
                     .contains("Gate load-roam against baseline [base]: FAIL")
                     .contains("ignored invalid runs [c]")
                     .containsPattern("VALID_RUNS\\s+-\\s+2\\.000\\s+3\\.000\\s+FAIL")
                     .containsPattern(
                             "ENGINE_PASS_P99\\s+-\\s+-\\s+50\\.000\\s+FAIL\\s+no engine loop meters in runs \\[a]");
         }
+
+        @Test
+        void verdictTable_shouldSizeTheSubjectColumnToTheLongestSubject() {
+            var subject = "app.l2nx.highfive.movement.command.MoveTo";
+            var verdict = GateVerdict.builder()
+                    .scenario("load-roam")
+                    .baselineRunIds(List.of("base"))
+                    .validRunIds(List.of("a"))
+                    .invalidRunIds(List.of())
+                    .results(List.of(
+                            CriterionResult.builder()
+                                    .criterion(GateCriterion.VALID_RUNS)
+                                    .measured(1.0)
+                                    .threshold(1.0)
+                                    .passed(true)
+                                    .build(),
+                            CriterionResult.builder()
+                                    .criterion(GateCriterion.INPUT_TIME_P99)
+                                    .subject(subject)
+                                    .measured(1.0)
+                                    .threshold(1.5)
+                                    .passed(true)
+                                    .build()))
+                    .build();
+
+            var actual = writer.verdictTable(verdict);
+
+            assertThat(actual)
+                    .contains("\ncriterion" + " ".repeat(12) + "subject" + " ".repeat(39) + "measured")
+                    .contains("\nVALID_RUNS" + " ".repeat(11) + "-" + " ".repeat(48) + "1.000")
+                    .contains("\nINPUT_TIME_P99" + " ".repeat(7) + subject + " ".repeat(8) + "1.000");
+        }
     }
 
     private static RunSummary summary() {
         return RunSummary.builder()
+                .reportVersion(RunSummary.REPORT_VERSION)
                 .runId(ReportWriter.runId("load-roam", STARTED_AT, 42))
                 .scenario("load-roam")
                 .protocol("in-memory")
@@ -362,6 +470,7 @@ class ReportWriterTest {
                                         .phaseMeanMillis(Map.of("input", 0.4, "tick", 2.5))
                                         .inboxDepthMax(12.0)
                                         .inboxDepthP99(4.0)
+                                        .busyShare(0.55)
                                         .build(),
                                 "l2nx-game-packets",
                                 LoopStats.builder()
@@ -380,6 +489,14 @@ class ReportWriterTest {
                                         .build(),
                                 "login",
                                 ProcessStats.builder().cpuMean(0.05).build()))
+                        .inputs(Map.of(
+                                "app.l2nx.highfive.movement.command.MoveTo",
+                                InputStats.builder()
+                                        .count(1_000)
+                                        .p50Millis(0.04)
+                                        .p99Millis(1.2)
+                                        .maxMillis(2.5)
+                                        .build()))
                         .build())
                 .build();
     }

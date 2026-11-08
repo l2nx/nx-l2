@@ -6,8 +6,10 @@ package app.l2nx.load.app.prometheus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.within;
 
 import app.l2nx.load.app.prometheus.model.Sample;
+import app.l2nx.load.report.model.InputStats;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.ProcessStats;
 import app.l2nx.load.report.model.ServerStats;
@@ -47,7 +49,9 @@ class ServerStatsAssemblerTest {
                             .phaseMeanMillis(Map.of("input", 0.5, "tick", 2.5))
                             .inboxDepthMax(12.0)
                             .inboxDepthP99(4.0)
+                            .busyShare(0.55)
                             .build());
+            assertThat(actual.loops().get("world-1").busyShare()).isEqualTo(0.0);
         }
 
         @Test
@@ -245,7 +249,38 @@ class ServerStatsAssemblerTest {
                             .loops(Map.of())
                             .legacyPacketMeanMillis(Map.of())
                             .processes(Map.of())
+                            .inputs(Map.of())
                             .build());
+        }
+
+        @Test
+        void assemble_shouldGiveEveryInputClassItsTimesInMillis_whenItRanInTheWindow() {
+            final Map<ServerMeterQuery, List<Sample>> results = new EnumMap<>(ServerMeterQuery.class);
+            results.put(
+                    ServerMeterQuery.INPUT_COUNT,
+                    List.of(type("a.MoveTo", 1_000), type("a.Say2", 0), type("a.Attack", Double.NaN)));
+            results.put(ServerMeterQuery.INPUT_P50, List.of(type("a.MoveTo", 0.00004)));
+            results.put(ServerMeterQuery.INPUT_P99, List.of(type("a.MoveTo", 0.0012)));
+            results.put(
+                    ServerMeterQuery.INPUT_BUCKETS,
+                    List.of(
+                            bucket(Map.of("type", "a.MoveTo"), "0.001", 990),
+                            bucket(Map.of("type", "a.MoveTo"), "0.0025", 1_000),
+                            bucket(Map.of("type", "a.MoveTo"), "+Inf", 1_000)));
+            results.put(ServerMeterQuery.INPUT_MAX, List.of(type("a.MoveTo", 0.004)));
+
+            final ServerStats actual = ServerStatsAssembler.assemble(results);
+
+            assertThat(actual.inputs())
+                    .as("a class without an input in the window is not in it")
+                    .containsOnlyKeys("a.MoveTo");
+            final InputStats move = actual.inputs().get("a.MoveTo");
+            assertThat(move.count()).isEqualTo(1_000);
+            assertThat(move.p50Millis()).isCloseTo(0.04, within(1e-9));
+            assertThat(move.p99Millis()).isCloseTo(1.2, within(1e-9));
+            assertThat(move.maxMillis())
+                    .as("the 4 ms gauge capped at the highest bucket the window filled")
+                    .isCloseTo(2.5, within(1e-9));
         }
     }
 
@@ -280,7 +315,12 @@ class ServerStatsAssemblerTest {
         results.put(ServerMeterQuery.JDBC_ON_LOOP_SHARE, List.of(loop(WORLD, 0.02)));
         results.put(ServerMeterQuery.INBOX_DEPTH_MAX, List.of(loop(WORLD, 12), loop("world-1", 0)));
         results.put(ServerMeterQuery.INBOX_DEPTH_P99, List.of(loop(WORLD, 4), loop("world-1", 0)));
+        results.put(ServerMeterQuery.PASS_BUSY_SHARE, List.of(loop(WORLD, 0.55), loop("world-1", 0)));
         return results;
+    }
+
+    private static Sample type(String type, double value) {
+        return sample(Map.of("type", type), value);
     }
 
     private static Sample loop(String loop, double value) {

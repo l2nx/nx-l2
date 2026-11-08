@@ -22,6 +22,7 @@ import app.l2nx.load.bot.observation.ObjectGone;
 import app.l2nx.load.bot.observation.ObjectMoved;
 import app.l2nx.load.bot.observation.ObjectSeen;
 import app.l2nx.load.bot.observation.Revived;
+import app.l2nx.load.bot.observation.RunSpeedChanged;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.protocol.game.p267.Bodies;
@@ -86,6 +87,7 @@ final class GameWorld {
     private IntentKind revival = IntentKind.REVIVE_AT_RESTART_POINT;
     private int hp;
     private int mp;
+    private double runSpeed;
     private int selectedTarget;
     private int clickingTarget;
     private ScheduledFuture<?> secondClick;
@@ -96,6 +98,7 @@ final class GameWorld {
             Position start,
             int hp,
             int mp,
+            double runSpeed,
             SessionListener listener,
             Consumer<Consumer<ByteBuf>> out,
             EventLoop loop,
@@ -103,11 +106,12 @@ final class GameWorld {
         this.selfObjectId = selfObjectId;
         this.hp = hp;
         this.mp = mp;
+        this.runSpeed = runSpeed;
         this.listener = listener;
         this.out = out;
         this.loop = loop;
         this.clock = clock;
-        own = new OwnPosition(start);
+        own = new OwnPosition(start, runSpeed);
     }
 
     void startValidating() {
@@ -161,6 +165,11 @@ final class GameWorld {
             case USER_INFO -> {
                 final UserInfoHead head = UserInfoHead.read(body);
                 own.sync(position(head.x(), head.y(), head.z()), clock.getAsLong());
+                if (head.runSpeed() != runSpeed) {
+                    runSpeed = head.runSpeed();
+                    own.runSpeed(runSpeed, clock.getAsLong());
+                    listener.observed(new RunSpeedChanged(runSpeed));
+                }
             }
             case CHAR_INFO -> seen(CharInfoHead.read(body));
             case NPC_INFO -> seen(NpcInfoHead.read(body));

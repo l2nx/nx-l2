@@ -7,9 +7,11 @@ package app.l2nx.protocol.game.p267.serverpackets;
 import static app.l2nx.network.test.GoldenBytes.read;
 import static app.l2nx.network.test.GoldenBytes.written;
 import static app.l2nx.protocol.game.p267.WireHex.d;
+import static app.l2nx.protocol.game.p267.WireHex.f;
 import static app.l2nx.protocol.game.p267.WireHex.s;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import app.l2nx.network.codec.PacketDecodeException;
 import app.l2nx.protocol.game.p267.serverpackets.head.CharInfoHead;
@@ -142,7 +144,7 @@ class WorldPacketsTest {
     @Nested
     class UserInfoHeadCodec {
         @Test
-        void read_shouldStopAtTheName() {
+        void read_shouldReadTheRunSpeedAfterTheName() {
             final UserInfoHead expected = UserInfoHead.builder()
                     .x(1)
                     .y(-2)
@@ -150,10 +152,25 @@ class WorldPacketsTest {
                     .vehicleId(0)
                     .objectId(5)
                     .name("Bot")
+                    .baseRunSpeed(120)
+                    .moveMultiplier(1.1)
                     .build();
+            final String body = d(1)
+                    + d(-2)
+                    + d(3)
+                    + d(0)
+                    + d(5)
+                    + s("Bot")
+                    + "00".repeat(456)
+                    + d(120)
+                    + "00".repeat(28)
+                    + f(1.1)
+                    + d(0);
 
-            assertThat(read(d(1) + d(-2) + d(3) + d(0) + d(5) + s("Bot") + d(0), UserInfoHead::read))
-                    .isEqualTo(expected);
+            final UserInfoHead actual = read(body, UserInfoHead::read);
+
+            assertThat(actual).isEqualTo(expected);
+            assertThat(actual.runSpeed()).isCloseTo(132.0, within(1e-9));
         }
     }
 

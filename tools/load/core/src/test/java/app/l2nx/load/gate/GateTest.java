@@ -15,6 +15,7 @@ import app.l2nx.load.gate.model.GateCriterion;
 import app.l2nx.load.gate.model.GateThresholds;
 import app.l2nx.load.gate.model.GateVerdict;
 import app.l2nx.load.injection.InjectionProfile;
+import app.l2nx.load.report.model.InputStats;
 import app.l2nx.load.report.model.IntentStats;
 import app.l2nx.load.report.model.InvalidReason;
 import app.l2nx.load.report.model.LoopStats;
@@ -27,6 +28,7 @@ import app.l2nx.load.report.model.StepStats;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -44,7 +46,10 @@ class GateTest {
     private static final String SCENARIO = "load-crowd-pvp";
     private static final String LOOP = "world-0";
     private static final String DRAIN = "l2nx-game-packets";
-    private static final GateThresholds THRESHOLDS = GateThresholds.defaults();
+    private static final GateThresholds THRESHOLDS =
+            GateThresholds.defaults().toBuilder().runs(3).build();
+    private static final String TYPE = "app.l2nx.highfive.movement.command.MoveTo";
+    private static final String OTHER_TYPE = "app.l2nx.highfive.network.clientpackets.Say2";
     private static final Instant STARTED_AT = Instant.parse("2026-11-04T08:00:00Z");
     private static final InjectionProfile INJECTION = InjectionProfile.builder()
             .bots(500)
@@ -77,7 +82,7 @@ class GateTest {
                             tuple(GateCriterion.VALID_RUNS, null, true),
                             tuple(GateCriterion.ENGINE_PASS_P99, LOOP, true),
                             tuple(GateCriterion.OVER_BUDGET_SHARE, LOOP, true),
-                            tuple(GateCriterion.CLIENT_LATENCY_P99, "MOVE_TO", true),
+                            tuple(GateCriterion.INPUT_TIME_P99, TYPE, true),
                             tuple(GateCriterion.TIMEOUTS_AND_ERRORS, Gate.TIMEOUTS, true),
                             tuple(GateCriterion.TIMEOUTS_AND_ERRORS, Gate.REJECTED, true),
                             tuple(GateCriterion.TIMEOUTS_AND_ERRORS, Gate.STOPPED_LOAD_BOTS, true),
@@ -204,24 +209,13 @@ class GateTest {
         }
 
         @Test
-        void evaluate_shouldFailClientLatency_whenRunLacksBaselineIntent() {
-            var withoutIntent = run("c").toBuilder().intents(Map.of()).build();
-
-            var actual = Gate.evaluate(List.of(run("a"), run("b"), withoutIntent), baseline(), THRESHOLDS);
-
-            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99))
-                    .extracting(CriterionResult::measured, CriterionResult::passed, CriterionResult::reason)
-                    .containsExactly(null, false, "no acknowledged MOVE_TO intents in runs [c]");
-        }
-
-        @Test
-        void evaluate_shouldFailClientLatency_whenTheBaselineHasFewerValidRunsThanRequired() {
+        void evaluate_shouldFailInputTime_whenTheBaselineHasFewerValidRunsThanRequired() {
             var baseline = List.of(
                     run("base1").toBuilder().validity(RunValidity.INVALID).build(), run("base2"), run("base3"));
 
             var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), baseline, THRESHOLDS);
 
-            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99))
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
                     .extracting(CriterionResult::passed, CriterionResult::reason)
                     .containsExactly(false, "the baseline has 2 valid runs [base2, base3] of 3 needed");
             assertThat(actual.baselineRunIds()).containsExactly("base2", "base3");
@@ -229,19 +223,250 @@ class GateTest {
         }
 
         @Test
-        void evaluate_shouldFailClientLatency_whenRunHasIntentKindAbsentFromBaseline() {
-            var withSay = run("a").toBuilder()
-                    .intents(Map.of(IntentKind.MOVE_TO, intent(10), IntentKind.SAY, intent(900)))
-                    .build();
+        void evaluate_shouldReportButNotGateAType_whenItIsAbsentFromTheBaseline() {
+            var withOther = withInputs(run("a"), Map.of(TYPE, input(1.0), OTHER_TYPE, input(0.2)));
 
-            var actual = Gate.evaluate(List.of(withSay, run("b"), run("c")), baseline(), THRESHOLDS);
+            var actual = Gate.evaluate(List.of(withOther, run("b"), run("c")), baseline(), THRESHOLDS);
 
             assertThat(actual.results())
-                    .filteredOn(result -> result.criterion() == GateCriterion.CLIENT_LATENCY_P99)
-                    .extracting(CriterionResult::subject, CriterionResult::passed, CriterionResult::reason)
+                    .filteredOn(result -> result.criterion() == GateCriterion.INPUT_TIME_P99)
+                    .extracting(
+                            CriterionResult::subject,
+                            CriterionResult::measured,
+                            CriterionResult::passed,
+                            CriterionResult::reason)
+                    .containsExactly(tuple(TYPE, 1.0, true, null), tuple(OTHER_TYPE, 0.2, true, Gate.NOT_GATED));
+        }
+
+        @ParameterizedTest(name = "{0} inputs in the baseline median, {1} in the run median -> gated {2}")
+        @CsvSource({"99, 99, false", "100, 99, true", "99, 100, true"})
+        void evaluate_shouldGateATypeFrom100InputsInTheBaselineOrTheRunMedian(
+                long baselineCount, long runCount, boolean expected) {
+            var baseline = Stream.of("base1", "base2", "base3")
+                    .map(id -> withInputs(run(id), Map.of(TYPE, input(1.0, baselineCount))))
+                    .toList();
+            var slow = Stream.of("a", "b", "c")
+                    .map(id -> withInputs(run(id), Map.of(TYPE, input(50.0, runCount))))
+                    .toList();
+
+            var actual = result(Gate.evaluate(slow, baseline, THRESHOLDS), GateCriterion.INPUT_TIME_P99);
+
+            assertThat(actual.passed()).isEqualTo(!expected);
+            assertThat(actual.measured()).isEqualTo(50.0);
+            assertThat(actual.reason()).isEqualTo(expected ? null : Gate.NOT_GATED);
+        }
+
+        @Test
+        void evaluate_shouldFailANewInputClass_whenMostRunsHaveEnoughOfIt() {
+            var runs = List.of(
+                    withInputs(run("a"), Map.of(TYPE, input(1.0), OTHER_TYPE, input(0.2, 500))),
+                    withInputs(run("b"), Map.of(TYPE, input(1.0), OTHER_TYPE, input(0.2, 500))),
+                    run("c"));
+
+            var actual = Gate.evaluate(runs, baseline(), THRESHOLDS);
+
+            assertThat(actual.results())
+                    .filteredOn(result -> OTHER_TYPE.equals(result.subject()))
+                    .extracting(CriterionResult::passed, CriterionResult::reason)
+                    .as("the run median is 500, so the class is gated and the baseline lacks it")
+                    .containsExactly(tuple(false, Gate.NEW_INPUT_CLASS));
+        }
+
+        @Test
+        void evaluate_shouldFailANewInputClass_whenTheRunsHaveEnoughOfIt() {
+            var runs = Stream.of("a", "b", "c")
+                    .map(id -> withInputs(run(id), Map.of(TYPE, input(1.0), OTHER_TYPE, input(0.2))))
+                    .toList();
+
+            var actual = Gate.evaluate(runs, baseline(), THRESHOLDS);
+
+            assertThat(actual.results())
+                    .filteredOn(result -> result.criterion() == GateCriterion.INPUT_TIME_P99)
+                    .extracting(
+                            CriterionResult::subject,
+                            CriterionResult::threshold,
+                            CriterionResult::passed,
+                            CriterionResult::reason)
                     .containsExactly(
-                            tuple("MOVE_TO", true, null),
-                            tuple("SAY", false, "no acknowledged SAY intents in the baseline, present in runs [a]"));
+                            tuple(TYPE, 1.5, true, null),
+                            tuple(
+                                    OTHER_TYPE,
+                                    null,
+                                    false,
+                                    "absent from the baseline: new input class, retake the baseline"));
+        }
+
+        @Test
+        void evaluate_shouldGateAType_whenMostBaselineRunsHaveIt() {
+            var baseline = List.of(run("base1"), run("base2"), withInputs(run("base3"), Map.of()));
+
+            var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), baseline, THRESHOLDS);
+
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
+                    .extracting(CriterionResult::subject, CriterionResult::threshold, CriterionResult::passed)
+                    .containsExactly(TYPE, 1.5, true);
+        }
+
+        @Test
+        void evaluate_shouldFailAGatedType_whenARunLacksIt() {
+            var actual =
+                    Gate.evaluate(List.of(run("a"), run("b"), withInputs(run("c"), Map.of())), baseline(), THRESHOLDS);
+
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
+                    .extracting(CriterionResult::subject, CriterionResult::passed, CriterionResult::reason)
+                    .containsExactly(TYPE, false, "absent from runs [c]");
+        }
+
+        @Test
+        void evaluate_shouldFailInputTime_whenARunHasNoServerMeters() {
+            var withoutServer = run("c").toBuilder().server(null).build();
+
+            var actual = Gate.evaluate(List.of(run("a"), run("b"), withoutServer), baseline(), THRESHOLDS);
+
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
+                    .extracting(CriterionResult::passed, CriterionResult::reason)
+                    .containsExactly(false, "no input time meters in runs [c]");
+        }
+
+        @Test
+        void evaluate_shouldFailInputTime_whenNeitherTheBaselineNorTheRunsHaveAnInputSeries() {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> withInputs(run, Map.of()))
+                    .toList();
+            var baseline =
+                    baseline().stream().map(run -> withInputs(run, Map.of())).toList();
+
+            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
+
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
+                    .extracting(CriterionResult::passed, CriterionResult::reason)
+                    .containsExactly(false, Gate.NO_INPUT_SERIES);
+        }
+
+        @Test
+        void evaluate_shouldNotGateClientLatency_whenTheGameTimingSetsIt() {
+            var slowClient = IntentStats.builder()
+                    .sent(1_000)
+                    .acknowledged(1_000)
+                    .p99Millis(5_000)
+                    .build();
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> run.toBuilder()
+                            .intents(Map.of(IntentKind.USE_SKILL, slowClient))
+                            .build())
+                    .toList();
+
+            var actual = Gate.evaluate(runs, baseline(), THRESHOLDS);
+
+            assertThat(actual.passed()).isTrue();
+        }
+
+        @Test
+        void evaluate_shouldPassTheLifecycleSteps_whenTheirP99StaysWithinTheBaseline() {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> withStep(run, LoadBotState.LOGIN_AUTH, 120))
+                    .toList();
+            var baseline = baseline().stream()
+                    .map(run -> withStep(run, LoadBotState.LOGIN_AUTH, 110))
+                    .toList();
+
+            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
+
+            assertThat(actual.passed()).isTrue();
+            assertThat(actual.results())
+                    .filteredOn(result -> result.criterion() == GateCriterion.LIFECYCLE_STEP_P99)
+                    .extracting(CriterionResult::subject, CriterionResult::measured, CriterionResult::passed)
+                    .containsExactly(tuple("LOGIN_AUTH", 120.0, true));
+            assertThat(result(actual, GateCriterion.LIFECYCLE_STEP_P99).threshold())
+                    .as("110 ms * 1.10 lies above 110 ms + 10 ms")
+                    .isCloseTo(121, within(1e-9));
+        }
+
+        @ParameterizedTest(name = "step p99 {0} ms against baseline {1} ms -> limit {2} ms, passed {3}")
+        @CsvSource({
+            "220, 200, 220, true",
+            "220.01, 200, 220, false",
+            "15, 5, 15, true",
+            "15.01, 5, 15, false",
+            "110, 100, 110, true"
+        })
+        void evaluate_shouldGateTheStepP99OnTheLargerOfTheRatioAndTheAdditiveFloor(
+                double p99, double baselineP99, double limit, boolean expected) {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> withStep(run, LoadBotState.ENTERING, p99))
+                    .toList();
+            var baseline = baseline().stream()
+                    .map(run -> withStep(run, LoadBotState.ENTERING, baselineP99))
+                    .toList();
+
+            var actual = result(Gate.evaluate(runs, baseline, THRESHOLDS), GateCriterion.LIFECYCLE_STEP_P99);
+
+            assertThat(actual.threshold()).isCloseTo(limit, within(1e-9));
+            assertThat(actual.passed()).isEqualTo(expected);
+        }
+
+        @Test
+        void evaluate_shouldSkipAStep_whenNeitherTheBaselineNorTheRunsCountedIt() {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> withStep(withStep(run, LoadBotState.LOGIN_AUTH, 50), LoadBotState.GAME_CONNECT, 0, 0))
+                    .toList();
+            var baseline = baseline().stream()
+                    .map(run -> withStep(run, LoadBotState.LOGIN_AUTH, 50))
+                    .toList();
+
+            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
+
+            assertThat(actual.results())
+                    .filteredOn(result -> result.criterion() == GateCriterion.LIFECYCLE_STEP_P99)
+                    .extracting(CriterionResult::subject, CriterionResult::passed)
+                    .containsExactly(tuple("LOGIN_AUTH", true));
+        }
+
+        @Test
+        void evaluate_shouldFailAStep_whenARunDidNotCountIt() {
+            var runs = List.of(
+                    withStep(run("a"), LoadBotState.LOGIN_AUTH, 50),
+                    withStep(run("b"), LoadBotState.LOGIN_AUTH, 50),
+                    withStep(run("c"), LoadBotState.LOGIN_AUTH, 0, 0));
+            var baseline = baseline().stream()
+                    .map(run -> withStep(run, LoadBotState.LOGIN_AUTH, 50))
+                    .toList();
+
+            var actual = result(Gate.evaluate(runs, baseline, THRESHOLDS), GateCriterion.LIFECYCLE_STEP_P99);
+
+            assertThat(actual)
+                    .extracting(CriterionResult::subject, CriterionResult::passed, CriterionResult::reason)
+                    .containsExactly("LOGIN_AUTH", false, "no LOGIN_AUTH steps in runs [c]");
+        }
+
+        @Test
+        void evaluate_shouldReportTheLifecycleStepsAsNotApplicableAndPass_whenThereIsNoBaseline() {
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> withStep(run, LoadBotState.LOGIN_AUTH, 5_000))
+                    .toList();
+
+            var actual = Gate.evaluate(runs, List.of(), THRESHOLDS);
+
+            assertThat(actual.passed()).isTrue();
+            assertThat(actual.results())
+                    .filteredOn(result -> result.criterion() == GateCriterion.LIFECYCLE_STEP_P99)
+                    .extracting(CriterionResult::measured, CriterionResult::passed, CriterionResult::reason)
+                    .containsExactly(tuple(null, true, Gate.NO_BASELINE));
+        }
+
+        @Test
+        void evaluate_shouldRefuseTheBaseline_whenItWasTakenWithAnotherReportVersion() {
+            var old = baseline().stream()
+                    .map(run -> run.toBuilder().reportVersion(1).build())
+                    .toList();
+
+            var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), old, THRESHOLDS);
+
+            assertThat(actual.passed()).isFalse();
+            assertThat(result(actual, GateCriterion.COMPARABLE_RUNS).reason())
+                    .isEqualTo(
+                            "runs [base1, base2, base3] were taken with report version [1], the gate reads version 2:"
+                                    + " take them again");
         }
 
         static Stream<Arguments> incomparableRuns() {
@@ -295,7 +520,26 @@ class GateTest {
                     Arguments.of(
                             "another CPU affinity",
                             run("x").toBuilder().cpuAffinity("server 0-1").build(),
-                            "runs [x] differ from base1 in the CPU affinity (server 0-3)"));
+                            "runs [x] differ from base1 in the CPU affinity (server 0-3)"),
+                    Arguments.of(
+                            "a capacity run",
+                            run("x").toBuilder()
+                                    .injection(INJECTION.toBuilder()
+                                            .levels(InjectionProfile.Levels.builder()
+                                                    .increment(250)
+                                                    .count(2)
+                                                    .duration(Duration.ofSeconds(90))
+                                                    .ramp(Duration.ZERO)
+                                                    .build())
+                                            .build())
+                                    .build(),
+                            "runs [x] differ from base1 in the injection (" + INJECTION
+                                    + "); runs [x] add load bots in levels: a capacity run changes N inside the run"
+                                    + " and is no gate sample"),
+                    Arguments.of(
+                            "another report version",
+                            run("x").toBuilder().reportVersion(1).build(),
+                            "runs [x] were taken with report version [1], the gate reads version 2: take them again"));
         }
 
         @ParameterizedTest(name = "{0}")
@@ -314,19 +558,50 @@ class GateTest {
                     .containsExactly(tuple(GateCriterion.COMPARABLE_RUNS, null, false, reason));
         }
 
+        @Test
+        void evaluate_shouldReportInputTimeAsNotApplicable_whenLoadBotsStopBeforeTheGameAndNoInputRan() {
+            var server = ServerStats.builder().loops(Map.of()).inputs(Map.of()).build();
+            var runs = Stream.of(run("a"), run("b"), run("c"))
+                    .map(run -> run.toBuilder()
+                            .finalState(LoadBotState.SERVER_LIST)
+                            .server(server)
+                            .build())
+                    .toList();
+            var baseline = baseline().stream()
+                    .map(run -> run.toBuilder()
+                            .finalState(LoadBotState.SERVER_LIST)
+                            .server(server)
+                            .build())
+                    .toList();
+
+            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
+
+            var inputTime = result(actual, GateCriterion.INPUT_TIME_P99);
+            assertThat(inputTime.passed()).isTrue();
+            assertThat(inputTime.reason()).contains("not applicable").contains("SERVER_LIST");
+        }
+
         @ParameterizedTest(name = "final state {0}")
         @EnumSource(
                 value = LoadBotState.class,
                 names = {"LOGIN_AUTH", "SERVER_LIST", "GAME_CONNECT", "CHARACTER_SELECT", "ENTERING"})
         void evaluate_shouldPassTheEngineCriteriaAsNotApplicable_whenTheLoadBotsStopBeforeTheGame(
                 LoadBotState finalState) {
+            var server = ServerStats.builder()
+                    .loops(Map.of())
+                    .inputs(Map.of(TYPE, input(1.0)))
+                    .build();
             var runs = Stream.of(run("a"), run("b"), run("c"))
-                    .map(run ->
-                            run.toBuilder().finalState(finalState).server(null).build())
+                    .map(run -> run.toBuilder()
+                            .finalState(finalState)
+                            .server(server)
+                            .build())
                     .toList();
             var baseline = baseline().stream()
-                    .map(run ->
-                            run.toBuilder().finalState(finalState).server(null).build())
+                    .map(run -> run.toBuilder()
+                            .finalState(finalState)
+                            .server(server)
+                            .build())
                     .toList();
 
             var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
@@ -361,8 +636,7 @@ class GateTest {
             var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
 
             assertThat(result(actual, GateCriterion.ENGINE_PASS_P99).passed()).isTrue();
-            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99).passed())
-                    .isFalse();
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99).passed()).isFalse();
         }
 
         @ParameterizedTest(name = "pass p99 {0} ms -> passed {1}")
@@ -392,26 +666,27 @@ class GateTest {
             assertThat(actual.passed()).isEqualTo(expected);
         }
 
-        @ParameterizedTest(name = "client p99 {0} ms against baseline 10 ms -> passed {1}")
+        @ParameterizedTest(name = "input p99 {0} ms against baseline 10 ms -> passed {1}")
         @CsvSource({"9, true", "11, true", "11.01, false"})
-        void evaluate_shouldCompareClientP99WithBaseline_whenAtBoundary(double p99, boolean expected) {
+        void evaluate_shouldCompareInputP99WithBaseline_whenAtBoundary(double p99, boolean expected) {
             var runs = List.of(run("a", p99), run("b", p99), run("c", p99));
-            var thresholds =
-                    THRESHOLDS.toBuilder().clientP99Floor(Duration.ZERO).build();
+            var baseline = List.of(run("base1", 10), run("base2", 10), run("base3", 10));
+            var thresholds = THRESHOLDS.toBuilder().inputP99Floor(Duration.ZERO).build();
 
-            var actual = result(Gate.evaluate(runs, baseline(), thresholds), GateCriterion.CLIENT_LATENCY_P99);
+            var actual = result(Gate.evaluate(runs, baseline, thresholds), GateCriterion.INPUT_TIME_P99);
 
             assertThat(actual.threshold()).isCloseTo(11, within(1e-9));
             assertThat(actual.passed()).isEqualTo(expected);
         }
 
         @ParameterizedTest(name = "baseline {0} ms -> limit {1} ms")
-        @CsvSource({"6, 16", "100, 110", "200, 220"})
-        void evaluate_shouldTakeTheLargerOfTheRatioAndTheFloor(double baselineP99, double expected) {
+        @CsvSource({"1, 1.5", "5, 5.5", "10, 11"})
+        void evaluate_shouldTakeTheLargerOfTheRatioAndTheAdditiveFloor(double baselineP99, double expected) {
             var baseline = List.of(run("base1", baselineP99), run("base2", baselineP99), run("base3", baselineP99));
-            var runs = List.of(run("a"), run("b"), run("c"));
 
-            var actual = result(Gate.evaluate(runs, baseline, THRESHOLDS), GateCriterion.CLIENT_LATENCY_P99);
+            var actual = result(
+                    Gate.evaluate(List.of(run("a"), run("b"), run("c")), baseline, THRESHOLDS),
+                    GateCriterion.INPUT_TIME_P99);
 
             assertThat(actual.threshold()).isCloseTo(expected, within(1e-9));
         }
@@ -422,77 +697,22 @@ class GateTest {
                     .validity(RunValidity.INVALID)
                     .invalidReasons(List.of(InvalidReason.GENERATOR_LAG))
                     .build();
-            var baseline = List.of(invalid, run("base1", 90), run("base2", 100), run("base3", 500));
+            var baseline = List.of(invalid, run("base1", 0.9), run("base2", 1.0), run("base3", 5.0));
 
             var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), baseline, THRESHOLDS);
 
-            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99).threshold())
-                    .isCloseTo(110, within(1e-9));
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99).threshold()).isCloseTo(1.5, within(1e-9));
             assertThat(actual.baselineRunIds()).containsExactly("base1", "base2", "base3");
         }
 
         @Test
-        void evaluate_shouldFailClientLatency_whenOnlySomeBaselineRunsHaveTheIntent() {
-            var withoutIntent = run("base3").toBuilder().intents(Map.of()).build();
-            var baseline = List.of(run("base1"), run("base2"), withoutIntent);
-
-            var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), baseline, THRESHOLDS);
-
-            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99))
-                    .extracting(CriterionResult::passed, CriterionResult::reason)
-                    .containsExactly(false, "no acknowledged MOVE_TO intents in baseline runs [base3]");
-        }
-
-        @Test
-        void evaluate_shouldLeaveAnArrivalThatOnlyFailedToCriterionFour_whenItHasNoMeasuredLatency() {
-            var failedLogin = IntentStats.builder().sent(1).timeouts(1).build();
-            var withFailure = run("a").toBuilder()
-                    .intents(Map.of(IntentKind.MOVE_TO, intent(10), IntentKind.LOGIN, failedLogin))
-                    .build();
-
-            var actual = Gate.evaluate(List.of(withFailure, run("b"), run("c")), baseline(), THRESHOLDS);
-
-            assertThat(actual.results())
-                    .filteredOn(result -> result.criterion() == GateCriterion.CLIENT_LATENCY_P99)
-                    .extracting(CriterionResult::subject)
-                    .containsExactly("MOVE_TO");
-        }
-
-        @ParameterizedTest(name = "step p99 {0} ms against baseline 100 ms -> passed {1}")
-        @CsvSource({"110, true", "111, false"})
-        void evaluate_shouldHoldLifecycleStepsToTheBaseline_whenTheRunsMeasureThem(double p99, boolean expected) {
-            var runs =
-                    Stream.of("a", "b", "c").map(id -> withStep(run(id), p99)).toList();
-            var baseline = baseline().stream().map(run -> withStep(run, 100)).toList();
-
-            var actual = Gate.evaluate(runs, baseline, THRESHOLDS);
-
-            assertThat(actual.results())
-                    .filteredOn(result -> result.criterion() == GateCriterion.CLIENT_LATENCY_P99)
-                    .extracting(CriterionResult::subject, CriterionResult::passed)
-                    .containsExactly(tuple("MOVE_TO", true), tuple("step LOGIN_AUTH", expected));
-        }
-
-        @Test
-        void evaluate_shouldLeaveAStepWithoutSamplesAlone_whenItOnlyTimedOutOutsideTheMeasuredPhase() {
-            var timedOut = StepStats.builder().timeouts(1).build();
-            var withTimeout = run("a").toBuilder()
-                    .steps(Map.of(LoadBotState.LOGIN_AUTH, timedOut))
-                    .build();
-
-            var actual = Gate.evaluate(List.of(withTimeout, run("b"), run("c")), baseline(), THRESHOLDS);
-
-            assertThat(actual.passed()).isTrue();
-        }
-
-        @Test
-        void evaluate_shouldReportClientLatencyAsNotApplicableAndPass_whenThereIsNoBaseline() {
+        void evaluate_shouldReportInputTimeAsNotApplicableAndPass_whenThereIsNoBaseline() {
             var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), List.of(), THRESHOLDS);
 
             assertThat(actual.passed()).isTrue();
             assertThat(actual.scenario()).isEqualTo(SCENARIO);
             assertThat(actual.baselineRunIds()).isEmpty();
-            assertThat(result(actual, GateCriterion.CLIENT_LATENCY_P99))
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
                     .extracting(CriterionResult::measured, CriterionResult::passed, CriterionResult::reason)
                     .containsExactly(null, true, Gate.NO_BASELINE);
         }
@@ -681,14 +901,6 @@ class GateTest {
         return List.of(run("base1"), run("base2"), run("base3"));
     }
 
-    private static RunSummary withStep(RunSummary run, double p99Millis) {
-        return run.toBuilder()
-                .steps(Map.of(
-                        LoadBotState.LOGIN_AUTH,
-                        StepStats.builder().count(1_000).p99Millis(p99Millis).build()))
-                .build();
-    }
-
     private static RunSummary served(String runId, int minutes, int serverMinutes) {
         var startedAt = STARTED_AT.plus(Duration.ofMinutes(minutes));
         return run(runId).toBuilder()
@@ -702,10 +914,33 @@ class GateTest {
         return run(runId, loop(loop -> loop));
     }
 
-    private static RunSummary run(String runId, double clientP99Millis) {
-        return run(runId).toBuilder()
-                .intents(Map.of(IntentKind.MOVE_TO, intent(clientP99Millis)))
+    private static RunSummary run(String runId, double inputP99Millis) {
+        return withInputs(run(runId), Map.of(TYPE, input(inputP99Millis)));
+    }
+
+    private static RunSummary withInputs(RunSummary run, Map<String, InputStats> inputs) {
+        return run.toBuilder()
+                .server(run.server().toBuilder().inputs(inputs).build())
                 .build();
+    }
+
+    private static RunSummary withStep(RunSummary run, LoadBotState state, double p99Millis) {
+        return withStep(run, state, 1_000, p99Millis);
+    }
+
+    private static RunSummary withStep(RunSummary run, LoadBotState state, long count, double p99Millis) {
+        var steps = new EnumMap<LoadBotState, StepStats>(LoadBotState.class);
+        steps.putAll(run.steps());
+        steps.put(
+                state,
+                StepStats.builder()
+                        .count(count)
+                        .p50Millis(p99Millis / 2)
+                        .p99Millis(p99Millis)
+                        .p999Millis(p99Millis)
+                        .maxMillis(p99Millis)
+                        .build());
+        return run.toBuilder().steps(steps).build();
     }
 
     private static RunSummary run(String runId, LoopStats loop) {
@@ -714,6 +949,7 @@ class GateTest {
 
     private static RunSummary run(String runId, Map<String, LoopStats> loops) {
         return RunSummary.builder()
+                .reportVersion(RunSummary.REPORT_VERSION)
                 .runId(runId)
                 .scenario(SCENARIO)
                 .measuredPhase(MeasuredPhase.STEADY)
@@ -733,7 +969,10 @@ class GateTest {
                 .timeoutShare(0.001)
                 .rejectedShare(0.001)
                 .stoppedShare(0)
-                .server(ServerStats.builder().loops(loops).build())
+                .server(ServerStats.builder()
+                        .loops(loops)
+                        .inputs(Map.of(TYPE, input(1.0)))
+                        .build())
                 .build();
     }
 
@@ -756,6 +995,19 @@ class GateTest {
                 .p99Millis(p99Millis)
                 .p999Millis(p99Millis)
                 .maxMillis(p99Millis)
+                .build();
+    }
+
+    private static InputStats input(double p99Millis) {
+        return input(p99Millis, 10_000);
+    }
+
+    private static InputStats input(double p99Millis, long count) {
+        return InputStats.builder()
+                .count(count)
+                .p50Millis(p99Millis / 4)
+                .p99Millis(p99Millis)
+                .maxMillis(p99Millis * 2)
                 .build();
     }
 }

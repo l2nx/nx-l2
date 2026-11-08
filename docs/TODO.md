@@ -10,8 +10,8 @@ lists what is open.
 - [#155](https://github.com/l2nx/nx-l2/issues/155) Move the remaining item and adena transfers onto value transactions
 - [#151](https://github.com/l2nx/nx-l2/issues/151) Engine core performance: regressions and improvements left for later
 - [#202](https://github.com/l2nx/nx-l2/issues/202) LoadRunTest counts ramp lifecycle steps in the steady window under a loaded machine
+- [#203](https://github.com/l2nx/nx-l2/issues/203) MailItemRepositoryTest online adena limit case fails intermittently in a full server test run
 - [#194](https://github.com/l2nx/nx-l2/issues/194) Serialize a broadcast packet once and drop per-packet attribute lookups on the send path
-- [#195](https://github.com/l2nx/nx-l2/issues/195) Correct the load harness runbook, spec 009 and the run speed constant
 - [#196](https://github.com/l2nx/nx-l2/issues/196) Check every mutation result in the item handlers touched by the pending item pass
 - [#197](https://github.com/l2nx/nx-l2/issues/197) Share one residence function implementation between clan halls, castles and forts
 - [#198](https://github.com/l2nx/nx-l2/issues/198) Execute a planned item take before the payment and name the fort siege registration fee
@@ -63,7 +63,6 @@ lists what is open.
 - [#61](https://github.com/l2nx/nx-l2/issues/61) Castle.setOwner throws for a castle without a territory
 - [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
 - [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
-- [#192](https://github.com/l2nx/nx-l2/issues/192) load-pve: 4.6% of MoveTo intents time out with no server answer
 - [#193](https://github.com/l2nx/nx-l2/issues/193) CombatBehaviour marks the wrong target as refused after a late intent failure
 - [#68](https://github.com/l2nx/nx-l2/issues/68) E0: load harness in a separate process, gate of the E6 cutover ([spec 009](specs/009-load-harness.md))
 - E0 / relay: real-client checks of the first slice that need a second client (observer movement, party, clan and

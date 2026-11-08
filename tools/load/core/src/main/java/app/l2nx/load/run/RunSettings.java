@@ -4,6 +4,7 @@
  */
 package app.l2nx.load.run;
 
+import app.l2nx.load.gate.model.GateThresholds;
 import app.l2nx.load.injection.InjectionProfile;
 import java.time.Duration;
 import lombok.Builder;
@@ -23,6 +24,7 @@ public record RunSettings(
         Duration intentTimeout,
         Duration lifecycleTimeout,
         Duration maxGeneratorLagP99,
+        GateThresholds gate,
         String serverCommit,
         String cpuAffinity) {
     public RunSettings {
@@ -41,6 +43,9 @@ public record RunSettings(
                     + " must not be below the intent timeout " + intentTimeout);
         }
         requirePositive("maximum generator lag p99", maxGeneratorLagP99);
+        if (gate == null) {
+            throw new IllegalArgumentException("The gate thresholds are required");
+        }
         if (serverCommit != null) {
             requireText("server commit", serverCommit);
         }
@@ -54,7 +59,8 @@ public record RunSettings(
                 .eventLoopThreads(Runtime.getRuntime().availableProcessors())
                 .intentTimeout(Duration.ofSeconds(5))
                 .lifecycleTimeout(Duration.ofSeconds(30))
-                .maxGeneratorLagP99(Duration.ofMillis(10));
+                .maxGeneratorLagP99(Duration.ofMillis(10))
+                .gate(GateThresholds.defaults());
     }
 
     private static void requireText(String name, String value) {

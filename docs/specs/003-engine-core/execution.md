@@ -528,7 +528,7 @@ legacy locks (managers, scripts) go as E7 and E10 rework their code.
 - **Bot load tests** with a siege scenario on the full local stack are the acceptance criterion for every migration
   step ([spec.md §6](spec.md#6-migration)). They run from a separate process (E0,
   [spec 009](../009-load-harness.md)); the E6 cutover lands on `main` only after its gate scenario passes
-  ([spec 009 §8](../009-load-harness.md#8-e6-gate)), with the world pass p99 within `pass-budget`. A pass over budget is analysed with JDK Flight Recorder and fixed in the hot
+  ([spec 009 §8](../009-load-harness.md#8-gate)), with the world pass p99 within `pass-budget`. A pass over budget is analysed with JDK Flight Recorder and fixed in the hot
   code; returning work to shared pools is not a fix.
 
 ## 9. Replay

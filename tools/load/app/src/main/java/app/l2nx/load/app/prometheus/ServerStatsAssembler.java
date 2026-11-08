@@ -6,6 +6,7 @@ package app.l2nx.load.app.prometheus;
 
 import app.l2nx.load.app.prometheus.model.QueryResponse;
 import app.l2nx.load.app.prometheus.model.Sample;
+import app.l2nx.load.report.model.InputStats;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.ProcessStats;
 import app.l2nx.load.report.model.ServerStats;
@@ -47,6 +48,7 @@ public final class ServerStatsAssembler {
                         sample -> true))
                 .legacyPacketMeanMillis(millisBy(results, ServerMeterQuery.LEGACY_PACKET_MEAN, TYPE, sample -> true))
                 .processes(processes(results))
+                .inputs(inputs(results))
                 .build();
     }
 
@@ -88,9 +90,33 @@ public final class ServerStatsAssembler {
                             .phaseMeanMillis(millisBy(results, ServerMeterQuery.PHASE_MEAN, PHASE, ofLoop))
                             .inboxDepthMax(value(results, ServerMeterQuery.INBOX_DEPTH_MAX, ofLoop))
                             .inboxDepthP99(value(results, ServerMeterQuery.INBOX_DEPTH_P99, ofLoop))
+                            .busyShare(value(results, ServerMeterQuery.PASS_BUSY_SHARE, ofLoop))
                             .build());
         }
         return loops;
+    }
+
+    /** Every outcome counts, since a failed input took its time too. */
+    private static Map<String, InputStats> inputs(Map<ServerMeterQuery, List<Sample>> results) {
+        final Map<String, InputStats> inputs = new TreeMap<>();
+        for (Sample sample : result(results, ServerMeterQuery.INPUT_COUNT)) {
+            final String type = sample.labels().get(TYPE);
+            if (type == null || Double.isNaN(sample.value()) || Math.round(sample.value()) == 0) {
+                continue;
+            }
+            final Predicate<Sample> ofType =
+                    candidate -> type.equals(candidate.labels().get(TYPE));
+            inputs.put(
+                    type,
+                    InputStats.builder()
+                            .count(Math.round(sample.value()))
+                            .p50Millis(millis(value(results, ServerMeterQuery.INPUT_P50, ofType)))
+                            .p99Millis(millis(value(results, ServerMeterQuery.INPUT_P99, ofType)))
+                            .maxMillis(millis(boundedMax(
+                                    results, ServerMeterQuery.INPUT_MAX, ServerMeterQuery.INPUT_BUCKETS, ofType)))
+                            .build());
+        }
+        return inputs;
     }
 
     private static Map<String, Double> millisBy(

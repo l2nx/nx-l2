@@ -60,6 +60,67 @@ class ServerStatsTest {
         }
     }
 
+    @Nested
+    class Worst {
+        @Test
+        void timedLoops_shouldLeaveOutUntimedLoops() {
+            final ServerStats actual = stats(Map.of("world-0", timed(10.0, 1, 100), "session-drain", untimed()));
+
+            assertThat(actual.timedLoops()).containsOnlyKeys("world-0");
+        }
+
+        @Test
+        void worst_shouldTakeTheHighestValuesOverTheTimedLoops() {
+            final ServerStats actual = stats(
+                    Map.of("world-0", timed(10.0, 4, 100), "world-1", timed(30.0, 1, 100), "session-drain", untimed()));
+
+            assertThat(actual.worstPassP99Millis()).isEqualTo(30.0);
+            assertThat(actual.worstOverBudgetShare()).isEqualTo(0.04);
+        }
+
+        @Test
+        void worst_shouldBeNull_whenATimedLoopHasNoPass() {
+            final ServerStats actual = stats(Map.of("world-0", timed(10.0, 1, 100), "world-1", timed(null, 0, 0)));
+
+            assertThat(actual.worstPassP99Millis()).isNull();
+            assertThat(actual.worstOverBudgetShare()).isNull();
+        }
+
+        @Test
+        void worstPassP99Millis_shouldBeNull_whenATimedLoopHasNoP99() {
+            final ServerStats actual = stats(Map.of("world-0", timed(10.0, 1, 100), "world-1", timed(null, 1, 100)));
+
+            assertThat(actual.worstPassP99Millis()).isNull();
+            assertThat(actual.worstOverBudgetShare()).isEqualTo(0.01);
+        }
+
+        @Test
+        void worst_shouldBeNull_whenThereIsNoTimedLoop() {
+            final ServerStats actual = stats(Map.of("session-drain", untimed()));
+
+            assertThat(actual.timedLoops()).isEmpty();
+            assertThat(actual.worstPassP99Millis()).isNull();
+            assertThat(actual.worstOverBudgetShare()).isNull();
+            assertThat(ServerStats.builder().build().timedLoops()).isEmpty();
+        }
+
+        private static ServerStats stats(Map<String, LoopStats> loops) {
+            return ServerStats.builder().loops(loops).build();
+        }
+
+        private static LoopStats timed(Double passP99Millis, long overBudget, long passes) {
+            return loop().toBuilder()
+                    .passes(passes)
+                    .overBudget(overBudget)
+                    .passP99Millis(passP99Millis)
+                    .build();
+        }
+
+        private static LoopStats untimed() {
+            return loop().toBuilder().untimed(true).failures(3).build();
+        }
+    }
+
     private static LoopStats loop() {
         return LoopStats.builder().phaseMeanMillis(Map.of()).build();
     }

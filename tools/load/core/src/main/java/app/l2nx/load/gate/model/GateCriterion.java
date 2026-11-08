@@ -11,8 +11,15 @@ public enum GateCriterion {
     /** Together with {@link #OVER_BUDGET_SHARE}, applies only to runs whose final state is {@code IN_GAME}. */
     ENGINE_PASS_P99,
     OVER_BUDGET_SHARE,
-    /** Intents and lifecycle steps; not applicable while there is no baseline yet. */
-    CLIENT_LATENCY_P99,
+    /**
+     * Input time p99 of every input class against its baseline; not applicable without a baseline. Client latency of
+     * intents is reported, not gated: game timing sets it.
+     */
+    INPUT_TIME_P99,
+    /**
+     * Client p99 of every lifecycle step against its baseline; not applicable without a baseline.
+     */
+    LIFECYCLE_STEP_P99,
     TIMEOUTS_AND_ERRORS,
     NOT_AT_FINAL_STATE,
     OWNERSHIP_VIOLATIONS

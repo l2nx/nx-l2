@@ -7,6 +7,7 @@ package app.l2nx.load.run;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.tuple;
 
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotIdentity;
@@ -14,8 +15,10 @@ import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.injection.InjectionProfile;
 import app.l2nx.load.latency.LatencyRecorder;
 import app.l2nx.load.protocol.FakeProtocol;
+import app.l2nx.load.report.model.CapacityLimit;
 import app.l2nx.load.report.model.IntentStats;
 import app.l2nx.load.report.model.InvalidReason;
+import app.l2nx.load.report.model.LevelStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
@@ -186,6 +189,29 @@ class LoadRunTest {
         }
 
         @Test
+        void execute_shouldFailBeforeTheRunIdIsClaimed_whenARunWithLevelsMeasuresTheRamp() {
+            final List<String> claimed = new CopyOnWriteArrayList<>();
+            final RunSettings settings = SETTINGS.toBuilder()
+                    .injection(SETTINGS.injection().toBuilder()
+                            .levels(InjectionProfile.Levels.builder()
+                                    .increment(4)
+                                    .count(2)
+                                    .duration(Duration.ofMillis(300))
+                                    .ramp(Duration.ZERO)
+                                    .build())
+                            .build())
+                    .build();
+            final FakeScenario scenario = new FakeScenario(INTERVAL, Duration.ZERO).measuredPhase(MeasuredPhase.RAMP);
+
+            assertThatIllegalArgumentException()
+                    .isThrownBy(
+                            () -> run.execute(settings, scenario, protocol, IDENTITIES, latencies, null, claimed::add))
+                    .withMessageContaining("measures each level like a steady window");
+            assertThat(claimed).isEmpty();
+            assertThat(protocol.sessions()).isEmpty();
+        }
+
+        @Test
         void execute_shouldFailBeforeAnyLoadBotStarts_whenServerMetersAreNotReady() {
             final RecordingMeterWindow meters = new RecordingMeterWindow().notReady();
 
@@ -199,6 +225,84 @@ class LoadRunTest {
 
     @Nested
     class Summary {
+        @Test
+        void execute_shouldMeasureEveryLevelAndGiveTheCapacity_whenTheRunHasLevels() throws InterruptedException {
+            final RunSettings settings = SETTINGS.toBuilder()
+                    .injection(SETTINGS.injection().toBuilder()
+                            .bots(4)
+                            .levels(InjectionProfile.Levels.builder()
+                                    .increment(4)
+                                    .count(2)
+                                    .duration(Duration.ofMillis(300))
+                                    .ramp(Duration.ofMillis(50))
+                                    .build())
+                            .build())
+                    .maxGeneratorLagP99(Duration.ofMillis(100))
+                    .build();
+            final RecordingMeterWindow meters = new RecordingMeterWindow();
+
+            final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), meters);
+
+            assertThat(meters.calls).containsExactly("checkReady", "start", "end", "measure", "measure");
+            assertThat(actual.serverWindow())
+                    .as("the levels carry the server values")
+                    .isNull();
+            assertThat(actual.server()).isNull();
+            assertThat(actual.reachedFinalState()).as("both levels' load bots").isEqualTo(8);
+            assertThat(actual.levels())
+                    .allSatisfy(
+                            level -> assertThat(level.generatorLagP99Millis()).isNotNull());
+            assertThat(actual.levels())
+                    .extracting(
+                            LevelStats::timeoutShare,
+                            LevelStats::rejectedShare,
+                            LevelStats::stoppedShare,
+                            LevelStats::notAtFinalStateShare)
+                    .containsOnly(tuple(0.0, 0.0, 0.0, 0.0));
+            assertThat(actual.levels()).extracting(LevelStats::bots).containsExactly(4, 8);
+            assertThat(actual.levels())
+                    .allSatisfy(level -> assertThat(level.window()).isNotNull());
+            assertThat(actual.capacity().limitedBy())
+                    .as("the recorded meters hold no loop")
+                    .isEqualTo(CapacityLimit.SERVER_METERS);
+            assertThat(actual.reportVersion()).isEqualTo(RunSummary.REPORT_VERSION);
+        }
+
+        @Test
+        void execute_shouldStopTheCapacityAtALevelThatLostLoadBots() throws InterruptedException {
+            protocol.failOnEnter(index -> index % 4 == 0);
+            final RunSettings settings = SETTINGS.toBuilder()
+                    .injection(SETTINGS.injection().toBuilder()
+                            .bots(4)
+                            .levels(InjectionProfile.Levels.builder()
+                                    .increment(4)
+                                    .count(2)
+                                    .duration(Duration.ofMillis(300))
+                                    .ramp(Duration.ofMillis(50))
+                                    .build())
+                            .build())
+                    .maxGeneratorLagP99(Duration.ofMillis(100))
+                    .build();
+
+            final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null);
+
+            assertThat(actual.levels())
+                    .extracting(LevelStats::bots, LevelStats::stoppedShare, LevelStats::notAtFinalStateShare)
+                    .as("load bots 0 and 4 stopped as they entered, each before its level ended")
+                    .containsExactly(tuple(4, 0.25, 0.25), tuple(8, 0.25, 0.25));
+            assertThat(actual.capacity().bots()).isNull();
+            assertThat(actual.capacity().limitedBy()).isEqualTo(CapacityLimit.LOAD_BOTS_FAILED);
+        }
+
+        @Test
+        void execute_shouldGiveNoLevels_whenTheRunHasNone() throws InterruptedException {
+            final RunSummary actual =
+                    execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), new RecordingMeterWindow());
+
+            assertThat(actual.levels()).isNull();
+            assertThat(actual.capacity()).isNull();
+        }
+
         @Test
         void execute_shouldReturnValidSummary_whenLoadBotsActOnTime() throws InterruptedException {
             // A 15.6 ms Windows timer tick alone can exceed the 10 ms lag limit; the limit has a test of its own.
@@ -508,10 +612,21 @@ class LoadRunTest {
         }
 
         @Override
+        public void end() {
+            calls.add("end");
+        }
+
+        @Override
         public ServerStats finish(ServerWindow finished) {
             finishedAt.set(System.nanoTime());
             window.set(finished);
             calls.add("finish");
+            return readable ? STATS : null;
+        }
+
+        @Override
+        public ServerStats measure(ServerWindow measured) {
+            calls.add("measure");
             return readable ? STATS : null;
         }
     }

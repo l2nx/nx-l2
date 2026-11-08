@@ -17,6 +17,7 @@ public enum ServerMeterQuery {
     PASS_P99("histogram_quantile(0.99, sum by (loop, le) " + delta("l2nx_engine_pass_seconds_bucket") + ")"),
     PASS_BUCKETS("sum by (loop, le) " + delta("l2nx_engine_pass_seconds_bucket")),
     PASS_MAX("max by (loop) (max_over_time(l2nx_engine_pass_seconds_max[%1$dms]))"),
+    PASS_BUSY_SHARE("sum by (loop) " + delta("l2nx_engine_pass_seconds_sum") + " / (%1$d / 1000)"),
     PHASE_MEAN("sum by (loop, phase) " + delta("l2nx_engine_pass_phase_seconds_sum") + " / sum by (loop, phase) "
             + delta("l2nx_engine_pass_phase_seconds_count")),
     OVER_BUDGET("sum by (loop) " + delta("l2nx_engine_pass_over_budget_total")),
@@ -34,6 +35,11 @@ public enum ServerMeterQuery {
     SESSION_QUEUE_DEPTH_MAX("max(max_over_time(l2nx_session_queue_depth_max[%1$dms]))"),
     LEGACY_PACKET_MEAN("sum by (type) " + delta("l2nx_legacy_packet_seconds_sum") + " / sum by (type) "
             + delta("l2nx_legacy_packet_seconds_count")),
+    INPUT_COUNT("sum by (type) " + delta("l2nx_session_input_seconds_count")),
+    INPUT_P50("histogram_quantile(0.5, sum by (type, le) " + delta("l2nx_session_input_seconds_bucket") + ")"),
+    INPUT_P99("histogram_quantile(0.99, sum by (type, le) " + delta("l2nx_session_input_seconds_bucket") + ")"),
+    INPUT_BUCKETS("sum by (type, le) " + delta("l2nx_session_input_seconds_bucket")),
+    INPUT_MAX("max by (type) (max_over_time(l2nx_session_input_seconds_max[%1$dms]))"),
     GC_PAUSE_P99("histogram_quantile(0.99, sum by (job, le) " + delta("jvm_gc_pause_seconds_bucket") + ")"),
     GC_PAUSE_BUCKETS("sum by (job, le) " + delta("jvm_gc_pause_seconds_bucket")),
     GC_PAUSE_MEAN("sum by (job) " + delta("jvm_gc_pause_seconds_sum") + " / sum by (job) "

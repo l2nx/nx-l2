@@ -23,5 +23,16 @@ public interface ServerMeterWindow {
 
     void start();
 
-    ServerStats finish(ServerWindow window) throws InterruptedException;
+    void end();
+
+    default ServerStats finish(ServerWindow window) throws InterruptedException {
+        end();
+        return measure(window);
+    }
+
+    /**
+     * Reads a window that has already ended: a capacity run reads each level after the last, so no query overlaps the
+     * next level.
+     */
+    ServerStats measure(ServerWindow window) throws InterruptedException;
 }

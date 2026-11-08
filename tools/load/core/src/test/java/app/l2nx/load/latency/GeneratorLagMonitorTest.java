@@ -35,4 +35,34 @@ class GeneratorLagMonitorTest {
             assertThat(monitor.p99Nanos()).isZero();
         }
     }
+
+    @Nested
+    class Levels {
+        @Test
+        void levelHistogram_shouldKeepEachLevelApart() {
+            final GeneratorLagMonitor levelled = new GeneratorLagMonitor(2);
+            for (int i = 0; i < 100; i++) {
+                levelled.recordLevel(0, 1_000_000);
+                levelled.recordLevel(1, 20_000_000);
+            }
+
+            assertThat(levelled.levelHistogram(0).getValueAtPercentile(99.0)).isBetween(999_000L, 1_001_000L);
+            assertThat(levelled.levelHistogram(1).getValueAtPercentile(99.0)).isBetween(19_990_000L, 20_010_000L);
+            assertThat(levelled.p99Nanos())
+                    .as("the run-wide lag is recorded apart")
+                    .isZero();
+        }
+
+        @Test
+        void levelHistogram_shouldBeEmpty_whenNoTaskOfTheLevelRan() {
+            final GeneratorLagMonitor levelled = new GeneratorLagMonitor(2);
+            levelled.recordLevel(0, 1_000_000);
+
+            assertThat(levelled.levelHistogram(1).getTotalCount()).isZero();
+            assertThat(levelled.levelHistogram(0).getTotalCount())
+                    .as("a read does not drain the level")
+                    .isEqualTo(1);
+            assertThat(levelled.levelHistogram(0).getTotalCount()).isEqualTo(1);
+        }
+    }
 }

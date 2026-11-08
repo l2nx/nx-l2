@@ -24,6 +24,7 @@ import app.l2nx.load.bot.observation.ObjectMoved;
 import app.l2nx.load.bot.observation.ObjectSeen;
 import app.l2nx.load.bot.observation.Observation;
 import app.l2nx.load.bot.observation.Revived;
+import app.l2nx.load.bot.observation.RunSpeedChanged;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.injection.RunTimeline;
 import app.l2nx.load.latency.GeneratorLagMonitor;
@@ -88,6 +89,9 @@ public final class LoadBot implements LoadBotView {
     private final Int2ObjectOpenHashMap<ObjectSeen> visible = new Int2ObjectOpenHashMap<>();
     private final Collection<ObjectSeen> visibleView = Collections.unmodifiableCollection(visible.values());
     private final long[] failedIntents = new long[IntentKind.values().length];
+    private final long[] levelSent;
+    private final long[] levelTimeouts;
+    private final long[] levelErrors;
 
     private LoadBotState state = LoadBotState.LOGIN_CONNECT;
     private ClientSession session;
@@ -107,9 +111,12 @@ public final class LoadBot implements LoadBotView {
     private boolean finished;
     private boolean stoppedOnError;
     private boolean reachedFinalState;
+    private long reachedFinalStateAt;
+    private long stoppedAt;
     private boolean arrivalOver;
     private int selfObjectId;
     private Position position;
+    private double runSpeed;
     private int hp;
     private int mp;
     private boolean dead;
@@ -142,6 +149,9 @@ public final class LoadBot implements LoadBotView {
         this.onStopped = onStopped;
         random = new SplittableRandom(seedOf(seed, identity.index()));
         enteredAt = timeline.startAt(identity.index());
+        levelSent = new long[timeline.levels()];
+        levelTimeouts = new long[timeline.levels()];
+        levelErrors = new long[timeline.levels()];
     }
 
     /** Intent kinds a load bot sends itself on its way to {@code finalState}; a protocol must express them. */
@@ -206,6 +216,27 @@ public final class LoadBot implements LoadBotView {
         return reachedFinalState;
     }
 
+    public boolean reachedFinalStateBefore(long time) {
+        return reachedFinalState && reachedFinalStateAt - time < 0;
+    }
+
+    public boolean stoppedOnErrorBefore(long time) {
+        return stoppedOnError && stoppedAt - time < 0;
+    }
+
+    /** Intents sent with an intended time in the measured window of {@code level}; read once its event loop is done. */
+    public long levelSent(int level) {
+        return levelSent[level];
+    }
+
+    public long levelTimeouts(int level) {
+        return levelTimeouts[level];
+    }
+
+    public long levelErrors(int level) {
+        return levelErrors[level];
+    }
+
     @Override
     public LoadBotIdentity identity() {
         return identity;
@@ -224,6 +255,11 @@ public final class LoadBot implements LoadBotView {
     @Override
     public Position position() {
         return position;
+    }
+
+    @Override
+    public double runSpeed() {
+        return runSpeed;
     }
 
     @Override
@@ -272,8 +308,13 @@ public final class LoadBot implements LoadBotView {
     }
 
     private void recordLag(long intended) {
+        final long lagNanos = timeline.now() - intended;
         if (timeline.countsLag(intended)) {
-            lag.record(timeline.now() - intended);
+            lag.record(lagNanos);
+        }
+        final int level = timeline.levelAt(intended);
+        if (level >= 0) {
+            lag.recordLevel(level, lagNanos);
         }
     }
 
@@ -390,7 +431,10 @@ public final class LoadBot implements LoadBotView {
         if (reached.compareTo(finalState) < 0) {
             return false;
         }
-        reachedFinalState = true;
+        if (!reachedFinalState) {
+            reachedFinalState = true;
+            reachedFinalStateAt = timeline.now();
+        }
         endArrival();
         if (finalState == LoadBotState.IN_GAME) {
             return false;
@@ -477,6 +521,7 @@ public final class LoadBot implements LoadBotView {
         if (counted) {
             latencies.recordSent(kind);
         }
+        countInLevel(levelSent, intended);
         if (intent instanceof Attack attack) {
             attackTarget = attack.targetObjectId();
         }
@@ -529,6 +574,7 @@ public final class LoadBot implements LoadBotView {
 
     private void countTimeout(IntentKind kind, Pending waiting) {
         failedIntents[kind.ordinal()]++;
+        countInLevel(levelTimeouts, waiting.intended);
         if (waiting.counted) {
             latencies.recordTimeout(kind, intentTimeoutNanos);
         } else if (waiting.arrival) {
@@ -539,11 +585,19 @@ public final class LoadBot implements LoadBotView {
 
     private void countError(IntentKind kind, Pending waiting) {
         failedIntents[kind.ordinal()]++;
+        countInLevel(levelErrors, waiting.intended);
         if (waiting.counted) {
             latencies.recordError(kind);
         } else if (waiting.arrival) {
             latencies.recordSent(kind);
             latencies.recordError(kind);
+        }
+    }
+
+    private void countInLevel(long[] counts, long intended) {
+        final int level = timeline.levelAt(intended);
+        if (level >= 0) {
+            counts[level]++;
         }
     }
 
@@ -668,7 +722,9 @@ public final class LoadBot implements LoadBotView {
             case Entered entered -> {
                 selfObjectId = entered.selfObjectId();
                 position = entered.position();
+                runSpeed = entered.runSpeed();
             }
+            case RunSpeedChanged changed -> runSpeed = changed.runSpeed();
             case ObjectSeen seen -> {
                 final ObjectSeen known = visible.get(seen.objectId());
                 final boolean stillDead = known != null && known.dead();
@@ -759,6 +815,7 @@ public final class LoadBot implements LoadBotView {
         finished = true;
         state = LoadBotState.STOPPED;
         stoppedOnError = onError;
+        stoppedAt = timeline.now();
         endArrival();
         cancelActions();
         if (leaveTask != null) {

@@ -23,11 +23,16 @@ import app.l2nx.load.protocol.ClientSession;
 import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.load.protocol.p267.P267Protocol;
 import app.l2nx.load.report.ReportWriter;
+import app.l2nx.load.report.model.Capacity;
+import app.l2nx.load.report.model.CapacityLimit;
+import app.l2nx.load.report.model.InputStats;
 import app.l2nx.load.report.model.IntentStats;
+import app.l2nx.load.report.model.LevelStats;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.RunValidity;
 import app.l2nx.load.report.model.ServerStats;
+import app.l2nx.load.report.model.StepStats;
 import app.l2nx.load.scenario.model.MeasuredPhase;
 import io.netty.channel.EventLoop;
 import io.netty.channel.IoHandlerFactory;
@@ -39,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,6 +114,36 @@ class LoadCommandRunnerTest {
             assertThat(actual.intents().get(IntentKind.SAY).acknowledged()).isPositive();
             assertThat(summaries.getFirst().resolveSibling(ReportWriter.histogramFile(IntentKind.MOVE_TO)))
                     .exists();
+        }
+
+        @Test
+        void run_shouldReportEveryLevelAndTheCapacity_whenLevelsAreGiven() throws IOException {
+            final int exitCode = execute(
+                    LoadCommandRunner.RUN,
+                    "--l2nx.load.scenario=" + RoamLoadScenario.ID,
+                    "--l2nx.load.protocol=" + InMemoryProtocol.ID,
+                    "--l2nx.load.bots=4",
+                    "--l2nx.load.ramp=200ms",
+                    "--l2nx.load.warm-up=300ms",
+                    "--l2nx.load.levels.increment=4",
+                    "--l2nx.load.levels.count=2",
+                    "--l2nx.load.levels.duration=2s",
+                    "--l2nx.load.levels.ramp=100ms",
+                    "--l2nx.load.ramp-down=200ms",
+                    "--l2nx.load.seed=42",
+                    "--l2nx.load.event-loop-threads=2",
+                    "--l2nx.load.max-generator-lag-p99=100ms",
+                    "--l2nx.load.output-dir=" + root);
+
+            final List<Path> summaries = summaries(root);
+            assertThat(exitCode).isZero();
+            final RunSummary actual = reportWriter.readSummary(summaries.getFirst());
+            assertThat(actual.injection().levels().increment()).isEqualTo(4);
+            assertThat(actual.levels()).extracting(LevelStats::bots).containsExactly(4, 8);
+            assertThat(actual.capacity())
+                    .as("no server behind the in-memory protocol")
+                    .extracting(Capacity::bots, Capacity::limitedBy)
+                    .containsExactly(null, CapacityLimit.SERVER_METERS);
         }
 
         @Test
@@ -303,6 +339,8 @@ class LoadCommandRunnerTest {
                     .lifecycleTimeout(Duration.ofSeconds(30))
                     .maxGeneratorLagP99(Duration.ofMillis(100))
                     .outputDir(root)
+                    .gate(LoadProperties.Gate.builder().build())
+                    .levels(LoadProperties.Levels.builder().ramp(Duration.ZERO).build())
                     .accounts(LoadProperties.Accounts.builder()
                             .prefix("load")
                             .password("load")
@@ -382,15 +420,15 @@ class LoadCommandRunnerTest {
     @Nested
     @Execution(ExecutionMode.SAME_THREAD)
     class Gate {
-        @ParameterizedTest(name = "client p99 {0} ms against 10 ms -> exit code {1}")
-        @CsvSource({"19.5, 0", "25.0, " + LoadCommandRunner.GATE_FAILED})
-        void gate_shouldExitWithTheVerdict_whenGivenThreeReportsAndABaselineOfThree(
-                double clientP99Millis, int expected) throws IOException {
+        @ParameterizedTest(name = "input p99 {0} ms against 1 ms -> exit code {1}")
+        @CsvSource({"1.4, 0", "1.6, " + LoadCommandRunner.GATE_FAILED})
+        void gate_shouldExitWithTheVerdict_whenGivenFiveReportsAndABaselineOfFive(double inputP99Millis, int expected)
+                throws IOException {
             final Path baseline = root.resolve("baseline");
             final Path reports = root.resolve("reports");
-            for (int run = 1; run <= 3; run++) {
-                reportWriter.write(baseline, summary(run, 10.0), Map.of(), Map.of(), Map.of());
-                reportWriter.write(reports, summary(run + 3, clientP99Millis), Map.of(), Map.of(), Map.of());
+            for (int run = 1; run <= 5; run++) {
+                reportWriter.write(baseline, summary(run, 1.0), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, summary(run + 5, inputP99Millis), Map.of(), Map.of(), Map.of());
             }
 
             // No l2nx.load.protocol: the gate connects no load bot.
@@ -406,28 +444,52 @@ class LoadCommandRunnerTest {
         void gate_shouldTakeTheFloorFromTheSettings_whenOneIsGiven() throws IOException {
             final Path baseline = root.resolve("baseline");
             final Path reports = root.resolve("reports");
-            for (int run = 1; run <= 3; run++) {
-                reportWriter.write(baseline, summary(run, 10.0), Map.of(), Map.of(), Map.of());
-                reportWriter.write(reports, summary(run + 3, 15.0), Map.of(), Map.of(), Map.of());
+            for (int run = 1; run <= 5; run++) {
+                reportWriter.write(baseline, summary(run, 1.0), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, summary(run + 5, 1.4), Map.of(), Map.of(), Map.of());
             }
 
             final int actual = execute(
                     LoadCommandRunner.GATE,
                     "--" + LoadCommandRunner.BASELINE + "=" + baseline,
                     "--" + LoadCommandRunner.REPORTS + "=" + reports,
-                    "--l2nx.load.gate.client-p99-floor=1ms");
+                    "--l2nx.load.gate.input-p99-floor=100us");
 
             assertThat(actual).isEqualTo(LoadCommandRunner.GATE_FAILED);
+        }
+
+        @ParameterizedTest(name = "step p99 105 ms against 100 ms, ratio {0}, floor {1} -> exit code {2}")
+        @CsvSource({",, 0", "1.01, 4ms, " + LoadCommandRunner.GATE_FAILED, "1.01, 6ms, 0"})
+        void gate_shouldGateTheLifecycleStepsWithTheSettings_whenTheStepP99Grows(
+                Double ratio, String floor, int expected) throws IOException {
+            final Path baseline = root.resolve("baseline");
+            final Path reports = root.resolve("reports");
+            for (int run = 1; run <= 5; run++) {
+                reportWriter.write(baseline, withLoginStep(summary(run, 1.0), 100.0), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, withLoginStep(summary(run + 5, 1.0), 105.0), Map.of(), Map.of(), Map.of());
+            }
+            final List<String> args = new ArrayList<>(List.of(
+                    LoadCommandRunner.GATE,
+                    "--" + LoadCommandRunner.BASELINE + "=" + baseline,
+                    "--" + LoadCommandRunner.REPORTS + "=" + reports));
+            if (ratio != null) {
+                args.add("--l2nx.load.gate.max-step-p99-ratio=" + ratio);
+                args.add("--l2nx.load.gate.step-p99-floor=" + floor);
+            }
+
+            final int actual = execute(args.toArray(String[]::new));
+
+            assertThat(actual).isEqualTo(expected);
         }
 
         @Test
         void gate_shouldNotCountABaselineFileAsARun_whenTheReportsDirectoryHoldsBoth() throws IOException {
             final Path reports = root.resolve("reports");
             final StringBuilder baseline = new StringBuilder();
-            for (int run = 1; run <= 3; run++) {
-                final Path directory = reportWriter.write(reports, summary(run, 10.0), Map.of(), Map.of(), Map.of());
+            for (int run = 1; run <= 5; run++) {
+                final Path directory = reportWriter.write(reports, summary(run, 1.0), Map.of(), Map.of(), Map.of());
                 baseline.append(directory.resolve(ReportWriter.SUMMARY_FILE)).append(',');
-                reportWriter.write(reports, summary(run + 3, 100.0), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, summary(run + 5, 10.0), Map.of(), Map.of(), Map.of());
             }
 
             final int actual = execute(
@@ -443,13 +505,31 @@ class LoadCommandRunnerTest {
         @Test
         void gate_shouldPassOnTheAbsoluteCriteria_whenNoBaselineIsGiven() throws IOException {
             final Path reports = root.resolve("reports");
-            for (int run = 1; run <= 3; run++) {
-                reportWriter.write(reports, summary(run, 100.0), Map.of(), Map.of(), Map.of());
+            for (int run = 1; run <= 5; run++) {
+                reportWriter.write(reports, summary(run, 10.0), Map.of(), Map.of(), Map.of());
             }
 
             final int actual = execute(LoadCommandRunner.GATE, "--" + LoadCommandRunner.REPORTS + "=" + reports);
 
             assertThat(actual).isZero();
+        }
+
+        @Test
+        void gate_shouldFail_whenTheBaselineWasTakenWithReportVersionOne() throws IOException {
+            final Path baseline = root.resolve("baseline");
+            final Path reports = root.resolve("reports");
+            for (int run = 1; run <= 5; run++) {
+                reportWriter.write(
+                        baseline, summary(run, 1.0).toBuilder().reportVersion(1).build(), Map.of(), Map.of(), Map.of());
+                reportWriter.write(reports, summary(run + 5, 1.0), Map.of(), Map.of(), Map.of());
+            }
+
+            final int actual = execute(
+                    LoadCommandRunner.GATE,
+                    "--" + LoadCommandRunner.BASELINE + "=" + baseline,
+                    "--" + LoadCommandRunner.REPORTS + "=" + reports);
+
+            assertThat(actual).isEqualTo(LoadCommandRunner.GATE_FAILED);
         }
 
         @Test
@@ -484,8 +564,23 @@ class LoadCommandRunnerTest {
         }
     }
 
-    private static RunSummary summary(int run, double clientP99Millis) {
+    private static RunSummary withLoginStep(RunSummary summary, double p99Millis) {
+        return summary.toBuilder()
+                .steps(Map.of(
+                        LoadBotState.LOGIN_AUTH,
+                        StepStats.builder()
+                                .count(500)
+                                .p50Millis(p99Millis / 2)
+                                .p99Millis(p99Millis)
+                                .p999Millis(p99Millis)
+                                .maxMillis(p99Millis)
+                                .build()))
+                .build();
+    }
+
+    private static RunSummary summary(int run, double inputP99Millis) {
         return RunSummary.builder()
+                .reportVersion(RunSummary.REPORT_VERSION)
                 .runId(RoamLoadScenario.ID + "-" + run)
                 .scenario(RoamLoadScenario.ID)
                 .protocol(InMemoryProtocol.ID)
@@ -508,9 +603,9 @@ class LoadCommandRunnerTest {
                                 .sent(10_000)
                                 .acknowledged(10_000)
                                 .p50Millis(4.0)
-                                .p99Millis(clientP99Millis)
-                                .p999Millis(clientP99Millis * 2)
-                                .maxMillis(clientP99Millis * 3)
+                                .p99Millis(40.0)
+                                .p999Millis(80.0)
+                                .maxMillis(120.0)
                                 .build()))
                 .steps(Map.of())
                 .generatorLagP99Millis(1.0)
@@ -522,6 +617,14 @@ class LoadCommandRunnerTest {
                                         .passP50Millis(5.0)
                                         .passP99Millis(20.0)
                                         .passMaxMillis(40.0)
+                                        .build()))
+                        .inputs(Map.of(
+                                "app.l2nx.highfive.movement.command.MoveTo",
+                                InputStats.builder()
+                                        .count(10_000)
+                                        .p50Millis(inputP99Millis / 4)
+                                        .p99Millis(inputP99Millis)
+                                        .maxMillis(inputP99Millis * 2)
                                         .build()))
                         .build())
                 .build();

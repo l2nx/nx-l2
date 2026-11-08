@@ -45,8 +45,6 @@ final class CombatBehaviour implements LoadBehaviour {
     /** Below the longest move the server accepts, 9,900 units. */
     static final int MAX_WALK = 8_000;
 
-    static final double RUN_SPEED = 120.0;
-
     private static final int NO_TARGET = 0;
     private static final ActionSchedule SCHEDULE = ActionSchedule.builder()
             .interval(ACTION_INTERVAL)
@@ -62,6 +60,12 @@ final class CombatBehaviour implements LoadBehaviour {
     private int refusedTarget = NO_TARGET;
     private long failedActions;
     private long failedRevivals;
+    private long failedMoves;
+    /** Direction of the last {@code MoveTo} in radians, {@code NaN} before the first. */
+    private double walkAngle = Double.NaN;
+
+    private double turnAngle = Double.NaN;
+
     private boolean reviving;
     private boolean returning;
     private int walkSlots;
@@ -83,6 +87,7 @@ final class CombatBehaviour implements LoadBehaviour {
 
     @Override
     public Intent next(LoadBotView bot, RandomGenerator random) {
+        noteRefusedMove(bot);
         if (bot.dead()) {
             return revive(bot);
         }
@@ -97,7 +102,7 @@ final class CombatBehaviour implements LoadBehaviour {
         }
         if (returning) {
             if (distance(bot.position(), home) > HOME_RANGE) {
-                return walkTo(bot.position(), home);
+                return walkTo(bot, home);
             }
             returning = false;
         }
@@ -113,6 +118,15 @@ final class CombatBehaviour implements LoadBehaviour {
         failedRevivals = failed;
         walkSlots = 0;
         return revival;
+    }
+
+    /** The server answers a move it cannot path, such as one into a wall, with no more than ActionFailed. */
+    private void noteRefusedMove(LoadBotView bot) {
+        final long failed = bot.failedIntents(IntentKind.MOVE_TO);
+        if (failed != failedMoves) {
+            failedMoves = failed;
+            turnAngle = walkAngle + Math.PI;
+        }
     }
 
     private Intent fight(LoadBotView bot, RandomGenerator random) {
@@ -142,7 +156,7 @@ final class CombatBehaviour implements LoadBehaviour {
         }
         if (distance(bot.position(), nearest.position()) > ENGAGE_RANGE) {
             target = NO_TARGET;
-            return walkTo(bot.position(), nearest.position());
+            return walkTo(bot, nearest.position());
         }
         target = nearest.objectId();
         skillWait = Math.max(skillWait, ENGAGE_SLOTS);
@@ -174,22 +188,41 @@ final class CombatBehaviour implements LoadBehaviour {
         return nearest;
     }
 
+    /**
+     * Draws the point around the load bot, not {@code home}, which can lie behind the wall the bot stands at; a point
+     * beyond {@link #WANDER_RANGE} of {@code home} is pulled in on its line from {@code home}.
+     */
     private Intent wander(LoadBotView bot, RandomGenerator random) {
+        final Position here = bot.position();
         final double distance = WANDER_RANGE * Math.sqrt(random.nextDouble());
-        final double angle = random.nextDouble(2 * Math.PI);
-        return walkTo(
-                bot.position(),
-                home.toBuilder()
-                        .x(home.x() + (int) Math.round(distance * Math.cos(angle)))
-                        .y(home.y() + (int) Math.round(distance * Math.sin(angle)))
-                        .build());
+        final double angle = Double.isNaN(turnAngle) ? random.nextDouble(2 * Math.PI) : turnAngle;
+        final double x = here.x() - home.x() + distance * Math.cos(angle);
+        final double y = here.y() - home.y() + distance * Math.sin(angle);
+        final double scale = Math.min(1, WANDER_RANGE / Math.hypot(x, y));
+        // Truncation rounds towards home, so a point pulled in to the range stays within it.
+        final Position to = here.toBuilder()
+                .x(home.x() + (int) (x * scale))
+                .y(home.y() + (int) (y * scale))
+                .build();
+        if (to.x() == here.x() && to.y() == here.y()) {
+            return null;
+        }
+        return walkTo(bot, to);
     }
 
-    private Intent walkTo(Position from, Position to) {
+    private Intent walkTo(LoadBotView bot, Position to) {
+        if (bot.runSpeed() <= 0) {
+            return null;
+        }
+        final Position from = bot.position();
         final double distance = distance(from, to);
         final double share = distance > MAX_WALK ? MAX_WALK / distance : 1;
         final double walked = distance * share;
-        walkSlots = (int) Math.ceil(walked / (RUN_SPEED * ACTION_INTERVAL.toSeconds()));
+        walkSlots = (int) Math.ceil(walked / (bot.runSpeed() * ACTION_INTERVAL.toSeconds()));
+        if (distance > 0) {
+            walkAngle = Math.atan2(to.y() - from.y(), to.x() - from.x());
+        }
+        turnAngle = Double.NaN;
         return new MoveTo(to.toBuilder()
                 .x(from.x() + (int) Math.round((to.x() - from.x()) * share))
                 .y(from.y() + (int) Math.round((to.y() - from.y()) * share))

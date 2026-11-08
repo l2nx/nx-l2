@@ -8,7 +8,9 @@ import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.gate.model.CriterionResult;
 import app.l2nx.load.gate.model.GateVerdict;
+import app.l2nx.load.report.model.Capacity;
 import app.l2nx.load.report.model.FrameStats;
+import app.l2nx.load.report.model.LevelStats;
 import app.l2nx.load.report.model.RunEnvironment;
 import app.l2nx.load.report.model.RunSummary;
 import app.l2nx.load.report.model.ServerStats;
@@ -24,10 +26,13 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import org.HdrHistogram.Histogram;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.cfg.DateTimeFeature;
@@ -122,6 +127,7 @@ public final class ReportWriter {
             validity += " " + summary.invalidReasons();
         }
         line(out, "Run %s: %s", summary.runId(), validity);
+        line(out, "report version %d", summary.reportVersion());
         line(
                 out,
                 "scenario %s, protocol %s, seed %d, server commit %s, CPU affinity %s",
@@ -145,6 +151,16 @@ public final class ReportWriter {
                     summary.measuredPhase(),
                     summary.intentTimeout(),
                     summary.lifecycleTimeout());
+            if (injection.levels() != null) {
+                var levels = injection.levels();
+                line(
+                        out,
+                        "levels: %d, +%d load bots each, each level %s, ramp between levels %s",
+                        levels.count(),
+                        levels.increment(),
+                        levels.duration(),
+                        levels.ramp());
+            }
         }
         line(
                 out,
@@ -191,7 +207,11 @@ public final class ReportWriter {
         if (summary.serverStartedAt() != null) {
             line(out, "server started %s", summary.serverStartedAt());
         }
-        appendServer(out, summary.serverWindow(), summary.server());
+        // A run with levels has no run-wide server values: its level rows carry them.
+        if (summary.levels() == null) {
+            appendServer(out, summary.serverWindow(), summary.server());
+        }
+        appendLevels(out, summary.levels(), summary.capacity());
         return out.toString();
     }
 
@@ -204,11 +224,13 @@ public final class ReportWriter {
                 verdict.baselineRunIds(),
                 verdict.passed() ? "PASS" : "FAIL");
         line(out, "valid runs %s, ignored invalid runs %s", verdict.validRunIds(), verdict.invalidRunIds());
-        line(out, "%-20s %-22s %12s %12s %-6s %s", "criterion", "subject", "measured", "threshold", "result", "reason");
+        var subject = "%-" + width("subject", verdict.results().stream().map(result -> text(result.subject()))) + "s";
+        var row = "%-20s " + subject + " %12s %12s %-6s %s";
+        line(out, row, "criterion", "subject", "measured", "threshold", "result", "reason");
         for (CriterionResult result : verdict.results()) {
             line(
                     out,
-                    "%-20s %-22s %12s %12s %-6s %s",
+                    row,
                     result.criterion(),
                     text(result.subject()),
                     number(result.measured()),
@@ -284,7 +306,7 @@ public final class ReportWriter {
         }
         line(
                 out,
-                "%-20s %10s %9s %9s %9s %11s %9s %9s %9s %9s %9s %9s %9s",
+                "%-20s %10s %9s %9s %9s %11s %9s %9s %9s %9s %9s %9s %9s %9s",
                 "loop",
                 "passes",
                 "p50 ms",
@@ -297,12 +319,13 @@ public final class ReportWriter {
                 "jdbc",
                 "jdbc s",
                 "jdbc %",
-                "inbox max");
+                "inbox max",
+                "busy %");
         if (server.loops() != null) {
             new TreeMap<>(server.loops())
                     .forEach((loop, stats) -> line(
                             out,
-                            "%-20s %10d %9s %9s %9s %11d %9d %9d %9d %9d %9s %9s %9s",
+                            "%-20s %10d %9s %9s %9s %11d %9d %9d %9d %9d %9s %9s %9s %9s",
                             loop,
                             stats.passes(),
                             number(stats.passP50Millis()),
@@ -315,7 +338,8 @@ public final class ReportWriter {
                             stats.jdbcOnLoop(),
                             number(stats.jdbcOnLoopSeconds()),
                             number(stats.jdbcOnLoopShare() == null ? null : stats.jdbcOnLoopShare() * 100),
-                            number(stats.inboxDepthMax())));
+                            number(stats.inboxDepthMax()),
+                            number(stats.busyShare() == null ? null : stats.busyShare() * 100)));
         }
         line(
                 out,
@@ -338,6 +362,67 @@ public final class ReportWriter {
             new TreeMap<>(server.legacyPacketMeanMillis())
                     .forEach((type, mean) -> line(out, "%s mean %s ms", type, number(mean)));
         }
+        if (server.inputs() != null && !server.inputs().isEmpty()) {
+            var row = "%-" + width("input", server.inputs().keySet().stream()) + "s %10s %9s %9s %9s";
+            line(out, row, "input", "count", "p50 ms", "p99 ms", "max ms");
+            new TreeMap<>(server.inputs())
+                    .forEach((type, stats) -> line(
+                            out,
+                            row,
+                            type,
+                            stats.count(),
+                            number(stats.p50Millis()),
+                            number(stats.p99Millis()),
+                            number(stats.maxMillis())));
+        }
+    }
+
+    private static void appendLevels(StringBuilder out, List<LevelStats> levels, Capacity capacity) {
+        if (levels == null) {
+            return;
+        }
+        out.append('\n');
+        line(
+                out,
+                "%-10s %-24s %12s %13s %10s %10s %10s %10s %14s %13s %-5s",
+                "level bots",
+                "server window end",
+                "pass p99 ms",
+                "over budget %",
+                "busy %",
+                "timeouts %",
+                "rejected %",
+                "stopped %",
+                "not at final %",
+                "generator ms",
+                "valid");
+        for (LevelStats level : levels) {
+            line(
+                    out,
+                    "%-10d %-24s %12s %13s %10s %10.3f %10.3f %10.3f %14.3f %13s %-5s",
+                    level.bots(),
+                    level.window() == null ? NONE : level.window().end().toString(),
+                    number(level.passP99Millis()),
+                    number(level.overBudgetShare() == null ? null : level.overBudgetShare() * 100),
+                    number(
+                            level.busyShare() == null || level.busyShare().isEmpty()
+                                    ? null
+                                    : Collections.max(level.busyShare().values()) * 100),
+                    level.timeoutShare() * 100,
+                    level.rejectedShare() * 100,
+                    level.stoppedShare() * 100,
+                    level.notAtFinalStateShare() * 100,
+                    number(level.generatorLagP99Millis()),
+                    level.valid() ? "yes" : "no");
+        }
+        if (capacity != null) {
+            line(
+                    out,
+                    "capacity %s load bots, limited by %s: %s",
+                    capacity.bots() == null ? NONE : capacity.bots().toString(),
+                    capacity.limitedBy(),
+                    capacity.reason());
+        }
     }
 
     private static void writeHistogram(Path file, Histogram histogram) throws IOException {
@@ -351,6 +436,10 @@ public final class ReportWriter {
 
     private static void line(StringBuilder out, String format, Object... args) {
         out.append(String.format(Locale.ROOT, format, args)).append('\n');
+    }
+
+    private static int width(String header, Stream<String> values) {
+        return Math.max(header.length(), values.mapToInt(String::length).max().orElse(0));
     }
 
     private static String number(Double value) {

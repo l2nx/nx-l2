@@ -78,7 +78,7 @@ CLOSING → STOPPED`, the same for every protocol; `STOPPED` without a logout is
   `load-crowd-pvp` (P3). Only what scenarios need.
 - **Client duties:** what the game requires of a client and no scenario asks for stays in the adapter: `Appearing` after
   every `TeleportToLocation` (without it the server keeps the character teleporting) and a `ValidatePosition` once a
-  second. The position it sends is dead-reckoned from the last move, since the server takes a client position further
+  second. The position it sends is dead-reckoned from the last move at the run speed its own `UserInfo` carries, since the server takes a client position further
   than one tick of running as the truth.
 - **Decoding:** every frame is decrypted, since the XOR key rolls, but only the opcodes a scenario needs are decoded;
   with N load bots in one spot the generator receives about N² broadcasts. The harness times a frame from
@@ -114,6 +114,26 @@ gate settings, so one scenario runs at any size and against any baseline. Ids ca
 
 - **Injection profile:** ramp (N load bots over T), warm-up (not reported), steady (the measurement window),
   ramp-down.
+- **Levels** (capacity runs): the closed model of Gatling, `incrementConcurrentUsers(increment)`, `times(count)`,
+  `eachLevelLasting(duration)`, `separatedByRampsLasting(ramp)`, `startingFrom(bots)`, set by
+  `l2nx.load.levels.increment`, `.count`, `.duration` and `.ramp` (default `0s`). `count` is the number of levels, the
+  first included, as Gatling's `times`: level k (from 0) holds `l2nx.load.bots` + k × `increment` load bots, the first
+  entering over `l2nx.load.ramp`. The levels take the place of the steady window, so `l2nx.load.steady` is not used and
+  the measured phase is `STEADY`. Each level is measured like a steady window: its duration minus `l2nx.load.warm-up`,
+  with its own server window and generator self-check. The report gives one row per level, and the **capacity**: the
+  highest level, counting up from the first, at which the engine pass p99 of every loop is within `pass-budget` and its
+  share over budget within `max-over-budget-share`, and at which the shares of timed-out intents, rejected intents
+  and stopped load bots are within `max-timeout-and-error-share` and the share of load bots not at the final state
+  within `max-not-at-final-state-share` (the gate settings, §8, handed to the run; intents count in the level of their
+  intended time), so a server that drops load bots cannot pass a level on the fewer that remain. The capacity names
+  what ended it, checked in this order: `GENERATOR` (the next level's generator lag p99 exceeded
+  `max-generator-lag-p99`, or the level has no lag samples, so it is invalid), `LOAD_BOTS_FAILED` (the next level's
+  intent or load bot shares are over their limits), `SERVER_METERS` (the next level has no server values),
+  `PASS_BUDGET` (the next level's pass failed) or `LAST_LEVEL` (every level passed, the capacity is at least the top
+  level). When the first level does not pass, the capacity has
+  no load bot count, only that reason. The run itself reports no server values or server window, since one window
+  would span the ramps and warm-ups between the levels; each level carries its own. A run with levels is never gated
+  (§8).
 - **Measured phase:** a load scenario measures either the steady window (actions of load bots already in the game)
   or the ramp (load bots arriving: every lifecycle step and arrival intent, `Login` to `EnterWorld`, of a load bot whose
   intended start lies in the ramp, however late it completes). The server meter window and the generator self-check follow the same
@@ -127,8 +147,8 @@ gate settings, so one scenario runs at any size and against any baseline. Ids ca
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `load-login-storm` | N logins over T seconds (the ramp, its measured phase) through login and game; time of every lifecycle step up to its final state, `IN_GAME` by default; `GAME_CONNECT` measures the login server alone                                                     |
 | `load-roam`        | walking routes around points, chat at a set rate                                                                                                                                                                                                            |
-| `load-pve`         | fighting monsters in a hunting spot, target = nearest alive; a dead load bot restarts at its restart point and walks back                                                                                                                                                                                                 |
-| `load-crowd-pvp`   | the E6 gate: N characters placed in a circle in the arena zone `colosseum_battle1` (no karma), two teams by index parity, read from the character name; each attacks the nearest enemy and casts a skill every K seconds; a dead load bot gets up in place with a Feather of Blessing, since a wall divides the arena from the restart points of the colosseum, which also keeps the crowd dense. N = 500 by default |
+| `load-pve`         | fighting monsters in a hunting spot, target = nearest alive; without one in sight a load bot wanders to a point drawn around its own position inside the spot, and turns the other way after a move the server refused (a wall in the way gets only `ActionFailed`); a dead load bot restarts at its restart point and walks back                                                                                                                                                                                                 |
+| `load-crowd-pvp`   | the E6 gate: N characters placed in a circle in the arena zone `colosseum_battle1` (no karma), two teams by index parity, read from the character name; each attacks the nearest enemy and casts a skill every K seconds; a dead load bot gets up in place with a Feather of Blessing, since a wall divides the arena from the restart points of the colosseum, which also keeps the crowd dense. N comes from `l2nx.load.bots` (default 100); the gate size is recorded in the runbook |
 
 `Attack` is sent only when a load bot has no live target: the server repeats the attack by itself, so a second click
 would be acknowledged by a hit already on its way and record a false latency. `UseSkill` is the steady combat intent.
@@ -205,17 +225,39 @@ depth by their builders, `jvm.gc.pause` through `management.metrics.distribution
 
 | Meter                                                        | Report value                                           | PromQL (`R` ms, at the window end)                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `l2nx.engine.pass` (percentile histogram)                    | passes, p50, p99, max per `loop`                       | `sum by (loop) Δ(l2nx_engine_pass_seconds_count)`; `histogram_quantile(0.5, sum by (loop, le) Δ(l2nx_engine_pass_seconds_bucket))` and the same with `0.99`; max: `max by (loop) (max_over_time(l2nx_engine_pass_seconds_max[Rms]))` capped by `sum by (loop, le) Δ(l2nx_engine_pass_seconds_bucket)`                                                                                                                       |
+| `l2nx.engine.pass` (percentile histogram)                    | passes, p50, p99, max and busy share per `loop`        | `sum by (loop) Δ(l2nx_engine_pass_seconds_count)`; `histogram_quantile(0.5, sum by (loop, le) Δ(l2nx_engine_pass_seconds_bucket))` and the same with `0.99`; max: `max by (loop) (max_over_time(l2nx_engine_pass_seconds_max[Rms]))` capped by `sum by (loop, le) Δ(l2nx_engine_pass_seconds_bucket)`; busy share: `sum by (loop) Δ(l2nx_engine_pass_seconds_sum)` divided by the window in seconds                                                                                                                       |
 | `l2nx.engine.pass.phase`                                     | mean per `loop` and phase                              | `sum by (loop, phase) Δ(l2nx_engine_pass_phase_seconds_sum) / sum by (loop, phase) Δ(l2nx_engine_pass_phase_seconds_count)`                                                                                                                                                                                                                                                                                                 |
 | `l2nx.engine.pass.over.budget`, `failures`, `timers.overdue` | count per `loop`                                       | `sum by (loop) Δ(l2nx_engine_pass_over_budget_total)`, the same for `l2nx_engine_failures_total` and `l2nx_engine_timers_overdue_total`                                                                                                                                                                                                                                                                                     |
 | `l2nx.engine.ownership.violations`                           | count per `loop`                                       | `sum by (loop) Δ(l2nx_engine_ownership_violations_total)` |
 | `l2nx.engine.jdbc.on.loop`                                   | calls, seconds and share of pass time per `loop`       | `sum by (loop) Δ(l2nx_engine_jdbc_on_loop_seconds_count)`; `sum by (loop) Δ(l2nx_engine_jdbc_on_loop_seconds_sum)`, divided by `sum by (loop) Δ(l2nx_engine_pass_seconds_sum)`                                                                                                                                                                                                                                                                                                                                                                   |
 | `l2nx.engine.inbox.depth`                                    | max and p99 of the per-second samples                  | `max by (loop) (max_over_time(l2nx_engine_inbox_depth[Rms]))`; `max by (loop) (quantile_over_time(0.99, l2nx_engine_inbox_depth[Rms]))`                                                                                                                                                                                                                                                                                     |
 | `l2nx.session.queue.depth` (percentile histogram)            | p99, max                                               | `histogram_quantile(0.99, sum by (le) Δ(l2nx_session_queue_depth_bucket))`; max: `max(max_over_time(l2nx_session_queue_depth_max[Rms]))` capped by `sum by (le) Δ(l2nx_session_queue_depth_bucket)`                                                                                                                                                                                                                         |
+| `l2nx.session.input` (percentile histogram in profile `load`) | count, p50, p99, max per input class (`type`), all outcomes | `sum by (type) Δ(l2nx_session_input_seconds_count)`; `histogram_quantile(0.5, sum by (type, le) Δ(l2nx_session_input_seconds_bucket))` and the same with `0.99`; max: `max by (type) (max_over_time(l2nx_session_input_seconds_max[Rms]))` capped by `sum by (type, le) Δ(l2nx_session_input_seconds_bucket)` |
 | `l2nx.legacy.packet`                                         | mean per packet class (`type`)                         | `sum by (type) Δ(l2nx_legacy_packet_seconds_sum) / sum by (type) Δ(l2nx_legacy_packet_seconds_count)`                                                                                                                                                                                                                                                                                                                       |
 | `jvm.gc.pause`, `process.cpu.usage`, `jvm.threads.live`      | per job: GC p99, mean, max; CPU mean; live threads max | `histogram_quantile(0.99, sum by (job, le) Δ(jvm_gc_pause_seconds_bucket))`; `sum by (job) Δ(jvm_gc_pause_seconds_sum) / sum by (job) Δ(jvm_gc_pause_seconds_count)`; max: `max by (job) (max_over_time(jvm_gc_pause_seconds_max[Rms]))` capped by `sum by (job, le) Δ(jvm_gc_pause_seconds_bucket)`; `avg by (job) (avg_over_time(process_cpu_usage[Rms]))`; `max by (job) (max_over_time(jvm_threads_live_threads[Rms]))` |
 
 Engine rows come from the game server only, which alone runs the loops; JVM and process rows are reported per job.
+
+**Input time** (`l2nx.session.input`, tags `type`, `outcome`, `exception`, as on `l2nx.session.command` and
+`l2nx.legacy.packet`): the time of one session input, a command or a legacy packet, server-addressed ones included,
+from its enqueue on the IO thread to the end of its run, read once at the end of the run by the same `RunTimers` that
+time the run. It covers the wait in the session queue and the run, on the session pool before `AUTHED` and on the
+world loop after it, so a saturated loop shows as input time even when every handler is fast. An input that never
+runs (discarded by the close, rejected for a missing context, or replaced by a newer coalescable input of its type)
+is not recorded; a coalescable input that replaced older ones counts from the enqueue of the oldest it replaced, so
+coalescing cannot hide a queue that backs up. The game server's `application-load.yaml` turns on
+its percentile histogram and the service level objectives below through `management.metrics.distribution.*`, so
+production keeps the plain timer:
+
+| Meter                | Bucket bounds (`slo`)                                                              |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `l2nx.session.input` | 25, 50, 100, 250 and 500 µs, then every 0.25 ms up to 5 ms, every 1 ms up to 50 ms |
+| `l2nx.engine.pass`   | every 0.25 ms up to 5 ms, every 1 ms up to 50 ms                                   |
+
+Without them the default Micrometer buckets near p99 lie 0.35 ms apart at 1 to 4 ms, so two neighbouring buckets
+already spread the p99 of like runs by 40%. The property matches by name prefix, so the profile `load` sets an
+empty `slo` for `l2nx.engine.pass.phase`: the report reads only the mean of the phases, and their buckets would load
+the machine under test.
 A loop line is built from the union of the pass and failure series, so the session drain, which has no pass timer,
 reports its failures with zero passes. The report also records `process_start_time_seconds` of each server.
 
@@ -240,9 +282,10 @@ image is a JRE without `jcmd`, so the server starts with `-XX:StartFlightRecordi
 samples every thread with the `world` thread as its own root, because JFR's execution samples miss a thread waiting on a socket, which is where JDBC on
 the loop spends its time. The recordings are kept with the run.
 
-**Report** in `build/load/<run>/`: `summary.json` (scenario, its measured phase and final state, the number of load bots that reached it, seed, N, windows, server commit, environment, client
+**Report** in `build/load/<run>/`: `summary.json` (`reportVersion`, now 2, scenario, its measured phase and final state, the number of load bots that reached it, seed, N, windows, server commit, environment, client
 p50, p99, p99.9 and max per intent and per lifecycle step, timeout, rejection and stopped shares, the server window
-`serverWindow` and the server values above), an `.hgrm` per intent and per lifecycle step,
+`serverWindow`, the server values above with the input time per `type`, and for a run with levels one row per level
+and the capacity), an `.hgrm` per intent and per lifecycle step,
 `server-metrics-<job>-start.prom` and `server-metrics-<job>-end.prom`, the text exposition of each server fetched at
 the window's start and end and kept raw for a later look (the numbers come from Prometheus; a failed fetch only loses
 its file), and a table on the console. When Prometheus has no scrape at or after the window's end in time, or a query
@@ -266,31 +309,48 @@ Always name the services: a bare `up` or `down` on the profile also recreates or
 injection profile leaves the last load bot the ramp-down and drain time to reach its final state; a run ends as soon as
 every load bot is done. `seed` writes no report.
 
-## 8. E6 gate
+## 8. Gate
 
-The `gate` command compares the reports of a scenario with its baseline:
+The `gate` command compares the reports of a scenario with its baseline. Gated scenarios: `load-crowd-pvp` at the
+gate size N, chosen so that the world loop is about 50 to 70% busy, and `load-login-storm` (its ramp measures the
+login loads on the loop). The client latency of intents is reported, not gated: the p99 of `Attack` and `UseSkill`
+is set by attack speed and cast time, and the server does not show in it. Lifecycle steps carry no game timing, and
+the login server runs no engine session, so criterion 3b gates their client p99: its limit is the larger of
+baseline × `max-step-p99-ratio` (1.10) and baseline plus `step-p99-floor` (10 ms).
 
 | #   | Criterion                                                                   | Threshold         |
 | --- | --------------------------------------------------------------------------- | ----------------- |
 | 1   | `l2nx.engine.pass` p99 over the measured phase, every loop                  | ≤ `pass-budget`   |
 | 2   | Share of passes over budget                                                 | ≤ 0.1%            |
-| 3   | Client action latency p99, every intent                                     | ≤ baseline × 1.10 |
+| 3   | Input time p99 (`l2nx.session.input`), every `type`                         | ≤ baseline × 1.10 |
+| 3b  | Client p99 of every lifecycle step                                          | ≤ baseline × 1.10 |
 | 4   | Timed-out intents; intents the server rejected; load bots stopped on errors | ≤ 0.5% each       |
 | 5   | Load bots that did not reach the final state                                | ≤ 0.5%            |
 | 6   | `l2nx.engine.ownership.violations`                                          | 0                 |
 
 - Criteria 1 and 2 apply to runs whose final state is `IN_GAME`: before it the engine has nothing of the load bots to
   run, so they are reported as not applicable.
-- A scenario runs three times, each run its own `run` from `db-reset` with fresh server processes (server state left
+- A scenario runs five times, each run its own `run` from `db-reset` with fresh server processes (server state left
   by one run, such as accounts still marked on the login server, must not leak into the next), and the gate takes the median of each criterion's per-run values, except criterion 6: one violation in any run is a defect. An invalid run does
-  not count; with fewer than three valid runs the gate fails with that reason.
+  not count; with fewer than five valid runs the gate fails with that reason. Five, so the median survives one outlier on each
+  side.
 - Thresholds live in the gate settings. The baseline numbers and the method behind them are kept in
   `docs/runbooks/load-baseline.md`.
-- **Baseline:** a set of runs of the current build, under the same validity rules, of which the gate takes the median.
+- **Baseline:** five runs of the current build, under the same validity rules, of which the gate takes the median.
   There is no legacy baseline: the single writer is not going back, so its cost against the old pools decides nothing.
-  The first three runs on a build become the baseline, criterion 3 is reported as not applicable for them and E6 is
-  accepted on the absolute criteria; from then on criterion 3 guards against regressions. Its limit is the larger of
-  baseline × 1.10 and baseline plus an absolute floor, and it covers lifecycle steps as well as intents.
+  The first runs on a build become the baseline and criterion 3 is reported as not applicable for them; from then on
+  criterion 3 guards against regressions. Its limit is the larger of baseline × `max-input-p99-ratio` (1.10) and
+  baseline plus `input-p99-floor` (0.5 ms): the floor is added to the baseline, not an absolute bound, so a p99 of a
+  fraction of a millisecond cannot fail on noise. All outcomes count, since a failed handler costs loop time too. A
+  `type` is gated when the larger of its median input count over the baseline and over the runs reaches 100 (a run
+  without it counts 0), since below that its p99 would be its maximum; a smaller one is reported, not gated. A gated
+  `type` absent from every baseline run fails as a new input class, which asks for a new baseline; one absent from the
+  runs fails with that reason. No input series on either side fails criterion 3 as a missing meter, unless the load bots
+  stop before `IN_GAME`, where a scenario may never reach the game server and the criterion is not applicable.
+- **Report version:** the gate compares `reportVersion` with the baseline's and refuses another version with the
+  reason, so a baseline is retaken after a change of what the report measures. Missing server values in a report of
+  the current version stay missing meters (criteria 1 to 3 fail), not an old format.
+- **Levels:** a run with levels (§5) changes N inside the run and is refused with that reason.
 - **Validity is about the generator only:** stopped load bots always count in criterion 4, so a server that drops them
   fails the gate instead of invalidating the run.
 - **Where it runs:** one machine, Linux, the way load generators and game servers run in production. The server,
@@ -307,7 +367,12 @@ The `gate` command compares the reports of a scenario with its baseline:
   cores, the cpuset of each service, JVM version), and the gate fails when a report's environment, injection, protocol, intent timeout, lifecycle timeout or
   measured phase differs from the baseline's, or when a server process started before the previous run. The gate is relative to a baseline taken on the same machine; criteria 1 and 2 are absolute because the
   engine measures them itself.
-- E6 is accepted when `load-crowd-pvp` passes the gate; its cutover landed on main before the gate, on the owner's decision.
+- E6 is accepted when `load-crowd-pvp` passes the gate; its cutover landed on main before the gate, on the owner's
+  decision. The first gate passed at 500 load bots but failed both trust checks (§9): the loop was 5.5% busy and its
+  criterion 3 measured game timing, hence input time at the gate size N
+  ([#68](https://github.com/l2nx/nx-l2/issues/68)).
+- Thresholds (`l2nx.load.gate.*`): `runs` 5, `pass-budget`, `max-over-budget-share` 0.1%, `max-input-p99-ratio` 1.10,
+  `input-p99-floor` 0.5 ms, `max-step-p99-ratio` 1.10, `step-p99-floor` 10 ms, `max-timeout-and-error-share` and `max-not-at-final-state-share` 0.5%.
 
 ## 9. Tests and trust
 
@@ -323,15 +388,20 @@ The `gate` command compares the reports of a scenario with its baseline:
 - **Server meters:** the PromQL text of every value, the mapping of recorded `/api/v1/query` and `/api/v1/targets` answers, and one
   Testcontainers test where a real Prometheus scrapes a stub endpoint and the harness reads known quantiles back.
 - **Gate:** report fixtures for pass, fail, invalid and too few runs.
-- **One integration test:** Testcontainers PostgreSQL, login and game servers in the test context, 20 load bots in
-  `load-roam` for 30 s; all reach `IN_GAME`, no errors, window snapshots written.
+- **One integration test** (`ScenarioRunTest`): the login and game servers started as separate processes from their
+  test distributions (`ServerProcess`), PostgreSQL and Prometheus in Testcontainers; the test seeds the characters
+  itself and plays `load-roam`, `load-crowd-pvp` and `load-pve`.
 
-**Before the gate is trusted** (once, results in `load-baseline.md`):
+**Before the gate is trusted** (with every new baseline, results in `load-baseline.md`):
 
 1. A real client stands in the `load-crowd-pvp` spot: load bots are visible, walk, hit and cast.
-2. Sensitivity: the same run with the server limited to two cores must raise client p99 and fail the gate.
-3. Repeatability: three runs with one seed spread their p99 by at most 10%; a wider spread widens the thresholds or
-   the number of runs, recorded with the reason.
+2. Sensitivity: the same runs with the game server under a CPU quota below one core (`cpus` 0.5 on the same cpuset)
+   must fail criteria 1 and 3. The world loop is one thread, so fewer cores alone do not slow it; a quota throttles the
+   whole process, the loop included. The quota is not part of the environment the gate compares.
+3. Repeatability: five runs with one seed spread the p99 of every gated value (engine pass, input time per `type`)
+   by at most 10%. A `type` whose baseline p99 is below `input-p99-floor` is left out, its quantile being an
+   interpolation inside one bucket. A wider spread widens the thresholds or the number of runs, recorded with the
+   reason.
 
 ## 10. Stages
 
@@ -341,7 +411,8 @@ The `gate` command compares the reports of a scenario with its baseline:
 | P1  | login part of `protocol-p267` (the whole `c621` exchange up to `PlayOk`); lifecycle steps, measured phase and final state in the core; the `load` profiles of the login server and the database commands; `load-login-storm` up to `GAME_CONNECT`; server meters from Prometheus (the compose profile `load` with Prometheus) | `protocols/login/c621`   |
 | P2  | game part: entering the world, `load-roam`, the integration test                                                                                                                                                                                                                                                              | first `game/p267` codecs |
 | P3  | combat codecs (§3), `load-pve`, `load-crowd-pvp`, the compose profile `load` gains the servers, the harness and `load-db` with cpusets, and the environment check; the trust checks, the baseline                                                   | P2                       |
-| P4  | dev portal page (§11)                                                                                                                                                                                                                                                                                                         | P3 numbers               |
+| P3.1 | gate v2: input time (`l2nx.session.input`) with criterion 3 on it, five runs, histograms of the profile `load`, levels and capacity, `reportVersion`, the gate on `load-login-storm`, trust checks at the gate size, a new baseline | P3 |
+| P4  | dev portal page (§11)                                                                                                                                                                                                                                                                                                         | P3.1 numbers               |
 
 ## 11. Dev portal page
 

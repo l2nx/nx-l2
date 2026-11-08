@@ -164,7 +164,7 @@ The slice layout and Spring Modulith `verify()` are checked from stage 4, when t
 over the migrated slices only ([wiring-layout.md §4](wiring-layout.md#verification)).
 
 E6 is the step with the main risk: legacy code running on one thread may not fit the budget. E1 measured the legacy
-load. The cutover landed on main before the E6 gate of the load harness ([spec 009 §8](../009-load-harness.md#8-e6-gate)),
+load. The cutover landed on main before the E6 gate of the load harness ([spec 009 §8](../009-load-harness.md#8-gate)),
 on the owner's decision, after two manual runs kept the world pass p99 within 1 ms. The gate is still its
 acceptance: the world pass p99 must stay within budget under `load-crowd-pvp`, and an overrun is fixed by profiling,
 not by returning to shared-pool threading.

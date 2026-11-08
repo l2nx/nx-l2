@@ -305,6 +305,32 @@ class PrometheusServerMetersTest {
                     .isThrownBy(() -> meters.finish(WINDOW))
                     .withMessageContaining("checkReady");
             verify(client, never()).query(any(), any());
+            verify(client, never()).text(any());
+            assertThat(meters.snapshots()).isEmpty();
+        }
+
+        @Test
+        void end_shouldFailBeforeTheSnapshot_whenCheckReadyHasNotPassed() {
+            assertThatIllegalStateException().isThrownBy(meters::end).withMessageContaining("checkReady");
+            verify(client, never()).text(any());
+            assertThat(meters.snapshots()).isEmpty();
+        }
+    }
+
+    @Nested
+    class Measure {
+        @Test
+        void measure_shouldQueryAPastWindowWithoutASnapshot() throws InterruptedException {
+            ready();
+            when(client.query(LAST_SCRAPE, null)).thenReturn(List.of(scrapedAt(END.plusSeconds(60))));
+            when(client.query(anyString(), eq(END))).thenReturn(List.of());
+            stubUp(1, 1);
+
+            final ServerStats actual = meters.measure(WINDOW);
+
+            assertThat(actual).isNotNull();
+            assertThat(meters.snapshots()).isEmpty();
+            verify(client, never()).text(any());
         }
     }
 

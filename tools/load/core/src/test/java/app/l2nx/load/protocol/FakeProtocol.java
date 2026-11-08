@@ -241,6 +241,7 @@ public final class FakeProtocol implements ClientProtocol {
             listener.observed(Entered.builder()
                     .selfObjectId(1_000 + identity.index())
                     .position(SPAWN)
+                    .runSpeed(120.0)
                     .build());
             state(LoadBotState.IN_GAME);
         }

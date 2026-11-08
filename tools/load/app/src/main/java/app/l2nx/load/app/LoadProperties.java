@@ -66,7 +66,8 @@ public record LoadProperties(
         @NotNull @Valid P267 p267,
         @NotNull @Valid Prometheus prometheus,
         @NotNull @Valid Database database,
-        @NotNull @Valid @DefaultValue Gate gate) {
+        @NotNull @Valid @DefaultValue Gate gate,
+        @NotNull @Valid @DefaultValue Levels levels) {
 
     public LoadProperties {
         scenario = StringUtils.trimToNull(scenario);
@@ -234,8 +235,10 @@ public record LoadProperties(
      * @param runs valid runs the gate needs
      * @param passBudget limit of the engine pass p99 of every loop
      * @param maxOverBudgetShare limit of the passes over budget over all passes of a loop, a fraction
-     * @param maxClientP99Ratio limit of the client p99 of an intent kind or lifecycle step over its baseline p99
-     * @param clientP99Floor the client p99 may always exceed its baseline by this much
+     * @param maxInputP99Ratio limit of the input time p99 of an input class over its baseline p99
+     * @param inputP99Floor added to the baseline p99 before the comparison
+     * @param maxStepP99Ratio limit of the client p99 of a lifecycle step over its baseline p99
+     * @param stepP99Floor added to the baseline p99 of a lifecycle step before the comparison
      * @param maxTimeoutAndErrorShare limit of the timed-out intents, of the rejected intents and of the stopped load
      *     bots, each a fraction
      * @param maxNotAtFinalStateShare limit of the load bots that did not reach the final state, a fraction
@@ -245,8 +248,30 @@ public record LoadProperties(
             @Positive Integer runs,
             @DurationMin(nanos = 0, inclusive = false) Duration passBudget,
             @DecimalMin("0") @DecimalMax("1") Double maxOverBudgetShare,
-            @DecimalMin(value = "0", inclusive = false) Double maxClientP99Ratio,
-            @DurationMin(nanos = 0) Duration clientP99Floor,
+            @DecimalMin(value = "0", inclusive = false) Double maxInputP99Ratio,
+            @DurationMin(nanos = 0) Duration inputP99Floor,
+            @DecimalMin(value = "0", inclusive = false) Double maxStepP99Ratio,
+            @DurationMin(nanos = 0) Duration stepP99Floor,
             @DecimalMin("0") @DecimalMax("1") Double maxTimeoutAndErrorShare,
             @DecimalMin("0") @DecimalMax("1") Double maxNotAtFinalStateShare) {}
+
+    /**
+     * Levels of a capacity run; without {@code increment} the run injects {@code bots} once.
+     *
+     * @param count levels, the first ({@code bots}) included
+     * @param duration of each level; its server window is the duration minus {@code warm-up}
+     */
+    @Builder(toBuilder = true)
+    public record Levels(
+            @Positive Integer increment,
+            @Positive Integer count,
+            @DurationMin(nanos = 0, inclusive = false) Duration duration,
+
+            @NotNull @DurationMin(nanos = 0) @DefaultValue("0s")
+            Duration ramp) {
+        @AssertTrue(message = "l2nx.load.levels.increment, .count and .duration go together")
+        public boolean isComplete() {
+            return (increment == null) == (count == null) && (increment == null) == (duration == null);
+        }
+    }
 }

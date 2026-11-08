@@ -13,6 +13,7 @@ import app.l2nx.load.app.LoadProperties;
 import app.l2nx.load.app.prometheus.PrometheusClient;
 import app.l2nx.load.app.prometheus.PrometheusServerMeters;
 import app.l2nx.load.app.prometheus.model.Sample;
+import app.l2nx.load.report.model.InputStats;
 import app.l2nx.load.report.model.LoopStats;
 import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.report.model.ServerWindow;
@@ -146,6 +147,13 @@ class PrometheusServerMetersTest {
                     .as("a series registered inside the window counts from zero")
                     .isEqualTo(MetricsStub.JDBC_CALLS);
             assertThat(world.inboxDepthMax()).isEqualTo(3.0);
+            assertThat(world.busyShare()).as("pass time over the window").isPositive();
+            final InputStats move = actual.inputs().get("a.MoveTo");
+            assertThat(move).isNotNull();
+            assertThat(move.p99Millis()).isCloseTo(1.0, within(1e-6));
+            assertThat(move.maxMillis())
+                    .as("the 3 ms gauge capped at the highest bucket the window filled")
+                    .isCloseTo(2.5, within(1e-6));
             assertThat(meters.snapshots())
                     .containsOnlyKeys("server-metrics-game-start.prom", "server-metrics-game-end.prom")
                     .allSatisfy((file, text) -> assertThat(text).contains("l2nx_engine_pass_seconds_bucket"));

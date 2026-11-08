@@ -124,6 +124,10 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
 
     /** @throws IllegalStateException when a load bot's character was not set up and stored */
     private void seed() throws InterruptedException {
+        if (properties.levels().increment() != null) {
+            throw new IllegalArgumentException("Seeding takes no levels: seed l2nx.load.bots accounts, one more than"
+                    + " the top level of the capacity run");
+        }
         for (CharacterPlan plan : CharacterPlan.values()) {
             seed(plan);
         }
@@ -172,23 +176,38 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         final RunSettings.RunSettingsBuilder settings = RunSettings.withDefaults()
                 .scenario(scenario.id())
                 .protocol(protocol.id())
-                .injection(InjectionProfile.builder()
-                        .bots(properties.bots())
-                        .ramp(properties.ramp())
-                        .warmUp(properties.warmUp())
-                        .steady(properties.steady())
-                        .rampDown(properties.rampDown())
-                        .build())
+                .injection(injection())
                 .seed(properties.seed())
                 .intentTimeout(properties.intentTimeout())
                 .lifecycleTimeout(properties.lifecycleTimeout())
                 .maxGeneratorLagP99(properties.maxGeneratorLagP99())
+                .gate(thresholds())
                 .serverCommit(properties.serverCommit())
                 .cpuAffinity(properties.cpuAffinity());
         if (properties.eventLoopThreads() != null) {
             settings.eventLoopThreads(properties.eventLoopThreads());
         }
         return settings.build();
+    }
+
+    private InjectionProfile injection() {
+        final LoadProperties.Levels levels = properties.levels();
+        return InjectionProfile.builder()
+                .bots(properties.bots())
+                .ramp(properties.ramp())
+                .warmUp(properties.warmUp())
+                .steady(properties.steady())
+                .rampDown(properties.rampDown())
+                .levels(
+                        levels.increment() == null
+                                ? null
+                                : InjectionProfile.Levels.builder()
+                                        .increment(levels.increment())
+                                        .count(levels.count())
+                                        .duration(levels.duration())
+                                        .ramp(levels.ramp())
+                                        .build())
+                .build();
     }
 
     private Path write(RunSummary summary, LatencyRecorder latencies, Map<String, String> metricsSnapshots)
@@ -265,11 +284,17 @@ public class LoadCommandRunner implements ApplicationRunner, ExitCodeGenerator {
         if (gate.maxOverBudgetShare() != null) {
             thresholds.maxOverBudgetShare(gate.maxOverBudgetShare());
         }
-        if (gate.maxClientP99Ratio() != null) {
-            thresholds.maxClientP99Ratio(gate.maxClientP99Ratio());
+        if (gate.maxInputP99Ratio() != null) {
+            thresholds.maxInputP99Ratio(gate.maxInputP99Ratio());
         }
-        if (gate.clientP99Floor() != null) {
-            thresholds.clientP99Floor(gate.clientP99Floor());
+        if (gate.inputP99Floor() != null) {
+            thresholds.inputP99Floor(gate.inputP99Floor());
+        }
+        if (gate.maxStepP99Ratio() != null) {
+            thresholds.maxStepP99Ratio(gate.maxStepP99Ratio());
+        }
+        if (gate.stepP99Floor() != null) {
+            thresholds.stepP99Floor(gate.stepP99Floor());
         }
         if (gate.maxTimeoutAndErrorShare() != null) {
             thresholds.maxTimeoutAndErrorShare(gate.maxTimeoutAndErrorShare());

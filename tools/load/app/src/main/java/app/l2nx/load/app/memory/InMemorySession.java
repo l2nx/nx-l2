@@ -29,6 +29,8 @@ final class InMemorySession implements ClientSession {
     // Any point works: nothing in memory depends on the world.
     static final Position SPAWN = Position.builder().x(0).y(0).z(0).build();
 
+    static final double RUN_SPEED = 120.0;
+
     private final LoadBotIdentity identity;
     private final EventLoop loop;
     private final SessionListener listener;
@@ -79,6 +81,7 @@ final class InMemorySession implements ClientSession {
         listener.observed(Entered.builder()
                 .selfObjectId(OBJECT_ID_BASE + identity.index())
                 .position(SPAWN)
+                .runSpeed(RUN_SPEED)
                 .build());
         listener.stateChanged(LoadBotState.IN_GAME);
     }

@@ -10,6 +10,7 @@ import app.l2nx.load.bot.model.LoadBotState;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -21,6 +22,31 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class LoadPropertiesTest {
+    @Nested
+    class Levels {
+        @ParameterizedTest(name = "increment {0}, count {1}, duration {2} s -> {3}")
+        @CsvSource(
+                nullValues = "null",
+                value = {
+                    "null, null, null, true",
+                    "250, 6, 90, true",
+                    "250, null, 90, false",
+                    "null, 6, null, false",
+                    "250, 6, null, false"
+                })
+        void isComplete_shouldRequireIncrementCountAndDurationTogether(
+                Integer increment, Integer count, Integer durationSeconds, boolean expected) {
+            final LoadProperties.Levels actual = LoadProperties.Levels.builder()
+                    .increment(increment)
+                    .count(count)
+                    .duration(durationSeconds == null ? null : Duration.ofSeconds(durationSeconds))
+                    .ramp(Duration.ZERO)
+                    .build();
+
+            assertThat(actual.isComplete()).isEqualTo(expected);
+        }
+    }
+
     @Nested
     class LoginStorm {
         @ParameterizedTest(name = "{0}")

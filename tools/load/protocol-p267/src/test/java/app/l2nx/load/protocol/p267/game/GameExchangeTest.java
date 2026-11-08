@@ -27,6 +27,7 @@ import app.l2nx.load.bot.observation.ObjectMoved;
 import app.l2nx.load.bot.observation.ObjectSeen;
 import app.l2nx.load.bot.observation.Observation;
 import app.l2nx.load.bot.observation.Revived;
+import app.l2nx.load.bot.observation.RunSpeedChanged;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.protocol.p267.RecordingListener;
 import app.l2nx.network.bootstrap.L2Pipeline;
@@ -240,6 +241,7 @@ class GameExchangeTest {
                                     + Entered.builder()
                                             .selfObjectId(SELF)
                                             .position(START)
+                                            .runSpeed(120.0)
                                             .build(),
                             "observed "
                                     + StatusChanged.builder().hp(500).mp(300).build(),
@@ -364,6 +366,34 @@ class GameExchangeTest {
             frame.accept(GameExchangeTest.this);
 
             assertThat(listener.events()).last().isEqualTo("observed " + expected);
+        }
+
+        @Test
+        void userInfo_shouldReportTheNewRunSpeed_whenItChanged() {
+            inWorld();
+
+            deliverRaw(out -> {
+                out.writeByte(0x32);
+                writeHead(out, START, SELF);
+                writeName(out, "load7");
+                writeSpeed(out, 120, 1.25);
+            });
+
+            assertThat(listener.events()).last().isEqualTo("observed " + new RunSpeedChanged(150.0));
+        }
+
+        @Test
+        void userInfo_shouldReportNothing_whenTheRunSpeedStayed() {
+            inWorld();
+
+            deliverRaw(out -> {
+                out.writeByte(0x32);
+                writeHead(out, START, SELF);
+                writeName(out, "load7");
+                writeSpeed(out, 120, 1.0);
+            });
+
+            assertThat(listener.events()).last().isEqualTo("state IN_GAME");
         }
 
         @Test
@@ -831,6 +861,7 @@ class GameExchangeTest {
             out.writeByte(0x32);
             writeHead(out, START, SELF);
             writeName(out, "load7");
+            writeSpeed(out, 120, 1.0);
         });
     }
 
@@ -840,6 +871,14 @@ class GameExchangeTest {
         out.writeIntLE(position.z());
         out.writeIntLE(0);
         out.writeIntLE(objectId);
+    }
+
+    /** Zeros from the race to the run speed, then the speeds and the movement multiplier. */
+    private static void writeSpeed(ByteBuf out, int runSpd, double moveMultiplier) {
+        out.writeZero(456);
+        out.writeIntLE(runSpd);
+        out.writeZero(28);
+        out.writeDoubleLE(moveMultiplier);
     }
 
     private static void writeName(ByteBuf out, String name) {

@@ -10,9 +10,8 @@ import lombok.Builder;
 /**
  * Limits of the gate; shares are fractions ({@code 0.001} is 0.1%).
  *
- * @param maxClientP99Ratio limit of the client p99 of an intent kind or lifecycle step over its baseline p99
- * @param clientP99Floor the client p99 may always exceed its baseline by this much: a ratio of a millisecond p99 is
- *     smaller than the generator lag a valid run may carry
+ * @param inputP99Floor added to the baseline p99: sub-millisecond p99 ratios are below the noise of like runs
+ * @param stepP99Floor added to the baseline p99: ~1 ms p99 ratios are below the generator lag a valid run may carry
  * @param maxTimeoutAndErrorShare limit of each share: timed-out intents, rejected intents, stopped load bots
  */
 @Builder(toBuilder = true)
@@ -20,8 +19,10 @@ public record GateThresholds(
         int runs,
         Duration passBudget,
         double maxOverBudgetShare,
-        double maxClientP99Ratio,
-        Duration clientP99Floor,
+        double maxInputP99Ratio,
+        Duration inputP99Floor,
+        double maxStepP99Ratio,
+        Duration stepP99Floor,
         double maxTimeoutAndErrorShare,
         double maxNotAtFinalStateShare) {
 
@@ -35,21 +36,29 @@ public record GateThresholds(
         requireShare("maxOverBudgetShare", maxOverBudgetShare);
         requireShare("maxTimeoutAndErrorShare", maxTimeoutAndErrorShare);
         requireShare("maxNotAtFinalStateShare", maxNotAtFinalStateShare);
-        if (!(maxClientP99Ratio > 0)) {
-            throw new IllegalArgumentException("maxClientP99Ratio must be positive, got " + maxClientP99Ratio);
+        if (!(maxInputP99Ratio > 0)) {
+            throw new IllegalArgumentException("maxInputP99Ratio must be positive, got " + maxInputP99Ratio);
         }
-        if (clientP99Floor == null || clientP99Floor.isNegative()) {
-            throw new IllegalArgumentException("clientP99Floor must be zero or positive, got " + clientP99Floor);
+        if (inputP99Floor == null || inputP99Floor.isNegative()) {
+            throw new IllegalArgumentException("inputP99Floor must be zero or positive, got " + inputP99Floor);
+        }
+        if (!(maxStepP99Ratio > 0)) {
+            throw new IllegalArgumentException("maxStepP99Ratio must be positive, got " + maxStepP99Ratio);
+        }
+        if (stepP99Floor == null || stepP99Floor.isNegative()) {
+            throw new IllegalArgumentException("stepP99Floor must be zero or positive, got " + stepP99Floor);
         }
     }
 
     public static GateThresholds defaults() {
         return GateThresholds.builder()
-                .runs(3)
+                .runs(5)
                 .passBudget(Duration.ofMillis(50))
                 .maxOverBudgetShare(0.001)
-                .maxClientP99Ratio(1.10)
-                .clientP99Floor(Duration.ofMillis(10))
+                .maxInputP99Ratio(1.10)
+                .inputP99Floor(Duration.ofNanos(500_000))
+                .maxStepP99Ratio(1.10)
+                .stepP99Floor(Duration.ofMillis(10))
                 .maxTimeoutAndErrorShare(0.005)
                 .maxNotAtFinalStateShare(0.005)
                 .build();

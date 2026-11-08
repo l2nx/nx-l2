@@ -43,6 +43,26 @@ class ServerMeterQueryTest {
         }
 
         @Test
+        void expression_shouldTakeTheInputP99ByTypeOverEveryOutcome() {
+            final String actual = ServerMeterQuery.INPUT_P99.expression(61_250);
+
+            assertThat(actual)
+                    .isEqualTo("histogram_quantile(0.99, sum by (type, le) (l2nx_session_input_seconds_bucket"
+                            + " - ((l2nx_session_input_seconds_bucket offset 61250ms)"
+                            + " or (l2nx_session_input_seconds_bucket * 0))))");
+        }
+
+        @Test
+        void expression_shouldDivideThePassTimeByTheWindowInSeconds() {
+            final String actual = ServerMeterQuery.PASS_BUSY_SHARE.expression(61_250);
+
+            assertThat(actual)
+                    .isEqualTo("sum by (loop) (l2nx_engine_pass_seconds_sum"
+                            + " - ((l2nx_engine_pass_seconds_sum offset 61250ms)"
+                            + " or (l2nx_engine_pass_seconds_sum * 0))) / (61250 / 1000)");
+        }
+
+        @Test
         void expression_shouldWriteTheRangeOfAGaugeInMilliseconds() {
             final String actual = ServerMeterQuery.PASS_MAX.expression(61_250);
 

@@ -5,6 +5,7 @@
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -69,6 +70,7 @@ class InfoHeadsTest {
         @Test
         void writeImpl_shouldGiveTheHeadItsFields() {
             final Player player = player();
+            when(player.getRunSpeed()).thenReturn(115.0);
             final TerritoryWarManager territories = mock(TerritoryWarManager.class);
             try (MockedStatic<TerritoryWarManager> instance = mockStatic(TerritoryWarManager.class)) {
                 instance.when(TerritoryWarManager::getInstance).thenReturn(territories);
@@ -83,7 +85,25 @@ class InfoHeadsTest {
                                 .vehicleId(0)
                                 .objectId(OBJECT_ID)
                                 .name(NAME)
+                                .baseRunSpeed(115)
+                                .moveMultiplier(1.0)
                                 .build());
+            }
+        }
+
+        @Test
+        void writeImpl_shouldGiveTheHeadTheRunSpeedTheClientMovesAt_whenAMultiplierApplies() {
+            final Player player = player();
+            when(player.getRunSpeed()).thenReturn(132.0);
+            when(player.getMovementSpeedMultiplier()).thenReturn(1.1);
+            final TerritoryWarManager territories = mock(TerritoryWarManager.class);
+            try (MockedStatic<TerritoryWarManager> instance = mockStatic(TerritoryWarManager.class)) {
+                instance.when(TerritoryWarManager::getInstance).thenReturn(territories);
+
+                final UserInfoHead actual = head(new UserInfo(player), GameServerOpcode.USER_INFO, UserInfoHead::read);
+
+                assertThat(actual.baseRunSpeed()).isEqualTo(120);
+                assertThat(actual.runSpeed()).isCloseTo(132.0, within(1e-9));
             }
         }
     }

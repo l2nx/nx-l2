@@ -5,6 +5,7 @@
 package app.l2nx.load.app.integration.run;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import app.l2nx.database.PostgresDatabase;
 import app.l2nx.load.app.LoadApplication;
@@ -144,6 +145,19 @@ class ScenarioRunTest {
         assertThat(roam.resolve(ReportWriter.metricsFile("game", "end"))).isNotEmptyFile();
         assertThat(roam.resolve(ReportWriter.metricsFile("login", "start"))).isNotEmptyFile();
         assertThat(roam.resolve(ReportWriter.metricsFile("login", "end"))).isNotEmptyFile();
+        final Path gameEnd = roam.resolve(ReportWriter.metricsFile("game", "end"));
+        assertThat(bucketBounds(gameEnd, "l2nx_session_input_seconds_bucket"))
+                .as("the input time buckets of the profile load")
+                .anySatisfy(bound -> assertThat(bound).isCloseTo(25e-6, within(1e-12)))
+                .anySatisfy(bound -> assertThat(bound).isCloseTo(1.25e-3, within(1e-12)));
+        assertThat(bucketBounds(gameEnd, "l2nx_engine_pass_seconds_bucket"))
+                .as("the pass buckets of the profile load")
+                .anySatisfy(bound -> assertThat(bound).isCloseTo(0.25e-3, within(1e-12)))
+                .anySatisfy(bound -> assertThat(bound).isCloseTo(4.75e-3, within(1e-12)));
+        assertThat(Files.readString(gameEnd)).contains("l2nx_engine_pass_phase_seconds_count{");
+        assertThat(bucketBounds(gameEnd, "l2nx_engine_pass_phase_seconds_bucket"))
+                .as("the phases take no pass bounds")
+                .isEmpty();
 
         assertFought(summary(play(PveLoadScenario.ID)));
         final RunSummary crowd = summary(play(CrowdPvpLoadScenario.ID));
@@ -396,6 +410,17 @@ class ScenarioRunTest {
                     .findFirst()
                     .orElseThrow();
         }
+    }
+
+    private static List<Double> bucketBounds(Path snapshot, String bucket) throws IOException {
+        final Pattern bound =
+                Pattern.compile("^" + Pattern.quote(bucket) + "\\{.*le=\"([^\"]+)\".*$", Pattern.MULTILINE);
+        return bound.matcher(Files.readString(snapshot))
+                .results()
+                .map(match -> match.group(1))
+                .filter(le -> !le.equals("+Inf"))
+                .map(Double::valueOf)
+                .toList();
     }
 
     private static RunSummary summary(Path report) {

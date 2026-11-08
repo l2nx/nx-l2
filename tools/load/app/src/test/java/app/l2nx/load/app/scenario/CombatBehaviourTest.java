@@ -19,15 +19,20 @@ import app.l2nx.load.bot.model.LoadBotState;
 import app.l2nx.load.bot.model.Position;
 import app.l2nx.load.bot.observation.ObjectSeen;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.function.Predicate;
+import java.util.random.RandomGenerator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CombatBehaviourTest {
     private static final int SKILL = 190;
@@ -129,6 +134,21 @@ class CombatBehaviourTest {
 
             assertThat(actual).isInstanceOf(MoveTo.class);
         }
+
+        @ParameterizedTest(name = "run speed {0}")
+        @ValueSource(doubles = {0, -120})
+        void next_shouldNotWalk_untilTheRunSpeedIsPositive(double runSpeed) {
+            bot.runSpeed = runSpeed;
+            bot.see(monster(1, CombatBehaviour.ENGAGE_RANGE + 100));
+            final CombatBehaviour behaviour = behaviour();
+
+            assertThat(behaviour.next(bot, random)).isNull();
+            bot.runSpeed = 120;
+
+            assertThat(behaviour.next(bot, random))
+                    .as("no walk was waited out at the unknown speed")
+                    .isInstanceOf(MoveTo.class);
+        }
     }
 
     @Nested
@@ -152,6 +172,73 @@ class CombatBehaviourTest {
                                             move.destination().x(),
                                             move.destination().y()))
                                     .isLessThanOrEqualTo(CombatBehaviour.WANDER_RANGE + 1));
+        }
+    }
+
+    @Nested
+    class Wander {
+        private final CombatBehaviour behaviour =
+                new CombatBehaviour(HOME, SKILL, MONSTERS, true, new ReviveAtRestartPoint());
+
+        @Test
+        void next_shouldWanderAroundTheLoadBotsOwnPosition_whenItStandsAwayFromHome() {
+            bot.position = HOME.toBuilder().x(200).z(-90).build();
+
+            final Intent actual = behaviour.next(bot, scripted(0.25, Math.PI / 2));
+
+            assertThat(actual)
+                    .isEqualTo(
+                            new MoveTo(Position.builder().x(200).y(250).z(-90).build()));
+        }
+
+        @Test
+        void next_shouldPullTheWanderPointInToTheSpot_whenItFallsOutside() {
+            bot.position = HOME.toBuilder().x(400).build();
+
+            final Intent actual = behaviour.next(bot, scripted(0.64, Math.PI / 2));
+
+            assertThat(actual)
+                    .as("(400, 400) lies 566 from home and is pulled in on its line from home")
+                    .isEqualTo(new MoveTo(HOME.toBuilder().x(353).y(353).build()));
+        }
+
+        @Test
+        void next_shouldNotWalk_whenTheWanderPointIsTheLoadBotsOwnPosition() {
+            bot.position = HOME.toBuilder().x(CombatBehaviour.WANDER_RANGE).build();
+
+            final Intent actual = behaviour.next(bot, scripted(0.04, 0));
+
+            assertThat(actual)
+                    .as("(600, 0) is pulled back to the load bot on the edge of the spot")
+                    .isNull();
+        }
+
+        @Test
+        void next_shouldWanderTheOtherWay_afterAMoveWasRefused() {
+            assertThat(behaviour.next(bot, scripted(0.25, 0)))
+                    .isEqualTo(new MoveTo(HOME.toBuilder().x(250).build()));
+            final List<Intent> walk = slots(behaviour, 3);
+            bot.position = HOME.toBuilder().x(100).build();
+            bot.failed.put(IntentKind.MOVE_TO, 1L);
+
+            final Intent actual = behaviour.next(bot, scripted(0.25));
+
+            assertThat(walk).containsOnlyNulls();
+            assertThat(actual).isEqualTo(new MoveTo(HOME.toBuilder().x(-150).build()));
+        }
+
+        @Test
+        void next_shouldDrawTheDirectionAgain_afterTheTurn() {
+            behaviour.next(bot, scripted(0.25, 0));
+            slots(behaviour, 3);
+            bot.failed.put(IntentKind.MOVE_TO, 1L);
+            behaviour.next(bot, scripted(0.25));
+            slots(behaviour, 3);
+            bot.position = HOME.toBuilder().x(-250).build();
+
+            final Intent actual = behaviour.next(bot, scripted(0.04, Math.PI));
+
+            assertThat(actual).isEqualTo(new MoveTo(HOME.toBuilder().x(-350).build()));
         }
     }
 
@@ -189,8 +276,24 @@ class CombatBehaviourTest {
             assertThat(behaviour.next(bot, random)).isEqualTo(new MoveTo(HOME));
             bot.position = HOME;
 
-            final int walkSlots = (int) Math.ceil(1_200 / CombatBehaviour.RUN_SPEED);
-            assertThat(slots(behaviour, walkSlots)).containsOnlyNulls();
+            assertThat(slots(behaviour, 10)).containsOnlyNulls();
+            assertThat(behaviour.next(bot, random)).isEqualTo(new Attack(1));
+        }
+
+        @Test
+        void next_shouldWaitOutTheWalkAtTheLoadBotsOwnSpeed_whenItRunsSlower() {
+            bot.runSpeed = 115;
+            bot.dead = true;
+            final CombatBehaviour behaviour = behaviour();
+            behaviour.next(bot, random);
+            bot.dead = false;
+            bot.position = HOME.toBuilder().x(1_200).build();
+            bot.see(monster(1, 100));
+
+            assertThat(behaviour.next(bot, random)).isEqualTo(new MoveTo(HOME));
+            bot.position = HOME;
+
+            assertThat(slots(behaviour, 11)).containsOnlyNulls();
             assertThat(behaviour.next(bot, random)).isEqualTo(new Attack(1));
         }
 
@@ -242,6 +345,30 @@ class CombatBehaviourTest {
         return intents;
     }
 
+    /**
+     * Hands out {@code values} in order: {@code nextDouble()} draws the share of the wander range, squared,
+     * {@code nextDouble(bound)} the angle in radians.
+     */
+    private static RandomGenerator scripted(double... values) {
+        final Iterator<Double> next = Arrays.stream(values).boxed().toList().iterator();
+        return new RandomGenerator() {
+            @Override
+            public long nextLong() {
+                throw new UnsupportedOperationException("only doubles are scripted");
+            }
+
+            @Override
+            public double nextDouble() {
+                return next.next();
+            }
+
+            @Override
+            public double nextDouble(double bound) {
+                return next.next();
+            }
+        };
+    }
+
     private static ObjectSeen monster(int objectId, int x) {
         return ObjectSeen.builder()
                 .objectId(objectId)
@@ -261,6 +388,7 @@ class CombatBehaviourTest {
         private boolean dead;
         private boolean casting;
         private int mp = 1_000;
+        private double runSpeed = 120;
 
         private void see(ObjectSeen seen) {
             visible.put(seen.objectId(), seen);
@@ -288,6 +416,11 @@ class CombatBehaviourTest {
         @Override
         public Position position() {
             return position;
+        }
+
+        @Override
+        public double runSpeed() {
+            return runSpeed;
         }
 
         @Override
