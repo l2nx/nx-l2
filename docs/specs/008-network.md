@@ -532,6 +532,10 @@ service.
 
 Run time of commands is `l2nx.session.command`, of legacy packets `l2nx.legacy.packet` (tags `type`, `outcome`,
 `exception`), timed by the session drain (`SessionMetrics`, [execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
+The input time of a session input, from its enqueue on the IO thread to the end of its run (queue wait plus run, on
+the session pool before `AUTHED` and on the world loop after it), is `l2nx.session.input` with the same tags; an input
+that never runs (discarded by the close, rejected, replaced by a newer coalescable input) is not recorded. The
+profile `load` publishes its percentile histogram ([spec 009 §7](009-load-harness.md#7-measurement-and-report)).
 Items rejected for a missing game context are `l2nx.session.rejected` (tags `type`, `context`). The depth of a session
 queue after each enqueue is `l2nx.session.queue.depth`, a distribution summary without tags (one series per connection
 would not scale) with a percentile histogram bounded by the queue limit, so p99 and max come from Prometheus. `unauthenticated` is

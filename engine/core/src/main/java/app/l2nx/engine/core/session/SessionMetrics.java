@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +27,7 @@ public final class SessionMetrics {
     public static final String REJECTED = "l2nx.session.rejected";
     public static final String DRAIN = "l2nx-game-packets";
     public static final String QUEUE_DEPTH = "l2nx.session.queue.depth";
+    public static final String INPUT = "l2nx.session.input";
 
     private final RunTimers commands;
     private final RunTimers legacyPackets;
@@ -34,8 +36,11 @@ public final class SessionMetrics {
     private final DistributionSummary queueDepth;
 
     public SessionMetrics(MeterRegistry registry, int queueLimit) {
-        commands = new RunTimers(registry, COMMAND, "Run time of commands in the session drain");
-        legacyPackets = new RunTimers(registry, LEGACY_PACKET, "Run time of client packets");
+        final MeterProvider<Timer> inputTime = Timer.builder(INPUT)
+                .description("Time of a session input from its enqueue on the IO thread to the end of its run")
+                .withRegistry(registry);
+        commands = new RunTimers(registry, COMMAND, "Run time of commands in the session drain", inputTime);
+        legacyPackets = new RunTimers(registry, LEGACY_PACKET, "Run time of client packets", inputTime);
         inboxFailures = Counter.builder(FAILURES)
                 .tag("loop", DRAIN)
                 .tag("phase", PassPhase.INBOX.tag())
@@ -55,12 +60,16 @@ public final class SessionMetrics {
         return new SessionMetrics(new SimpleMeterRegistry(), Integer.MAX_VALUE);
     }
 
-    void command(Command command, Runnable dispatch) {
-        commands.run(command.getClass(), dispatch);
+    long now() {
+        return commands.now();
     }
 
-    void legacyPacket(Runnable packet) {
-        legacyPackets.run(packet.getClass(), packet);
+    void command(Command command, long enqueuedAt, Runnable dispatch) {
+        commands.run(command.getClass(), enqueuedAt, dispatch);
+    }
+
+    void legacyPacket(Runnable packet, long enqueuedAt) {
+        legacyPackets.run(packet.getClass(), enqueuedAt, packet);
     }
 
     void queued(int depth) {

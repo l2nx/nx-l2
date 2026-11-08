@@ -29,6 +29,9 @@ import ch.qos.logback.core.read.ListAppender;
 import io.github.bucket4j.TimeMeter;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MockClock;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -88,7 +91,8 @@ class SessionTest {
     private final Queue<Runnable> drains = new ArrayDeque<>();
     private final AtomicLong nanos = new AtomicLong();
     private final FakeTransport transport = new FakeTransport();
-    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    private final MockClock meterClock = new MockClock();
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry(SimpleConfig.DEFAULT, meterClock);
     private final SessionMetrics metrics = new SessionMetrics(registry, 256);
     private final DrainScheduler pool =
             DrainScheduler.pool((drain, abandoned) -> drains.add(drain), metrics.drainFailures());
@@ -693,6 +697,127 @@ class SessionTest {
         }
     }
 
+    @Nested
+    class InputTime {
+        @Test
+        void drain_shouldRecordTheInputTimeFromEnqueueToTheEndOfTheRun_whenALegacyPacketWaitsAndRuns() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Slow(meterClock, Duration.ofMillis(3))));
+            meterClock.add(Duration.ofMillis(2));
+            runDrains();
+
+            assertThat(inputTimer(Slow.class, "SUCCESS", "none").totalTime(TimeUnit.MILLISECONDS))
+                    .as("2 ms in the queue and 3 ms of run")
+                    .isEqualTo(5.0);
+            assertThat(registry.get(SessionMetrics.LEGACY_PACKET)
+                            .tags("type", Slow.class.getName())
+                            .timer()
+                            .totalTime(TimeUnit.MILLISECONDS))
+                    .as("the run time alone")
+                    .isEqualTo(3.0);
+        }
+
+        @Test
+        void drain_shouldRecordTheInputTimeOfACommand_whenItWaitedInTheQueue() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Step(1)));
+            meterClock.add(Duration.ofMillis(4));
+            runDrains();
+
+            final Timer actual = inputTimer(Step.class, "SUCCESS", "none");
+            assertThat(actual.count()).isEqualTo(1);
+            assertThat(actual.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(4.0);
+        }
+
+        @Test
+        void drain_shouldRecordTheInputTimeWithTheError_whenTheRunFails() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Failing()));
+            meterClock.add(Duration.ofMillis(1));
+            runDrains();
+
+            final Timer actual = inputTimer(Failing.class, "ERROR", "IllegalStateException");
+            assertThat(actual.count()).isEqualTo(1);
+            assertThat(actual.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(1.0);
+        }
+
+        @Test
+        void drain_shouldTimeOnlyTheLatestOfACoalescedRunFromTheEnqueueOfTheOldestItReplaced() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Move(1)));
+            meterClock.add(Duration.ofMillis(1));
+            session.offer(session.input(new Move(2)));
+            meterClock.add(Duration.ofMillis(1));
+            session.offer(session.input(new Move(3)));
+            meterClock.add(Duration.ofMillis(2));
+            runDrains();
+
+            final Timer actual = inputTimer(Move.class, "SUCCESS", "none");
+            assertThat(actual.count()).as("the dropped moves are not recorded").isEqualTo(1);
+            assertThat(actual.totalTime(TimeUnit.MILLISECONDS))
+                    .as("the first move waited 4 ms before the latest ran")
+                    .isEqualTo(4.0);
+        }
+
+        @Test
+        void drain_shouldTimeAnInputFromItsOwnEnqueue_whenAnotherTypeSeparatesItFromAnEarlierCoalescedRun() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Move(1)));
+            session.offer(session.input(new Move(2)));
+            session.offer(session.input(new Step(1)));
+            meterClock.add(Duration.ofMillis(3));
+            session.offer(session.input(new Move(3)));
+            meterClock.add(Duration.ofMillis(1));
+            runDrains();
+
+            assertThat(inputTimer(Move.class, "SUCCESS", "none").max(TimeUnit.MILLISECONDS))
+                    .as("the first run waited 4 ms, the lone move after the step 1 ms")
+                    .isEqualTo(4.0);
+            assertThat(inputTimer(Move.class, "SUCCESS", "none").totalTime(TimeUnit.MILLISECONDS))
+                    .isEqualTo(5.0);
+        }
+
+        @Test
+        void drain_shouldRecordNoInputTime_whenTheInputIsRejectedForAMissingContext() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Bound(new AtomicBoolean(false), "bound")));
+            runDrains();
+
+            assertThat(registry.find(SessionMetrics.INPUT).timers()).isEmpty();
+        }
+
+        @Test
+        void close_shouldRecordNoInputTime_whenTheQueuedInputIsDiscarded() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offer(session.input(new Step(1)));
+            session.close();
+            runDrains();
+
+            assertThat(registry.find(SessionMetrics.INPUT).timers()).isEmpty();
+        }
+
+        @Test
+        void offerInternal_shouldCountFromTheEnqueueOnTheTransport_notFromTheCall() {
+            final Session session = session(limits(256, 16, 200, 256));
+
+            session.offerInternal(new Step(1));
+            meterClock.add(Duration.ofMillis(5));
+            transport.runTasks();
+            meterClock.add(Duration.ofMillis(1));
+            runDrains();
+
+            assertThat(inputTimer(Step.class, "SUCCESS", "none").totalTime(TimeUnit.MILLISECONDS))
+                    .isEqualTo(1.0);
+        }
+    }
+
     private static Session.Limits limits(int queueLimit, int perDrain, int perSecond, int burst) {
         return Session.Limits.builder()
                 .queueLimit(queueLimit)
@@ -771,6 +896,12 @@ class SessionTest {
         };
     }
 
+    private Timer inputTimer(Class<?> type, String outcome, String exception) {
+        return registry.get(SessionMetrics.INPUT)
+                .tags("type", type.getName(), "outcome", outcome, "exception", exception)
+                .timer();
+    }
+
     private static final class LegacyProbe implements Runnable {
         @Override
         public void run() {}
@@ -780,6 +911,21 @@ class SessionTest {
         @Override
         public void run() {
             throw new IllegalStateException("boom");
+        }
+    }
+
+    private static final class Slow implements Runnable {
+        private final MockClock clock;
+        private final Duration work;
+
+        Slow(MockClock clock, Duration work) {
+            this.clock = clock;
+            this.work = work;
+        }
+
+        @Override
+        public void run() {
+            clock.add(work);
         }
     }
 }

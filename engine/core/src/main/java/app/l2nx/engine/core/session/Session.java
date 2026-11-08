@@ -148,7 +148,11 @@ public final class Session implements InputSource {
 
     private boolean enqueue(Input input) {
         // The queue rounds its capacity up to a power of two; the limit is enforced here.
-        if ((queue.size() >= queueLimit) || !queue.offer(input)) {
+        if (queue.size() >= queueLimit) {
+            return false;
+        }
+        input.enqueuedAt = metrics.now();
+        if (!queue.offer(input)) {
             return false;
         }
         metrics.queued(queue.size());
@@ -241,17 +245,24 @@ public final class Session implements InputSource {
 
     /**
      * The next item, or {@code null} when the queue is empty or the session is closing. A run of coalescable
-     * commands of one type yields only its latest.
+     * commands of one type yields only its latest, timed from the enqueue of the oldest it replaced.
      */
     @Override
     public Message poll() {
+        Input oldestReplaced = null;
         while (!closed.get()) {
             final Input input = queue.poll();
             if (input == null) {
                 return null;
             }
             if (!(input.item() instanceof CoalescableCommand) || !sameTypeIsNext(input)) {
+                if (oldestReplaced != null) {
+                    input.enqueuedAt = oldestReplaced.enqueuedAt;
+                }
                 return input;
+            }
+            if (oldestReplaced == null) {
+                oldestReplaced = input;
             }
         }
         finishClose();
@@ -320,7 +331,7 @@ public final class Session implements InputSource {
         return (next != null) && (next.item().getClass() == input.item().getClass());
     }
 
-    private void run(Object item) {
+    private void run(Object item, long enqueuedAt) {
         try {
             if ((item instanceof ContextBound bound) && !bound.hasContext()) {
                 reject(item, bound.requiredContext());
@@ -328,11 +339,11 @@ public final class Session implements InputSource {
             }
             if (item instanceof Command command) {
                 switch (dispatcher.resolve(this, command)) {
-                    case Dispatch.Ready ready -> metrics.command(command, ready.handling());
+                    case Dispatch.Ready ready -> metrics.command(command, enqueuedAt, ready.handling());
                     case Dispatch.Rejected rejected -> reject(item, rejected.resolver());
                 }
             } else {
-                metrics.legacyPacket((Runnable) item);
+                metrics.legacyPacket((Runnable) item, enqueuedAt);
             }
         } catch (RuntimeException e) {
             itemFailed();
@@ -398,6 +409,8 @@ public final class Session implements InputSource {
     public static final class Input implements Message {
         private final Session session;
         private final Object item;
+        // Written by the producer before the queue's release store, read by the consumer after its poll.
+        private long enqueuedAt;
 
         private Input(Session session, Object item) {
             this.session = session;
@@ -410,7 +423,7 @@ public final class Session implements InputSource {
 
         @Override
         public void execute(Loop loop) {
-            session.run(item);
+            session.run(item, enqueuedAt);
         }
 
         @Override
