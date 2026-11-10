@@ -21,7 +21,7 @@ pmd = "7.29.0"
 postgresql = "42.7.14"
 protobuf-plugin = "0.10.1"
 spotless = "8.11.0"
-spring-boot = "4.1.1"
+spring-boot = "4.1.2"
 spring-modulith = "2.1.2"
 uuid-creator = "6.1.1"
 
