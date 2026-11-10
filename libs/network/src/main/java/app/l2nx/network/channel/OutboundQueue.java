@@ -7,6 +7,7 @@ package app.l2nx.network.channel;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;
+import io.micrometer.core.instrument.Counter;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -15,6 +16,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.AbstractEventExecutor;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -38,22 +40,27 @@ public final class OutboundQueue extends ChannelDuplexHandler {
     private static final int IDLE = 0;
     private static final int SUBMITTED = 1;
     private static final int ACTIVE = 2;
+    // Queued without a wake-up: the hand-off that deferred it wakes the event loop when it closes.
+    private static final int DEFERRED = 3;
 
     private final MessagePassingQueue<ByteBuf> queue = new MpscUnboundedXaddArrayQueue<>(CHUNK_SIZE);
     private final AtomicInteger role = new AtomicInteger(IDLE);
     private final AtomicBoolean terminationWatched = new AtomicBoolean();
     private final AtomicLong queuedBytes = new AtomicLong();
+    private final NetworkMetrics metrics;
     private final long outboundLimit;
     private final long slowClientNanos;
     private final Runnable drainTask = this::drain;
     private volatile ChannelHandlerContext ctx;
+    private volatile Counter handoffs;
     private volatile boolean closing;
     // Set by close(reason): queued frames are released, not written, even by a drain scheduled before the close.
     private volatile boolean aborted;
     private volatile ByteBuf closeAfter;
     private ScheduledFuture<?> slowClientTimer;
 
-    public OutboundQueue(NetworkProperties properties) {
+    public OutboundQueue(NetworkProperties properties, NetworkMetrics metrics) {
+        this.metrics = metrics;
         outboundLimit = properties.outboundLimit().toBytes();
         slowClientNanos = properties.slowClientTimeout().toNanos();
     }
@@ -64,6 +71,7 @@ public final class OutboundQueue extends ChannelDuplexHandler {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
+        handoffs = metrics.handoffs(ctx.executor());
         this.ctx = ctx;
         ctx.channel().attr(KEY).set(this);
         // Not channelInactive: a client channel that never connects closes without becoming inactive.
@@ -79,24 +87,32 @@ public final class OutboundQueue extends ChannelDuplexHandler {
     }
 
     public void send(ByteBuf frame) {
+        send(frame, null);
+    }
+
+    /**
+     * @param handoff the sender's hand-off: while open it wakes the event loop when it closes; {@code null} or closed,
+     *     the event loop is woken at once
+     */
+    public void send(ByteBuf frame, OutboundHandoff handoff) {
         if (closing) {
             frame.release();
-            Connections.metrics(ctx.channel()).dropped(DropReason.CLOSED);
+            metrics.dropped(DropReason.CLOSED);
             return;
         }
-        enqueue(frame);
+        enqueue(frame, handoff);
     }
 
     public ChannelFuture sendAndClose(ByteBuf frame) {
         final Channel channel = ctx.channel();
         if (closing) {
             frame.release();
-            Connections.metrics(channel).dropped(DropReason.CLOSED);
+            metrics.dropped(DropReason.CLOSED);
             return channel.closeFuture();
         }
         closeAfter = frame;
         closing = true;
-        enqueue(frame);
+        enqueue(frame, null);
         return channel.closeFuture();
     }
 
@@ -114,13 +130,17 @@ public final class OutboundQueue extends ChannelDuplexHandler {
         return queuedBytes.get() + channelPending(ctx.channel());
     }
 
-    private void enqueue(ByteBuf frame) {
+    private void enqueue(ByteBuf frame, OutboundHandoff handoff) {
         final long pending = queuedBytes.addAndGet(frame.readableBytes()) + channelPending(ctx.channel());
         queue.offer(frame);
         if (pending > outboundLimit) {
             close(CloseReason.OUTBOUND_LIMIT);
         }
-        schedule();
+        if ((handoff != null) && handoff.isOpen()) {
+            defer(handoff);
+        } else {
+            submit();
+        }
     }
 
     // The outbound buffer keeps its total in a volatile field, so any producer thread reads the live value.
@@ -129,10 +149,40 @@ public final class OutboundQueue extends ChannelDuplexHandler {
         return buffer == null ? 0 : buffer.totalPendingWriteBytes();
     }
 
-    // Never writes inline, even on the event loop: encoding the key packet switches inbound decryption on, and clear
-    // frames decoded later in the same channelRead must still pass in clear.
-    private void schedule() {
-        if (!role.compareAndSet(IDLE, SUBMITTED)) {
+    // Neither path writes inline, even on the event loop: encoding the key packet switches inbound decryption on, and
+    // clear frames decoded later in the same channelRead must still pass in clear.
+    private void defer(OutboundHandoff handoff) {
+        final EventExecutor executor = ctx.executor();
+        final int previous = role.compareAndExchange(IDLE, DEFERRED);
+        if (previous == DEFERRED) {
+            // Deferred by another hand-off that may stay open longer than this one: this one wakes the drain too.
+            handoff.defer(executor);
+            return;
+        }
+        if (previous != IDLE) {
+            return;
+        }
+        try {
+            if (executor instanceof AbstractEventExecutor lazy) {
+                lazy.lazyExecute(drainTask);
+            } else {
+                executor.execute(drainTask);
+            }
+        } catch (RejectedExecutionException e) {
+            // The event loop will never drain. Only a termination listener or a sender can have taken the role.
+            if (role.compareAndSet(DEFERRED, ACTIVE)) {
+                discardQueued();
+            }
+            return;
+        }
+        accepted(executor);
+        handoff.defer(executor);
+    }
+
+    private void submit() {
+        // A drain deferred to a hand-off still waits for its wake-up: this sender wakes the event loop now instead,
+        // and whichever of the two drain tasks runs first takes the role.
+        if (!role.compareAndSet(IDLE, SUBMITTED) && !role.compareAndSet(DEFERRED, SUBMITTED)) {
             return;
         }
         final EventExecutor executor = ctx.executor();
@@ -145,6 +195,11 @@ public final class OutboundQueue extends ChannelDuplexHandler {
             }
             return;
         }
+        accepted(executor);
+    }
+
+    private void accepted(EventExecutor executor) {
+        handoffs.increment();
         if (executor.isShutdown() && terminationWatched.compareAndSet(false, true)) {
             // A task accepted while the loop terminates may be dropped unrun; the termination future completes after
             // that, so one listener reclaims whatever was dropped.
@@ -153,7 +208,9 @@ public final class OutboundQueue extends ChannelDuplexHandler {
     }
 
     private void reclaimAfterTermination() {
-        if (role.compareAndSet(SUBMITTED, ACTIVE) || role.compareAndSet(IDLE, ACTIVE)) {
+        if (role.compareAndSet(SUBMITTED, ACTIVE)
+                || role.compareAndSet(DEFERRED, ACTIVE)
+                || role.compareAndSet(IDLE, ACTIVE)) {
             discardQueued();
         }
     }
@@ -167,7 +224,7 @@ public final class OutboundQueue extends ChannelDuplexHandler {
     }
 
     private void drain() {
-        if (!role.compareAndSet(SUBMITTED, ACTIVE)) {
+        if (!role.compareAndSet(SUBMITTED, ACTIVE) && !role.compareAndSet(DEFERRED, ACTIVE)) {
             return;
         }
         final Channel channel = ctx.channel();
@@ -182,7 +239,7 @@ public final class OutboundQueue extends ChannelDuplexHandler {
             queuedBytes.addAndGet(-frame.readableBytes());
             if (aborted || !channel.isOpen()) {
                 frame.release();
-                Connections.metrics(channel).dropped(DropReason.CLOSED);
+                metrics.dropped(DropReason.CLOSED);
                 continue;
             }
             if (frame == closeAfter) {
@@ -202,12 +259,11 @@ public final class OutboundQueue extends ChannelDuplexHandler {
         }
         role.set(IDLE);
         if (!queue.isEmpty()) {
-            schedule();
+            submit();
         }
     }
 
     private void releaseQueued() {
-        final NetworkMetrics metrics = Connections.metrics(ctx.channel());
         ByteBuf frame;
         while ((frame = queue.poll()) != null) {
             queuedBytes.addAndGet(-frame.readableBytes());
@@ -219,7 +275,7 @@ public final class OutboundQueue extends ChannelDuplexHandler {
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) {
         if (!ctx.channel().isWritable()) {
-            Connections.metrics(ctx.channel()).unwritable();
+            metrics.unwritable();
             if (slowClientTimer == null) {
                 slowClientTimer = ctx.executor()
                         .schedule(
@@ -252,7 +308,7 @@ public final class OutboundQueue extends ChannelDuplexHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         if (!queue.isEmpty()) {
-            schedule();
+            submit();
         }
         ctx.fireChannelActive();
     }

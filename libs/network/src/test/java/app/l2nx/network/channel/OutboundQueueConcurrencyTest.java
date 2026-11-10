@@ -10,6 +10,7 @@ import app.l2nx.network.codec.FrameCipher;
 import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 class OutboundQueueConcurrencyTest {
     private static final int PRODUCERS = 4;
     private static final int FRAMES = 2_000;
+    private static final int PASS = 50;
 
     @Nested
     class Send {
@@ -55,8 +57,9 @@ class OutboundQueueConcurrencyTest {
                         .childHandler(new ChannelInitializer<>() {
                             @Override
                             protected void initChannel(Channel ch) {
-                                final OutboundQueue queue = new OutboundQueue(NetworkProperties.defaults());
-                                ch.pipeline().addLast(new FrameEncoder(FrameCipher.NONE), queue);
+                                final OutboundQueue queue =
+                                        new OutboundQueue(NetworkProperties.defaults(), NetworkMetrics.noop());
+                                ch.pipeline().addLast(new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop()), queue);
                                 serverQueue.set(queue);
                                 connected.countDown();
                             }
@@ -115,6 +118,94 @@ class OutboundQueueConcurrencyTest {
         }
 
         @Test
+        void send_shouldKeepEachProducersOrder_whenOneProducerDefersToAHandoff() throws Exception {
+            final EventLoopGroup group = new MultiThreadIoEventLoopGroup(2, LocalIoHandler.newFactory());
+            final LocalAddress address = new LocalAddress("outbound-queue-handoff");
+            final AtomicReference<OutboundQueue> serverQueue = new AtomicReference<>();
+            final CountDownLatch connected = new CountDownLatch(1);
+            final List<Long> received = new CopyOnWriteArrayList<>();
+            final CountDownLatch done = new CountDownLatch(PRODUCERS * FRAMES);
+            try {
+                new ServerBootstrap()
+                        .group(group)
+                        .channel(LocalServerChannel.class)
+                        .childHandler(new ChannelInitializer<>() {
+                            @Override
+                            protected void initChannel(Channel ch) {
+                                final OutboundQueue queue =
+                                        new OutboundQueue(NetworkProperties.defaults(), NetworkMetrics.noop());
+                                ch.pipeline().addLast(new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop()), queue);
+                                serverQueue.set(queue);
+                                connected.countDown();
+                            }
+                        })
+                        .bind(address)
+                        .sync();
+                final Channel client = new Bootstrap()
+                        .group(group)
+                        .channel(LocalChannel.class)
+                        .handler(new ChannelInitializer<>() {
+                            @Override
+                            protected void initChannel(Channel ch) {
+                                ch.pipeline().addLast(Frames.decoder(1024), new SimpleChannelInboundHandler<ByteBuf>() {
+                                    @Override
+                                    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf frame) {
+                                        received.add(frame.readLongLE());
+                                        done.countDown();
+                                    }
+                                });
+                            }
+                        })
+                        .connect(address)
+                        .sync()
+                        .channel();
+                assertThat(connected.await(5, TimeUnit.SECONDS)).isTrue();
+
+                final Thread[] producers = new Thread[PRODUCERS];
+                producers[0] = Thread.ofPlatform().start(() -> {
+                    final OutboundHandoff handoff = new OutboundHandoff();
+                    for (int i = 0; i < FRAMES; ) {
+                        handoff.open();
+                        for (int end = Math.min(FRAMES, i + PASS); i < end; i++) {
+                            serverQueue
+                                    .get()
+                                    .send(Frames.allocate(client.alloc(), 8).writeLongLE(i), handoff);
+                        }
+                        handoff.wake();
+                    }
+                });
+                for (int p = 1; p < PRODUCERS; p++) {
+                    final long producer = p;
+                    producers[p] = Thread.ofPlatform().start(() -> {
+                        for (int i = 0; i < FRAMES; i++) {
+                            serverQueue
+                                    .get()
+                                    .send(Frames.allocate(client.alloc(), 8).writeLongLE((producer << 32) | i));
+                        }
+                    });
+                }
+                for (Thread producer : producers) {
+                    producer.join();
+                }
+
+                assertThat(done.await(10, TimeUnit.SECONDS)).isTrue();
+                for (long producer = 0; producer < PRODUCERS; producer++) {
+                    final long p = producer;
+                    assertThat(received.stream()
+                                    .filter(v -> (v >>> 32) == p)
+                                    .map(v -> v & 0xFFFFFFFFL)
+                                    .toList())
+                            .as("producer %d", p)
+                            .isSorted()
+                            .hasSize(FRAMES);
+                }
+                client.close().sync();
+            } finally {
+                group.shutdownGracefully(0, 1, TimeUnit.SECONDS).sync();
+            }
+        }
+
+        @Test
         void send_shouldHoldFramesUntilTheChannelConnects() throws Exception {
             final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, LocalIoHandler.newFactory());
             final LocalAddress address = new LocalAddress("outbound-connect");
@@ -162,7 +253,7 @@ class OutboundQueueConcurrencyTest {
         void shutdown_shouldReleaseEveryFrame_whenTheEventLoopStopsWithFramesQueued() throws Exception {
             final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, LocalIoHandler.newFactory());
             final LocalAddress address = new LocalAddress("outbound-shutdown");
-            final OutboundQueue queue = new OutboundQueue(NetworkProperties.defaults());
+            final OutboundQueue queue = new OutboundQueue(NetworkProperties.defaults(), NetworkMetrics.noop());
             new ServerBootstrap()
                     .group(group)
                     .channel(LocalServerChannel.class)
@@ -175,7 +266,7 @@ class OutboundQueueConcurrencyTest {
                     .handler(new ChannelInitializer<Channel>() {
                         @Override
                         protected void initChannel(Channel ch) {
-                            ch.pipeline().addLast(new FrameEncoder(FrameCipher.NONE), queue);
+                            ch.pipeline().addLast(new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop()), queue);
                         }
                     })
                     .connect(address)
@@ -237,8 +328,8 @@ class OutboundQueueConcurrencyTest {
                     protected void initChannel(Channel ch) {
                         ch.pipeline()
                                 .addLast(
-                                        new FrameEncoder(FrameCipher.NONE),
-                                        new OutboundQueue(NetworkProperties.defaults()));
+                                        new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop()),
+                                        new OutboundQueue(NetworkProperties.defaults(), NetworkMetrics.noop()));
                     }
                 })
                 .register()

@@ -11,10 +11,13 @@ import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.config.Transport;
 import app.l2nx.network.metrics.model.Direction;
 import app.l2nx.network.metrics.model.DropReason;
+import app.l2nx.network.test.RecordingExecutor;
 import app.l2nx.network.transport.NetworkEventLoops;
 import app.l2nx.network.transport.TransportResolver;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.concurrent.EventExecutor;
 import java.time.Duration;
 import java.util.Arrays;
 import org.junit.jupiter.api.Nested;
@@ -144,6 +147,42 @@ class NetworkMetricsTest {
                             .count())
                     .isEqualTo(1.0);
             assertThat(anonymous.getClass().getName()).isNotBlank();
+        }
+    }
+
+    @Nested
+    class Handoffs {
+        @Test
+        void handoffs_shouldTagTheEventLoopAsMicrometersNettyBinderDoes() throws Exception {
+            try (NetworkEventLoops loops = new NetworkEventLoops(
+                    NetworkProperties.defaults().toBuilder()
+                            .transport(Transport.NIO)
+                            .workerThreads(1)
+                            .shutdownQuietPeriod(Duration.ZERO)
+                            .build(),
+                    TransportResolver.nativeAvailability())) {
+                metrics.bindEventLoops(loops);
+                final EventExecutor worker = loops.workers().next();
+
+                final Counter actual =
+                        worker.submit(() -> metrics.handoffs(worker)).get();
+
+                final String expected = registry.get("netty.eventexecutor.tasks.pending")
+                        .tag("group", "io")
+                        .gauge()
+                        .getId()
+                        .getTag("name");
+                assertThat(actual.getId().getName()).isEqualTo("l2nx.network.outbound.handoffs");
+                assertThat(actual.getId().getTag("group")).isEqualTo("io");
+                assertThat(actual.getId().getTag("name")).isNotNull().isEqualTo(expected);
+            }
+        }
+
+        @Test
+        void handoffs_shouldReturnOneCounterPerEventLoop() {
+            final RecordingExecutor executor = new RecordingExecutor();
+
+            assertThat(metrics.handoffs(executor)).isSameAs(metrics.handoffs(executor));
         }
     }
 }

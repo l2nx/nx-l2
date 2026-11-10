@@ -113,6 +113,11 @@ public class NpcSay extends ServerPacket {
     }
 
     @Override
+    protected boolean receiverDependent() {
+        return MultilingualSupportConfig.MULTILANG_ENABLE;
+    }
+
+    @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.NPC_SAY.writeId(this, buffer);
         buffer.writeInt(objectId);

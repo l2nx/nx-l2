@@ -7,9 +7,11 @@ package app.l2nx.highfive.network;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.test.TestChannels;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
@@ -28,8 +30,11 @@ class GameClientTest {
     private final GameClient client;
 
     GameClientTest() {
-        channel.pipeline().addLast(PipelineNames.OUTBOUND, new OutboundQueue(NetworkProperties.defaults()));
-        client = new GameClient(new GameConnection(channel, new GameFrameCipher(), NetworkProperties.defaults()));
+        final NetworkMetrics metrics = Connections.metrics(channel);
+        final OutboundQueue outbound = new OutboundQueue(NetworkProperties.defaults(), metrics);
+        channel.pipeline().addLast(PipelineNames.OUTBOUND, outbound);
+        client = new GameClient(
+                new GameConnection(channel, new GameFrameCipher(), outbound, metrics, NetworkProperties.defaults()));
     }
 
     @AfterEach

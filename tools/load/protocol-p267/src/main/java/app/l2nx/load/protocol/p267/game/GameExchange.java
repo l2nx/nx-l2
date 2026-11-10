@@ -16,6 +16,7 @@ import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.bootstrap.L2Pipeline;
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketDecodeException;
@@ -81,7 +82,7 @@ public final class GameExchange extends ChannelInboundHandlerAdapter {
         this.channel = channel;
         channel.pipeline().addLast(ReadClock.NAME, readClock);
         // Frames up to the protocol's limit: a skill or item list runs far past what a client ever sends.
-        L2Pipeline.installCodec(channel.pipeline(), cipher, Frames.MAX_LENGTH);
+        L2Pipeline.installCodec(channel.pipeline(), cipher, Frames.MAX_LENGTH, Connections.metrics(channel));
         channel.pipeline().addLast(PipelineNames.SESSION, this);
     }
 

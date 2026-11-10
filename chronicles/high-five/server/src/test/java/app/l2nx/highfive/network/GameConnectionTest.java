@@ -11,10 +11,14 @@ import app.l2nx.highfive.network.protocol.StubAdapter;
 import app.l2nx.network.bootstrap.L2Pipeline;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
+import app.l2nx.network.channel.OutboundQueue;
+import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.test.TestChannels;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -31,8 +35,9 @@ class GameConnectionTest {
     void setUp() {
         channel = TestChannels.embedded();
         final GameFrameCipher cipher = new GameFrameCipher();
-        L2Pipeline.install(channel.pipeline(), cipher, properties);
-        connection = new GameConnection(channel, cipher, properties);
+        final NetworkMetrics metrics = Connections.metrics(channel);
+        final OutboundQueue outbound = L2Pipeline.install(channel.pipeline(), cipher, properties, metrics);
+        connection = new GameConnection(channel, cipher, outbound, metrics, properties);
         channel.attr(GameConnection.KEY).set(connection);
         connection.accept(new StubAdapter("stub", 273, 0), 273);
     }
@@ -40,6 +45,17 @@ class GameConnectionTest {
     @AfterEach
     void tearDown() {
         channel.finishAndReleaseAll();
+    }
+
+    @Nested
+    class Outbound {
+        @Test
+        void outbound_shouldKeepTheInstalledQueue_whenTheChannelAttributeIsGone() {
+            final ChannelHandler installed = channel.pipeline().get(PipelineNames.OUTBOUND);
+            channel.attr(OutboundQueue.KEY).set(null);
+
+            assertThat(connection.outbound()).isSameAs(installed);
+        }
     }
 
     @Nested

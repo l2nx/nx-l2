@@ -6,9 +6,11 @@ package app.l2nx.network.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.codec.FrameCipher;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,7 +22,8 @@ class L2PipelineTest {
         void install_shouldAddTheSharedHandlersInTheirOrder() {
             final EmbeddedChannel channel = new EmbeddedChannel();
 
-            L2Pipeline.install(channel.pipeline(), FrameCipher.NONE, NetworkProperties.defaults());
+            final OutboundQueue actual = L2Pipeline.install(
+                    channel.pipeline(), FrameCipher.NONE, NetworkProperties.defaults(), NetworkMetrics.noop());
 
             assertThat(channel.pipeline().toMap().keySet())
                     .containsExactly(
@@ -31,6 +34,7 @@ class L2PipelineTest {
                             PipelineNames.IDLE_POLICY,
                             PipelineNames.OUTBOUND,
                             PipelineNames.DEADLINES);
+            assertThat(actual).isSameAs(channel.pipeline().get(PipelineNames.OUTBOUND));
             channel.finishAndReleaseAll();
         }
     }

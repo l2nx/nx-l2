@@ -12,6 +12,7 @@ import app.l2nx.engine.core.loop.periodic.PeriodicSchedule;
 import app.l2nx.engine.core.loop.periodic.PeriodicSystem;
 import app.l2nx.engine.core.loop.timer.TimeBase;
 import app.l2nx.engine.core.loop.timer.TimerQueue;
+import app.l2nx.engine.core.session.outbound.NetworkHandoff;
 import app.l2nx.logging.RateLimitedLog;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.invoke.VarHandle;
@@ -79,6 +80,7 @@ public class Loop {
     private ArrayDeque<Runnable> deferred = new ArrayDeque<>();
     private ArrayDeque<Runnable> spare = new ArrayDeque<>();
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
+    private final NetworkHandoff networkHandoff = new NetworkHandoff();
     private boolean inputStopped;
     private boolean liveClock;
     private boolean startupPass;
@@ -236,6 +238,13 @@ public class Loop {
         hooks.computeIfAbsent(phase, key -> new ArrayList<>()).add(Objects.requireNonNull(hook, "hook"));
     }
 
+    /**
+     * Owner thread. Open only while a live pass runs its phases; outside one, wakes the event loops at once.
+     */
+    public NetworkHandoff networkHandoff() {
+        return networkHandoff;
+    }
+
     public final void runPass(long now) {
         assertOwner();
         if (now < passTime) {
@@ -371,11 +380,26 @@ public class Loop {
     private void runCurrent(long now, boolean simulate) {
         final Loop previous = bindCurrent();
         watchFromNow();
+        if (simulate) {
+            networkHandoff.open();
+        }
         try {
             runPhases(now, simulate);
+        } catch (Throwable e) {
+            // A phase that failed, even with an Error, must not strand the drains deferred before it.
+            wakeAfter(e);
+            throw e;
         } finally {
             runningPassStartNanos = IDLE;
             restoreCurrent(previous);
+        }
+    }
+
+    private void wakeAfter(Throwable failure) {
+        try {
+            networkHandoff.wake();
+        } catch (Throwable e) {
+            failure.addSuppressed(e);
         }
     }
 
@@ -423,6 +447,7 @@ public class Loop {
         runHooks(PassPhase.REPLICATION, now);
         mark = endPhase(PassPhase.REPLICATION, mark);
         runHooks(PassPhase.FLUSH, now);
+        networkHandoff.wake();
         endPhase(PassPhase.FLUSH, mark);
         completePass(metrics.monotonicTime() - start);
     }

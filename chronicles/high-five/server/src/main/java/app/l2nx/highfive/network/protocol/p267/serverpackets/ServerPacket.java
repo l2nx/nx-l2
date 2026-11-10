@@ -79,13 +79,17 @@ public abstract class ServerPacket extends OutgoingPacket<GameClient> implements
     private volatile boolean broadcast;
     private ByteBuf broadcastFrame;
 
+    protected boolean receiverDependent() {
+        return false;
+    }
+
     /**
      * A broadcast serializes for its first recipient and hands every recipient {@link Frames#share}; the broadcaster
      * releases the shared frame with {@link #releaseBroadcast()} after the fan-out.
      */
     @Override
     public ByteBuf serialize(GameClient client, ByteBufAllocator alloc) {
-        if (!broadcast) {
+        if (!broadcast || receiverDependent()) {
             return super.serialize(client, alloc);
         }
         synchronized (this) {

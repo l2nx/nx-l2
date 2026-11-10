@@ -13,6 +13,7 @@ import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.test.TestChannels;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import app.l2nx.protocol.game.p267.crypt.GameXorKeys;
@@ -69,9 +70,11 @@ public class ChatBroadcastBenchmark {
             final byte[] key = GameXorKeys.getRandomKey();
             final GameFrameCipher cipher = new GameFrameCipher();
             cipher.setKey(key);
-            final EmbeddedChannel channel =
-                    TestChannels.embedded(new FrameEncoder(cipher), new OutboundQueue(NetworkProperties.defaults()));
-            final GameConnection connection = new GameConnection(channel, cipher, NetworkProperties.defaults());
+            final NetworkMetrics metrics = NetworkMetrics.noop();
+            final OutboundQueue outbound = new OutboundQueue(NetworkProperties.defaults(), metrics);
+            final EmbeddedChannel channel = TestChannels.embedded(new FrameEncoder(cipher, metrics), outbound);
+            final GameConnection connection =
+                    new GameConnection(channel, cipher, outbound, metrics, NetworkProperties.defaults());
             channel.attr(GameConnection.KEY).set(connection);
             connection.bind(null, new GameClient(connection));
             connection.accept(adapter, 267);

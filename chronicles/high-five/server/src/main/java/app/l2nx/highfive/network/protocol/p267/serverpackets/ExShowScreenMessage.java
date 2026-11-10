@@ -233,6 +233,11 @@ public class ExShowScreenMessage extends ServerPacket {
     }
 
     @Override
+    protected boolean receiverDependent() {
+        return MultilingualSupportConfig.MULTILANG_ENABLE;
+    }
+
+    @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.EX_SHOW_SCREEN_MESSAGE.writeId(this, buffer);
 

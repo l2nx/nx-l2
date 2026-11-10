@@ -18,6 +18,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufAllocatorMetricProvider;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.SingleThreadEventExecutor;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +36,7 @@ public final class NetworkMetrics {
     private final ClassValue<Counter> commands;
     private final ClassValue<Map<Direction, Counter>> legacyPackets;
     private final Map<String, Counter> decodeErrors = new ConcurrentHashMap<>();
+    private final Map<EventExecutor, Counter> handoffs = new ConcurrentHashMap<>();
     private final Counter unwritable;
 
     public NetworkMetrics(MeterRegistry registry) {
@@ -139,6 +142,26 @@ public final class NetworkMetrics {
 
     public void unwritable() {
         unwritable.increment();
+    }
+
+    /**
+     * Called once per connection, on its event loop, where the loop's thread is known without blocking. Tags follow
+     * Micrometer's Netty binder, so the series joins {@code netty.eventexecutor.tasks.pending}.
+     */
+    public Counter handoffs(EventExecutor executor) {
+        return handoffs.computeIfAbsent(
+                executor,
+                e -> Counter.builder("l2nx.network.outbound.handoffs")
+                        .description("Outbound drains handed to an event loop")
+                        .tag("group", "io")
+                        .tag("name", threadName(e))
+                        .register(registry));
+    }
+
+    private static String threadName(EventExecutor executor) {
+        return executor instanceof SingleThreadEventExecutor single
+                ? single.threadProperties().name()
+                : executor.getClass().getSimpleName();
     }
 
     public void bindEventLoops(NetworkEventLoops loops) {

@@ -17,6 +17,7 @@ import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestItemList;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestModifyBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestSaveBookMarkSlot;
 import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBookMark;
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
@@ -37,8 +38,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class P267AdapterTest {
     private final P267Adapter adapter = new P267Adapter();
     private final EmbeddedChannel channel = new EmbeddedChannel();
-    private final GameConnection connection =
-            new GameConnection(channel, new GameFrameCipher(), NetworkProperties.defaults());
+    // Serialization only: the channel has no outbound queue.
+    private final GameConnection connection = new GameConnection(
+            channel, new GameFrameCipher(), null, Connections.metrics(channel), NetworkProperties.defaults());
 
     @AfterEach
     void tearDown() {

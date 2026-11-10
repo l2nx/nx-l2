@@ -7,6 +7,7 @@ package app.l2nx.network.codec;
 import app.l2nx.network.crypt.GameXorCipher;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.XorChecksum;
+import app.l2nx.network.metrics.NetworkMetrics;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +51,7 @@ public class FrameEncoderBenchmark {
 
     @Setup(Level.Trial)
     public void setUp() {
-        encoder = new FrameEncoder(cipher(cipher));
+        encoder = new FrameEncoder(cipher(cipher), NetworkMetrics.noop());
         shared = frame();
         final ByteBuf probe = Frames.share(shared);
         final ByteBuf finished = encoder.finish(ALLOC, probe);

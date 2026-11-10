@@ -298,6 +298,11 @@ public class SystemMessage extends ServerPacket {
     }
 
     @Override
+    protected boolean receiverDependent() {
+        return MultilingualSupportConfig.MULTILANG_ENABLE;
+    }
+
+    @Override
     public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.SYSTEM_MESSAGE.debug(this);
         toWire(client).write(buffer.buffer());

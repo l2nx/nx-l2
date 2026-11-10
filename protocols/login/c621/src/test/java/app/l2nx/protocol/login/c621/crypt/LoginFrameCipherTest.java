@@ -12,6 +12,7 @@ import app.l2nx.network.codec.Frames;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.RollingXor;
 import app.l2nx.network.crypt.XorChecksum;
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.test.TestChannels;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -31,7 +32,7 @@ class LoginFrameCipherTest {
     private static final int XOR_KEY = 0x1234ABCD;
 
     private final LoginFrameCipher cipher = LoginFrameCipher.server(SESSION_KEY, () -> XOR_KEY);
-    private final EmbeddedChannel channel = TestChannels.embedded(new FrameEncoder(cipher));
+    private final EmbeddedChannel channel = TestChannels.embedded(new FrameEncoder(cipher, NetworkMetrics.noop()));
 
     @AfterEach
     void closeChannel() {

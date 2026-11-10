@@ -23,6 +23,7 @@ dependencies {
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.jqwik)
     testImplementation(testFixtures(project(":libs:database")))
+    testImplementation(testFixtures(project(":libs:network")))
     testImplementation(libs.liquibase.core)
     testRuntimeOnly(libs.postgresql)
 

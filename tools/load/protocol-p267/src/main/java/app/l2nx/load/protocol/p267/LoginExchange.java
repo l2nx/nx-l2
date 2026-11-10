@@ -11,6 +11,7 @@ import app.l2nx.load.protocol.SessionListener;
 import app.l2nx.load.protocol.p267.game.GameTicket;
 import app.l2nx.logging.RateLimitedLog;
 import app.l2nx.network.bootstrap.L2Pipeline;
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketDecodeException;
@@ -79,7 +80,7 @@ public final class LoginExchange extends ChannelInboundHandlerAdapter {
 
     public void install(Channel channel, int maxFrame) {
         this.channel = channel;
-        L2Pipeline.installCodec(channel.pipeline(), cipher, maxFrame);
+        L2Pipeline.installCodec(channel.pipeline(), cipher, maxFrame, Connections.metrics(channel));
         channel.pipeline().addLast(PipelineNames.SESSION, this);
     }
 

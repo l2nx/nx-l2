@@ -15,6 +15,7 @@ import app.l2nx.network.channel.guard.ConnectionDeadlines;
 import app.l2nx.network.channel.guard.EventLoopTasks;
 import app.l2nx.network.channel.guard.IdlePolicy;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.protocol.game.p267.crypt.GameFrameCipher;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.local.SynchronizationStrategy;
@@ -32,6 +33,8 @@ public final class GameConnection implements SessionTransport {
 
     private final Channel channel;
     private final GameFrameCipher cipher;
+    private final OutboundQueue outbound;
+    private final NetworkMetrics metrics;
     private final Bucket decodeErrors;
     private final AtomicInteger pingIds = new AtomicInteger();
     private volatile GameProtocolAdapter adapter;
@@ -39,9 +42,16 @@ public final class GameConnection implements SessionTransport {
     private Session session;
     private GameClient client;
 
-    public GameConnection(Channel channel, GameFrameCipher cipher, NetworkProperties properties) {
+    public GameConnection(
+            Channel channel,
+            GameFrameCipher cipher,
+            OutboundQueue outbound,
+            NetworkMetrics metrics,
+            NetworkProperties properties) {
         this.channel = channel;
         this.cipher = cipher;
+        this.outbound = outbound;
+        this.metrics = metrics;
         final NetworkProperties.DecodeErrorLimit limit = properties.decodeErrorLimit();
         // Only the IO thread decodes, so the bucket needs no synchronization.
         decodeErrors = Bucket.builder()
@@ -90,7 +100,11 @@ public final class GameConnection implements SessionTransport {
     }
 
     public OutboundQueue outbound() {
-        return OutboundQueue.of(channel);
+        return outbound;
+    }
+
+    public NetworkMetrics metrics() {
+        return metrics;
     }
 
     public ByteBufAllocator alloc() {
@@ -125,13 +139,12 @@ public final class GameConnection implements SessionTransport {
      */
     public void closeForShutdown() {
         final GameProtocolAdapter current = adapter;
-        final OutboundQueue queue = outbound();
-        if ((current == null) || (queue == null)) {
+        if (current == null) {
             channel.close();
             return;
         }
-        if (!queue.isClosing()) {
-            queue.sendAndClose(current.serverCloseFrame(channel.alloc()));
+        if (!outbound.isClosing()) {
+            outbound.sendAndClose(current.serverCloseFrame(channel.alloc()));
         }
     }
 
@@ -144,7 +157,7 @@ public final class GameConnection implements SessionTransport {
     private void ping() {
         final GameProtocolAdapter current = adapter;
         if (current != null) {
-            outbound().send(current.pingFrame(channel.alloc(), pingIds.incrementAndGet()));
+            outbound.send(current.pingFrame(channel.alloc(), pingIds.incrementAndGet()));
         }
     }
 }

@@ -6,6 +6,7 @@ package app.l2nx.network.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
@@ -186,9 +187,11 @@ class NetworkServerTest {
     }
 
     private static void echoPipeline(Channel channel) {
-        L2Pipeline.installCodec(channel.pipeline(), FrameCipher.NONE, 16 * 1024);
+        L2Pipeline.installCodec(channel.pipeline(), FrameCipher.NONE, 16 * 1024, Connections.metrics(channel));
         channel.pipeline()
-                .addLast(PipelineNames.OUTBOUND, new OutboundQueue(NetworkProperties.defaults()))
+                .addLast(
+                        PipelineNames.OUTBOUND,
+                        new OutboundQueue(NetworkProperties.defaults(), Connections.metrics(channel)))
                 .addLast(PipelineNames.PACKET, new SimpleChannelInboundHandler<ByteBuf>() {
                     @Override
                     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf frame) {

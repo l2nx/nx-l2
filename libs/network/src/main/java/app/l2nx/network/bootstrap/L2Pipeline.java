@@ -13,6 +13,7 @@ import app.l2nx.network.codec.FrameCipher;
 import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.metrics.NetworkMetrics;
 import io.netty.channel.ChannelPipeline;
 
 /**
@@ -22,18 +23,22 @@ import io.netty.channel.ChannelPipeline;
 public final class L2Pipeline {
     private L2Pipeline() {}
 
-    public static void install(ChannelPipeline pipeline, FrameCipher cipher, NetworkProperties properties) {
-        installCodec(pipeline, cipher, (int) properties.maxFrame().toBytes());
+    public static OutboundQueue install(
+            ChannelPipeline pipeline, FrameCipher cipher, NetworkProperties properties, NetworkMetrics metrics) {
+        installCodec(pipeline, cipher, (int) properties.maxFrame().toBytes(), metrics);
         IdlePolicy.install(pipeline, properties);
-        pipeline.addLast(PipelineNames.OUTBOUND, new OutboundQueue(properties));
+        final OutboundQueue outbound = new OutboundQueue(properties, metrics);
+        pipeline.addLast(PipelineNames.OUTBOUND, outbound);
         pipeline.addLast(
                 PipelineNames.DEADLINES,
                 new ConnectionDeadlines(properties.handshakeTimeout(), properties.authTimeout()));
+        return outbound;
     }
 
-    public static void installCodec(ChannelPipeline pipeline, FrameCipher cipher, int maxFrame) {
+    public static void installCodec(
+            ChannelPipeline pipeline, FrameCipher cipher, int maxFrame, NetworkMetrics metrics) {
         pipeline.addLast(PipelineNames.FRAME_DECODER, Frames.decoder(maxFrame));
         pipeline.addLast(PipelineNames.CIPHER_DECODER, new CipherDecoder(cipher));
-        pipeline.addLast(PipelineNames.FRAME_ENCODER, new FrameEncoder(cipher));
+        pipeline.addLast(PipelineNames.FRAME_ENCODER, new FrameEncoder(cipher, metrics));
     }
 }

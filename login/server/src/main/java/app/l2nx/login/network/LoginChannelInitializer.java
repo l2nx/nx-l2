@@ -10,6 +10,7 @@ import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.login.protocol.c621.pipeline.LoginHandshakeHandler;
 import app.l2nx.login.protocol.c621.pipeline.LoginPacketDecoder;
 import app.l2nx.network.bootstrap.L2Pipeline;
+import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.PipelineNames;
 import app.l2nx.network.channel.TailExceptionHandler;
 import app.l2nx.network.config.NetworkProperties;
@@ -83,7 +84,7 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
 
     private void installC621(ChannelPipeline pipeline, LoginClient client) {
         final LoginFrameCipher cipher = LoginFrameCipher.server(client.getBlowfishKey(), random::nextInt);
-        L2Pipeline.install(pipeline, cipher, properties);
+        L2Pipeline.install(pipeline, cipher, properties, Connections.metrics(pipeline.channel()));
         pipeline.addLast(PipelineNames.HANDSHAKE, new LoginHandshakeHandler());
         pipeline.addLast(PipelineNames.PACKET, new LoginPacketDecoder(routes));
         pipeline.addLast(PipelineNames.TAIL, TailExceptionHandler.INSTANCE);

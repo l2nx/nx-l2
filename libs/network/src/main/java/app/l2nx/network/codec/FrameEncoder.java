@@ -4,7 +4,7 @@
  */
 package app.l2nx.network.codec;
 
-import app.l2nx.network.channel.Connections;
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.Direction;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -19,9 +19,11 @@ import io.netty.handler.codec.EncoderException;
  */
 public final class FrameEncoder extends ChannelOutboundHandlerAdapter {
     private final FrameCipher cipher;
+    private final NetworkMetrics metrics;
 
-    public FrameEncoder(FrameCipher cipher) {
+    public FrameEncoder(FrameCipher cipher, NetworkMetrics metrics) {
         this.cipher = cipher;
+        this.metrics = metrics;
     }
 
     @Override
@@ -38,7 +40,7 @@ public final class FrameEncoder extends ChannelOutboundHandlerAdapter {
             promise.setFailure(e);
             return;
         }
-        Connections.metrics(ctx.channel()).bytes(Direction.OUT, finished.readableBytes());
+        metrics.bytes(Direction.OUT, finished.readableBytes());
         ctx.write(finished, promise);
     }
 

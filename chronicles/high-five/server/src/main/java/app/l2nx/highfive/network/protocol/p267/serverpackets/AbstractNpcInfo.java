@@ -64,8 +64,8 @@ public abstract class AbstractNpcInfo extends ServerPacket {
     protected int enchantEffect;
     protected float collisionHeight;
     protected float collisionRadius;
-    protected String name = "";
-    protected String title = "";
+    protected String name;
+    protected String title;
     protected final boolean gmSeeInvis;
 
     public AbstractNpcInfo(Creature creature, boolean gmSeeInvis) {
@@ -134,6 +134,11 @@ public abstract class AbstractNpcInfo extends ServerPacket {
         }
 
         @Override
+        protected boolean receiverDependent() {
+            return MultilingualSupportConfig.MULTILANG_ENABLE;
+        }
+
+        @Override
         public void writeImpl(GameClient client, PacketWriter buffer) {
             if (npc.isDecayed()) {
                 return;
@@ -141,6 +146,8 @@ public abstract class AbstractNpcInfo extends ServerPacket {
 
             // Localisation related.
             String[] localisation = null;
+            String shownName = name;
+            String shownTitle = title;
             if (MultilingualSupportConfig.MULTILANG_ENABLE) {
                 final Player player = client.getPlayer();
                 if (player != null) {
@@ -148,8 +155,8 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                     if ((lang != null) && !lang.equals("en")) {
                         localisation = NpcNameLocalisationData.getInstance().getLocalisation(lang, npc.getId());
                         if (localisation != null) {
-                            name = localisation[0];
-                            title = localisation[1];
+                            shownName = localisation[0];
+                            shownTitle = localisation[1];
                         }
                     }
                 }
@@ -191,18 +198,18 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                             : 0); // invisible ?? 0=false 1=true 2=summoned (only works if model has a summon animation)
             buffer.writeInt(-1); // High Five NPCString ID
             if ((localisation == null) && npc.getTemplate().isUsingServerSideName()) {
-                name = npc.getName(); // On every subclass
+                shownName = npc.getName(); // On every subclass
             }
 
-            buffer.writeString(name);
+            buffer.writeString(shownName);
             buffer.writeInt(-1); // High Five NPCString ID
             if (npc.isInvisible()) {
-                title = "Invisible";
+                shownTitle = "Invisible";
             } else if (localisation == null) {
                 if (npc.getTemplate().isUsingServerSideTitle()) {
-                    title = npc.getTemplate().getTitle(); // On every subclass
+                    shownTitle = npc.getTemplate().getTitle(); // On every subclass
                 } else {
-                    title = npc.getTitle(); // On every subclass
+                    shownTitle = npc.getTitle(); // On every subclass
                 }
             }
 
@@ -231,16 +238,16 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                 }
 
                 t1 += t2;
-                if ((title != null) && !title.isEmpty()) {
-                    t1 += " " + title;
+                if ((shownTitle != null) && !shownTitle.isEmpty()) {
+                    t1 += " " + shownTitle;
                 }
 
-                title = npc.isChampion() ? ChampionMonstersConfig.CHAMP_TITLE + " " + t1 : t1;
+                shownTitle = npc.isChampion() ? ChampionMonstersConfig.CHAMP_TITLE + " " + t1 : t1;
             } else if (ChampionMonstersConfig.CHAMPION_ENABLE && npc.isChampion()) {
-                title = (ChampionMonstersConfig.CHAMP_TITLE); // On every subclass
+                shownTitle = (ChampionMonstersConfig.CHAMP_TITLE); // On every subclass
             }
 
-            buffer.writeString(title);
+            buffer.writeString(shownTitle);
             buffer.writeInt(0); // Title color 0=client default
             buffer.writeInt(0); // pvp flag
             buffer.writeInt(0); // karma
@@ -283,7 +290,7 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                 name = cha.getName();
             }
 
-            title = cha.getOwner() != null ? cha.getOwner().getName() : "";
+            title = cha.getOwner() != null ? cha.getOwner().getName() : null;
         }
 
         @Override
@@ -372,7 +379,7 @@ public abstract class AbstractNpcInfo extends ServerPacket {
             name = cha.getName();
             title = (cha.getOwner() != null) && cha.getOwner().isOnline()
                     ? cha.getOwner().getName()
-                    : "";
+                    : null;
             displayId = cha.getTemplate().getDisplayId();
             collisionHeight = cha.getTemplate().getFCollisionHeight();
             collisionRadius = cha.getTemplate().getFCollisionRadius();

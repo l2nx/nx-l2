@@ -7,8 +7,10 @@ package app.l2nx.network.codec;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.test.TestChannels;
 import app.l2nx.network.test.XorTestCipher;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.AbstractByteBufAllocator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -45,7 +47,7 @@ class FrameEncoderTest {
         void finish_shouldEncryptInPlace_whenBufferIsNotShared(ByteBufAllocator alloc) {
             final ByteBuf frame = payload(alloc, 0x11);
 
-            final ByteBuf actual = new FrameEncoder(new XorTestCipher(1)).finish(alloc, frame);
+            final ByteBuf actual = new FrameEncoder(new XorTestCipher(1), NetworkMetrics.noop()).finish(alloc, frame);
 
             assertThat(actual).isSameAs(frame);
             actual.release();
@@ -58,7 +60,7 @@ class FrameEncoderTest {
             final ByteBuf original = payload(alloc, 0x11, 0x22);
             final ByteBuf shared = sharer.apply(original);
 
-            final ByteBuf actual = new FrameEncoder(new XorTestCipher(1)).finish(alloc, shared);
+            final ByteBuf actual = new FrameEncoder(new XorTestCipher(1), NetworkMetrics.noop()).finish(alloc, shared);
 
             assertThat(actual).isNotSameAs(shared);
             assertThat(ByteBufUtil.getBytes(actual)).containsExactly(4, 0, 0x11 ^ 0x5A, 0x22 ^ 0x5A);
@@ -77,7 +79,7 @@ class FrameEncoderTest {
             final ByteBuf last = Frames.share(original);
             original.release();
 
-            final ByteBuf actual = new FrameEncoder(new XorTestCipher(1)).finish(alloc, last);
+            final ByteBuf actual = new FrameEncoder(new XorTestCipher(1), NetworkMetrics.noop()).finish(alloc, last);
 
             assertThat(actual).isSameAs(last);
             actual.release();
@@ -93,7 +95,7 @@ class FrameEncoderTest {
                     .writeByte(2)
                     .writeByte(3);
 
-            final ByteBuf actual = new FrameEncoder(new XorTestCipher(8)).finish(alloc, frame);
+            final ByteBuf actual = new FrameEncoder(new XorTestCipher(8), NetworkMetrics.noop()).finish(alloc, frame);
 
             assertThat(actual.readableBytes()).isEqualTo(10);
             assertThat(actual.getUnsignedShortLE(actual.readerIndex())).isEqualTo(10);
@@ -105,7 +107,7 @@ class FrameEncoderTest {
         void finish_shouldReleaseAndFail_whenFrameHasNoHeaderRoom(ByteBufAllocator alloc) {
             final ByteBuf frame = alloc.buffer(1).writeByte(1);
 
-            assertThatThrownBy(() -> new FrameEncoder(FrameCipher.NONE).finish(alloc, frame))
+            assertThatThrownBy(() -> new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop()).finish(alloc, frame))
                     .isInstanceOf(IllegalArgumentException.class);
             assertThat(frame.refCnt()).isZero();
         }
@@ -115,7 +117,8 @@ class FrameEncoderTest {
             final ByteBuf original = payload(UnpooledByteBufAllocator.DEFAULT, 0x11, 0x22);
             final ByteBuf shared = Frames.share(original);
 
-            assertThatThrownBy(() -> new FrameEncoder(FrameCipher.NONE).finish(new OneByteAllocator(), shared))
+            assertThatThrownBy(() -> new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop())
+                            .finish(new OneByteAllocator(), shared))
                     .isInstanceOf(IndexOutOfBoundsException.class);
 
             assertThat(original.refCnt()).as("the shared holder was released").isEqualTo(1);
@@ -127,8 +130,8 @@ class FrameEncoderTest {
             final ByteBuf frame = Frames.allocate(UnpooledByteBufAllocator.DEFAULT, Frames.MAX_LENGTH - Frames.HEADER)
                     .writeZero(Frames.MAX_LENGTH - Frames.HEADER);
 
-            assertThatThrownBy(() ->
-                            new FrameEncoder(new XorTestCipher(8)).finish(UnpooledByteBufAllocator.DEFAULT, frame))
+            assertThatThrownBy(() -> new FrameEncoder(new XorTestCipher(8), NetworkMetrics.noop())
+                            .finish(UnpooledByteBufAllocator.DEFAULT, frame))
                     .isInstanceOf(EncoderException.class);
             assertThat(frame.refCnt()).isZero();
         }
@@ -137,16 +140,17 @@ class FrameEncoderTest {
     @Nested
     class Write {
         @Test
-        void write_shouldFillLengthAndEncryptPayloadOnly() {
-            final EmbeddedChannel channel = TestChannels.embedded(new FrameEncoder(new XorTestCipher(1)));
+        void write_shouldFillLengthEncryptPayloadAndCountOnItsOwnMetrics_whenTheChannelHasNoMetricsAttribute() {
+            final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+            final EmbeddedChannel channel =
+                    new EmbeddedChannel(new FrameEncoder(new XorTestCipher(1), new NetworkMetrics(registry)));
 
             channel.writeOutbound(payload(channel.alloc(), 0x01, 0x02, 0x03));
 
             final ByteBuf actual = channel.readOutbound();
             assertThat(ByteBufUtil.getBytes(actual)).containsExactly(5, 0, 0x01 ^ 0x5A, 0x02 ^ 0x5A, 0x03 ^ 0x5A);
             actual.release();
-            assertThat(TestChannels.registry(channel)
-                            .get("l2nx.network.bytes")
+            assertThat(registry.get("l2nx.network.bytes")
                             .tag("direction", "out")
                             .counter()
                             .count())
@@ -156,7 +160,8 @@ class FrameEncoderTest {
 
         @Test
         void write_shouldFailThePromiseAndReleaseTheFrame_whenFrameExceedsTheLengthField() {
-            final EmbeddedChannel channel = TestChannels.embedded(new FrameEncoder(FrameCipher.NONE));
+            final EmbeddedChannel channel =
+                    TestChannels.embedded(new FrameEncoder(FrameCipher.NONE, NetworkMetrics.noop()));
             final ByteBuf frame = oversize();
 
             final ChannelFuture written = channel.writeOneOutbound(frame);
