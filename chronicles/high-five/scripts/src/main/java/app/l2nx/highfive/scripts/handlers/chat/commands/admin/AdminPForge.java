@@ -477,9 +477,10 @@ public class AdminPForge implements IAdminCommandHandler {
             buf.putDouble(Double.parseDouble(string));
             return true;
         } else if ((b == 'S') || (b == 's')) {
-            final int len = string.length();
-            for (int i = 0; i < len; i++) {
-                buf.putChar(string.charAt(i));
+            if (string != null) {
+                for (int i = 0; i < string.length(); i++) {
+                    buf.putChar(string.charAt(i));
+                }
             }
 
             buf.putChar('\000');

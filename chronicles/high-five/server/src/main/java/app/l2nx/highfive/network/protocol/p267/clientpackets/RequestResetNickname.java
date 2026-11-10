@@ -36,7 +36,7 @@ public class RequestResetNickname extends ClientPacket {
         }
 
         player.getAppearance().setTitleColor(0xFFFF77);
-        player.setTitle("");
+        player.setTitle(null);
         player.broadcastTitleInfo();
     }
 }

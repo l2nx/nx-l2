@@ -4,6 +4,7 @@
  */
 package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
+import static app.l2nx.network.test.GoldenBytes.written;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
@@ -106,6 +107,21 @@ class InfoHeadsTest {
                 assertThat(actual.runSpeed()).isCloseTo(132.0, within(1e-9));
             }
         }
+
+        @Test
+        void writeImpl_shouldWriteTheBytesOfAnEmptyTitle_whenThePlayerHasNoTitle() {
+            final Player player = player();
+            final TerritoryWarManager territories = mock(TerritoryWarManager.class);
+            try (MockedStatic<TerritoryWarManager> instance = mockStatic(TerritoryWarManager.class)) {
+                instance.when(TerritoryWarManager::getInstance).thenReturn(territories);
+                final UserInfo packet = new UserInfo(player);
+                when(player.getTitle()).thenReturn("");
+                final String expected = hex(packet);
+                when(player.getTitle()).thenReturn(null);
+
+                assertThat(hex(packet)).isEqualTo(expected);
+            }
+        }
     }
 
     @Nested
@@ -138,6 +154,19 @@ class InfoHeadsTest {
                             .dead(true)
                             .build());
         }
+
+        @Test
+        void writeImpl_shouldWriteTheBytesOfAnEmptyTitle_whenTheNpcHasNoTitle() {
+            final Npc npc = mock(Npc.class, RETURNS_DEEP_STUBS);
+            when(npc.getTemplate()).thenReturn(mock(NpcTemplate.class));
+            when(npc.getTeam()).thenReturn(Team.NONE);
+            final NpcInfo packet = new NpcInfo(npc, mock(Player.class));
+            when(npc.getTitle()).thenReturn("");
+            final String expected = hex(packet);
+            when(npc.getTitle()).thenReturn(null);
+
+            assertThat(hex(packet)).isEqualTo(expected);
+        }
     }
 
     private static Player player() {
@@ -157,6 +186,16 @@ class InfoHeadsTest {
         when(player.getCubicIds()).thenReturn(new int[0]);
         when(player.getMovementSpeedMultiplier()).thenReturn(1.0);
         return player;
+    }
+
+    private static String hex(ServerPacket packet) {
+        return written(out -> {
+            try {
+                packet.writeImpl(null, new PacketWriter(out));
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        });
     }
 
     private static <T> T head(ServerPacket packet, GameServerOpcode opcode, Function<ByteBuf, T> reader) {

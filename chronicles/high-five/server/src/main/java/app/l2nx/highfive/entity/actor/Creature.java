@@ -184,6 +184,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -2720,11 +2721,8 @@ public abstract class Creature extends WorldObject {
 
     public void setTitle(String value) {
         WorldPartition.checkOwner();
-        if (value == null) {
-            title = "";
-        } else {
-            title = isPlayer() && (value.length() > 21) ? value.substring(0, 20) : value;
-        }
+        final String shown = (value != null) && isPlayer() && (value.length() > 21) ? value.substring(0, 20) : value;
+        title = StringUtils.isBlank(shown) ? null : shown;
     }
 
     public void setWalking() {

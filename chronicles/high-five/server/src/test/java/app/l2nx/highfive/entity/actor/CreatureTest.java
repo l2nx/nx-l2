@@ -40,6 +40,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
@@ -343,6 +345,38 @@ class CreatureTest {
             final Skill skill = mock(Skill.class);
             when(skill.getId()).thenReturn(id);
             return skill;
+        }
+    }
+
+    @Nested
+    class Title {
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {"   "})
+        void setTitle_shouldHoldNoTitle_whenTheValueIsBlank(String value) {
+            final AtomicReference<String> actual = new AtomicReference<>("unset");
+
+            WorldLoopExtension.runInPass(() -> {
+                final TestAttackable attackable = new TestAttackable();
+                attackable.setTitle("Guard");
+                attackable.setTitle(value);
+                actual.set(attackable.getTitle());
+            });
+
+            assertThat(actual.get()).isNull();
+        }
+
+        @Test
+        void setTitle_shouldKeepTheTitle_whenItHasText() {
+            final AtomicReference<String> actual = new AtomicReference<>();
+
+            WorldLoopExtension.runInPass(() -> {
+                final TestAttackable attackable = new TestAttackable();
+                attackable.setTitle(" Guard ");
+                actual.set(attackable.getTitle());
+            });
+
+            assertThat(actual.get()).isEqualTo(" Guard ");
         }
     }
 
