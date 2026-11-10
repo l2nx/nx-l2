@@ -12,8 +12,6 @@ lists what is open.
 - [#202](https://github.com/l2nx/nx-l2/issues/202) LoadRunTest counts ramp lifecycle steps in the steady window under a loaded machine
 - [#203](https://github.com/l2nx/nx-l2/issues/203) MailItemRepositoryTest online adena limit case fails intermittently in a full server test run
 - [#206](https://github.com/l2nx/nx-l2/issues/206) Offline-row writers change a loaded character behind its back
-- [#205](https://github.com/l2nx/nx-l2/issues/205) Broadcast sends receiver-dependent NPC packets in the first receiver language
-- [#194](https://github.com/l2nx/nx-l2/issues/194) Serialize a broadcast packet once and drop per-packet attribute lookups on the send path
 - [#196](https://github.com/l2nx/nx-l2/issues/196) Check every mutation result in the item handlers touched by the pending item pass
 - [#197](https://github.com/l2nx/nx-l2/issues/197) Share one residence function implementation between clan halls, castles and forts
 - [#198](https://github.com/l2nx/nx-l2/issues/198) Execute a planned item take before the payment and name the fort siege registration fee
