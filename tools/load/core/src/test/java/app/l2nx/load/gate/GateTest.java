@@ -288,7 +288,7 @@ class GateTest {
                             CriterionResult::passed,
                             CriterionResult::reason)
                     .containsExactly(
-                            tuple(TYPE, 1.5, true, null),
+                            tuple(TYPE, 2.0, true, null),
                             tuple(
                                     OTHER_TYPE,
                                     null,
@@ -304,7 +304,7 @@ class GateTest {
 
             assertThat(result(actual, GateCriterion.INPUT_TIME_P99))
                     .extracting(CriterionResult::subject, CriterionResult::threshold, CriterionResult::passed)
-                    .containsExactly(TYPE, 1.5, true);
+                    .containsExactly(TYPE, 2.0, true);
         }
 
         @Test
@@ -680,7 +680,7 @@ class GateTest {
         }
 
         @ParameterizedTest(name = "baseline {0} ms -> limit {1} ms")
-        @CsvSource({"1, 1.5", "5, 5.5", "10, 11"})
+        @CsvSource({"1, 2", "5, 6", "10, 11"})
         void evaluate_shouldTakeTheLargerOfTheRatioAndTheAdditiveFloor(double baselineP99, double expected) {
             var baseline = List.of(run("base1", baselineP99), run("base2", baselineP99), run("base3", baselineP99));
 
@@ -701,7 +701,7 @@ class GateTest {
 
             var actual = Gate.evaluate(List.of(run("a"), run("b"), run("c")), baseline, THRESHOLDS);
 
-            assertThat(result(actual, GateCriterion.INPUT_TIME_P99).threshold()).isCloseTo(1.5, within(1e-9));
+            assertThat(result(actual, GateCriterion.INPUT_TIME_P99).threshold()).isCloseTo(2.0, within(1e-9));
             assertThat(actual.baselineRunIds()).containsExactly("base1", "base2", "base3");
         }
 

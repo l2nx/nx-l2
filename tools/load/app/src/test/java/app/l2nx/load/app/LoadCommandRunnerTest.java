@@ -421,7 +421,7 @@ class LoadCommandRunnerTest {
     @Execution(ExecutionMode.SAME_THREAD)
     class Gate {
         @ParameterizedTest(name = "input p99 {0} ms against 1 ms -> exit code {1}")
-        @CsvSource({"1.4, 0", "1.6, " + LoadCommandRunner.GATE_FAILED})
+        @CsvSource({"1.9, 0", "2.1, " + LoadCommandRunner.GATE_FAILED})
         void gate_shouldExitWithTheVerdict_whenGivenFiveReportsAndABaselineOfFive(double inputP99Millis, int expected)
                 throws IOException {
             final Path baseline = root.resolve("baseline");

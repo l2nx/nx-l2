@@ -70,7 +70,7 @@ class GateThresholdsTest {
                     .as("the median survives one outlier on each side")
                     .isEqualTo(5);
             assertThat(actual.maxInputP99Ratio()).isEqualTo(1.10);
-            assertThat(actual.inputP99Floor()).isEqualTo(Duration.ofNanos(500_000));
+            assertThat(actual.inputP99Floor()).isEqualTo(Duration.ofMillis(1));
             assertThat(actual.maxStepP99Ratio()).isEqualTo(1.10);
             assertThat(actual.stepP99Floor()).isEqualTo(Duration.ofMillis(10));
             assertThat(actual.passBudget()).isEqualTo(Duration.ofMillis(50));

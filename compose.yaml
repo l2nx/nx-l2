@@ -133,8 +133,8 @@ services:
       login-server:
         condition: service_healthy
     stop_grace_period: 120s
-    cpuset: ${L2NX_LOAD_GAME_CPUSET:-0-5}
-    cpus: ${L2NX_LOAD_GAME_CPUS:-6}
+    cpuset: ${L2NX_LOAD_GAME_CPUSET:-0-3}
+    cpus: ${L2NX_LOAD_GAME_CPUS:-4}
     # -Xmx4g of the image plus metaspace, code cache, direct buffers and thread stacks.
     mem_limit: 6g
     memswap_limit: 6g
@@ -160,8 +160,8 @@ services:
       # A collector pause of the generator would count as generator lag.
       JAVA_OPTS: -XX:+UseZGC -Xms1g -Xmx2g
       L2NX_LOAD_CPUAFFINITY: >-
-        game-server=${L2NX_LOAD_GAME_CPUSET:-0-5}
-        harness=${L2NX_LOAD_HARNESS_CPUSET:-6-9}
+        game-server=${L2NX_LOAD_GAME_CPUSET:-0-3}
+        harness=${L2NX_LOAD_HARNESS_CPUSET:-4-9}
         load-db,login-server,prometheus=${L2NX_LOAD_SHARED_CPUSET:-10-11}
       L2NX_LOAD_P267_LOGINHOST: login-server
       L2NX_LOAD_PROMETHEUS_URL: http://prometheus:9090
@@ -170,8 +170,8 @@ services:
       L2NX_LOAD_PROMETHEUS_TARGETS_1_JOB: login
       L2NX_LOAD_PROMETHEUS_TARGETS_1_METRICSURL: http://login-server:8106/actuator/prometheus
       L2NX_LOAD_DATABASE_ADMINURL: jdbc:postgresql://load-db:5432/postgres
-    cpuset: ${L2NX_LOAD_HARNESS_CPUSET:-6-9}
-    cpus: ${L2NX_LOAD_HARNESS_CPUS:-4}
+    cpuset: ${L2NX_LOAD_HARNESS_CPUSET:-4-9}
+    cpus: ${L2NX_LOAD_HARNESS_CPUS:-6}
     mem_limit: 3g
     memswap_limit: 3g
     networks:

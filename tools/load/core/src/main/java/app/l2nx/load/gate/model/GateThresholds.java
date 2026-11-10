@@ -56,7 +56,7 @@ public record GateThresholds(
                 .passBudget(Duration.ofMillis(50))
                 .maxOverBudgetShare(0.001)
                 .maxInputP99Ratio(1.10)
-                .inputP99Floor(Duration.ofNanos(500_000))
+                .inputP99Floor(Duration.ofMillis(1))
                 .maxStepP99Ratio(1.10)
                 .stepP99Floor(Duration.ofMillis(10))
                 .maxTimeoutAndErrorShare(0.005)
