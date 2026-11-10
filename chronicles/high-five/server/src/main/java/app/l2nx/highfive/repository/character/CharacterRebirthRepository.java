@@ -7,6 +7,7 @@ package app.l2nx.highfive.repository.character;
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -47,15 +48,18 @@ public class CharacterRebirthRepository {
                 .update();
     }
 
-    public List<Integer> findSelectedSkillIds(int characterId) {
-        return registry.findId(characterId)
-                .flatMap(id -> jdbcClient
-                        .sql(SELECT_SELECTED_SKILLS)
-                        .param(id)
-                        .query((rs, rowNum) -> List.of(
-                                (Integer[]) rs.getArray("selected_skill_ids").getArray()))
-                        .optional())
+    public List<Integer> findSelectedSkillIds(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_SELECTED_SKILLS)
+                .param(characterId)
+                .query((rs, rowNum) ->
+                        List.of((Integer[]) rs.getArray("selected_skill_ids").getArray()))
+                .optional()
                 .orElse(List.of());
+    }
+
+    public List<Integer> findSelectedSkillIds(int characterId) {
+        return registry.findId(characterId).map(this::findSelectedSkillIds).orElse(List.of());
     }
 
     /**

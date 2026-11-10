@@ -306,7 +306,7 @@ public final class ReportWriter {
         }
         line(
                 out,
-                "%-20s %10s %9s %9s %9s %11s %9s %9s %9s %9s %9s %9s %9s %9s",
+                "%-20s %10s %9s %9s %9s %11s %9s %9s %9s %9s %9s %9s %9s %9s %9s %9s",
                 "loop",
                 "passes",
                 "p50 ms",
@@ -319,13 +319,15 @@ public final class ReportWriter {
                 "jdbc",
                 "jdbc s",
                 "jdbc %",
+                "jdbc r",
+                "jdbc w",
                 "inbox max",
                 "busy %");
         if (server.loops() != null) {
             new TreeMap<>(server.loops())
                     .forEach((loop, stats) -> line(
                             out,
-                            "%-20s %10d %9s %9s %9s %11d %9d %9d %9d %9d %9s %9s %9s %9s",
+                            "%-20s %10d %9s %9s %9s %11d %9d %9d %9d %9d %9s %9s %9s %9s %9s %9s",
                             loop,
                             stats.passes(),
                             number(stats.passP50Millis()),
@@ -338,6 +340,8 @@ public final class ReportWriter {
                             stats.jdbcOnLoop(),
                             number(stats.jdbcOnLoopSeconds()),
                             number(stats.jdbcOnLoopShare() == null ? null : stats.jdbcOnLoopShare() * 100),
+                            count(stats.jdbcReads()),
+                            count(stats.jdbcWrites()),
                             number(stats.inboxDepthMax()),
                             number(stats.busyShare() == null ? null : stats.busyShare() * 100)));
         }
@@ -440,6 +444,10 @@ public final class ReportWriter {
 
     private static int width(String header, Stream<String> values) {
         return Math.max(header.length(), values.mapToInt(String::length).max().orElse(0));
+    }
+
+    private static String count(Long value) {
+        return value == null ? NONE : String.valueOf(value);
     }
 
     private static String number(Double value) {

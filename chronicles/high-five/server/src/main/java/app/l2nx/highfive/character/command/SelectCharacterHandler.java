@@ -30,6 +30,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.engine.core.session.command.ContextCommandHandler;
 import app.l2nx.engine.core.session.command.ContextResolver;
+import app.l2nx.highfive.character.CharacterLoader;
 import app.l2nx.highfive.character.view.CharacterSelected;
 import app.l2nx.highfive.character.view.CharacterSummary;
 import app.l2nx.highfive.character.view.ServerClosed;
@@ -61,12 +62,16 @@ import app.l2nx.highfive.session.GameContexts;
 import app.l2nx.highfive.session.LegacyNotices;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class SelectCharacterHandler implements ContextCommandHandler<GameClient, SelectCharacter> {
@@ -76,6 +81,7 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
     private static final String FACTION_LIMIT = "data/html/mods/Faction/ExceededOnlineLimit.htm";
 
     private final IdentityRegistry registry;
+    private final CharacterLoader loader;
 
     @Override
     public ContextResolver<GameClient> context() {
@@ -99,45 +105,68 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
             return;
         }
 
-        // The load reads the rows a value transaction in flight is about to change, so it waits for the outcome.
-        final Runnable selection = () -> selectOnce(client, command.slot());
-        registry.findId(info.objectId())
-                .ifPresentOrElse(id -> WorldPartition.inFlightCharacters().whenIdle(id, selection), selection);
-    }
-
-    private void selectOnce(GameClient client, int slot) {
-        if (client.getConnectionState() != SessionState.AUTHED) {
+        final Optional<UUID> characterId = registry.findId(info.objectId());
+        if (characterId.isEmpty()) {
+            log.warn("{} selected a character without an id in slot {}", client, command.slot());
             return;
         }
 
-        // A lock that cannot be taken means a repeated packet: nothing to do.
-        if (client.getPlayerLock().tryLock()) {
-            try {
-                // A player already set means a second select queued behind the first one.
-                if (client.getPlayer() == null) {
-                    select(client, slot);
-                }
-            } finally {
-                client.getPlayerLock().unlock();
-            }
+        client.session().hold();
+        WorldPartition.inFlightCharacters()
+                .whenIdle(characterId.get(), () -> afterOtherLoads(client, command.slot(), characterId.get()));
+    }
 
-            ACCOUNTING_LOG.info("Logged in, {}", client);
+    // A reconnect can select while its old session's load is still running or being discarded.
+    private void afterOtherLoads(GameClient client, int slot, UUID characterId) {
+        WorldPartition.loadedCharacters().whenLoaded(characterId, () -> {
+            boolean loading = false;
+            try {
+                loading = selectOnce(client, slot, characterId);
+            } finally {
+                if (!loading) {
+                    client.session().release();
+                }
+            }
+        });
+    }
+
+    /** @return whether a load started; the load then releases the session */
+    private boolean selectOnce(GameClient client, int slot, UUID characterId) {
+        if (client.getConnectionState() != SessionState.AUTHED) {
+            return false;
+        }
+
+        if (!client.getPlayerLock().tryLock()) {
+            return false;
+        }
+        try {
+            // A player already set means a second select queued behind the first one.
+            return (client.getPlayer() == null) && select(client, slot, characterId);
+        } finally {
+            client.getPlayerLock().unlock();
         }
     }
 
-    private void select(GameClient client, int slot) {
+    private boolean select(GameClient client, int slot, UUID characterId) {
         final CharacterSummary info = client.getCharSelection(slot);
         if (info == null) {
-            return;
+            return false;
         }
 
-        final Player player = World.getPlayer(info.objectId());
-        if (player != null) {
-            if (OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS && player.isAutoPlaying()) {
-                OfflinePlayTable.getInstance().removeOfflinePlay(player);
+        // Kicked before the load so the load's read never sees rows older than this save.
+        final Player previous =
+                WorldPartition.loadedCharacters().find(characterId).orElseGet(() -> World.getPlayer(info.objectId()));
+        if (previous != null) {
+            if (OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS && previous.isAutoPlaying()) {
+                OfflinePlayTable.getInstance().removeOfflinePlay(previous);
             }
 
-            Disconnection.of(player).storeAndDelete();
+            final GameClient previousClient = previous.getClient();
+            if (previousClient != null) {
+                Disconnection.of(previousClient, previous).storeAndCloseWith(WorldLeft.INSTANCE);
+            } else {
+                Disconnection.of(previous).storeAndDelete();
+            }
         }
 
         if (PunishmentManager.getInstance()
@@ -147,23 +176,23 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
                 || PunishmentManager.getInstance()
                         .hasPunishment(client.getIp(), PunishmentAffect.IP, PunishmentType.BAN)) {
             client.port().emitAndClose(ServerClosed.INSTANCE);
-            return;
+            return false;
         }
 
         // A negative access level is the ban of earlier versions.
         if (info.accessLevel() < 0) {
             client.port().emitAndClose(ServerClosed.INSTANCE);
-            return;
+            return false;
         }
 
         if (info.accessLevel() < 100) {
-            if ((player != null)
-                    && player.hasPremiumStatus()
+            if ((previous != null)
+                    && previous.hasPremiumStatus()
                     && (DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP > 0)
                     && !AntiFeedManager.getInstance()
                             .tryAddPlayer(
                                     AntiFeedManager.OFFLINE_PLAY,
-                                    player,
+                                    previous,
                                     DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP)) {
                 LegacyNotices.htmlFile(
                         client,
@@ -174,7 +203,7 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
                                         .getLimit(
                                                 client,
                                                 DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP))));
-                return;
+                return false;
             } else if ((DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP > 0)
                     && !AntiFeedManager.getInstance()
                             .tryAddClient(
@@ -188,7 +217,7 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
                                 "%max%",
                                 String.valueOf(AntiFeedManager.getInstance()
                                         .getLimit(client, DualboxCheckConfig.DUALBOX_CHECK_MAX_PLAYERS_PER_IP))));
-                return;
+                return false;
             }
         }
 
@@ -203,7 +232,7 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
                         Map.of(
                                 "%more%", FactionSystemConfig.FACTION_GOOD_TEAM_NAME,
                                 "%less%", FactionSystemConfig.FACTION_EVIL_TEAM_NAME));
-                return;
+                return false;
             }
 
             if (info.evil()
@@ -216,16 +245,19 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
                         Map.of(
                                 "%more%", FactionSystemConfig.FACTION_EVIL_TEAM_NAME,
                                 "%less%", FactionSystemConfig.FACTION_GOOD_TEAM_NAME));
-                return;
+                return false;
             }
         }
 
-        final Player cha = client.load(slot);
-        if (cha == null) {
-            return;
-        }
-        WorldPartition.loadedCharacters().register(registry.idOf(cha.getObjectId()), cha);
+        loader.load(characterId, client, player -> selected(client, player));
+        return true;
+    }
 
+    private void selected(GameClient client, Player cha) {
+        cha.setRunning();
+        cha.standUp();
+        cha.refreshOverloaded();
+        cha.refreshExpertisePenalty();
         CharInfoTable.getInstance().addName(cha);
 
         // Invisible GMs must not appear for a moment on login.
@@ -245,7 +277,6 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
 
         cha.setClient(client);
         client.setPlayer(cha);
-        cha.setOnlineStatus(true, true);
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_SELECT, Containers.Players())) {
             final TerminateReturn terminate = EventDispatcher.getInstance()
@@ -270,5 +301,6 @@ class SelectCharacterHandler implements ContextCommandHandler<GameClient, Select
                         cha,
                         client.getSessionId().playOk1(),
                         GameTimeTaskManager.getInstance().getGameTime() % MINUTES_PER_DAY));
+        ACCOUNTING_LOG.info("Logged in, {}", client);
     }
 }

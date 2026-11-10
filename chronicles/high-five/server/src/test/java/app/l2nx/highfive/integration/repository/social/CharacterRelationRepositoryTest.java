@@ -40,6 +40,26 @@ class CharacterRelationRepositoryTest extends RepositoryTest {
     }
 
     @Nested
+    class FindTargets {
+        @ParameterizedTest(name = "{0}")
+        @EnumSource(RelationType.class)
+        void findTargets_shouldGiveTheTargetIdsOfTheRelationAndAllocateNoHandle(RelationType relation) {
+            final UUID character = insertCharacter();
+            final UUID friend = insertCharacter();
+            final UUID blocked = insertCharacter();
+            insertRelation(character, friend, "FRIEND");
+            insertRelation(character, blocked, "BLOCK");
+            final UUID expected = relation == RelationType.FRIEND ? friend : blocked;
+            final int allocatedBefore = registry.allocatedCount();
+
+            final List<UUID> actual = repository.findTargets(character, relation);
+
+            assertThat(actual).containsExactly(expected);
+            assertThat(registry.allocatedCount()).isEqualTo(allocatedBefore);
+        }
+    }
+
+    @Nested
     class Add {
         @Test
         void add_shouldStoreBlock_whenTargetIsAFriend() {

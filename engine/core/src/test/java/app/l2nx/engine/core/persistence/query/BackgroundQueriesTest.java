@@ -63,6 +63,71 @@ class BackgroundQueriesTest {
             assertThat(delivered).isEmpty();
             verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
         }
+
+        @Test
+        void run_shouldDeliverTheFailureOnTheResultLoop_whenTheQueryFails() {
+            final List<Runnable> loop = new ArrayList<>();
+            final List<RuntimeException> failures = new ArrayList<>();
+            final BackgroundQueries queries = new BackgroundQueries(Runnable::run, scheduler);
+            final IllegalStateException failure = new IllegalStateException("database down");
+
+            queries.<String>run(
+                    () -> {
+                        throw failure;
+                    },
+                    loop::add,
+                    delivered::add,
+                    failures::add);
+
+            assertThat(failures).as("not before the loop runs it").isEmpty();
+            loop.forEach(Runnable::run);
+            assertThat(failures).containsExactly(failure);
+            assertThat(delivered).isEmpty();
+        }
+
+        @Test
+        void run_shouldDeliverTheRefusalOnTheResultLoop_whenTheExecutorRejectsTheQuery() {
+            final List<RuntimeException> failures = new ArrayList<>();
+            final BackgroundQueries queries = new BackgroundQueries(
+                    task -> {
+                        throw new RejectedExecutionException("full");
+                    },
+                    scheduler);
+
+            queries.run(() -> "rows", Runnable::run, delivered::add, failures::add);
+
+            assertThat(failures).singleElement().isInstanceOf(RejectedExecutionException.class);
+            assertThat(delivered).isEmpty();
+        }
+
+        @Test
+        void run_shouldDeliverTheResultAndNoFailure_whenTheQueryAnswers() {
+            final List<RuntimeException> failures = new ArrayList<>();
+            final BackgroundQueries queries = new BackgroundQueries(Runnable::run, scheduler);
+
+            queries.run(() -> "rows", Runnable::run, delivered::add, failures::add);
+
+            assertThat(delivered).containsExactly("rows");
+            assertThat(failures).isEmpty();
+        }
+    }
+
+    @Nested
+    class RunAfter {
+        @Test
+        void runAfter_shouldRunTheQueryAfterThePause() {
+            final BackgroundQueries queries = new BackgroundQueries(Runnable::run, scheduler);
+
+            queries.runAfter(Duration.ofSeconds(5), () -> "rows", Runnable::run, delivered::add);
+            assertThat(delivered).isEmpty();
+            final ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
+            final ArgumentCaptor<Instant> start = ArgumentCaptor.forClass(Instant.class);
+            verify(scheduler).schedule(task.capture(), start.capture());
+            task.getValue().run();
+
+            assertThat(start.getValue()).isEqualTo(Instant.EPOCH.plus(Duration.ofSeconds(5)));
+            assertThat(delivered).containsExactly("rows");
+        }
     }
 
     @Nested

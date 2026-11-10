@@ -26,7 +26,6 @@ import app.l2nx.highfive.repository.character.CharacterVariableRepository;
 import app.l2nx.highfive.repository.character.model.CharacterHenna;
 import app.l2nx.highfive.repository.character.model.CharacterItemReuse;
 import app.l2nx.highfive.repository.character.model.CharacterMacro;
-import app.l2nx.highfive.repository.character.model.CharacterPremiumItem;
 import app.l2nx.highfive.repository.character.model.CharacterQuestVariable;
 import app.l2nx.highfive.repository.character.model.CharacterRecipe;
 import app.l2nx.highfive.repository.character.model.CharacterRecipeShopItem;
@@ -147,22 +146,11 @@ public class PlayerPersistenceManager {
         });
     }
 
-    public Optional<CharacterRow> findCharacter(int objectId) {
-        return characterRepository.findById(objectId);
-    }
-
     /**
      * @return the characters of the account, oldest first
      */
     public List<CharacterRow> findCharacters(UUID accountId) {
         return characterRepository.findByAccount(accountId);
-    }
-
-    /**
-     * @return names by handle of the other characters of the account, oldest first
-     */
-    public Map<Integer, String> findOtherCharacterNames(UUID accountId, int objectId) {
-        return characterRepository.findOtherNames(accountId, objectId);
     }
 
     public void updateOnlineStatus(int objectId, OnlineStatus status, long lastAccessMillis) {
@@ -227,10 +215,6 @@ public class PlayerPersistenceManager {
         return true;
     }
 
-    public List<CharacterSubclass> findSubclasses(int objectId) {
-        return subclassRepository.findAll(objectId);
-    }
-
     public Optional<CharacterSubclass> findSubclass(int objectId, int classId) {
         return subclassRepository.findByClassId(objectId, classId);
     }
@@ -286,10 +270,6 @@ public class PlayerPersistenceManager {
         skillSaveRepository.deleteAll(objectId, classIndex);
     }
 
-    public List<CharacterItemReuse> findItemReuses(int objectId) {
-        return itemReuseRepository.findAll(objectId);
-    }
-
     public void replaceItemReuses(int objectId, List<CharacterItemReuse> reuses) {
         itemReuseRepository.replaceAll(objectId, reuses);
     }
@@ -310,10 +290,6 @@ public class PlayerPersistenceManager {
         hennaRepository.delete(objectId, classIndex, slot);
     }
 
-    public List<CharacterTeleportBookmark> findBookmarks(int objectId) {
-        return bookmarkRepository.findAll(objectId);
-    }
-
     public void insertBookmark(int objectId, CharacterTeleportBookmark bookmark) {
         bookmarkRepository.insert(objectId, bookmark);
     }
@@ -324,10 +300,6 @@ public class PlayerPersistenceManager {
 
     public void deleteBookmark(int objectId, int bookmarkId) {
         bookmarkRepository.delete(objectId, bookmarkId);
-    }
-
-    public List<CharacterRecipe> findRecipes(int objectId) {
-        return recipeRepository.findAll(objectId);
     }
 
     public List<Integer> findDwarvenRecipeIds(int objectId, int classIndex) {
@@ -345,19 +317,8 @@ public class PlayerPersistenceManager {
         recipeRepository.delete(objectId, classIndex, recipeId);
     }
 
-    /**
-     * @return the manufacture list in its stored order
-     */
-    public List<CharacterRecipeShopItem> findRecipeShopItems(int objectId) {
-        return recipeShopRepository.findAll(objectId);
-    }
-
     public void replaceRecipeShopItems(int objectId, List<CharacterRecipeShopItem> items) {
         recipeShopRepository.replaceAll(objectId, items);
-    }
-
-    public List<CharacterPremiumItem> findPremiumItems(int objectId) {
-        return premiumItemRepository.findByCharacter(objectId);
     }
 
     public void updatePremiumItemCount(int objectId, int itemNum, long count) {
@@ -402,10 +363,6 @@ public class PlayerPersistenceManager {
 
     public void deleteShortcut(int objectId, int classIndex, int slot, int page) {
         shortcutRepository.delete(objectId, classIndex, slot, page);
-    }
-
-    public List<CharacterQuestVariable> findQuestStates(int objectId) {
-        return questRepository.findStates(objectId);
     }
 
     /**

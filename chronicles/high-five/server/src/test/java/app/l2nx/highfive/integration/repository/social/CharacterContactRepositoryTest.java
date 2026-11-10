@@ -32,6 +32,31 @@ class CharacterContactRepositoryTest extends RepositoryTest {
     }
 
     @Nested
+    class FindContactNames {
+        @Test
+        void findContactNames_shouldGiveTheNamesOfTheContacts() {
+            final UUID character = insertCharacter();
+            final UUID first = insertCharacter();
+            final UUID second = insertCharacter();
+            JDBC.sql("UPDATE characters SET name = 'First' WHERE id = ?")
+                    .param(first)
+                    .update();
+            JDBC.sql("UPDATE characters SET name = 'Second' WHERE id = ?")
+                    .param(second)
+                    .update();
+            insertContact(character, first);
+            insertContact(character, second);
+            insertContact(insertCharacter(), character);
+            final int allocatedBefore = registry.allocatedCount();
+
+            final List<String> actual = repository.findContactNames(character);
+
+            assertThat(actual).containsExactlyInAnyOrder("First", "Second");
+            assertThat(registry.allocatedCount()).isEqualTo(allocatedBefore);
+        }
+    }
+
+    @Nested
     class Add {
         @Test
         void add_shouldStoreContactUuid() {

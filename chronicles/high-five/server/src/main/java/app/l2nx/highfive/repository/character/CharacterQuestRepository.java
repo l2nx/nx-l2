@@ -12,6 +12,7 @@ import app.l2nx.highfive.repository.character.model.CharacterQuestVariable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -58,14 +59,16 @@ public class CharacterQuestRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<CharacterQuestVariable> findStates(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_STATES)
+                .param(characterId)
+                .query(this::mapVariable)
+                .list();
+    }
+
     public List<CharacterQuestVariable> findStates(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_STATES)
-                        .param(id)
-                        .query(this::mapVariable)
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findStates).orElse(List.of());
     }
 
     public List<CharacterQuestVariable> findStates(int objectId, String state) {
@@ -82,14 +85,16 @@ public class CharacterQuestRepository {
     /**
      * @return the variables of every quest of the character except the states
      */
+    public List<CharacterQuestVariable> findVariables(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_VARIABLES)
+                .param(characterId)
+                .query(this::mapVariable)
+                .list();
+    }
+
     public List<CharacterQuestVariable> findVariables(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_VARIABLES)
-                        .param(id)
-                        .query(this::mapVariable)
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findVariables).orElse(List.of());
     }
 
     /**

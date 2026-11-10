@@ -35,6 +35,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import it.unimi.dsi.fastutil.ints.IntLinkedOpenHashSet;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -63,10 +64,21 @@ public class BlockList {
 
     public BlockList(Player owner) {
         this.owner = owner;
-        blockList = OFFLINE_LIST.get(owner.getObjectId());
-        if (blockList == null) {
-            blockList = loadList(this.owner.getObjectId());
+        blockList = new IntLinkedOpenHashSet();
+    }
+
+    /** Also replaces the owner's cached offline list, so {@link #isInBlockList(int, int)} answers from it until world entry. */
+    public void restore(Collection<Integer> blockedHandles) {
+        WorldPartition.checkOwner();
+        final int ownerId = owner.getObjectId();
+        blockList = new IntLinkedOpenHashSet();
+        for (int blocked : blockedHandles) {
+            if (blocked != ownerId) {
+                blockList.add(blocked);
+            }
         }
+
+        OFFLINE_LIST.put(ownerId, blockList);
     }
 
     private void addToBlockList(int target) {

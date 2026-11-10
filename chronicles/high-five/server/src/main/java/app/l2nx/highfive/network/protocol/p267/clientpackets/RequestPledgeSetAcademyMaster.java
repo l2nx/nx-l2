@@ -25,6 +25,7 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 
 /**
  * Format: (ch) dSS
@@ -88,8 +89,8 @@ public class RequestPledgeSetAcademyMaster extends ClientPacket {
                 sponsorMember.setApprenticeAndSponsor(0, 0);
             }
 
-            apprenticeMember.saveApprenticeAndSponsor(0, 0);
-            sponsorMember.saveApprenticeAndSponsor(0, 0);
+            save(apprenticeMember, apprentice, 0, 0);
+            save(sponsorMember, sponsor, 0, 0);
             sm = new SystemMessage(SystemMessageId.S2_CLAN_MEMBER_C1_S_APPRENTICE_HAS_BEEN_REMOVED);
         } else {
             if ((apprenticeMember.getSponsor() != 0)
@@ -114,8 +115,8 @@ public class RequestPledgeSetAcademyMaster extends ClientPacket {
             }
 
             // saving to database even if online, since both must match
-            apprenticeMember.saveApprenticeAndSponsor(0, sponsorMember.getObjectId());
-            sponsorMember.saveApprenticeAndSponsor(apprenticeMember.getObjectId(), 0);
+            save(apprenticeMember, apprentice, 0, sponsorMember.getObjectId());
+            save(sponsorMember, sponsor, apprenticeMember.getObjectId(), 0);
             sm = new SystemMessage(SystemMessageId.S2_HAS_BEEN_DESIGNATED_AS_THE_APPRENTICE_OF_CLAN_MEMBER_S1);
         }
 
@@ -132,5 +133,16 @@ public class RequestPledgeSetAcademyMaster extends ClientPacket {
         if (apprentice != null) {
             apprentice.sendPacket(sm);
         }
+    }
+
+    private static void save(ClanMember member, Player atRequest, int apprenticeId, int sponsorId) {
+        OfflineRows.whenSettled(member.getObjectId(), () -> {
+            final Player entered = member.getPlayer();
+            if ((entered != null) && (entered != atRequest)) {
+                entered.setApprentice(apprenticeId);
+                entered.setSponsor(sponsorId);
+            }
+            member.saveApprenticeAndSponsor(apprenticeId, sponsorId);
+        });
     }
 }

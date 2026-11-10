@@ -1077,11 +1077,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * Loads all quest states and variables for the specified player.
      * @param player the player who is entering the world
      */
-    public static void playerEnter(Player player) {
+    public static void playerEnter(
+            Player player, List<CharacterQuestVariable> states, List<CharacterQuestVariable> variables) {
         final PlayerPersistenceManager persistence = PlayerPersistenceManager.getInstance();
         final int objectId = player.getObjectId();
         try {
-            for (CharacterQuestVariable state : persistence.findQuestStates(objectId)) {
+            for (CharacterQuestVariable state : states) {
                 final String questId = state.questName();
 
                 // Search quest associated with the ID.
@@ -1098,7 +1099,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 new QuestState(q, player, State.getStateId(state.content()));
             }
 
-            for (CharacterQuestVariable variable : persistence.findQuestVariables(objectId)) {
+            for (CharacterQuestVariable variable : variables) {
                 final String questId = variable.questName();
                 final String var = variable.name();
 

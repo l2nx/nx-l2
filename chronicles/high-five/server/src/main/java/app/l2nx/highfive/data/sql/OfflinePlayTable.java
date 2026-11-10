@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.data.sql;
 
+import app.l2nx.highfive.character.CharacterLoader;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.config.custom.AutoPotionsConfig;
@@ -35,6 +36,7 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.AutoUseSettingsHolder;
 import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.repository.offline.OfflinePlayRepository;
@@ -59,9 +61,11 @@ public class OfflinePlayTable {
     private static volatile OfflinePlayTable instance;
 
     private final OfflinePlayRepository offlinePlayRepository;
+    private final CharacterLoader characterLoader;
 
-    public OfflinePlayTable(OfflinePlayRepository offlinePlayRepository) {
+    public OfflinePlayTable(OfflinePlayRepository offlinePlayRepository, CharacterLoader characterLoader) {
         this.offlinePlayRepository = offlinePlayRepository;
+        this.characterLoader = characterLoader;
         instance = this;
     }
 
@@ -75,7 +79,11 @@ public class OfflinePlayTable {
                 Player player = null;
 
                 try {
-                    player = Player.load(characterId);
+                    player = IdManager.getInstance()
+                            .findId(characterId)
+                            .flatMap(characterLoader::read)
+                            .map(Player::load)
+                            .orElseThrow(() -> new IllegalStateException("Character " + characterId + " has no row"));
                     player.setOnlineStatus(true, false);
                     player.spawnMe(player.getX(), player.getY(), player.getZ());
 

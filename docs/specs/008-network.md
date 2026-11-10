@@ -148,21 +148,43 @@ included, since selecting, creating and entering load and create world objects
   2 forks, 5×1 s warmup, 10×1 s measurement; shared vs per-session, µs/op per run: 200 viewers × 105 characters
   402/397 vs 361/360, 50 × 16 47.2/44.5 vs 43.7/42.4, 1 × 16 1.20/1.17 vs 1.08/1.09; at 200 viewers shared allocated
   about 49 KB/op, per-session 15–36 KB/op), and E8 replication decides again with its own benchmark.
+- **A legacy broadcast serializes once:** a packet sent to an audience serializes for its first recipient, every
+  recipient queues a share of that frame (`Frames.share`), and the broadcaster releases it after the fan-out. A packet
+  whose bytes depend on the recipient (`NpcInfo`, `NpcSay`, `ExShowScreenMessage` and `SystemMessage` with multilang
+  on) declares itself receiver-dependent and serializes per recipient ([#205](https://github.com/l2nx/nx-l2/issues/205)).
 - **Buffer ownership:** the emitter holds one reference and releases it after the fan-out; each queued duplicate is
   released by the encoder after writing, or by the outbound drain or the close path when the channel closes, the write fails or
   the event loop rejects the task during shutdown.
 - **A frame never outgrows its length field:** a frame longer than 65535 bytes after padding and checksum fails its
   write and closes the connection with `error`; the length is never truncated.
 - **One ordered outbound queue per connection** (MPSC), drained on its event loop:
-  - an atomic `scheduled` flag guards one outbound drain task; the drain clears it and re-checks the queue, so no
-    wake-up is lost; outside passes it writes at most a batch per run with `voidPromise()`, flushes once and
-    reschedules if items remain;
+  - an atomic consumer role guards one outbound drain task; the drain hands the role back and re-checks the queue,
+    so no wake-up is lost; a drain writes at most 64 frames (`DRAIN_BATCH`) with `voidPromise()`, flushes once and
+    reschedules if frames remain, so one connection cannot hold its event loop from the others;
   - the outbound drain is the only writer of the channel: the key packet, legacy packets and view events all go through it;
     a direct `channel.write` from another thread is forbidden, since the rolling XOR depends on write order;
+  - the send path holds its references in final fields: `GameConnection` keeps the `OutboundQueue` that
+    `L2Pipeline.install` returns and the server's `NetworkMetrics`, `FrameEncoder` gets `NetworkMetrics` in its
+    constructor; no channel attribute is looked up per packet ([#194](https://github.com/l2nx/nx-l2/issues/194));
   - from E8, view events and legacy packets emitted in any phase of a pass are buffered per session in emission
-    order and released by the replication phase after its spawns; the partition schedules each connection's
-    outbound drain once, after the replication phase, and the drain writes everything and flushes once
+    order and released by the replication phase after its spawns
     ([replication.md §6](003-engine-core/replication.md#6-network-hand-off)).
+- **Network hand-off:** the world loop opens a hand-off before the phases of a pass and closes it in the flush phase
+  ([#194](https://github.com/l2nx/nx-l2/issues/194)):
+  - inside an open hand-off a send that takes the consumer role queues the drain with `EventExecutor.lazyExecute`
+    (no wake-up), marks the role `DEFERRED` and records the event loop; the flush phase wakes each recorded event
+    loop once, so a pass costs one wake-up per event loop, not one per connection;
+  - the flush runs in a `finally` around the phases and catches a `Throwable` per event loop, so a failed phase or
+    an `Error` never strands frames;
+  - a send from any other thread (an event loop, a background pool) to a `DEFERRED` connection takes the role to
+    `SUBMITTED` and executes the drain at once; the deferred task then finds the role taken and does nothing;
+  - outside an open hand-off (startup before the first pass, shutdown hooks, the stop drains) and on any other
+    thread a send executes the drain at once;
+  - the hand-off moves only the wake-up: a connection's frame order, the `outbound-limit` check in the enqueue and
+    the close path stay as above; an event loop that rejects the task or the wake-up takes the same path as a
+    rejected drain, the connection releases its queued frames;
+  - the type lives in `libs/network`, the loop owns it through `engine/core` (`session/outbound`); chronicles and
+    the world partition do not take part.
 - **Failures:** a tail handler counts, logs rate-limited and closes on exceptions, which with `voidPromise()` are
   the only failure signal. A send that must precede a close (server close, kick, leave world) uses a real promise
   that closes the channel when the write completes.
@@ -250,7 +272,18 @@ Whether a character is selected or in the world is game state, not a session sta
 filters by it. An item that needs it says so: it is a `ContextBound` and answers, just before it runs, whether its
 context is present. The check runs in the session item's execution path, shared by the pre-E6 session drain and the
 partition inbox, so it sees every change made by the items queued before it (a packet read right behind
-`CharacterSelect` sees the selected character). An item without its context is rejected, not run: counted as
+`CharacterSelect` sees the selected character). The character's rows are read off the loop, so the session takes
+no input from `CharacterSelect` until the player is built or the load fails; the items behind it wait in the queue
+and run in order afterwards, which keeps that guarantee, and a repeated `CharacterSelect` runs after the first one
+with its usual checks ([execution.md §3](003-engine-core/execution.md#3-inbox-and-session-queues),
+[#204](https://github.com/l2nx/nx-l2/issues/204)). The character list is read off the loop too: after
+authentication, and for the lobby, restart, delete, restore and create paths, the session is held until the list is
+sent; a list that cannot be read closes the connection with `ServerClosed`.
+
+A held session (`Session.hold()` until `release()`, drain thread only) hands out no input, and a close still runs.
+While held, its queue takes input with no `queueLimit`, bounded by the rate bucket only, since a client that keeps
+playing while its outcome is read is no flood. After `release()` the queue accepts `queueLimit` more beyond what
+accumulated, and the normal limit applies again once the backlog is below it. An item without its context is rejected, not run: counted as
 `l2nx.session.rejected` (tags `type`, `context`) and logged rate-limited at debug; an item that races the session's
 close is discarded uncounted like the rest of the queue. Commands the server addresses to a session itself carry no
 context and always run.
@@ -503,16 +536,20 @@ service GsLink {
 
 Micrometer, per server:
 
-| Meter                         | Type    | Tags                                                                                                                                                                            |
-| ----------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `l2nx.network.connections`    | gauge   |                                                                                                                                                                                 |
-| `l2nx.network.bytes`          | counter | `direction` (`in`, `out`)                                                                                                                                                       |
-| `l2nx.network.commands`       | counter | `type`                                                                                                                                                                          |
-| `l2nx.network.legacy.packets` | counter | `type`, `direction`                                                                                                                                                             |
-| `l2nx.network.decode.errors`  | counter | `state`                                                                                                                                                                         |
-| `l2nx.network.dropped`        | counter | `reason` (`banned`, `connections-per-ip`, `accept-rate`, `max-connections`, `unknown-opcode`, `unauthenticated`, `wrong-state`, `ignored`, `closed`, `unhandled`, `no-session`) |
-| `l2nx.network.closed`         | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`)                                                                                                        |
-| `l2nx.network.unwritable`     | counter |                                                                                                                                                                                 |
+| Meter                            | Type    | Tags                                                                                                                                                                            |
+| -------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `l2nx.network.connections`       | gauge   |                                                                                                                                                                                 |
+| `l2nx.network.bytes`             | counter | `direction` (`in`, `out`)                                                                                                                                                       |
+| `l2nx.network.commands`          | counter | `type`                                                                                                                                                                          |
+| `l2nx.network.legacy.packets`    | counter | `type`, `direction`                                                                                                                                                             |
+| `l2nx.network.decode.errors`     | counter | `state`                                                                                                                                                                         |
+| `l2nx.network.dropped`           | counter | `reason` (`banned`, `connections-per-ip`, `accept-rate`, `max-connections`, `unknown-opcode`, `unauthenticated`, `wrong-state`, `ignored`, `closed`, `unhandled`, `no-session`) |
+| `l2nx.network.closed`            | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`)                                                                                                        |
+| `l2nx.network.unwritable`        | counter |                                                                                                                                                                                 |
+| `l2nx.network.outbound.handoffs` | counter | `group` (`io`), `name` (event-loop thread)                                                                                                                                      |
+
+`l2nx.network.outbound.handoffs` counts every outbound drain task handed to an event loop, deferred by the network
+hand-off (§6) or submitted at once, woken or not (Netty decides); its tags match `netty.eventexecutor.tasks.pending` ([#194](https://github.com/l2nx/nx-l2/issues/194)).
 
 A `type` tag is the fully qualified class name, so anonymous classes never yield a blank tag and two protocol
 adapters never share a series. Event-loop and allocator meters come from Micrometer's Netty binders (`netty.eventexecutor.tasks.pending`,

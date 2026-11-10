@@ -36,6 +36,7 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
+import app.l2nx.highfive.partition.OfflineRows;
 
 /**
  * Change access level command handler.
@@ -68,12 +69,14 @@ public class AdminChangeAccessLevel implements IAdminCommandHandler {
                 return true;
             }
 
-            final Player player = World.getPlayer(name);
-            if (player != null) {
-                onlineChange(activeChar, player, lvl);
-            } else {
-                offlineChange(activeChar, name, lvl);
-            }
+            OfflineRows.whenSettled(name, () -> {
+                final Player player = World.getPlayer(name);
+                if (player != null) {
+                    onlineChange(activeChar, player, lvl);
+                } else {
+                    offlineChange(activeChar, name, lvl);
+                }
+            });
         }
 
         return true;

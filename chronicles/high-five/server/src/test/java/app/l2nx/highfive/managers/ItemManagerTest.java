@@ -7,10 +7,12 @@ package app.l2nx.highfive.managers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.identity.EntityIds;
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.identity.WireHandleAllocator;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -22,6 +24,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.clan.ClanNoticeRepository;
 import app.l2nx.highfive.repository.clan.ClanRankPrivilegeRepository;
@@ -40,6 +43,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -63,6 +68,7 @@ class ItemManagerTest {
     private final EtcItem eventTemplate =
             new EtcItem(new StatSet(Map.of("item_id", EVENT_ITEM, "name", "Event Token")));
     private final List<Item> spawned = new ArrayList<>();
+    private final UUID ownerId = EntityIds.next();
 
     private ItemManager manager;
 
@@ -96,7 +102,7 @@ class ItemManagerTest {
             assertThat(WorldLoopExtension.callInPass(token::getCount)).isZero();
             assertThat(WorldLoopExtension.callInPass(token::getItemLocation)).isEqualTo(ItemLocation.VOID);
             assertThat(findObject(objectIdOf(token))).isNull();
-            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
+            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(), Set.of());
         }
 
         @Test
@@ -107,7 +113,7 @@ class ItemManagerTest {
 
             final int inTransitId = objectIdOf(inTransit);
             assertThat(findObject(inTransitId)).isSameAs(inTransit);
-            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(inTransitId));
+            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(inTransitId), Set.of());
         }
 
         @Test
@@ -122,7 +128,40 @@ class ItemManagerTest {
 
             assertThat(spawnedAfter).isFalse();
             assertThat(findObject(objectIdOf(dropped))).isNull();
-            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of());
+            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(), Set.of());
+        }
+
+        @Test
+        void destroyItemsOfTemplate_shouldKeepTheRowsOfABusyOwner_andDestroyThemOnceItIsSettled() {
+            when(items.findOwnersOfTemplate(EVENT_ITEM, Set.of(ownerId))).thenReturn(Set.of(ownerId));
+            WorldLoopExtension.runInPass(() -> {
+                WorldPartition.loadedCharacters().startLoading(ownerId);
+                manager.destroyItemsOfTemplate(EVENT_ITEM);
+            });
+
+            verify(items).deleteByItemIdExcept(EVENT_ITEM, List.of(), Set.of(ownerId));
+            verify(items, never()).deleteOfOwnerByItemIdExcept(EVENT_ITEM, ownerId, List.of());
+            WorldLoopExtension.runInPass(() -> WorldPartition.loadedCharacters().loadEnded(ownerId));
+
+            verify(items).deleteOfOwnerByItemIdExcept(EVENT_ITEM, ownerId, List.of());
+            verify(items, never()).deleteByItemIdExcept(EVENT_ITEM, List.of(), Set.of());
+        }
+
+        @Test
+        void destroyItemsOfTemplate_shouldKeepOnlyTheSettledOwnersStillLoadedItems_whenItSettles() {
+            when(items.findOwnersOfTemplate(EVENT_ITEM, Set.of(ownerId))).thenReturn(Set.of(ownerId));
+            final Item owned = item();
+            final Item foreign = item();
+            WorldLoopExtension.runInPass(() -> {
+                owned.setOwnerId(registry.handleOf(ownerId));
+                foreign.setOwnerId(registry.handleOf(EntityIds.next()));
+                WorldPartition.loadedCharacters().startLoading(ownerId);
+                manager.destroyItemsOfTemplate(EVENT_ITEM);
+            });
+
+            WorldLoopExtension.runInPass(() -> WorldPartition.loadedCharacters().loadEnded(ownerId));
+
+            verify(items).deleteOfOwnerByItemIdExcept(EVENT_ITEM, ownerId, List.of(objectIdOf(owned)));
         }
 
         @Test

@@ -47,6 +47,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.Earthquake;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ExRedSky;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -233,6 +234,14 @@ public class CursedWeapon {
 
     public void endOfLife() {
         WorldPartition.checkOwner();
+        if (activated && OfflineRows.isBusy(playerId)) {
+            OfflineRows.whenSettled(playerId, () -> {
+                if (activated) {
+                    endOfLife();
+                }
+            });
+            return;
+        }
         if (activated) {
             if ((player != null) && player.isOnline()) {
                 log.info("{} being removed online.", name);

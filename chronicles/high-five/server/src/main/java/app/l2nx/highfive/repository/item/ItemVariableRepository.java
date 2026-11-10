@@ -8,6 +8,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class ItemVariableRepository {
     private static final String SELECT_VARIABLES =
             "SELECT name, content FROM item_variables WHERE item_id = ? ORDER BY name";
+    private static final String SELECT_BY_OWNER = """
+        SELECT v.item_id, v.name, v.content
+        FROM item_variables v
+        JOIN items i ON i.id = v.item_id
+        WHERE i.owner_id = ?
+        ORDER BY v.item_id, v.name\
+        """;
     private static final String EXISTS_VARIABLES = "SELECT EXISTS (SELECT 1 FROM item_variables WHERE item_id = ?)";
     private static final String UPSERT_VARIABLE = """
         INSERT INTO item_variables (item_id, name, content)
@@ -45,6 +53,14 @@ public class ItemVariableRepository {
         registry.findId(objectId)
                 .ifPresent(id -> jdbcClient.sql(SELECT_VARIABLES).param(id).query((RowCallbackHandler)
                         rs -> variables.put(rs.getString("name"), rs.getString("content"))));
+        return variables;
+    }
+
+    public Map<UUID, Map<String, String>> findByOwner(UUID ownerId) {
+        final Map<UUID, Map<String, String>> variables = new HashMap<>();
+        jdbcClient.sql(SELECT_BY_OWNER).param(ownerId).query((RowCallbackHandler) rs -> variables
+                .computeIfAbsent(rs.getObject("item_id", UUID.class), id -> new LinkedHashMap<>())
+                .put(rs.getString("name"), rs.getString("content")));
         return variables;
     }
 

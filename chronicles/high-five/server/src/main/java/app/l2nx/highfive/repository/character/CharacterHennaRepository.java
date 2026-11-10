@@ -8,6 +8,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterHenna;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -27,18 +28,20 @@ public class CharacterHennaRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<CharacterHenna> findAll(UUID characterId, int classIndex) {
+        return jdbcClient
+                .sql(SELECT_HENNAS)
+                .param(characterId)
+                .param(classIndex)
+                .query((rs, rowNum) -> CharacterHenna.builder()
+                        .slot(rs.getInt("slot"))
+                        .hennaId(rs.getInt("henna_id"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterHenna> findAll(int objectId, int classIndex) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_HENNAS)
-                        .param(id)
-                        .param(classIndex)
-                        .query((rs, rowNum) -> CharacterHenna.builder()
-                                .slot(rs.getInt("slot"))
-                                .hennaId(rs.getInt("henna_id"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(id -> findAll(id, classIndex)).orElse(List.of());
     }
 
     /**

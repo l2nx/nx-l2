@@ -87,6 +87,8 @@ public final class ServerStatsAssembler {
                             .jdbcOnLoop(jdbcOnLoop == null ? 0 : Math.round(jdbcOnLoop))
                             .jdbcOnLoopSeconds(value(results, ServerMeterQuery.JDBC_ON_LOOP_SECONDS, ofLoop))
                             .jdbcOnLoopShare(value(results, ServerMeterQuery.JDBC_ON_LOOP_SHARE, ofLoop))
+                            .jdbcReads(Math.round(valueOrZero(results, ServerMeterQuery.JDBC_READS_ON_LOOP, ofLoop)))
+                            .jdbcWrites(Math.round(valueOrZero(results, ServerMeterQuery.JDBC_WRITES_ON_LOOP, ofLoop)))
                             .phaseMeanMillis(millisBy(results, ServerMeterQuery.PHASE_MEAN, PHASE, ofLoop))
                             .inboxDepthMax(value(results, ServerMeterQuery.INBOX_DEPTH_MAX, ofLoop))
                             .inboxDepthP99(value(results, ServerMeterQuery.INBOX_DEPTH_P99, ofLoop))
@@ -221,6 +223,12 @@ public final class ServerStatsAssembler {
             }
         }
         return null;
+    }
+
+    private static double valueOrZero(
+            Map<ServerMeterQuery, List<Sample>> results, ServerMeterQuery query, Predicate<Sample> filter) {
+        final Double value = value(results, query, filter);
+        return value == null ? 0 : value;
     }
 
     private static List<Sample> result(Map<ServerMeterQuery, List<Sample>> results, ServerMeterQuery query) {

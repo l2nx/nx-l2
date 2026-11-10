@@ -233,6 +233,56 @@ class SessionTest {
         }
 
         @Test
+        void offer_shouldQueuePastTheQueueLimit_whileHeld() {
+            final Session session = session(limits(2, 16, 1_000, 1_000));
+            session.hold();
+
+            assertThat(session.offer(session.input(new Step(1)))).isTrue();
+            assertThat(session.offer(session.input(new Step(2)))).isTrue();
+            assertThat(session.offer(session.input(new Step(3)))).isTrue();
+            session.offerInternal(new Step(4));
+            transport.runTasks();
+
+            assertThat(session.queued()).isEqualTo(4);
+            assertThat(transport.closes).isEmpty();
+        }
+
+        @Test
+        void offer_shouldStillRateLimit_whileHeld() {
+            final Session session = session(limits(2, 16, 1, 3));
+            session.hold();
+            session.offer(session.input(new Step(1)));
+            session.offer(session.input(new Step(2)));
+            session.offer(session.input(new Step(3)));
+
+            assertThat(session.offer(session.input(new Step(4)))).isFalse();
+        }
+
+        @Test
+        void release_shouldTakeTheQueueLimitOnTopOfTheBacklog_untilTheBacklogDrains() {
+            final Session session = session(limits(2, 16, 1_000, 1_000));
+            session.hold();
+            for (int i = 1; i <= 3; i++) {
+                session.offer(session.input(new Step(i)));
+            }
+
+            session.release();
+            assertThat(session.offer(session.input(new Step(4)))).isTrue();
+            assertThat(session.offer(session.input(new Step(5)))).isTrue();
+            assertThat(session.offer(session.input(new Step(6))))
+                    .as("the backlog of 3 plus the limit of 2")
+                    .isFalse();
+            runDrains();
+
+            assertThat(log).containsExactly("step 1", "step 2", "step 3", "step 4", "step 5");
+            assertThat(session.offer(session.input(new Step(7)))).isTrue();
+            assertThat(session.offer(session.input(new Step(8)))).isTrue();
+            assertThat(session.offer(session.input(new Step(9))))
+                    .as("drained: the queue limit again")
+                    .isFalse();
+        }
+
+        @Test
         void offer_shouldRateLimit_whenSettingsAllowTheHighestPacketsPerSecond() {
             final Session session = session(Session.Limits.of(NetworkProperties.defaults().toBuilder()
                     .packetsPerSecond(1_000_000_000)
@@ -501,6 +551,61 @@ class SessionTest {
             assertThat(session.hasInput()).isFalse();
         }
 
+        @Test
+        void hold_shouldKeepTheInputBehindItQueued_untilRelease() {
+            session.setState(SessionState.AUTHED);
+            session.offer(session.input((Runnable) () -> {
+                log.add("select");
+                session.hold();
+            }));
+            session.offer(session.input((Runnable) () -> log.add("enter")));
+
+            runPass();
+            runPass();
+            assertThat(log).as("held across passes").containsExactly("select");
+
+            world.execute(session::release);
+            runPass();
+            runPass();
+
+            assertThat(log).containsExactly("select", "enter");
+        }
+
+        @Test
+        void hold_shouldKeepArrivalOrder_ofInputQueuedWhileHeld() {
+            session.setState(SessionState.AUTHED);
+            session.offer(session.input((Runnable) session::hold));
+            runPass();
+            for (int i = 1; i <= 3; i++) {
+                final int value = i;
+                session.offer(session.input((Runnable) () -> log.add("packet " + value)));
+            }
+            runPass();
+
+            world.execute(session::release);
+            runPass();
+            runPass();
+
+            assertThat(log).containsExactly("packet 1", "packet 2", "packet 3");
+        }
+
+        @Test
+        void close_shouldRunOnClosed_whileTheSessionIsHeld() {
+            final AtomicReference<Loop> closedIn = new AtomicReference<>();
+            session.onClosed(() -> closedIn.set(Loop.current()));
+            session.setState(SessionState.AUTHED);
+            session.offer(session.input((Runnable) session::hold));
+            session.offer(session.input((Runnable) () -> log.add("enter")));
+            runPass();
+
+            session.close();
+            runPass();
+
+            assertThat(closedIn.get()).isSameAs(world);
+            assertThat(log).as("held input is discarded with the queue").isEmpty();
+            assertThat(session.state()).isEqualTo(SessionState.DISCONNECTED);
+        }
+
         private void runPass() {
             world.runPass(world.getPassTime());
         }
@@ -536,6 +641,18 @@ class SessionTest {
             assertThat(session.hasInput()).isFalse();
             assertThat(session.trySignal()).as("the drain cleared the signal").isTrue();
             session.clearSignal();
+        }
+
+        @Test
+        void hasInput_shouldBeFalse_whileHeldWithInputQueued() {
+            final Session session = session(limits(256, 16, 200, 256));
+            session.offer(session.input(new Step(1)));
+            drains.clear();
+
+            session.hold();
+
+            assertThat(session.hasInput()).isFalse();
+            assertThat(session.poll()).isNull();
         }
 
         @Test

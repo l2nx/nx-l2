@@ -6,5 +6,6 @@ package app.l2nx.highfive.character;
 
 public enum DeleteFailure {
     CLAN_MEMBER,
-    CLAN_LEADER
+    CLAN_LEADER,
+    LOADED
 }

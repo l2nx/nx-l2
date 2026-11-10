@@ -73,7 +73,7 @@ class DisconnectionTest {
         @Test
         void storeAndDelete_shouldReleaseTheLoadedCharacter_afterTheSave() {
             final boolean released = WorldLoopExtension.callInPass(() -> {
-                WorldPartition.loadedCharacters().register(characterId, player);
+                WorldPartition.loadedCharacters().loaded(characterId, player);
                 Disconnection.of(player).storeAndDelete();
                 return WorldPartition.loadedCharacters().find(characterId).isEmpty();
             });

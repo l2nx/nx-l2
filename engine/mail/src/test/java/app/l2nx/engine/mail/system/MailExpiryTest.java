@@ -85,6 +85,24 @@ class MailExpiryTest {
         }
 
         @Test
+        void poll_shouldLeaveTheMailDue_whenTheOwnerIsLoading() {
+            final UUID sender = world.character("Sender");
+            final UUID mailId = attachedMail(sender, world.character("Receiver"), MailType.PLAYER);
+            world.clock.advanceWall(Duration.ofHours(360));
+            world.participants.startLoading(sender);
+
+            expiry.poll();
+
+            assertThat(world.row(mailId).attachments()).isEqualTo(AttachmentState.ATTACHED);
+            assertThat(world.participants.inFlight(sender)).isZero();
+            world.participants.loaded(sender);
+            expiry.poll();
+            assertThat(world.row(mailId).attachments())
+                    .as("the next poll expires it")
+                    .isEqualTo(AttachmentState.EXPIRED);
+        }
+
+        @Test
         void poll_shouldLeaveTheMail_whenItIsNotDueYet() {
             final UUID mailId = attachedMail(world.character("Sender"), world.character("Receiver"), MailType.PLAYER);
             world.clock.advanceWall(Duration.ofHours(359));

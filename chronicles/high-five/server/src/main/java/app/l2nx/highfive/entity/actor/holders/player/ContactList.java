@@ -55,7 +55,6 @@ public class ContactList {
 
     public ContactList(Player player) {
         this.player = player;
-        load();
     }
 
     public List<String> getAllContacts() {
@@ -63,27 +62,14 @@ public class ContactList {
         return allContacts.isEmpty() ? List.of() : ObjectLists.unmodifiable(new ObjectArrayList<>(allContacts));
     }
 
-    public void restore() {
+    public void restore(List<String> names) {
         WorldPartition.checkOwner();
-        load();
-    }
-
-    private void load() {
         allContacts.clear();
-
-        try {
-            for (int contactId : CharacterRelationsManager.getInstance().findContactIds(player.getObjectId())) {
-                final String contactName = CharInfoTable.getInstance().getNameById(contactId);
-                if ((contactName == null)
-                        || contactName.equals(player.getName())
-                        || (contactId == player.getObjectId())) {
-                    continue;
-                }
-
-                allContacts.add(contactName);
+        final String ownName = player.getName();
+        for (String name : names) {
+            if (!name.equals(ownName)) {
+                allContacts.add(name);
             }
-        } catch (DataAccessException e) {
-            log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
     }
 

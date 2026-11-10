@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.character.StoredCharacter;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.entity.World;
@@ -77,7 +78,10 @@ public class PremiumManager {
         final Player player = event.player();
         try {
             final long now = ClockBridge.wallMillis();
-            final long premiumExpiration = getPremiumExpiration(player.getObjectId());
+            final StoredCharacter.WorldEntry stored = event.stored();
+            final long premiumExpiration = (stored == null) || (stored.premiumEndsAt() == null)
+                    ? 0
+                    : stored.premiumEndsAt().toEpochMilli();
             player.setPremiumStatus(premiumExpiration > now);
             if (player.hasPremiumStatus()) {
                 startExpireTask(player, premiumExpiration - now);

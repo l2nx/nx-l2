@@ -28,6 +28,8 @@ public enum ServerMeterQuery {
     JDBC_ON_LOOP_SECONDS("sum by (loop) " + delta("l2nx_engine_jdbc_on_loop_seconds_sum")),
     JDBC_ON_LOOP_SHARE("sum by (loop) " + delta("l2nx_engine_jdbc_on_loop_seconds_sum") + " / sum by (loop) "
             + delta("l2nx_engine_pass_seconds_sum")),
+    JDBC_READS_ON_LOOP("sum by (loop) " + delta("l2nx_engine_jdbc_on_loop_statements_total{kind=\"read\"}")),
+    JDBC_WRITES_ON_LOOP("sum by (loop) " + delta("l2nx_engine_jdbc_on_loop_statements_total{kind=\"write\"}")),
     INBOX_DEPTH_MAX("max by (loop) (max_over_time(l2nx_engine_inbox_depth[%1$dms]))"),
     INBOX_DEPTH_P99("max by (loop) (quantile_over_time(0.99, l2nx_engine_inbox_depth[%1$dms]))"),
     SESSION_QUEUE_DEPTH_P99("histogram_quantile(0.99, sum by (le) " + delta("l2nx_session_queue_depth_bucket") + ")"),

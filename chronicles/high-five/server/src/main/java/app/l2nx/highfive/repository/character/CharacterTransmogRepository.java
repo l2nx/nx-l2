@@ -43,14 +43,16 @@ public class CharacterTransmogRepository {
     /**
      * @return the item template ids, ascending
      */
+    public List<Integer> findByCharacter(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_BY_CHARACTER)
+                .param(characterId)
+                .query(Integer.class)
+                .list();
+    }
+
     public List<Integer> findByCharacter(int characterId) {
-        return registry.findId(characterId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_BY_CHARACTER)
-                        .param(id)
-                        .query(Integer.class)
-                        .list())
-                .orElse(List.of());
+        return registry.findId(characterId).map(this::findByCharacter).orElse(List.of());
     }
 
     /**

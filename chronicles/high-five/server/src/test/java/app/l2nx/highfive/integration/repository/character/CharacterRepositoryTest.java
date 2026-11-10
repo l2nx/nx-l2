@@ -17,6 +17,7 @@ import app.l2nx.highfive.repository.character.model.CharacterAccess;
 import app.l2nx.highfive.repository.character.model.CharacterClanAlly;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.character.model.CharacterRow;
+import app.l2nx.highfive.repository.character.model.CharacterSlotRow;
 import app.l2nx.highfive.repository.character.model.CharacterSummaryRow;
 import app.l2nx.highfive.repository.character.model.Faction;
 import app.l2nx.highfive.repository.character.model.OnlineStatus;
@@ -178,6 +179,23 @@ class CharacterRepositoryTest extends RepositoryTest {
     }
 
     @Nested
+    class FindSlotsByAccount {
+        @Test
+        void findSlotsByAccount_shouldReturnOldestFirst_withoutAllocatingHandles() {
+            final UUID accountId = EntityIds.next();
+            final UUID newer = insertCharacter(accountId, NOW);
+            final UUID older = insertCharacter(accountId, NOW.minusSeconds(60));
+            insertCharacter();
+
+            final List<CharacterSlotRow> actual = repository.findSlotsByAccount(accountId);
+
+            assertThat(actual).extracting(CharacterSlotRow::id).containsExactly(older, newer);
+            assertThat(actual).extracting(CharacterSlotRow::name).containsExactly(name(older), name(newer));
+            assertThat(registry.findHandle(older)).isEmpty();
+        }
+    }
+
+    @Nested
     class FindOtherNames {
         @Test
         void findOtherNames_shouldSkipTheExcludedCharacter() {
@@ -192,6 +210,22 @@ class CharacterRepositoryTest extends RepositoryTest {
     }
 
     @Nested
+    class FindOtherNamesById {
+        @Test
+        void findOtherNames_shouldGiveTheOtherCharactersOfTheAccountByIdAndAllocateNoHandle() {
+            final UUID accountId = EntityIds.next();
+            final UUID self = insertCharacter(accountId, NOW);
+            final UUID other = insertCharacter(accountId, NOW);
+            final int allocatedBefore = registry.allocatedCount();
+
+            final Map<UUID, String> actual = repository.findOtherNames(accountId, self);
+
+            assertThat(actual).containsExactly(Map.entry(other, name(other)));
+            assertThat(registry.allocatedCount()).isEqualTo(allocatedBefore);
+        }
+    }
+
+    @Nested
     class UpdateOnlineStatus {
         @Test
         void updateOnlineStatus_shouldWriteStatusAndLastAccess() {
@@ -202,6 +236,21 @@ class CharacterRepositoryTest extends RepositoryTest {
 
             assertThat(character(id))
                     .containsEntry("online_status", "DETACHED")
+                    .containsEntry("last_access_at", JdbcTimes.utc(lastAccess));
+        }
+    }
+
+    @Nested
+    class UpdateOnlineStatusById {
+        @Test
+        void updateOnlineStatus_shouldWriteStatusAndLastAccess_byId() {
+            final UUID id = insertCharacter();
+            final Instant lastAccess = NOW.plusSeconds(5);
+
+            repository.updateOnlineStatus(id, OnlineStatus.ONLINE, lastAccess);
+
+            assertThat(character(id))
+                    .containsEntry("online_status", "ONLINE")
                     .containsEntry("last_access_at", JdbcTimes.utc(lastAccess));
         }
     }

@@ -11,6 +11,7 @@ import app.l2nx.highfive.repository.character.model.CharacterSkillSave;
 import app.l2nx.highfive.repository.character.model.SkillRestoreType;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,14 @@ public class CharacterSkillSaveRepository {
         USING characters c
         WHERE c.id = s.character_id AND c.online_status = 'OFFLINE' AND s.skill_id = ?\
         """;
+    private static final String DELETE_SKILL_OF_OFFLINE_EXCEPT = """
+        DELETE FROM character_skill_saves s
+        USING characters c
+        WHERE c.id = s.character_id AND c.online_status = 'OFFLINE' AND s.skill_id = :skillId
+          AND s.character_id NOT IN (:except)\
+        """;
+    private static final String DELETE_SKILL =
+            "DELETE FROM character_skill_saves WHERE character_id = ? AND skill_id = ?";
     private static final String DELETE_EXPIRED_REUSE =
             "DELETE FROM character_skill_saves WHERE restore_type = 'REUSE' AND reuse_ends_at <= ?";
 
@@ -52,23 +61,25 @@ public class CharacterSkillSaveRepository {
     private final JdbcTemplate jdbcTemplate;
     private final IdentityRegistry registry;
 
+    public List<CharacterSkillSave> findAll(UUID characterId, int classIndex) {
+        return jdbcClient
+                .sql(SELECT_SAVES)
+                .param(characterId)
+                .param(classIndex)
+                .query((rs, rowNum) -> CharacterSkillSave.builder()
+                        .skillId(rs.getInt("skill_id"))
+                        .skillLevel(rs.getInt("skill_level"))
+                        .restoreType(SkillRestoreType.valueOf(rs.getString("restore_type")))
+                        .remainingMs(rs.getObject("remaining_ms", Long.class))
+                        .tickPhaseMs(rs.getObject("tick_phase_ms", Long.class))
+                        .reuseDelayMs(rs.getLong("reuse_delay_ms"))
+                        .reuseEndsAt(JdbcTimes.instant(rs, "reuse_ends_at"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterSkillSave> findAll(int objectId, int classIndex) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_SAVES)
-                        .param(id)
-                        .param(classIndex)
-                        .query((rs, rowNum) -> CharacterSkillSave.builder()
-                                .skillId(rs.getInt("skill_id"))
-                                .skillLevel(rs.getInt("skill_level"))
-                                .restoreType(SkillRestoreType.valueOf(rs.getString("restore_type")))
-                                .remainingMs(rs.getObject("remaining_ms", Long.class))
-                                .tickPhaseMs(rs.getObject("tick_phase_ms", Long.class))
-                                .reuseDelayMs(rs.getLong("reuse_delay_ms"))
-                                .reuseEndsAt(JdbcTimes.instant(rs, "reuse_ends_at"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(id -> findAll(id, classIndex)).orElse(List.of());
     }
 
     @Transactional
@@ -108,6 +119,22 @@ public class CharacterSkillSaveRepository {
      */
     public void deleteSkillOfOfflineCharacters(int skillId) {
         jdbcClient.sql(DELETE_SKILL_OF_OFFLINE).param(skillId).update();
+    }
+
+    public void deleteSkillOfOfflineCharacters(int skillId, Collection<UUID> except) {
+        if (except.isEmpty()) {
+            deleteSkillOfOfflineCharacters(skillId);
+            return;
+        }
+        jdbcClient
+                .sql(DELETE_SKILL_OF_OFFLINE_EXCEPT)
+                .param("skillId", skillId)
+                .param("except", except)
+                .update();
+    }
+
+    public void deleteSkill(UUID characterId, int skillId) {
+        jdbcClient.sql(DELETE_SKILL).param(characterId).param(skillId).update();
     }
 
     public void deleteExpiredReuse(Instant now) {

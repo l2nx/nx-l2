@@ -46,6 +46,8 @@ class ServerStatsAssemblerTest {
                             .jdbcOnLoop(4)
                             .jdbcOnLoopSeconds(0.25)
                             .jdbcOnLoopShare(0.02)
+                            .jdbcReads(0L)
+                            .jdbcWrites(0L)
                             .phaseMeanMillis(Map.of("input", 0.5, "tick", 2.5))
                             .inboxDepthMax(12.0)
                             .inboxDepthP99(4.0)
@@ -65,6 +67,8 @@ class ServerStatsAssemblerTest {
                     .isEqualTo(LoopStats.builder()
                             .untimed(true)
                             .failures(2)
+                            .jdbcReads(0L)
+                            .jdbcWrites(0L)
                             .phaseMeanMillis(Map.of())
                             .build());
         }
@@ -103,6 +107,19 @@ class ServerStatsAssemblerTest {
             final ServerStats actual = ServerStatsAssembler.assemble(results);
 
             assertThat(actual.loops().get(WORLD).passMaxMillis()).isNull();
+        }
+
+        @Test
+        void assemble_shouldGiveTheReadsAndWritesOnTheLoop_whenTheStatementSeriesExist() {
+            final Map<ServerMeterQuery, List<Sample>> results = loopResults();
+            results.put(ServerMeterQuery.JDBC_READS_ON_LOOP, List.of(loop(WORLD, 0.0)));
+            results.put(ServerMeterQuery.JDBC_WRITES_ON_LOOP, List.of(loop(WORLD, 12.0)));
+
+            final LoopStats actual =
+                    ServerStatsAssembler.assemble(results).loops().get(WORLD);
+
+            assertThat(actual.jdbcReads()).isZero();
+            assertThat(actual.jdbcWrites()).isEqualTo(12);
         }
 
         @Test

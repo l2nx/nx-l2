@@ -41,6 +41,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionRow;
@@ -439,31 +440,7 @@ public class ItemAuctionInstance {
 
         final ItemAuctionBid bid = auction.getHighestBid();
         if (bid != null) {
-            final Item item = auction.createNewItemInstance();
-            final Player player = bid.getPlayer();
-            if (player != null) {
-                player.getWarehouse().addItem(ItemProcessType.BUY, item, null, null);
-                player.sendPacket(
-                        SystemMessageId
-                                .YOU_HAVE_BID_THE_HIGHEST_PRICE_AND_HAVE_WON_THE_ITEM_THE_ITEM_CAN_BE_FOUND_IN_YOUR_PERSONAL_WAREHOUSE);
-
-                log.info(
-                        "Auction {} has finished. Highest bid by {} for instance {}",
-                        auction.getAuctionId(),
-                        player.getName(),
-                        instanceId);
-            } else {
-                item.setOwnerId(bid.getPlayerObjId());
-                item.setItemLocation(ItemLocation.WAREHOUSE);
-                item.updateDatabase();
-                World.removeObject(item);
-
-                log.info(
-                        "Auction {} has finished. Highest bid by {} for instance {}",
-                        auction.getAuctionId(),
-                        CharInfoTable.getInstance().getNameById(bid.getPlayerObjId()),
-                        instanceId);
-            }
+            OfflineRows.whenSettled(bid.getPlayerObjId(), () -> deliver(auction, bid));
 
             // Clean all canceled bids.
             auction.clearCanceledBids();
@@ -471,6 +448,35 @@ public class ItemAuctionInstance {
             log.info(
                     "Auction {} has finished. There have not been any bid for instance {}",
                     auction.getAuctionId(),
+                    instanceId);
+        }
+    }
+
+    // Created at delivery: an item created at auction end would be an unowned world object until the winner settles.
+    private void deliver(ItemAuction auction, ItemAuctionBid bid) {
+        final Item item = auction.createNewItemInstance();
+        final Player player = bid.getPlayer();
+        if (player != null) {
+            player.getWarehouse().addItem(ItemProcessType.BUY, item, null, null);
+            player.sendPacket(
+                    SystemMessageId
+                            .YOU_HAVE_BID_THE_HIGHEST_PRICE_AND_HAVE_WON_THE_ITEM_THE_ITEM_CAN_BE_FOUND_IN_YOUR_PERSONAL_WAREHOUSE);
+
+            log.info(
+                    "Auction {} has finished. Highest bid by {} for instance {}",
+                    auction.getAuctionId(),
+                    player.getName(),
+                    instanceId);
+        } else {
+            item.setOwnerId(bid.getPlayerObjId());
+            item.setItemLocation(ItemLocation.WAREHOUSE);
+            item.updateDatabase();
+            World.removeObject(item);
+
+            log.info(
+                    "Auction {} has finished. Highest bid by {} for instance {}",
+                    auction.getAuctionId(),
+                    CharInfoTable.getInstance().getNameById(bid.getPlayerObjId()),
                     instanceId);
         }
     }

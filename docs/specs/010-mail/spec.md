@@ -337,6 +337,7 @@ public interface MailParticipants {
     Executor loop();                                        // where results and outcomes are delivered
     ParticipantState state(int characterHandle);
     Optional<MailActor> online(UUID characterId);
+    boolean loading(UUID characterId);                      // rows being read for a selection: write nothing by delta
     boolean refusesMailFrom(String receiverName, UUID senderId);   // an online receiver's block list or refusal mode
     void beginTransaction(UUID characterId);                // world entry, logout and save wait until the end
     void endTransaction(UUID characterId);
@@ -351,6 +352,12 @@ record ParticipantState(boolean peaceZone, boolean inCombat, boolean dead, boole
 rules (no mail at all; no attachments or cash on delivery). `online` also finds a character loaded into a session but
 not yet in the world.
 `beginTransaction` and `endTransaction` cover offline participants too, so a login racing a commit waits.
+A character whose rows are being read for its selection is loading
+([persistence.md §3.1](../003-engine-core/persistence.md#31-online-and-offline-sides)): `loading(UUID)` answers for
+it, `online` keeps its meaning, and nothing writes its rows by delta. A receive whose cash on delivery goes to a
+loading sender is tried again after a pause (`BackgroundQueries.runAfter`) until the sender is built and then pays it
+as online; an expiry into a loading owner's warehouse leaves the mail due for the next poll
+([#204](https://github.com/l2nx/nx-l2/issues/204)).
 
 Inside a value transaction, over the chronicle's tables:
 

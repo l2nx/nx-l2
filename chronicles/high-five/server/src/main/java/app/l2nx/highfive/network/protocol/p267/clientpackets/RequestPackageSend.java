@@ -21,6 +21,7 @@ package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -33,6 +34,7 @@ import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
+import app.l2nx.highfive.partition.OfflineRows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -105,16 +107,22 @@ public class RequestPackageSend extends ClientPacket {
         long currentAdena = player.getAdena();
         int slots = 0;
 
-        final ItemContainer warehouse = new PlayerFreight(objectId);
+        // A receiver in memory owns its freight there; a row written behind it is lost or doubled on its save.
+        if (OfflineRows.isBusy(objectId)) {
+            player.sendPacket(SystemMessageId.PLEASE_TRY_AGAIN_LATER);
+            return;
+        }
+        final Player receiver = World.getPlayer(objectId);
+        final ItemContainer warehouse = receiver != null ? receiver.getFreight() : new PlayerFreight(objectId);
         for (ItemHolder i : items) {
             // Check validity of requested item.
             final Item item = player.checkItemManipulation(i.getId(), i.getCount(), "freight");
             if (item == null) {
                 log.warn("Error depositing a warehouse object for char {} (validity check)", player.getName());
-                warehouse.deleteMe();
+                close(warehouse, receiver);
                 return;
             } else if (!item.isFreightable()) {
-                warehouse.deleteMe();
+                close(warehouse, receiver);
                 return;
             }
 
@@ -131,14 +139,14 @@ public class RequestPackageSend extends ClientPacket {
         // Item Max Limit Check.
         if (!warehouse.validateCapacity(slots)) {
             player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_QUANTITY_THAT_CAN_BE_INPUTTED);
-            warehouse.deleteMe();
+            close(warehouse, receiver);
             return;
         }
 
         // Check if enough adena and charge the fee.
         if ((currentAdena < fee) || !player.reduceAdena(ItemProcessType.FEE, fee, manager, false)) {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
-            warehouse.deleteMe();
+            close(warehouse, receiver);
             return;
         }
 
@@ -149,7 +157,7 @@ public class RequestPackageSend extends ClientPacket {
             final Item oldItem = player.checkItemManipulation(i.getId(), i.getCount(), "deposit");
             if (oldItem == null) {
                 log.warn("Error depositing a warehouse object for char {} (olditem == null)", player.getName());
-                warehouse.deleteMe();
+                close(warehouse, receiver);
                 return;
             }
 
@@ -172,7 +180,7 @@ public class RequestPackageSend extends ClientPacket {
             // World.removeObject(newItem);
         }
 
-        warehouse.deleteMe();
+        close(warehouse, receiver);
 
         // Send updated item list to the player.
         player.sendInventoryUpdate(playerIU);
@@ -181,5 +189,11 @@ public class RequestPackageSend extends ClientPacket {
         final StatusUpdate su = new StatusUpdate(player);
         su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
         player.sendPacket(su);
+    }
+
+    private static void close(ItemContainer warehouse, Player receiver) {
+        if (receiver == null) {
+            warehouse.deleteMe();
+        }
     }
 }

@@ -7,12 +7,28 @@ package app.l2nx.highfive.entity.item.auction;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.identity.EntityIds;
+import app.l2nx.engine.core.identity.IdentityRegistry;
+import app.l2nx.engine.core.identity.WireHandleAllocator;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.PlayerWarehouse;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.partition.WorldPartition;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -26,6 +42,38 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ItemAuctionInstanceTest {
     // The real constructor parses the auction XML and loads the database; the check comes before any field access.
     private final ItemAuctionInstance instance = mock(ItemAuctionInstance.class, CALLS_REAL_METHODS);
+
+    @Nested
+    class OnAuctionFinished {
+        private final IdentityRegistry registry =
+                new IdentityRegistry(new WireHandleAllocator(Clock.systemUTC(), Duration.ofMinutes(5)));
+        private final UUID winnerId = EntityIds.next();
+        private final ItemAuction auction = mock(ItemAuction.class);
+        private final ItemAuctionBid bid = mock(ItemAuctionBid.class);
+        private final Player winner = mock(Player.class);
+        private final PlayerWarehouse warehouse = mock(PlayerWarehouse.class);
+        private final Item won = mock(Item.class);
+
+        @Test
+        void onAuctionFinished_shouldCreateTheWonItem_onlyOnceTheWinnerSettled() {
+            new IdManager(registry);
+            when(auction.getHighestBid()).thenReturn(bid);
+            when(auction.createNewItemInstance()).thenReturn(won);
+            when(bid.getPlayerObjId()).thenReturn(registry.handleOf(winnerId));
+            when(bid.getPlayer()).thenReturn(winner);
+            when(winner.getWarehouse()).thenReturn(warehouse);
+            WorldLoopExtension.runInPass(() -> {
+                WorldPartition.loadedCharacters().startLoading(winnerId);
+                instance.onAuctionFinished(auction);
+            });
+            verify(auction, never()).createNewItemInstance();
+
+            WorldLoopExtension.runInPass(() -> WorldPartition.loadedCharacters().loadEnded(winnerId));
+
+            verify(auction).createNewItemInstance();
+            verify(warehouse).addItem(ItemProcessType.BUY, won, null, null);
+        }
+    }
 
     @Nested
     class OwnershipCheck {

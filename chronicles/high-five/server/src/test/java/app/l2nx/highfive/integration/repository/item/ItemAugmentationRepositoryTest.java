@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.highfive.integration.repository.RepositoryTest;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,24 @@ class ItemAugmentationRepositoryTest extends RepositoryTest {
             final UUID item = insertItem(insertCharacter(), 1, 1);
 
             assertThat(repository.find(registry.handleOf(item))).isEmpty();
+        }
+    }
+
+    @Nested
+    class FindByOwner {
+        @Test
+        void findByOwner_shouldGiveTheAugmentationOfEveryItemOfTheOwner() {
+            final UUID owner = insertCharacter();
+            final UUID first = insertItem(owner, 6_579, 1);
+            final UUID second = insertItem(owner, 6_580, 1);
+            insertItem(owner, 6_582, 1);
+            final UUID foreign = insertItem(insertCharacter(), 6_581, 1);
+            JDBC.sql("INSERT INTO item_augmentations (item_id, augmentation_id) VALUES (?, ?), (?, ?), (?, ?)")
+                    .params(first, 101, second, 102, foreign, 103)
+                    .update();
+
+            assertThat(repository.findByOwner(owner))
+                    .containsExactlyInAnyOrderEntriesOf(Map.of(first, 101, second, 102));
         }
     }
 

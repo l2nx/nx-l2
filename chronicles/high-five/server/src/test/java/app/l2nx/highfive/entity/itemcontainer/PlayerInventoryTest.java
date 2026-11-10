@@ -8,9 +8,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
+import app.l2nx.engine.core.identity.EntityIds;
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.engine.core.identity.WireHandleAllocator;
+import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.EtcItem;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
@@ -18,11 +22,13 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.mechanics.variables.ItemVariables;
 import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.item.ItemVariableRepository;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import app.l2nx.highfive.util.StatSet;
 import it.unimi.dsi.fastutil.objects.Reference2LongLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
@@ -30,6 +36,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.mockito.MockedStatic;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -329,6 +337,39 @@ class PlayerInventoryTest {
             });
 
             assertThat(actual).isZero();
+        }
+    }
+
+    @Nested
+    class Restore {
+        @Test
+        void restore_shouldBuildTheStoredItemsAndAllocateTheirHandles() {
+            final UUID adenaId = EntityIds.next();
+            final StoredItem stored = StoredItem.builder()
+                    .id(adenaId)
+                    .itemTemplateId(Inventory.ADENA_ID)
+                    .count(1_000)
+                    .location(ItemLocation.INVENTORY)
+                    .mana(-1)
+                    .variables(Map.of(ItemVariables.TRANSMOG_ID, "7"))
+                    .build();
+            final ItemData data = mock(ItemData.class);
+            when(data.getTemplate(Inventory.ADENA_ID)).thenReturn(adena);
+            final PlayerInventory inventory = new PlayerInventory(mock(Player.class));
+
+            try (MockedStatic<ItemData> itemData = mockStatic(ItemData.class)) {
+                itemData.when(ItemData::getInstance).thenReturn(data);
+                final List<Long> actual = WorldLoopExtension.callInPass(() -> {
+                    inventory.restore(List.of(stored));
+                    final Item adenaItem = inventory.getAdenaInstance();
+                    return List.of((long) adenaItem.getObjectId(), adenaItem.getCount(), (long)
+                            adenaItem.getVariables().getInt(ItemVariables.TRANSMOG_ID, 0));
+                });
+
+                assertThat(actual)
+                        .as("handle, count and the stored variables, not a read")
+                        .containsExactly((long) registry.findHandle(adenaId).orElseThrow(), 1_000L, 7L);
+            }
         }
     }
 

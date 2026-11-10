@@ -36,6 +36,7 @@ import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterVariableRepository;
 import app.l2nx.highfive.repository.olympiad.OlympiadFightRepository;
@@ -317,18 +318,22 @@ public class Olympiad extends ListenersContainer {
         for (int noblesId : NOBLES.keySet()) {
             final int points = getNoblessePasses(noblesId);
             if (points > 0) {
-                final Player player = World.getPlayer(noblesId);
-                if (player != null) {
-                    player.getVariables().set(UNCLAIMED_OLYMPIAD_PASSES_VAR, points);
-                } else {
-                    try {
-                        characterVariableRepository.save(
-                                noblesId, UNCLAIMED_OLYMPIAD_PASSES_VAR, String.valueOf(points));
-                    } catch (DataAccessException e) {
-                        log.warn("Olympiad System: Couldn't store unclaimed olympiad points to DB!");
-                    }
-                }
+                OfflineRows.whenSettled(noblesId, () -> storePasses(noblesId, points));
             }
+        }
+    }
+
+    private void storePasses(int noblesId, int points) {
+        final Player player = World.getPlayer(noblesId);
+        if (player != null) {
+            player.getVariables().set(UNCLAIMED_OLYMPIAD_PASSES_VAR, points);
+            return;
+        }
+
+        try {
+            characterVariableRepository.save(noblesId, UNCLAIMED_OLYMPIAD_PASSES_VAR, String.valueOf(points));
+        } catch (DataAccessException e) {
+            log.warn("Olympiad System: Couldn't store unclaimed olympiad points to DB!");
         }
     }
 

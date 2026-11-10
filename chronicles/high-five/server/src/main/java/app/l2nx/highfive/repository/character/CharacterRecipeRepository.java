@@ -8,6 +8,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterRecipe;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -33,18 +34,20 @@ public class CharacterRecipeRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<CharacterRecipe> findAll(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_RECIPES)
+                .param(characterId)
+                .query((rs, rowNum) -> CharacterRecipe.builder()
+                        .recipeId(rs.getInt("recipe_id"))
+                        .classIndex(rs.getInt("class_index"))
+                        .dwarven(rs.getBoolean("dwarven"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterRecipe> findAll(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_RECIPES)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterRecipe.builder()
-                                .recipeId(rs.getInt("recipe_id"))
-                                .classIndex(rs.getInt("class_index"))
-                                .dwarven(rs.getBoolean("dwarven"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findAll).orElse(List.of());
     }
 
     public List<Integer> findDwarvenRecipeIds(int objectId, int classIndex) {

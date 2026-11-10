@@ -53,16 +53,19 @@ import app.l2nx.highfive.repository.item.ItemVariableRepository;
 import app.l2nx.highfive.repository.item.model.ItemElemental;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.repository.item.model.LotteryTicket;
-import app.l2nx.highfive.repository.item.model.PaperdollItem;
 import app.l2nx.highfive.util.GMAudit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -309,14 +312,6 @@ public class ItemManager {
         return itemRepository.findByOwner(ownerId, location);
     }
 
-    public List<PaperdollItem> findPaperdoll(int characterId) {
-        return itemRepository.findPaperdoll(characterId);
-    }
-
-    public boolean hasPetItems(int characterId) {
-        return itemRepository.hasPetItems(characterId);
-    }
-
     /**
      * @return the owner of any stored item of the template; an item attached to a mail has none
      */
@@ -367,7 +362,26 @@ public class ItemManager {
      */
     public void destroyItemsOfTemplate(int itemId) {
         WorldPartition.checkOwner();
-        for (Item item : loadedItems(itemId)) {
+        destroyLoaded(loadedItems(itemId, item -> true));
+
+        final List<Integer> stillLoaded = objectIds(loadedItems(itemId, item -> true));
+        // A busy owner's rows stay: its read may hold them already, and a deleted item would come back on its save.
+        final Set<UUID> busy = WorldPartition.loadedCharacters().busy();
+        itemRepository.deleteByItemIdExcept(itemId, stillLoaded, busy);
+        for (UUID owner : itemRepository.findOwnersOfTemplate(itemId, busy)) {
+            WorldPartition.loadedCharacters().whenSettled(owner, () -> destroyItemsOfTemplateOf(owner, itemId));
+        }
+    }
+
+    private void destroyItemsOfTemplateOf(UUID owner, int itemId) {
+        final OptionalInt handle = IdManager.getInstance().findHandle(owner);
+        final Predicate<Item> owned = item -> handle.isPresent() && (item.getOwnerId() == handle.getAsInt());
+        destroyLoaded(loadedItems(itemId, owned));
+        itemRepository.deleteOfOwnerByItemIdExcept(itemId, owner, objectIds(loadedItems(itemId, owned)));
+    }
+
+    private static void destroyLoaded(List<Item> items) {
+        for (Item item : items) {
             if (!destroyQuietly(item)) {
                 log.warn(
                         "Item {} stays loaded in {} of {}: it was not destroyed through a container.",
@@ -376,22 +390,21 @@ public class ItemManager {
                         item.getOwnerId());
             }
         }
-
-        // Deleting the row of an item still loaded would leave a copy that is used and saved again.
-        final List<Integer> stillLoaded =
-                loadedItems(itemId).stream().map(Item::getObjectId).toList();
-        itemRepository.deleteByItemIdExcept(itemId, stillLoaded);
     }
 
-    private static List<Item> loadedItems(int itemId) {
+    private static List<Item> loadedItems(int itemId, Predicate<Item> filter) {
         final List<Item> loaded = new ArrayList<>();
         for (WorldObject object : World.getVisibleObjects()) {
-            if ((object instanceof Item item) && (item.getId() == itemId)) {
+            if ((object instanceof Item item) && (item.getId() == itemId) && filter.test(item)) {
                 loaded.add(item);
             }
         }
 
         return loaded;
+    }
+
+    private static List<Integer> objectIds(List<Item> items) {
+        return items.stream().map(Item::getObjectId).toList();
     }
 
     private static boolean destroyQuietly(Item item) {

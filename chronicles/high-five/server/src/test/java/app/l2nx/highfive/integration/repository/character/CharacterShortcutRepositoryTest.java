@@ -10,6 +10,8 @@ import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
 import app.l2nx.highfive.integration.repository.RepositoryTest;
 import app.l2nx.highfive.repository.character.CharacterShortcutRepository;
 import app.l2nx.highfive.repository.character.model.CharacterShortcut;
+import app.l2nx.highfive.repository.character.model.StoredShortcut;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -96,6 +98,49 @@ class CharacterShortcutRepositoryTest extends RepositoryTest {
             JDBC.sql("DELETE FROM items WHERE id = ?").param(itemId).update();
 
             assertThat(repository.findAll(registry.handleOf(id), 0)).isEmpty();
+        }
+    }
+
+    @Nested
+    class FindStored {
+        @Test
+        void findStored_shouldCarryTheItemIdAndAllocateNoHandle_whenTheShortcutIsAnItem() {
+            final UUID id = insertCharacter();
+            final UUID itemId = insertItem(id, 1060, 5);
+            JDBC.sql("""
+                INSERT INTO character_shortcuts (character_id, class_index, page, slot, shortcut_type, item_id)
+                VALUES (?, 0, 1, 3, 'ITEM', ?)\
+                """).params(id, itemId).update();
+            final int allocatedBefore = registry.allocatedCount();
+
+            final List<StoredShortcut> actual = repository.findStored(id, 0);
+
+            assertThat(actual)
+                    .containsExactly(StoredShortcut.builder()
+                            .slot(3)
+                            .page(1)
+                            .type(ShortcutType.ITEM)
+                            .itemId(itemId)
+                            .build());
+            assertThat(registry.allocatedCount()).isEqualTo(allocatedBefore);
+        }
+
+        @Test
+        void findStored_shouldCarryTheTargetAndNoItemId_whenTheShortcutIsASkill() {
+            final UUID id = insertCharacter();
+            JDBC.sql("""
+                INSERT INTO character_shortcuts (
+                    character_id, class_index, page, slot, shortcut_type, target_id, skill_level)
+                VALUES (?, 0, 0, 2, 'SKILL', 1177, 5)\
+                """).param(id).update();
+
+            assertThat(repository.findStored(id, 0))
+                    .containsExactly(StoredShortcut.builder()
+                            .slot(2)
+                            .type(ShortcutType.SKILL)
+                            .targetId(1177)
+                            .level(5)
+                            .build());
         }
     }
 

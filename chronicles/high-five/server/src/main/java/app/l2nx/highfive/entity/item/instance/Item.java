@@ -88,6 +88,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.ItemElemental;
 import app.l2nx.highfive.repository.item.model.ItemRow;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemManaTaskManager;
 import app.l2nx.highfive.util.GMAudit;
@@ -1222,6 +1223,21 @@ public class Item extends WorldObject {
 
         for (ItemElemental elemental : elementals) {
             inst.applyAttribute(elemental.element(), elemental.value());
+        }
+
+        return inst;
+    }
+
+    /**
+     * Variables load with the item, so {@link #getVariables()} never reads them again. Returns {@code null} when the
+     * template is unknown.
+     */
+    public static Item restoreStored(int ownerId, int objectId, StoredItem stored) {
+        WorldPartition.checkOwner();
+        final Item inst =
+                restoreCommitted(ownerId, stored.toRow(objectId), stored.augmentationId(), stored.elementals());
+        if (inst != null) {
+            inst.addScript(new ItemVariables(objectId, stored.variables()));
         }
 
         return inst;

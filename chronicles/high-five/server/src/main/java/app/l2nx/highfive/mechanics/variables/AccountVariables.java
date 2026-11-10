@@ -52,6 +52,13 @@ public class AccountVariables extends AbstractVariables {
         restoreMe();
     }
 
+    public AccountVariables(UUID accountId, Map<String, String> stored) {
+        WorldPartition.checkOwner();
+        this.accountId = accountId;
+        stored.forEach((name, value) -> set(name, value, false));
+        markSaved();
+    }
+
     public boolean restoreMe() {
         WorldPartition.checkOwner();
         try {

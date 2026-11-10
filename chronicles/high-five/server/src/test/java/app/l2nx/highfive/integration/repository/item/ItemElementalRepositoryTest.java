@@ -10,6 +10,8 @@ import app.l2nx.highfive.integration.repository.RepositoryTest;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.model.ItemElemental;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +48,33 @@ class ItemElementalRepositoryTest extends RepositoryTest {
         @Test
         void findAll_shouldBeEmpty_whenNoElementals() {
             assertThat(repository.findAll(newItem())).isEmpty();
+        }
+    }
+
+    @Nested
+    class FindByOwner {
+        @Test
+        void findByOwner_shouldGiveTheElementalsOfEveryItemOfTheOwner_orderedByElement() {
+            final UUID owner = insertCharacter();
+            final UUID item = insertItem(owner, 6_579, 1);
+            final UUID foreign = insertItem(insertCharacter(), 6_579, 1);
+            JDBC.sql("""
+                INSERT INTO item_elementals (item_id, element, element_value)
+                VALUES (?, 3, 60), (?, 0, 120), (?, 1, 30)\
+                """).params(item, item, foreign).update();
+
+            assertThat(repository.findByOwner(owner))
+                    .containsExactly(Map.entry(
+                            item,
+                            List.of(
+                                    ItemElemental.builder()
+                                            .element((byte) 0)
+                                            .value(120)
+                                            .build(),
+                                    ItemElemental.builder()
+                                            .element((byte) 3)
+                                            .value(60)
+                                            .build())));
         }
     }
 

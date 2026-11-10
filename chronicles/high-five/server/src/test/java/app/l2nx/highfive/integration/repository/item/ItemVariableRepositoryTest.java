@@ -11,6 +11,7 @@ import app.l2nx.highfive.repository.item.ItemVariableRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +70,22 @@ class ItemVariableRepositoryTest extends RepositoryTest {
             repository.save(newItem(), List.of(), Map.of("b", "2"));
 
             assertThat(repository.findAll(item)).containsExactly(Map.entry("a", "1"));
+        }
+    }
+
+    @Nested
+    class FindByOwner {
+        @Test
+        void findByOwner_shouldGiveTheVariablesOfEveryItemOfTheOwner() {
+            final UUID owner = insertCharacter();
+            final UUID item = insertItem(owner, 6_579, 1);
+            final UUID foreign = insertItem(insertCharacter(), 6_579, 1);
+            JDBC.sql("""
+                INSERT INTO item_variables (item_id, name, content)
+                VALUES (?, 'transmogId', '6580'), (?, 'transmogId', '6581')\
+                """).params(item, foreign).update();
+
+            assertThat(repository.findByOwner(owner)).containsExactly(Map.entry(item, Map.of("transmogId", "6580")));
         }
     }
 

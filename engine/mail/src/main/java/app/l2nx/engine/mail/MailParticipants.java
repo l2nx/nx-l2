@@ -20,6 +20,12 @@ public interface MailParticipants {
 
     Optional<MailActor> online(UUID characterId);
 
+    /**
+     * A character whose rows are being read for its selection is neither online nor offline: nothing writes its rows
+     * by delta until its load ends.
+     */
+    boolean loading(UUID characterId);
+
     /** Refusal by in-world state the database lacks (a message refusal mode); an offline receiver refuses nothing here. */
     boolean refusesMailFrom(String receiverName, UUID senderId);
 

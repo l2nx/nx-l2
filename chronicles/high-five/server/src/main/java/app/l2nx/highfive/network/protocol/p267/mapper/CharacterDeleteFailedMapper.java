@@ -22,6 +22,7 @@ public final class CharacterDeleteFailedMapper implements OutboundMapper<Charact
                 switch (event.reason()) {
                     case CLAN_MEMBER -> CharDeleteFailReason.REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER;
                     case CLAN_LEADER -> CharDeleteFailReason.REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED;
+                    case LOADED -> CharDeleteFailReason.REASON_DELETION_FAILED;
                 });
     }
 

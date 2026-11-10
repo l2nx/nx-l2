@@ -35,17 +35,19 @@ public class CharacterRecipeShopRepository {
     private final JdbcTemplate jdbcTemplate;
     private final IdentityRegistry registry;
 
+    public List<CharacterRecipeShopItem> findAll(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_ITEMS)
+                .param(characterId)
+                .query((rs, rowNum) -> CharacterRecipeShopItem.builder()
+                        .recipeId(rs.getInt("recipe_id"))
+                        .price(rs.getLong("price"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterRecipeShopItem> findAll(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_ITEMS)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterRecipeShopItem.builder()
-                                .recipeId(rs.getInt("recipe_id"))
-                                .price(rs.getLong("price"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findAll).orElse(List.of());
     }
 
     @Transactional

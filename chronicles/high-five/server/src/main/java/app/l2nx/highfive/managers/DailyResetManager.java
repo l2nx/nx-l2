@@ -49,7 +49,11 @@ import app.l2nx.highfive.repository.character.CharacterSkillSaveRepository;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
+import java.util.OptionalInt;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.dao.DataAccessException;
@@ -181,27 +185,35 @@ public class DailyResetManager {
     }
 
     private void resetDailySkills() {
+        final Set<UUID> busy = WorldPartition.loadedCharacters().busy();
         try {
             for (int skillId : RESET_SKILLS) {
-                skillSaveRepository.deleteSkillOfOfflineCharacters(skillId);
+                skillSaveRepository.deleteSkillOfOfflineCharacters(skillId, busy);
             }
         } catch (DataAccessException e) {
             log.error("Could not reset daily skill reuse", e);
         }
 
-        // Update data for online players.
-        for (int skillId : RESET_SKILLS) {
-            final Skill skill = SkillData.getInstance().getSkill(skillId, 1 /* No known need for more levels */);
-            if (skill != null) {
-                for (Player player : World.getPlayers()) {
-                    if (player.hasSkillReuse(skill.getReuseHashCode())) {
-                        player.removeTimeStamp(skill);
-                    }
-                }
-            }
+        for (Player player : World.getPlayers()) {
+            resetDailyReuse(player);
         }
 
+        whenSettled(busy, DailyResetManager::resetDailyReuse, characterId -> {
+            for (int skillId : RESET_SKILLS) {
+                skillSaveRepository.deleteSkill(characterId, skillId);
+            }
+        });
+
         log.info("Daily skill reuse cleaned.");
+    }
+
+    private static void resetDailyReuse(Player player) {
+        for (int skillId : RESET_SKILLS) {
+            final Skill skill = SkillData.getInstance().getSkill(skillId, 1 /* No known need for more levels */);
+            if ((skill != null) && player.hasSkillReuse(skill.getReuseHashCode())) {
+                player.removeTimeStamp(skill);
+            }
+        }
     }
 
     private void resetNevit() {
@@ -220,19 +232,23 @@ public class DailyResetManager {
     }
 
     private void resetRecommends() {
+        final Set<UUID> busy = WorldPartition.loadedCharacters().busy();
         try {
             recommendationRepository.resetDaily(
-                    DAILY_RECOMMENDATIONS, RECOMMENDATION_BONUS_TIME_MS, DAILY_RECOMMENDATIONS);
+                    DAILY_RECOMMENDATIONS, RECOMMENDATION_BONUS_TIME_MS, DAILY_RECOMMENDATIONS, busy);
         } catch (DataAccessException e) {
             log.error("Could not reset Recommendations System", e);
         }
 
         for (Player player : World.getPlayers()) {
-            player.setRecomLeft(DAILY_RECOMMENDATIONS);
-            player.setRecomHave(player.getRecomHave() - DAILY_RECOMMENDATIONS);
-            player.sendPacket(new ExVoteSystemInfo(player));
-            player.broadcastUserInfo();
+            resetRecommendations(player);
         }
+
+        whenSettled(
+                busy,
+                DailyResetManager::resetRecommendations,
+                characterId -> recommendationRepository.resetDaily(
+                        characterId, DAILY_RECOMMENDATIONS, RECOMMENDATION_BONUS_TIME_MS, DAILY_RECOMMENDATIONS));
 
         // Refresh reco bonus for online players.
         if (PlayerConfig.NEVIT_ENABLED) {
@@ -242,6 +258,33 @@ public class DailyResetManager {
                     player.startNevitHourglassTask();
                 }
             }
+        }
+    }
+
+    private static void resetRecommendations(Player player) {
+        player.setRecomLeft(DAILY_RECOMMENDATIONS);
+        player.setRecomHave(player.getRecomHave() - DAILY_RECOMMENDATIONS);
+        player.sendPacket(new ExVoteSystemInfo(player));
+        player.broadcastUserInfo();
+    }
+
+    // Busy characters were spared by the bulk statement; applying the reset after the build could lower the received
+    // count twice.
+    private static void whenSettled(Set<UUID> busy, Consumer<Player> inWorld, Consumer<UUID> offline) {
+        for (UUID characterId : busy) {
+            WorldPartition.loadedCharacters().whenSettled(characterId, () -> {
+                final OptionalInt handle = IdManager.getInstance().findHandle(characterId);
+                final Player player = handle.isPresent() ? World.getPlayer(handle.getAsInt()) : null;
+                if (player != null) {
+                    inWorld.accept(player);
+                    return;
+                }
+                try {
+                    offline.accept(characterId);
+                } catch (DataAccessException e) {
+                    log.error("Could not apply the daily reset to character {}", characterId, e);
+                }
+            });
         }
     }
 

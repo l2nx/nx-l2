@@ -74,6 +74,13 @@ one save point.
 - **Runner:** `engine/core` `persistence` runs the transaction on Boot's task executor in a `TransactionTemplate` at
   `READ COMMITTED`, so a conditional `UPDATE` racing a committed one re-reads the row instead of failing to serialize;
   no own executor or pool. Meter `l2nx.value.transaction` (timer, tags `type`, `outcome`).
+- **Background queries:** `BackgroundQueries` runs database work that moves no value on the same executor and hands
+  the result to a loop. `run(query, resultLoop, onResult)` logs a failure and delivers nothing, for a caller that
+  holds nothing until the answer; `run(query, resultLoop, onResult, onFailure)` delivers the failure (a query error or
+  a task the executor refuses) to the loop, for a caller that holds state until the answer, such as character
+  loading; `runAfter(pause, query, resultLoop, onResult)` runs a query once after a pause on the scheduler, for a
+  retry that waits for state on the loop (mail for a loading character); `runUntilAnswered` reads what memory must
+  follow after a commit again until the database answers ([#204](https://github.com/l2nx/nx-l2/issues/204)).
 
 ### 3.1 Online and offline sides
 
@@ -85,6 +92,18 @@ one save point.
 - **In-flight registry:** while a transaction is in flight for a character, the partition does not save its reserved
   items and holds its world entry and logout until the outcome. A save of the pre-commit memory would otherwise undo
   a committed move, and a login would load rows the commit is about to change.
+- **Loading:** from the selection until `loadEnded` (the player built from its rows and handed to its session, or the
+  load failed), `LoadedCharacters` marks the character loading
+  ([execution.md §7.1](execution.md#71-work-routed-into-the-world-partition-e6)); building the player (`loaded()`)
+  does not end the mark. Selections queued behind a running load re-enter `whenLoaded` one at a time: a queued
+  selection that starts a load again leaves the ones behind it waiting for that load, in arrival order. Its rows
+  are being read off the loop, so nobody may change them: a change after the read would be lost on the next save
+  from memory, and a deleted item would come back. A loading character is neither online nor offline; every writer
+  of its offline rows treats it as busy (§6). The in-flight registry does not cover this window: it holds a load for
+  a transaction, not a transaction for a load ([#204](https://github.com/l2nx/nx-l2/issues/204)).
+- **Settled:** a character is settled once it has entered the world or left memory. Between the build and world
+  entry the player owns its rows but is not in the world, where the loop writers look, so they wait for the settled
+  state, not for the build ([#206](https://github.com/l2nx/nx-l2/issues/206)).
 - **Pending marks** are checked in the mutating operations of the item containers, so every path that uses, drops,
   sells, destroys, equips or moves an item is covered, scripts included.
 - **Awaited stacks:** a stackable template the target has no stack of at reservation is reserved too; a stack of it
@@ -134,3 +153,29 @@ rolled-back operation.
 - **A missing value is `NULL`,** never an empty string: text columns get `CHECK (col <> '')`.
 - **Outside writers** (web, admin tools) do not update the tables of an online character; they send a command to the
   server, which applies it in the owning partition.
+- **Writers of a character's offline rows** check both `LoadedCharacters` and the world before they write by
+  database, and a loading or built but unsettled character (§3.1) is never written as offline
+  ([#204](https://github.com/l2nx/nx-l2/issues/204), [#206](https://github.com/l2nx/nx-l2/issues/206)):
+  - **value transactions** (mail: the cash on delivery of a receive, expiry into a warehouse): busy only while the
+    character loads, since mail's `online` finds a built player; tried again after a pause
+    ([spec 010 §3.4](../010-mail/spec.md#34-chronicle-spi));
+  - **loop writers that pick the database for an absent character** (clan member removal and dissolution, pledge
+    type, power grade, leader change, apprentice and sponsor resets, academy master assignment, castle circlet
+    removal, olympiad passes, hero items, item auction delivery to the winner's warehouse, cursed weapon removal,
+    `destroyItemsOfTemplate`, admin teleport, repair, clan penalties, punishment access level, friend deletion): wait
+    until the character is settled, then decide online or offline again, so a character in the world takes the
+    in-memory path (`OfflineRows.whenSettled`); `destroyItemsOfTemplate` deletes the rows of settled owners at once
+    and runs a per-owner step for each busy owner once it settles; the item auction creates the won item at delivery,
+    after the winner settles, so no world object waits unowned;
+  - **freight sent to a receiver by the database:** a receiver that is loading, or in memory without being in the
+    world (an offline trader of the account), owns its freight there; the sender gets `PLEASE_TRY_AGAIN_LATER` and
+    nothing is written (`OfflineRows.isBusy`), a receiver in the world gets the items into its loaded container;
+  - **character deletion and restore** from the lobby are refused while the character is loaded, since its save
+    would overwrite the mark (`OfflineRows.isLoaded`), as is the expiry deletion of a marked character;
+  - **daily resets on the loop** (skill reuse by `online_status`, recommendations): skip a busy character and apply
+    to it once it is settled, since its read may predate the bulk write;
+  - **known gap:** account variables of two loaded characters of one account are written by both saves
+    ([#206](https://github.com/l2nx/nx-l2/issues/206));
+  - not affected: tables a manager owns whole (heroes, nobles, Seven Signs, raid points, fishing championship,
+    grand boss zones, couples), which the load does not read; offline traders, which are loaded players; the start-up
+    cleanup, which runs before any load.

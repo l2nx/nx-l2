@@ -18,6 +18,7 @@ import app.l2nx.highfive.repository.character.model.CharacterAccess;
 import app.l2nx.highfive.repository.character.model.CharacterClanAlly;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.character.model.CharacterRow;
+import app.l2nx.highfive.repository.character.model.CharacterSlotRow;
 import app.l2nx.highfive.repository.character.model.CharacterSummaryRow;
 import app.l2nx.highfive.repository.character.model.Faction;
 import app.l2nx.highfive.repository.character.model.OnlineStatus;
@@ -80,6 +81,14 @@ public class CharacterRepository {
     private static final String SELECT_BY_ID = "SELECT " + COLUMNS + " FROM characters WHERE id = ?";
     private static final String SELECT_BY_ACCOUNT =
             "SELECT " + COLUMNS + " FROM characters WHERE account_id = ? ORDER BY created_at";
+    private static final String SELECT_SLOTS_BY_ACCOUNT = """
+        SELECT id, clan_id, name, access_level, class_id, base_class_id, character_level, exp, sp, max_hp, current_hp,
+            max_mp, current_mp, karma, pk_kills, pvp_kills, face, hair_style, hair_color, sex, race, x, y, z, faction,
+            vitality_points, delete_at, last_access_at
+        FROM characters
+        WHERE account_id = ?
+        ORDER BY created_at\
+        """;
     private static final String SELECT_OTHER_NAMES =
             "SELECT id, name FROM characters WHERE account_id = ? AND id <> ? ORDER BY created_at";
     private static final String UPDATE_ONLINE_STATUS =
@@ -155,13 +164,17 @@ public class CharacterRepository {
         bind(jdbcClient.sql(UPDATE_CHARACTER), row).update();
     }
 
+    /** Requires the handles of the row, its clan, apprentice and sponsor to be allocated already. */
+    public Optional<CharacterRow> findById(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_BY_ID)
+                .param(characterId)
+                .query(this::mapRow)
+                .optional();
+    }
+
     public Optional<CharacterRow> findById(int objectId) {
-        return registry.findId(objectId)
-                .flatMap(id -> jdbcClient
-                        .sql(SELECT_BY_ID)
-                        .param(id)
-                        .query(this::mapRow)
-                        .optional());
+        return registry.findId(objectId).flatMap(this::findById);
     }
 
     /**
@@ -175,29 +188,44 @@ public class CharacterRepository {
                 .list();
     }
 
-    /**
-     * @return names by handle of the other characters of the account, oldest first
-     */
-    public Map<Integer, String> findOtherNames(UUID accountId, int excludedObjectId) {
-        final Map<Integer, String> names = new LinkedHashMap<>();
+    public List<CharacterSlotRow> findSlotsByAccount(UUID accountId) {
+        return jdbcClient
+                .sql(SELECT_SLOTS_BY_ACCOUNT)
+                .param(accountId)
+                .query(CharacterRepository::mapSlot)
+                .list();
+    }
+
+    public Map<UUID, String> findOtherNames(UUID accountId, UUID excludedCharacterId) {
+        final Map<UUID, String> names = new LinkedHashMap<>();
         jdbcClient
                 .sql(SELECT_OTHER_NAMES)
                 .param(accountId)
-                .param(registry.idOf(excludedObjectId))
+                .param(excludedCharacterId)
                 .query(rs -> {
-                    names.put(registry.handleOf(rs.getObject("id", UUID.class)), rs.getString("name"));
+                    names.put(rs.getObject("id", UUID.class), rs.getString("name"));
                 });
         return names;
     }
 
+    public Map<Integer, String> findOtherNames(UUID accountId, int excludedObjectId) {
+        final Map<Integer, String> names = new LinkedHashMap<>();
+        findOtherNames(accountId, registry.idOf(excludedObjectId))
+                .forEach((id, name) -> names.put(registry.handleOf(id), name));
+        return names;
+    }
+
+    public void updateOnlineStatus(UUID characterId, OnlineStatus status, Instant lastAccessAt) {
+        jdbcClient
+                .sql(UPDATE_ONLINE_STATUS)
+                .param(status.name())
+                .param(JdbcTimes.utc(lastAccessAt))
+                .param(characterId)
+                .update();
+    }
+
     public void updateOnlineStatus(int objectId, OnlineStatus status, Instant lastAccessAt) {
-        registry.findId(objectId)
-                .ifPresent(id -> jdbcClient
-                        .sql(UPDATE_ONLINE_STATUS)
-                        .param(status.name())
-                        .param(JdbcTimes.utc(lastAccessAt))
-                        .param(id)
-                        .update());
+        registry.findId(objectId).ifPresent(id -> updateOnlineStatus(id, status, lastAccessAt));
     }
 
     /**
@@ -584,6 +612,40 @@ public class CharacterRepository {
                 .clanCreatePenaltyEndsAt(JdbcTimes.instant(rs, "clan_create_penalty_ends_at"))
                 .deleteAt(JdbcTimes.instant(rs, "delete_at"))
                 .createdAt(JdbcTimes.instant(rs, "created_at"))
+                .lastAccessAt(JdbcTimes.instant(rs, "last_access_at"))
+                .build();
+    }
+
+    private static CharacterSlotRow mapSlot(ResultSet rs, int rowNum) throws SQLException {
+        final String faction = rs.getString("faction");
+        return CharacterSlotRow.builder()
+                .id(rs.getObject("id", UUID.class))
+                .clanId(rs.getObject("clan_id", UUID.class))
+                .name(rs.getString("name"))
+                .accessLevel(rs.getInt("access_level"))
+                .classId(rs.getInt("class_id"))
+                .baseClassId(rs.getInt("base_class_id"))
+                .level(rs.getInt("character_level"))
+                .exp(rs.getLong("exp"))
+                .sp(rs.getLong("sp"))
+                .maxHp(rs.getInt("max_hp"))
+                .currentHp(rs.getDouble("current_hp"))
+                .maxMp(rs.getInt("max_mp"))
+                .currentMp(rs.getDouble("current_mp"))
+                .karma(rs.getInt("karma"))
+                .pkKills(rs.getInt("pk_kills"))
+                .pvpKills(rs.getInt("pvp_kills"))
+                .face(rs.getInt("face"))
+                .hairStyle(rs.getInt("hair_style"))
+                .hairColor(rs.getInt("hair_color"))
+                .sex(Sex.valueOf(rs.getString("sex")))
+                .race(Race.valueOf(rs.getString("race")))
+                .x(rs.getInt("x"))
+                .y(rs.getInt("y"))
+                .z(rs.getInt("z"))
+                .faction(faction == null ? null : Faction.valueOf(faction))
+                .vitalityPoints(rs.getInt("vitality_points"))
+                .deleteAt(JdbcTimes.instant(rs, "delete_at"))
                 .lastAccessAt(JdbcTimes.instant(rs, "last_access_at"))
                 .build();
     }

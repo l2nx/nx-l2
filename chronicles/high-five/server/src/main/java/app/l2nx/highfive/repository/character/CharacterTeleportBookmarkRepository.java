@@ -10,6 +10,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterTeleportBookmark;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -40,22 +41,24 @@ public class CharacterTeleportBookmarkRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<CharacterTeleportBookmark> findAll(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_BOOKMARKS)
+                .param(characterId)
+                .query((rs, rowNum) -> CharacterTeleportBookmark.builder()
+                        .bookmarkId(rs.getInt("bookmark_id"))
+                        .x(rs.getInt("x"))
+                        .y(rs.getInt("y"))
+                        .z(rs.getInt("z"))
+                        .icon(rs.getInt("icon"))
+                        .tag(rs.getString("tag"))
+                        .name(rs.getString("name"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterTeleportBookmark> findAll(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_BOOKMARKS)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterTeleportBookmark.builder()
-                                .bookmarkId(rs.getInt("bookmark_id"))
-                                .x(rs.getInt("x"))
-                                .y(rs.getInt("y"))
-                                .z(rs.getInt("z"))
-                                .icon(rs.getInt("icon"))
-                                .tag(rs.getString("tag"))
-                                .name(rs.getString("name"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findAll).orElse(List.of());
     }
 
     public void insert(int objectId, CharacterTeleportBookmark bookmark) {

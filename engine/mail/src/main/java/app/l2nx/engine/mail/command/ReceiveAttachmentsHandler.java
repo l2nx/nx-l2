@@ -8,6 +8,7 @@ import app.l2nx.engine.core.identity.EntityIds;
 import app.l2nx.engine.core.persistence.query.BackgroundQueries;
 import app.l2nx.engine.core.persistence.value.HolderType;
 import app.l2nx.engine.core.persistence.value.ItemMovement;
+import app.l2nx.engine.core.persistence.value.RetryBackoff;
 import app.l2nx.engine.core.persistence.value.ValueOutcomeHandler;
 import app.l2nx.engine.core.persistence.value.ValueTransactionSubmitter;
 import app.l2nx.engine.core.session.command.ContextCommandHandler;
@@ -78,14 +79,14 @@ class ReceiveAttachmentsHandler implements ContextCommandHandler<MailActor, Rece
                         .map(row -> new Loaded(row, attachments.findByMail(row.id()))),
                 participants.loop(),
                 loaded -> loaded.ifPresentOrElse(
-                        mail -> receive(actor, mail),
+                        mail -> receive(actor, mail, 0),
                         () -> log.debug(
                                 "{} asked for the attachments of mail {} that is not in its box",
                                 actor.name(),
                                 command.mailId())));
     }
 
-    private void receive(MailActor actor, Loaded mail) {
+    private void receive(MailActor actor, Loaded mail, int attempt) {
         final MailRow row = mail.row();
         final MailRefusal ruled = MailRules.refusal(settings, participants.state(actor.characterHandle()), true, true);
         if (ruled != null) {
@@ -98,6 +99,10 @@ class ReceiveAttachmentsHandler implements ContextCommandHandler<MailActor, Rece
         }
         final boolean charge = (row.codAdena() != null) && (row.senderId() != null);
         final long cod = charge ? row.codAdena() : 0;
+        if (charge && participants.loading(row.senderId())) {
+            retryAfterSenderLoad(actor, row.id(), attempt);
+            return;
+        }
         final IncomingTargets receiver;
         switch (items.incomingTargets(actor.characterHandle(), HolderType.INVENTORY, mail.snapshots(), -cod)) {
             case ReserveResult.Refused<IncomingTargets> refused -> {
@@ -123,6 +128,18 @@ class ReceiveAttachmentsHandler implements ContextCommandHandler<MailActor, Rece
             }
         }
         submit(actor, row, charge, receiver, sender, senderTargets);
+    }
+
+    // Cash on delivery would land in rows the sender's load is reading; retry once the sender is built.
+    private void retryAfterSenderLoad(MailActor actor, UUID mailId, int attempt) {
+        queries.runAfter(
+                RetryBackoff.pause(attempt),
+                () -> mails.findReceived(mailId, actor.characterId())
+                        .map(row -> new Loaded(row, attachments.findByMail(row.id()))),
+                participants.loop(),
+                loaded -> participants
+                        .online(actor.characterId())
+                        .ifPresent(receiver -> loaded.ifPresent(mail -> receive(receiver, mail, attempt + 1))));
     }
 
     private void submit(

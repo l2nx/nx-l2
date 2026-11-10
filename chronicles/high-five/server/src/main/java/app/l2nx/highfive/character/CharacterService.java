@@ -6,9 +6,12 @@ package app.l2nx.highfive.character;
 
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 
+import app.l2nx.engine.core.identity.IdentityRegistry;
+import app.l2nx.engine.core.persistence.query.BackgroundQueries;
 import app.l2nx.highfive.character.repository.CharacterSlots;
 import app.l2nx.highfive.character.view.CharacterListShown;
 import app.l2nx.highfive.character.view.CharacterSummary;
+import app.l2nx.highfive.character.view.ServerClosed;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -18,12 +21,14 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.repository.character.model.CharacterRow;
+import app.l2nx.highfive.partition.OfflineRows;
+import app.l2nx.highfive.partition.WorldPartition;
+import app.l2nx.highfive.repository.character.model.CharacterSlotRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -34,9 +39,13 @@ public class CharacterService {
     private static volatile CharacterService instance;
 
     private final CharacterSlots slots;
+    private final BackgroundQueries queries;
+    private final IdentityRegistry registry;
 
-    CharacterService(CharacterSlots slots) {
+    CharacterService(CharacterSlots slots, BackgroundQueries queries, IdentityRegistry registry) {
         this.slots = slots;
+        this.queries = queries;
+        this.registry = registry;
         instance = this;
     }
 
@@ -51,16 +60,41 @@ public class CharacterService {
 
     /** Shows the list with the most recently used character preselected. */
     public void showCharacterList(GameClient client) {
-        final List<CharacterSummary> characters = load(client.getAccountId());
-        show(client, characters, mostRecent(characters));
+        list(client, characters -> show(client, characters, mostRecent(characters)));
     }
 
     public void showCharacterList(GameClient client, int activeSlot) {
-        show(client, load(client.getAccountId()), activeSlot);
+        list(client, characters -> show(client, characters, activeSlot));
     }
 
     public void refreshSlots(GameClient client) {
-        client.setCharSelection(load(client.getAccountId()));
+        list(client, client::setCharSelection);
+    }
+
+    private void list(GameClient client, Consumer<List<CharacterSummary>> onListed) {
+        final UUID accountId = client.getAccountId();
+        client.session().hold();
+        queries.run(
+                () -> slots.findByAccount(accountId),
+                WorldPartition::offer,
+                stored -> {
+                    try {
+                        onListed.accept(build(stored));
+                    } catch (RuntimeException e) {
+                        failed(client, accountId, e);
+                    } finally {
+                        client.session().release();
+                    }
+                },
+                failure -> {
+                    failed(client, accountId, failure);
+                    client.session().release();
+                });
+    }
+
+    private static void failed(GameClient client, UUID accountId, RuntimeException failure) {
+        log.error("The character list of account {} could not be built", accountId, failure);
+        client.port().emitAndClose(ServerClosed.INSTANCE);
     }
 
     private static void show(GameClient client, List<CharacterSummary> characters, int activeSlot) {
@@ -74,31 +108,32 @@ public class CharacterService {
                         .build());
     }
 
-    private List<CharacterSummary> load(UUID accountId) {
+    private List<CharacterSummary> build(List<StoredCharacterSlot> stored) {
         final List<CharacterSummary> characters = new ArrayList<>();
-        try {
-            for (CharacterRow row : slots.findByAccount(accountId)) {
-                final long deleteAt = epochMillisOrZero(row.deleteAt());
-                if ((deleteAt > 0) && (ClockBridge.wallMillis() >= deleteAt)) {
-                    deleteExpired(row);
+        for (StoredCharacterSlot slot : stored) {
+            final CharacterSlotRow row = slot.character();
+            final long deleteAt = epochMillisOrZero(row.deleteAt());
+            if ((deleteAt > 0) && (ClockBridge.wallMillis() >= deleteAt)) {
+                final int objectId = registry.handleOf(row.id());
+                // A loaded character, such as an offline trader, saves its row over the deletion: it stays due.
+                if (!OfflineRows.isLoaded(objectId)) {
+                    deleteExpired(objectId, row.clanId());
                     continue;
                 }
-                final CharacterSummary character = slots.summarize(row);
-                characters.add(character);
-                disconnectOfflineSession(character.objectId());
             }
-        } catch (DataAccessException e) {
-            log.warn("Could not restore char info: {}", e.getMessage(), e);
+            final CharacterSummary character = slots.summarize(slot);
+            characters.add(character);
+            disconnectOfflineSession(character.objectId());
         }
         return characters;
     }
 
-    private static void deleteExpired(CharacterRow row) {
-        final Clan clan = ClanTable.getInstance().getClan(row.clanId());
+    private void deleteExpired(int objectId, UUID clanId) {
+        final Clan clan = (clanId == null) ? null : ClanTable.getInstance().getClan(registry.handleOf(clanId));
         if (clan != null) {
-            clan.removeClanMember(row.objectId(), 0);
+            clan.removeClanMember(objectId, 0);
         }
-        GameClient.deleteCharByObjId(row.objectId());
+        GameClient.deleteCharByObjId(objectId);
     }
 
     private static void disconnectOfflineSession(int objectId) {

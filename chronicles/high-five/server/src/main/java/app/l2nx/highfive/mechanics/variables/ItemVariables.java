@@ -50,6 +50,13 @@ public class ItemVariables extends AbstractVariables {
         restoreMe();
     }
 
+    public ItemVariables(int objectId, Map<String, String> stored) {
+        WorldPartition.checkOwner();
+        this.objectId = objectId;
+        stored.forEach((name, value) -> set(name, value, false));
+        markSaved();
+    }
+
     public static boolean hasVariables(int objectId) {
         WorldPartition.checkOwner();
         try {

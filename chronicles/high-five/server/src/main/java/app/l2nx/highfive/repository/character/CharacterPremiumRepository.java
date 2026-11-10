@@ -9,6 +9,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -27,13 +28,16 @@ public class CharacterPremiumRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public Optional<Instant> findEndsAt(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_ENDS_AT)
+                .param(characterId)
+                .query((rs, rowNum) -> JdbcTimes.instant(rs, "ends_at"))
+                .optional();
+    }
+
     public Optional<Instant> findEndsAt(int characterId) {
-        return registry.findId(characterId)
-                .flatMap(id -> jdbcClient
-                        .sql(SELECT_ENDS_AT)
-                        .param(id)
-                        .query((rs, rowNum) -> JdbcTimes.instant(rs, "ends_at"))
-                        .optional());
+        return registry.findId(characterId).flatMap(this::findEndsAt);
     }
 
     public void save(int characterId, Instant endsAt) {

@@ -10,12 +10,15 @@ import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.repository.item.model.LotteryTicket;
-import app.l2nx.highfive.repository.item.model.PaperdollItem;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -41,11 +44,6 @@ public class ItemRepository {
                custom_type1, custom_type2, mana_left, expires_at
         FROM items
         WHERE owner_id = ? AND location = ?\
-        """;
-    private static final String SELECT_PAPERDOLL = """
-        SELECT id, item_template_id, location_slot, enchant_level
-        FROM items
-        WHERE owner_id = ? AND location = 'PAPERDOLL'\
         """;
     private static final String EXISTS_PET_ITEMS =
             "SELECT EXISTS (SELECT 1 FROM items WHERE owner_id = ? AND location IN ('PET', 'PET_EQUIP'))";
@@ -77,64 +75,62 @@ public class ItemRepository {
     private static final String DELETE_BY_OWNER_AND_TEMPLATE =
             "DELETE FROM items WHERE owner_id = ? AND item_template_id = ?";
     private static final String DELETE_BY_TEMPLATE = "DELETE FROM items WHERE item_template_id = ?";
-    private static final String DELETE_BY_TEMPLATE_EXCEPT =
-            "DELETE FROM items WHERE item_template_id = :templateId AND id NOT IN (:kept)";
+    private static final String SELECT_OWNERS_OF_TEMPLATES = """
+        SELECT DISTINCT owner_id FROM items WHERE item_template_id IN (:templateIds) AND owner_id IN (:owners)\
+        """;
     // Items in mail transit have no owner and are removed too.
     private static final String DELETE_BY_TEMPLATES_EXCEPT_STAFF = """
         DELETE FROM items i
         WHERE i.item_template_id IN (:templateIds)
           AND NOT EXISTS (SELECT 1 FROM characters c WHERE c.id = i.owner_id AND c.access_level > 0)\
         """;
+    private static final String AND_NOT_OWNED_BY = " AND (i.owner_id IS NULL OR i.owner_id NOT IN (:owners))";
+    private static final String AND_OWNED_BY = " AND i.owner_id = :owner";
 
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<StoredItem> findStored(UUID ownerId, ItemLocation baseLocation, ItemLocation equipLocation) {
+        return jdbcClient
+                .sql(SELECT_BY_OWNER_AND_LOCATIONS)
+                .param(ownerId)
+                .param(baseLocation.name())
+                .param(equipLocation.name())
+                .query((rs, rowNum) -> toStored(rs))
+                .list();
+    }
+
+    public List<StoredItem> findStored(UUID ownerId, ItemLocation location) {
+        return jdbcClient
+                .sql(SELECT_BY_OWNER_AND_LOCATION)
+                .param(ownerId)
+                .param(location.name())
+                .query((rs, rowNum) -> toStored(rs))
+                .list();
+    }
+
     public List<ItemRow> findByOwner(int ownerId, ItemLocation baseLocation, ItemLocation equipLocation) {
         return registry.findId(ownerId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_BY_OWNER_AND_LOCATIONS)
-                        .param(id)
-                        .param(baseLocation.name())
-                        .param(equipLocation.name())
-                        .query((rs, rowNum) -> toItem(rs))
-                        .list())
+                .map(id -> withHandles(findStored(id, baseLocation, equipLocation)))
                 .orElse(List.of());
     }
 
     public List<ItemRow> findByOwner(int ownerId, ItemLocation location) {
         return registry.findId(ownerId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_BY_OWNER_AND_LOCATION)
-                        .param(id)
-                        .param(location.name())
-                        .query((rs, rowNum) -> toItem(rs))
-                        .list())
+                .map(id -> withHandles(findStored(id, location)))
                 .orElse(List.of());
     }
 
-    public List<PaperdollItem> findPaperdoll(int characterId) {
-        return registry.findId(characterId)
-                .map(refId -> jdbcClient
-                        .sql(SELECT_PAPERDOLL)
-                        .param(refId)
-                        .query((rs, rowNum) -> PaperdollItem.builder()
-                                .objectId(registry.handleOf(rs.getObject("id", UUID.class)))
-                                .itemId(rs.getInt("item_template_id"))
-                                .slot(rs.getInt("location_slot"))
-                                .enchantLevel(rs.getInt("enchant_level"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+    public boolean hasPetItems(UUID ownerId) {
+        return jdbcClient
+                .sql(EXISTS_PET_ITEMS)
+                .param(ownerId)
+                .query(Boolean.class)
+                .single();
     }
 
     public boolean hasPetItems(int characterId) {
-        return registry.findId(characterId)
-                .map(id -> jdbcClient
-                        .sql(EXISTS_PET_ITEMS)
-                        .param(id)
-                        .query(Boolean.class)
-                        .single())
-                .orElse(false);
+        return registry.findId(characterId).map(this::hasPetItems).orElse(false);
     }
 
     public Optional<Integer> findAnyOwner(int itemId) {
@@ -231,31 +227,90 @@ public class ItemRepository {
         jdbcClient.sql(DELETE_BY_TEMPLATE).param(itemId).update();
     }
 
+    public Set<UUID> findOwnersOfTemplate(int itemId, Collection<UUID> owners) {
+        return findOwnersOfTemplates(List.of(itemId), owners);
+    }
+
+    public Set<UUID> findOwnersOfTemplates(Collection<Integer> itemIds, Collection<UUID> owners) {
+        if (itemIds.isEmpty() || owners.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(jdbcClient
+                .sql(SELECT_OWNERS_OF_TEMPLATES)
+                .param("templateIds", itemIds)
+                .param("owners", owners)
+                .query(UUID.class)
+                .list());
+    }
+
     public void deleteByItemIdExcept(int itemId, Collection<Integer> keptObjectIds) {
+        deleteByItemIdExcept(itemId, keptObjectIds, List.of());
+    }
+
+    // Items in mail transit have no owner and are removed too.
+    public void deleteByItemIdExcept(int itemId, Collection<Integer> keptObjectIds, Collection<UUID> keptOwners) {
+        final Map<String, Object> params = new HashMap<>();
+        params.put("templateId", itemId);
+        String where = "item_template_id = :templateId";
+        if (!keptOwners.isEmpty()) {
+            where += " AND (owner_id IS NULL OR owner_id NOT IN (:owners))";
+            params.put("owners", keptOwners);
+        }
+        deleteExcept(where, params, keptObjectIds);
+    }
+
+    public void deleteOfOwnerByItemIdExcept(int itemId, UUID ownerId, Collection<Integer> keptObjectIds) {
+        final Map<String, Object> params = new HashMap<>();
+        params.put("templateId", itemId);
+        params.put("owner", ownerId);
+        deleteExcept("item_template_id = :templateId AND owner_id = :owner", params, keptObjectIds);
+    }
+
+    private void deleteExcept(String where, Map<String, Object> params, Collection<Integer> keptObjectIds) {
         final List<UUID> kept = keptObjectIds.stream()
                 .map(registry::findId)
                 .flatMap(Optional::stream)
                 .toList();
-        if (kept.isEmpty()) {
-            deleteByItemId(itemId);
-            return;
+        String sql = "DELETE FROM items WHERE " + where;
+        if (!kept.isEmpty()) {
+            sql += " AND id NOT IN (:kept)";
+            params.put("kept", kept);
         }
-
-        jdbcClient
-                .sql(DELETE_BY_TEMPLATE_EXCEPT)
-                .param("templateId", itemId)
-                .param("kept", kept)
-                .update();
+        jdbcClient.sql(sql).params(params).update();
     }
 
     public void deleteExceptStaff(Collection<Integer> itemIds) {
+        deleteExceptStaff(itemIds, List.of());
+    }
+
+    public void deleteExceptStaff(Collection<Integer> itemIds, Collection<UUID> keptOwners) {
+        if (itemIds.isEmpty()) {
+            return;
+        }
+
+        if (keptOwners.isEmpty()) {
+            jdbcClient
+                    .sql(DELETE_BY_TEMPLATES_EXCEPT_STAFF)
+                    .param("templateIds", itemIds)
+                    .update();
+            return;
+        }
+        jdbcClient
+                .sql(DELETE_BY_TEMPLATES_EXCEPT_STAFF + AND_NOT_OWNED_BY)
+                .param("templateIds", itemIds)
+                .param("owners", keptOwners)
+                .update();
+    }
+
+    public void deleteOfOwnerExceptStaff(Collection<Integer> itemIds, UUID ownerId) {
         if (itemIds.isEmpty()) {
             return;
         }
 
         jdbcClient
-                .sql(DELETE_BY_TEMPLATES_EXCEPT_STAFF)
+                .sql(DELETE_BY_TEMPLATES_EXCEPT_STAFF + AND_OWNED_BY)
                 .param("templateIds", itemIds)
+                .param("owner", ownerId)
                 .update();
     }
 
@@ -273,11 +328,17 @@ public class ItemRepository {
                 .toList();
     }
 
-    private ItemRow toItem(ResultSet rs) throws SQLException {
+    private List<ItemRow> withHandles(List<StoredItem> items) {
+        return items.stream()
+                .map(item -> item.toRow(registry.handleOf(item.id())))
+                .toList();
+    }
+
+    private static StoredItem toStored(ResultSet rs) throws SQLException {
         final Integer manaLeft = rs.getObject("mana_left", Integer.class);
-        return ItemRow.builder()
-                .objectId(registry.handleOf(rs.getObject("id", UUID.class)))
-                .itemId(rs.getInt("item_template_id"))
+        return StoredItem.builder()
+                .id(rs.getObject("id", UUID.class))
+                .itemTemplateId(rs.getInt("item_template_id"))
                 .count(rs.getLong("count"))
                 .location(ItemLocation.valueOf(rs.getString("location")))
                 .locationSlot(rs.getInt("location_slot"))

@@ -27,19 +27,43 @@ public class BackgroundQueries {
 
     /** A failed query is logged and delivers nothing: the caller reserved nothing that would wait for it. */
     public <T> void run(Supplier<T> query, Executor resultLoop, Consumer<T> onResult) {
+        submit(query, resultLoop, onResult, e -> log.error("Background query failed or was not started", e));
+    }
+
+    /**
+     * For a caller that holds state until the answer (character loading): a failed or executor-refused query reaches
+     * {@code onFailure} on the result loop, not only the log.
+     */
+    public <T> void run(
+            Supplier<T> query, Executor resultLoop, Consumer<T> onResult, Consumer<RuntimeException> onFailure) {
+        submit(query, resultLoop, onResult, e -> deliver(resultLoop, onFailure, e));
+    }
+
+    public <T> void runAfter(Duration pause, Supplier<T> query, Executor resultLoop, Consumer<T> onResult) {
+        try {
+            scheduler.schedule(
+                    () -> run(query, resultLoop, onResult),
+                    scheduler.getClock().instant().plus(pause));
+        } catch (TaskRejectedException e) {
+            log.error("Background query not scheduled: the scheduler has stopped", e);
+        }
+    }
+
+    private <T> void submit(
+            Supplier<T> query, Executor resultLoop, Consumer<T> onResult, Consumer<RuntimeException> failed) {
         try {
             executor.execute(() -> {
                 final T result;
                 try {
                     result = query.get();
                 } catch (RuntimeException e) {
-                    log.error("Background query failed", e);
+                    failed.accept(e);
                     return;
                 }
                 deliver(resultLoop, onResult, result);
             });
         } catch (RejectedExecutionException e) {
-            log.error("Background query not started: the executor is full or stopped", e);
+            failed.accept(e);
         }
     }
 

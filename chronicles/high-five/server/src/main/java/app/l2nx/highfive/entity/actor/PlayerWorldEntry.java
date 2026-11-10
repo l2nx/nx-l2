@@ -28,6 +28,7 @@ package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.character.StoredCharacter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -71,6 +72,7 @@ import app.l2nx.highfive.managers.CursedWeaponsManager;
 import app.l2nx.highfive.managers.DimensionalRiftManager;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.managers.FortSiegeManager;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PetitionManager;
@@ -148,10 +150,26 @@ public final class PlayerWorldEntry {
 
     public static void enter(Player player, List<Inet4Address> route) {
         WorldPartition.checkOwner();
-        final GameClient client = player.getClient();
         if (player.hasEnteredWorld()) {
             return;
         }
+
+        try {
+            enterWorld(player, route);
+        } finally {
+            player.clearStoredWorldEntry();
+            // A failed step after the spawn leaves the player in the world: writers waiting for it decide by the world.
+            if (World.getPlayer(player.getObjectId()) == player) {
+                IdManager.getInstance()
+                        .findId(player.getObjectId())
+                        .ifPresent(id -> WorldPartition.loadedCharacters().entered(id, player));
+            }
+        }
+    }
+
+    private static void enterWorld(Player player, List<Inet4Address> route) {
+        final GameClient client = player.getClient();
+        final StoredCharacter.WorldEntry stored = player.getStoredWorldEntry();
 
         // The legacy client state and hardware-info comparison read each hop as unsigned octets.
         final int[][] tracert = new int[route.size()][];
@@ -350,7 +368,7 @@ public final class PlayerWorldEntry {
         }
 
         if (PlayerConfig.NEVIT_ENABLED) {
-            player.checkRecoBonusTask();
+            player.checkRecoBonusTask(stored == null ? null : stored.recommendation());
         }
 
         player.getMacros().sendUpdate();
@@ -364,7 +382,10 @@ public final class PlayerWorldEntry {
         player.sendPacket(ExBasicActionList.STATIC_PACKET);
 
         player.sendPacket(new HennaInfo(player));
-        Quest.playerEnter(player);
+        Quest.playerEnter(
+                player,
+                stored == null ? List.of() : stored.questStates(),
+                stored == null ? List.of() : stored.questVariables());
 
         if (FactionSystemConfig.FACTION_SYSTEM_ENABLED) {
             final PlayerAppearance appearance = player.getAppearance();

@@ -10,6 +10,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterMacro;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -37,21 +38,23 @@ public class CharacterMacroRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<CharacterMacro> findAll(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_MACROS)
+                .param(characterId)
+                .query((rs, rowNum) -> CharacterMacro.builder()
+                        .macroId(rs.getInt("macro_id"))
+                        .icon(rs.getInt("icon"))
+                        .name(rs.getString("name"))
+                        .description(rs.getString("description"))
+                        .acronym(rs.getString("acronym"))
+                        .commands(rs.getString("commands"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterMacro> findAll(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_MACROS)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterMacro.builder()
-                                .macroId(rs.getInt("macro_id"))
-                                .icon(rs.getInt("icon"))
-                                .name(rs.getString("name"))
-                                .description(rs.getString("description"))
-                                .acronym(rs.getString("acronym"))
-                                .commands(rs.getString("commands"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findAll).orElse(List.of());
     }
 
     public void save(int objectId, CharacterMacro macro) {

@@ -160,17 +160,24 @@ public class Shortcuts {
 
     public boolean restoreMe() {
         WorldPartition.checkOwner();
-        shortcuts.clear();
         try {
-            for (CharacterShortcut stored :
-                    PlayerPersistenceManager.getInstance().findShortcuts(owner.getObjectId(), owner.getClassIndex())) {
-                shortcuts.put(
-                        stored.slot() + (stored.page() * MAX_SHORTCUTS_PER_BAR),
-                        new Shortcut(stored.slot(), stored.page(), stored.type(), stored.id(), stored.level(), 1));
-            }
+            restore(PlayerPersistenceManager.getInstance().findShortcuts(owner.getObjectId(), owner.getClassIndex()));
         } catch (DataAccessException e) {
             log.warn("Could not restore character shortcuts: {}", e.getMessage(), e);
             return false;
+        }
+
+        return true;
+    }
+
+    public void restore(List<CharacterShortcut> stored) {
+        WorldPartition.checkOwner();
+        shortcuts.clear();
+        for (CharacterShortcut shortcut : stored) {
+            shortcuts.put(
+                    shortcut.slot() + (shortcut.page() * MAX_SHORTCUTS_PER_BAR),
+                    new Shortcut(
+                            shortcut.slot(), shortcut.page(), shortcut.type(), shortcut.id(), shortcut.level(), 1));
         }
 
         try (ScratchBuffers.Snapshot<Shortcut> restored = ScratchBuffers.snapshot(shortcuts.values())) {
@@ -185,8 +192,6 @@ public class Shortcuts {
                 }
             }
         }
-
-        return true;
     }
 
     public void updateShortcuts(int skillId, int skillLevel) {

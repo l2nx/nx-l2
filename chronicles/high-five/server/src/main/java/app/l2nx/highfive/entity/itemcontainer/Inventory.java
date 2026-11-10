@@ -42,6 +42,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.item.type.EtcItemType;
 import app.l2nx.highfive.entity.item.type.WeaponType;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
@@ -51,6 +52,7 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SkillCoolTime;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.ItemRow;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.Collections;
@@ -1120,30 +1122,43 @@ public abstract class Inventory extends ItemContainer {
         try {
             for (ItemRow row :
                     ItemManager.getInstance().findItems(getOwnerId(), getBaseLocation(), getEquipLocation())) {
-                final Item item = Item.restoreFromDb(getOwnerId(), row);
-                if (item == null) {
-                    continue;
-                }
-
-                if (getOwner().isPlayer()) {
-                    final Player player = getOwner().asPlayer();
-                    if (!player.isGM() && !player.isHero() && item.isHeroItem()) {
-                        item.setItemLocation(ItemLocation.INVENTORY);
-                    }
-                }
-
-                World.addObject(item);
-
-                if (item.isStackable() && (getItemByItemIdIncludingPending(item.getId()) != null)) {
-                    addItem(ItemProcessType.RESTORE, item, getOwner().asPlayer(), null);
-                } else {
-                    addItem(item);
-                }
+                restoreItem(Item.restoreFromDb(getOwnerId(), row));
             }
 
             refreshWeight();
         } catch (DataAccessException e) {
             log.warn("Could not restore inventory:", e);
+        }
+    }
+
+    @Override
+    public void restore(List<StoredItem> stored) {
+        WorldPartition.checkOwner();
+        for (StoredItem row : stored) {
+            restoreItem(Item.restoreStored(getOwnerId(), IdManager.getInstance().handleOf(row.id()), row));
+        }
+
+        refreshWeight();
+    }
+
+    private void restoreItem(Item item) {
+        if (item == null) {
+            return;
+        }
+
+        if (getOwner().isPlayer()) {
+            final Player player = getOwner().asPlayer();
+            if (!player.isGM() && !player.isHero() && item.isHeroItem()) {
+                item.setItemLocation(ItemLocation.INVENTORY);
+            }
+        }
+
+        World.addObject(item);
+
+        if (item.isStackable() && (getItemByItemIdIncludingPending(item.getId()) != null)) {
+            addItem(ItemProcessType.RESTORE, item, getOwner().asPlayer(), null);
+        } else {
+            addItem(item);
         }
     }
 

@@ -28,6 +28,7 @@ public final class FakeParticipants implements MailParticipants {
     private final Map<Integer, ParticipantState> states = new HashMap<>();
     private final Map<UUID, Integer> inFlight = new ConcurrentHashMap<>();
     private final Set<List<Object>> refusals = new HashSet<>();
+    private final Set<UUID> loading = new HashSet<>();
     private Executor loop = Runnable::run;
 
     public MailActor enter(UUID characterId, int handle, String name) {
@@ -89,6 +90,19 @@ public final class FakeParticipants implements MailParticipants {
     @Override
     public ParticipantState state(int characterHandle) {
         return states.getOrDefault(characterHandle, IN_TOWN);
+    }
+
+    public void startLoading(UUID characterId) {
+        loading.add(characterId);
+    }
+
+    public void loaded(UUID characterId) {
+        loading.remove(characterId);
+    }
+
+    @Override
+    public boolean loading(UUID characterId) {
+        return loading.contains(characterId);
     }
 
     @Override

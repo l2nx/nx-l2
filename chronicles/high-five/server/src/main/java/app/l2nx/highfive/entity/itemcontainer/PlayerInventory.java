@@ -28,7 +28,6 @@ package app.l2nx.highfive.entity.itemcontainer;
 
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.config.PlayerConfig;
-import app.l2nx.highfive.config.custom.TransmogConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
@@ -37,28 +36,25 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
-import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemAdd;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemDestroy;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemDrop;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemTransfer;
-import app.l2nx.highfive.mechanics.variables.ItemVariables;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.TradeItem;
 import app.l2nx.highfive.network.holders.TradeList;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.partition.WorldPartition;
-import app.l2nx.highfive.repository.item.model.PaperdollItem;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import app.l2nx.highfive.util.ArrayUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 
 @Slf4j
 @SingleWriter
@@ -664,32 +660,19 @@ public class PlayerInventory extends Inventory {
     public void restore() {
         WorldPartition.checkOwner();
         super.restore();
-        adenaInstance = getItemByItemIdIncludingPending(ADENA_ID);
-        ancientAdenaInstance = getItemByItemIdIncludingPending(ANCIENT_ADENA_ID);
+        findCurrencies();
     }
 
-    public static int[][] restoreVisibleInventory(int objectId) {
+    @Override
+    public void restore(List<StoredItem> stored) {
         WorldPartition.checkOwner();
-        final int[][] paperdoll = new int[31][3];
-        try {
-            for (PaperdollItem item : ItemManager.getInstance().findPaperdoll(objectId)) {
-                final int slot = item.slot();
-                paperdoll[slot][0] = item.objectId();
-                if (TransmogConfig.ENABLE_TRANSMOG) {
-                    final ItemVariables vars = new ItemVariables(paperdoll[slot][0]);
-                    paperdoll[slot][1] = vars.getInt(ItemVariables.TRANSMOG_ID, item.itemId());
-                } else {
-                    final ItemTemplate template = ItemData.getInstance().getTemplate(item.itemId());
-                    paperdoll[slot][1] = template == null ? item.itemId() : template.getDisplayId();
-                }
+        super.restore(stored);
+        findCurrencies();
+    }
 
-                paperdoll[slot][2] = item.enchantLevel();
-            }
-        } catch (DataAccessException e) {
-            log.warn("Could not restore inventory:", e);
-        }
-
-        return paperdoll;
+    private void findCurrencies() {
+        adenaInstance = getItemByItemIdIncludingPending(ADENA_ID);
+        ancientAdenaInstance = getItemByItemIdIncludingPending(ANCIENT_ADENA_ID);
     }
 
     public boolean checkInventorySlotsAndWeight(

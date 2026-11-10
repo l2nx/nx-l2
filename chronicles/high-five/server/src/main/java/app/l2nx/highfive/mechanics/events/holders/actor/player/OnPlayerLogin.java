@@ -19,14 +19,20 @@
  */
 package app.l2nx.highfive.mechanics.events.holders.actor.player;
 
+import app.l2nx.highfive.character.StoredCharacter;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
+ * The listeners run after the world entry, when the player no longer keeps its rows, so the event carries them.
+ *
+ * @param stored the rows of the world entry; {@code null} for a character created in this session
  * @author UnAfraid
  */
-public record OnPlayerLogin(Player player) implements IBaseEvent {
+@Builder(toBuilder = true)
+public record OnPlayerLogin(Player player, StoredCharacter.WorldEntry stored) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_LOGIN;

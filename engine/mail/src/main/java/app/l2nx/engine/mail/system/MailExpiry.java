@@ -112,10 +112,13 @@ public class MailExpiry implements SmartLifecycle {
 
     // On the loop: the owner is held in flight until the outcome, so its world entry cannot load the rows halfway.
     private void expire(MailRow mail, List<AttachmentSnapshot> snapshots) {
+        final UUID owner = mail.expiryOwner();
+        if ((owner != null) && participants.loading(owner)) {
+            return;
+        }
         if (!expiring.add(mail.id())) {
             return;
         }
-        final UUID owner = mail.expiryOwner();
         if (owner != null) {
             participants.beginTransaction(owner);
         }

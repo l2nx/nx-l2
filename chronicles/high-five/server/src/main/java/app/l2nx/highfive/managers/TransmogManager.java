@@ -24,13 +24,6 @@ public class TransmogManager {
     /**
      * @return the item template ids, ascending
      */
-    public List<Integer> findByCharacter(int characterId) {
-        return transmogRepository.findByCharacter(characterId);
-    }
-
-    /**
-     * @return the item template ids, ascending
-     */
     public List<Integer> findByAccount(UUID accountId) {
         return transmogRepository.findByAccount(accountId);
     }

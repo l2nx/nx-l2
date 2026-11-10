@@ -62,7 +62,7 @@ class BlockListTest {
         @ParameterizedTest(name = "{0}")
         @MethodSource("ownerCheckedCalls")
         void ownerCheckedCall_shouldThrow_whenCalledOffTheLoop(Consumer<Player> call) {
-            final Player owner = owner(268_200_001, List.of());
+            final Player owner = owner(268_200_001);
 
             assertThatThrownBy(() -> call.accept(owner))
                     .isInstanceOf(IllegalStateException.class)
@@ -71,6 +71,7 @@ class BlockListTest {
 
         static Stream<Named<Consumer<Player>>> ownerCheckedCalls() {
             return Stream.of(
+                    Named.of("restore", owner -> owner.getBlockList().restore(List.of())),
                     Named.of("playerLogout", owner -> owner.getBlockList().playerLogout()),
                     Named.of("isInBlockList (id)", owner -> owner.getBlockList().isInBlockList(1)),
                     Named.of(
@@ -89,9 +90,35 @@ class BlockListTest {
     }
 
     @Nested
+    class Restore {
+        @Test
+        void restore_shouldTakeTheStoredTargetsWithoutTheOwner() {
+            final List<Boolean> actual = WorldLoopExtension.callInPass(() -> {
+                final Player owner = owner(268_200_005, List.of(2, 268_200_005, 3));
+                return List.of(
+                        BlockList.isBlocked(owner, 2),
+                        BlockList.isBlocked(owner, 3),
+                        BlockList.isBlocked(owner, 268_200_005));
+            });
+
+            assertThat(actual).containsExactly(true, true, false);
+        }
+
+        @Test
+        void restore_shouldAnswerTheOfflineCheck_beforeTheOwnerIsInTheWorld() {
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                owner(268_200_006, List.of(4));
+                return BlockList.isInBlockList(268_200_006, 4);
+            });
+
+            assertThat(actual).isTrue();
+        }
+    }
+
+    @Nested
     class Membership {
         @Test
-        void isBlocked_shouldAnswerForLoadedAndAddedTargets() {
+        void isBlocked_shouldAnswerForStoredAndAddedTargets() {
             final List<Boolean> actual = WorldLoopExtension.callInPass(() -> {
                 final Player owner = owner(268_200_002, List.of(7));
                 BlockList.addToBlockList(owner, 9);
@@ -117,7 +144,7 @@ class BlockListTest {
     @Nested
     class Order {
         @Test
-        void sendListToOwner_shouldListTargetsInLoadThenBlockOrder() {
+        void sendListToOwner_shouldListTargetsInStoredThenBlockOrder() {
             final Player owner = WorldLoopExtension.callInPass(() -> {
                 final Player created = owner(268_200_004, List.of(30, 10));
                 BlockList.addToBlockList(created, 20);
@@ -132,12 +159,17 @@ class BlockListTest {
         }
     }
 
-    private Player owner(int objectId, List<Integer> blocked) {
+    private static Player owner(int objectId) {
         final Player owner = mock(Player.class);
         when(owner.getObjectId()).thenReturn(objectId);
-        when(relations.findBlockedIds(objectId)).thenReturn(blocked);
         final BlockList blockList = new BlockList(owner);
         when(owner.getBlockList()).thenReturn(blockList);
+        return owner;
+    }
+
+    private static Player owner(int objectId, List<Integer> blocked) {
+        final Player owner = owner(objectId);
+        owner.getBlockList().restore(blocked);
         return owner;
     }
 }

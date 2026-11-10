@@ -7,6 +7,7 @@ package app.l2nx.highfive.repository.character;
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.character.model.CharacterPremiumItem;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -30,19 +31,21 @@ public class CharacterPremiumItemRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<CharacterPremiumItem> findByCharacter(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_BY_CHARACTER)
+                .param(characterId)
+                .query((rs, rowNum) -> CharacterPremiumItem.builder()
+                        .itemNum(rs.getInt("item_num"))
+                        .itemTemplateId(rs.getInt("item_template_id"))
+                        .count(rs.getLong("item_count"))
+                        .senderName(rs.getString("sender_name"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterPremiumItem> findByCharacter(int characterId) {
-        return registry.findId(characterId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_BY_CHARACTER)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterPremiumItem.builder()
-                                .itemNum(rs.getInt("item_num"))
-                                .itemTemplateId(rs.getInt("item_template_id"))
-                                .count(rs.getLong("item_count"))
-                                .senderName(rs.getString("sender_name"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(characterId).map(this::findByCharacter).orElse(List.of());
     }
 
     public void updateCount(int characterId, int itemNum, long count) {

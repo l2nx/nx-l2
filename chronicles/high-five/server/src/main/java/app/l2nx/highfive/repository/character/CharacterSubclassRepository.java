@@ -54,14 +54,16 @@ public class CharacterSubclassRepository {
     private final CharacterShortcutRepository shortcutRepository;
     private final CharacterHennaRepository hennaRepository;
 
+    public List<CharacterSubclass> findAll(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_SUBCLASSES)
+                .param(characterId)
+                .query(this::mapSubclass)
+                .list();
+    }
+
     public List<CharacterSubclass> findAll(int objectId) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_SUBCLASSES)
-                        .param(id)
-                        .query(this::mapSubclass)
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(this::findAll).orElse(List.of());
     }
 
     public Optional<CharacterSubclass> findByClassId(int objectId, int classId) {

@@ -41,14 +41,20 @@ public class CharacterRelationRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<UUID> findTargets(UUID characterId, RelationType relation) {
+        return jdbcClient
+                .sql(SELECT_TARGETS)
+                .param(characterId)
+                .param(relation.name())
+                .query((rs, rowNum) -> rs.getObject("target_character_id", UUID.class))
+                .list();
+    }
+
     public List<Integer> findTargetIds(int characterId, RelationType relation) {
         return registry.findId(characterId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_TARGETS)
-                        .param(id)
-                        .param(relation.name())
-                        .query((rs, rowNum) -> registry.handleOf(rs.getObject("target_character_id", UUID.class)))
-                        .list())
+                .map(id -> findTargets(id, relation).stream()
+                        .map(registry::handleOf)
+                        .toList())
                 .orElse(List.of());
     }
 

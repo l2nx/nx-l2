@@ -77,6 +77,7 @@ class DeleteCharacterHandler implements ContextCommandHandler<GameClient, Delete
                 }
                 case 1 -> client.port().emit(new CharacterDeleteFailed(DeleteFailure.CLAN_MEMBER));
                 case 2 -> client.port().emit(new CharacterDeleteFailed(DeleteFailure.CLAN_LEADER));
+                case 3 -> client.port().emit(new CharacterDeleteFailed(DeleteFailure.LOADED));
                 default -> {}
             }
         } catch (RuntimeException e) {

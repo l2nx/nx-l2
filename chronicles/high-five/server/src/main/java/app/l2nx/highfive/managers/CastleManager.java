@@ -32,6 +32,7 @@ import app.l2nx.highfive.data.holders.CastleTemplate;
 import app.l2nx.highfive.data.xml.CastleData;
 import app.l2nx.highfive.entity.ScratchBuffers;
 import app.l2nx.highfive.entity.ScratchBuffers.Snapshot;
+import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -40,6 +41,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.residence.CastleDoorUpgradeRepository;
 import app.l2nx.highfive.repository.residence.CastleFunctionRepository;
@@ -254,35 +256,37 @@ public class CastleManager {
             return;
         }
 
-        final Player player = member.getPlayer();
         final int circletId = getCircletByCastleId(castleId);
-        if (circletId != 0) {
-            // Online-player circlet removal.
-            if (player != null) {
-                try {
-                    final Item circlet = player.getInventory().getItemByItemId(circletId);
-                    if (circlet != null) {
-                        if (circlet.isEquipped()) {
-                            player.getInventory().unEquipItemInSlot(circlet.getLocationSlot());
-                        }
+        if (circletId == 0) {
+            return;
+        }
 
-                        player.destroyItemByItemId(ItemProcessType.DESTROY, circletId, 1, player, true);
-                    }
-                    return;
-                } catch (NullPointerException e) {
-                    // Continue removing offline.
-                }
-            }
-            // Else offline-player circlet removal.
+        final int memberId = member.getObjectId();
+        OfflineRows.whenSettled(memberId, () -> removeCirclet(World.getPlayer(memberId), member, circletId));
+    }
+
+    private void removeCirclet(Player player, ClanMember member, int circletId) {
+        // Online-player circlet removal.
+        if (player != null) {
             try {
-                itemRepository.deleteByOwner(member.getObjectId(), circletId);
-            } catch (DataAccessException e) {
-                log.warn(
-                        "Failed to remove castle circlets offline for player {}: {}",
-                        member.getName(),
-                        e.getMessage(),
-                        e);
+                final Item circlet = player.getInventory().getItemByItemId(circletId);
+                if (circlet != null) {
+                    if (circlet.isEquipped()) {
+                        player.getInventory().unEquipItemInSlot(circlet.getLocationSlot());
+                    }
+
+                    player.destroyItemByItemId(ItemProcessType.DESTROY, circletId, 1, player, true);
+                }
+                return;
+            } catch (NullPointerException e) {
+                // Continue removing offline.
             }
+        }
+        // Else offline-player circlet removal.
+        try {
+            itemRepository.deleteByOwner(member.getObjectId(), circletId);
+        } catch (DataAccessException e) {
+            log.warn("Failed to remove castle circlets offline for player {}: {}", member.getName(), e.getMessage(), e);
         }
     }
 

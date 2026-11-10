@@ -35,6 +35,7 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.AdminCharacterManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -148,12 +149,10 @@ public class AdminTeleport implements IAdminCommandHandler {
                 }
 
                 final String targetName = param[1];
-                final Player player = World.getPlayer(targetName);
-                if (player != null) {
-                    teleportCharacter(player, activeChar.getLocation(), activeChar);
-                } else {
-                    changeCharacterPosition(activeChar, targetName);
-                }
+                // Captured now: the GM may move or log out before the target settles.
+                final Location destination = activeChar.getLocation();
+                final int gmHandle = activeChar.getObjectId();
+                OfflineRows.whenSettled(targetName, () -> recall(World.getPlayer(gmHandle), destination, targetName));
             } catch (StringIndexOutOfBoundsException e) {
                 // Not important.
             }
@@ -338,23 +337,18 @@ public class AdminTeleport implements IAdminCommandHandler {
         }
     }
 
-    /**
-     * @param player
-     * @param loc
-     * @param activeChar
-     */
-    private void teleportCharacter(Player player, Location loc, Player activeChar) {
+    /** @param gm {@code null} when the GM logged out since the command */
+    private void teleportCharacter(Player player, Location loc, Player gm) {
         if (player != null) {
             // Check for jail
             if (player.isJailed()) {
-                activeChar.sendSysMessage("Sorry, player " + player.getName() + " is in Jail.");
+                if (gm != null) {
+                    gm.sendSysMessage("Sorry, player " + player.getName() + " is in Jail.");
+                }
             } else {
-                // Set player to same instance as GM teleporting.
-                if (activeChar != null) {
-                    player.setInstanceId(activeChar.getInstanceId());
-                    activeChar.sendSysMessage("You have recalled " + player.getName());
-                } else {
-                    player.setInstanceId(0);
+                player.setInstanceId(loc.getInstanceId());
+                if (gm != null) {
+                    gm.sendSysMessage("You have recalled " + player.getName());
                 }
 
                 player.sendMessage("Admin is teleporting you.");
@@ -393,15 +387,27 @@ public class AdminTeleport implements IAdminCommandHandler {
         }
     }
 
-    private void changeCharacterPosition(Player activeChar, String name) {
-        final int x = activeChar.getX();
-        final int y = activeChar.getY();
-        final int z = activeChar.getZ();
-        if (AdminCharacterManager.getInstance().moveCharacter(name, x, y, z)) {
-            activeChar.sendSysMessage(
-                    "Player's [" + name + "] position is now set to (" + x + "," + y + "," + z + ").");
+    private void recall(Player gm, Location destination, String targetName) {
+        final Player player = World.getPlayer(targetName);
+        if (player != null) {
+            teleportCharacter(player, destination, gm);
         } else {
-            activeChar.sendSysMessage("Character not found or position unaltered.");
+            changeCharacterPosition(gm, destination, targetName);
+        }
+    }
+
+    private void changeCharacterPosition(Player gm, Location destination, String name) {
+        final int x = destination.getX();
+        final int y = destination.getY();
+        final int z = destination.getZ();
+        final boolean moved = AdminCharacterManager.getInstance().moveCharacter(name, x, y, z);
+        if (gm == null) {
+            return;
+        }
+        if (moved) {
+            gm.sendSysMessage("Player's [" + name + "] position is now set to (" + x + "," + y + "," + z + ").");
+        } else {
+            gm.sendSysMessage("Character not found or position unaltered.");
         }
     }
 }

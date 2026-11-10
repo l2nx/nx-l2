@@ -55,8 +55,8 @@ class DeleteCharacterHandlerTest {
         }
 
         @ParameterizedTest(name = "{0} -> {1}")
-        @CsvSource({"1, CLAN_MEMBER", "2, CLAN_LEADER"})
-        void handle_shouldRefuseAndStillShowTheList_whenTheClanHoldsTheCharacter(byte result, DeleteFailure failure) {
+        @CsvSource({"1, CLAN_MEMBER", "2, CLAN_LEADER", "3, LOADED"})
+        void handle_shouldRefuseAndStillShowTheList_whenTheCharacterIsHeld(byte result, DeleteFailure failure) {
             when(client.markToDeleteChar(SLOT)).thenReturn(result);
 
             handler.handle(client, new DeleteCharacter(SLOT));

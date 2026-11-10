@@ -224,8 +224,9 @@ class ReportWriterTest {
                     .containsPattern("lifecycle step\\s+count")
                     .containsPattern("LOGIN_AUTH\\s+20\\s+1\\s+3\\.00\\s+40\\.00\\s+60\\.00\\s+61\\.00")
                     .containsPattern("world-0\\s+6000\\s+5\\.000\\s+20\\.000\\s+-\\s+3\\s+0\\s+0\\s+2\\s+7"
-                            + "\\s+0\\.014\\s+2\\.500\\s+12\\.000\\s+55\\.000")
-                    .containsPattern("l2nx-game-packets\\s+0\\s+-\\s+-\\s+-\\s+0\\s+4\\s+0\\s+0\\s+0\\s+-\\s+-\\s+-")
+                            + "\\s+0\\.014\\s+2\\.500\\s+0\\s+12\\s+12\\.000\\s+55\\.000")
+                    .containsPattern(
+                            "l2nx-game-packets\\s+0\\s+-\\s+-\\s+-\\s+0\\s+4\\s+0\\s+0\\s+0\\s+-\\s+-\\s+-\\s+-\\s+-")
                     .contains("server window 2026-10-21T08:16:30Z .. 2026-10-21T08:21:30Z (300000 ms)")
                     .contains("game: GC pause p99 3.000 ms mean 1.200 ms max - ms, CPU mean 0.350, live threads max"
                             + " 64.000")
@@ -467,6 +468,8 @@ class ReportWriterTest {
                                         .jdbcOnLoop(7)
                                         .jdbcOnLoopSeconds(0.014)
                                         .jdbcOnLoopShare(0.025)
+                                        .jdbcReads(0L)
+                                        .jdbcWrites(12L)
                                         .phaseMeanMillis(Map.of("input", 0.4, "tick", 2.5))
                                         .inboxDepthMax(12.0)
                                         .inboxDepthP99(4.0)

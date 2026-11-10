@@ -27,6 +27,7 @@
 package app.l2nx.highfive.scripts.custom.Transmog;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.character.StoredCharacter;
 import app.l2nx.highfive.chat.ChatType;
 import app.l2nx.highfive.config.custom.TransmogConfig;
 import app.l2nx.highfive.data.xml.ItemData;
@@ -265,9 +266,8 @@ public class Transmog extends Script {
         final Map<Integer, Set<Integer>> playerTransmogs = new HashMap<>();
 
         try {
-            final List<Integer> itemIds = TransmogConfig.TRANSMOG_SHARE_ACCOUNT
-                    ? TransmogManager.getInstance().findByAccount(player.getAccountId())
-                    : TransmogManager.getInstance().findByCharacter(player.getObjectId());
+            final StoredCharacter.WorldEntry stored = event.stored();
+            final List<Integer> itemIds = stored == null ? List.of() : stored.transmogItemIds();
             for (int itemId : itemIds) {
                 final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
                 if (itemTemplate != null) {

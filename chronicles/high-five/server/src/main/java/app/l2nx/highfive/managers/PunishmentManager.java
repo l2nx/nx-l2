@@ -31,6 +31,7 @@ import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.holders.PunishmentHolder;
+import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
 import app.l2nx.highfive.entity.actor.tasks.player.IllegalPlayerActionTask;
@@ -38,6 +39,7 @@ import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.world.PunishmentRepository;
@@ -198,12 +200,19 @@ public class PunishmentManager {
         tasks.get(affect).stopPunishment(task);
     }
 
+    // A loaded character saves its access level from memory, so a loaded one takes the level in memory too.
     private void changeCharAccessLevel(int objectId, int lvl) {
-        try {
-            characterRepository.updateAccessLevel(objectId, lvl);
-        } catch (DataAccessException e) {
-            log.warn("Error updating access level for character: {}. {}", objectId, e.getMessage());
-        }
+        OfflineRows.whenSettled(objectId, () -> {
+            final Player player = World.getPlayer(objectId);
+            if (player != null) {
+                player.setAccessLevel(lvl);
+            }
+            try {
+                characterRepository.updateAccessLevel(objectId, lvl);
+            } catch (DataAccessException e) {
+                log.warn("Error updating access level for character: {}. {}", objectId, e.getMessage());
+            }
+        });
     }
 
     public boolean hasPunishment(Object key, PunishmentAffect affect, PunishmentType type) {

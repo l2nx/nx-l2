@@ -10,6 +10,7 @@ import app.l2nx.database.JdbcTimes;
 import app.l2nx.highfive.integration.repository.RepositoryTest;
 import app.l2nx.highfive.repository.character.CharacterItemReuseRepository;
 import app.l2nx.highfive.repository.character.model.CharacterItemReuse;
+import app.l2nx.highfive.repository.character.model.StoredItemReuse;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -51,6 +52,32 @@ class CharacterItemReuseRepositoryTest extends RepositoryTest {
             final List<CharacterItemReuse> actual = repository.findAll(registry.handleOf(id));
 
             assertThat(actual).containsExactly(itemReuse(registry.handleOf(itemId), 1060, 10000, NOW));
+        }
+    }
+
+    @Nested
+    class FindStored {
+        @Test
+        void findStored_shouldCarryTheItemIdAndAllocateNoHandle() {
+            final UUID id = insertCharacter();
+            final UUID itemId = insertItem(id, 1060, 5);
+            JDBC.sql("""
+                INSERT INTO character_item_reuse_saves (
+                    character_id, item_id, item_template_id, reuse_delay_ms, reuse_ends_at)
+                VALUES (?, ?, 1060, 10000, ?)\
+                """).param(id).param(itemId).param(JdbcTimes.utc(NOW)).update();
+            final int allocatedBefore = registry.allocatedCount();
+
+            final List<StoredItemReuse> actual = repository.findStored(id);
+
+            assertThat(actual)
+                    .containsExactly(StoredItemReuse.builder()
+                            .itemId(itemId)
+                            .itemTemplateId(1060)
+                            .reuseDelayMs(10000)
+                            .reuseEndsAt(NOW)
+                            .build());
+            assertThat(registry.allocatedCount()).isEqualTo(allocatedBefore);
         }
     }
 

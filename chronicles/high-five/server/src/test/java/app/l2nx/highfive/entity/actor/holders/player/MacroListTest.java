@@ -20,6 +20,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SendMacroList;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.repository.character.model.CharacterMacro;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -75,7 +76,8 @@ class MacroListTest {
                     Named.of("registerMacro", macros -> macros.registerMacro(macro(0, "Buff"))),
                     Named.of("deleteMacro", macros -> macros.deleteMacro(1000)),
                     Named.of("sendUpdate", MacroList::sendUpdate),
-                    Named.of("restoreMe", MacroList::restoreMe));
+                    Named.of("restoreMe", MacroList::restoreMe),
+                    Named.of("restore", macros -> macros.restore(List.of())));
         }
     }
 
@@ -107,6 +109,29 @@ class MacroListTest {
             WorldLoopExtension.runInPass(macros::sendUpdate);
 
             verify(owner, times(2)).sendPacket(any(SendMacroList.class));
+        }
+    }
+
+    @Nested
+    class Restore {
+        @Test
+        void restore_shouldReplaceTheMacrosWithTheStoredOnes_withoutWriting() {
+            final CharacterMacro stored = CharacterMacro.builder()
+                    .macroId(1005)
+                    .icon(1)
+                    .name("Heal")
+                    .acronym("HL")
+                    .commands("3,1177,1,;bad")
+                    .build();
+
+            final List<Object> actual = WorldLoopExtension.callInPass(() -> {
+                macros.registerMacro(macro(1000, "Buff"));
+                macros.restore(List.of(stored));
+                return List.of(macros.getMacroCount(), macros.isNameTaken("Heal", 0), macros.isNameTaken("Buff", 0));
+            });
+
+            assertThat(actual).containsExactly(1, true, false);
+            verify(persistence, times(1)).saveMacro(anyInt(), any());
         }
     }
 

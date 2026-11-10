@@ -38,13 +38,16 @@ public class CharacterVariableRepository {
     private final JdbcTemplate jdbcTemplate;
     private final IdentityRegistry registry;
 
-    public Map<String, String> findAll(int objectId) {
+    public Map<String, String> findAll(UUID characterId) {
         final Map<String, String> variables = new LinkedHashMap<>();
-        registry.findId(objectId)
-                .ifPresent(id -> jdbcClient.sql(SELECT_VARIABLES).param(id).query(rs -> {
-                    variables.put(rs.getString("name"), rs.getString("content"));
-                }));
+        jdbcClient.sql(SELECT_VARIABLES).param(characterId).query(rs -> {
+            variables.put(rs.getString("name"), rs.getString("content"));
+        });
         return variables;
+    }
+
+    public Map<String, String> findAll(int objectId) {
+        return registry.findId(objectId).map(this::findAll).orElseGet(LinkedHashMap::new);
     }
 
     public void save(int objectId, String name, String content) {

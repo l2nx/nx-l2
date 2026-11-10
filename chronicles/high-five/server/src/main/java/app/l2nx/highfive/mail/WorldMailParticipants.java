@@ -79,6 +79,11 @@ class WorldMailParticipants implements MailParticipants {
                 .build();
     }
 
+    @Override
+    public boolean loading(UUID characterId) {
+        return WorldPartition.loadedCharacters().isLoading(characterId);
+    }
+
     /** A session-loaded character counts before world entry: its memory owns its items from the load on. */
     @Override
     public Optional<MailActor> online(UUID characterId) {

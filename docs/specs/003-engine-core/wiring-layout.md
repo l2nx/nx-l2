@@ -79,6 +79,9 @@ onto it and the longer it is exercised. The order follows the stages: `clock` (E
 
 Only `session` depends on `libs/network` (its transport, settings and meters); an ArchUnit rule in `engine/core` keeps
 the other packages transport-free.
+`loop` and `session` know each other on purpose: `session` implements `InputSource` of `loop.inbox`, and `loop` opens
+and wakes the network hand-off of a pass through `session.outbound.NetworkHandoff`, so the transport-free rule holds for
+`loop` while the pass decides when the event loops wake ([008 §6](../008-network.md)).
 
 Game mechanics shared by chronicles join `engine/` only by proven overlap
 ([spec 001 §4](../001-project-design.md#4-module-layout)). Such a module (`engine/mail` first) keeps the slice layout

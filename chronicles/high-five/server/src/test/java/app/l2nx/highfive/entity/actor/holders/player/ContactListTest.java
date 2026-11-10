@@ -35,6 +35,7 @@ import org.mockito.MockedStatic;
 @ResourceLock(WorldLoopExtension.LOCK)
 class ContactListTest {
     private static final int OWNER_ID = 268_100_001;
+    private static final List<String> STORED = List.of("Charlie", "Alice", "Bob");
 
     private final Player player = mock(Player.class);
     private final CharacterRelationsManager relations = mock(CharacterRelationsManager.class);
@@ -50,10 +51,6 @@ class ContactListTest {
         namesInstance.when(CharInfoTable::getInstance).thenReturn(names);
         when(player.getObjectId()).thenReturn(OWNER_ID);
         when(player.getName()).thenReturn("Owner");
-        when(relations.findContactIds(OWNER_ID)).thenReturn(List.of(3, 1, 2));
-        when(names.getNameById(3)).thenReturn("Charlie");
-        when(names.getNameById(1)).thenReturn("Alice");
-        when(names.getNameById(2)).thenReturn("Bob");
         when(names.getIdByName("Dave")).thenReturn(4);
     }
 
@@ -78,7 +75,7 @@ class ContactListTest {
         static Stream<Named<Consumer<ContactList>>> ownerCheckedCalls() {
             return Stream.of(
                     Named.of("getAllContacts", ContactList::getAllContacts),
-                    Named.of("restore", ContactList::restore),
+                    Named.of("restore", contacts -> contacts.restore(List.of())),
                     Named.of("add", contacts -> contacts.add("Dave")),
                     Named.of("remove", contacts -> contacts.remove("Alice")));
         }
@@ -94,9 +91,10 @@ class ContactListTest {
         }
 
         @Test
-        void getAllContacts_shouldKeepLoadOrderThenAddedNames() {
+        void getAllContacts_shouldKeepTheStoredOrderThenAddedNames() {
             final List<String> actual = WorldLoopExtension.callInPass(() -> {
                 final ContactList contacts = new ContactList(player);
+                contacts.restore(STORED);
                 contacts.add("Dave");
                 return contacts.getAllContacts();
             });
@@ -106,12 +104,42 @@ class ContactListTest {
     }
 
     @Nested
+    class Restore {
+        @Test
+        void restore_shouldKeepTheStoredOrder_withoutTheOwnersName() {
+            final List<String> actual = WorldLoopExtension.callInPass(() -> {
+                final ContactList contacts = new ContactList(player);
+                contacts.restore(List.of("Bob", "Owner", "Alice"));
+                return contacts.getAllContacts();
+            });
+
+            assertThat(actual).containsExactly("Bob", "Alice");
+        }
+
+        @Test
+        void restore_shouldReplaceTheContacts() {
+            final List<String> actual = WorldLoopExtension.callInPass(() -> {
+                final ContactList contacts = new ContactList(player);
+                contacts.restore(STORED);
+                contacts.restore(List.of("Bob"));
+                return contacts.getAllContacts();
+            });
+
+            assertThat(actual).containsExactly("Bob");
+        }
+    }
+
+    @Nested
     class Add {
         @Test
         void add_shouldRefuse_whenTheNameDiffersOnlyInCase() {
             when(names.getIdByName("ALICE")).thenReturn(1);
 
-            final boolean actual = WorldLoopExtension.callInPass(() -> new ContactList(player).add("ALICE"));
+            final boolean actual = WorldLoopExtension.callInPass(() -> {
+                final ContactList contacts = new ContactList(player);
+                contacts.restore(STORED);
+                return contacts.add("ALICE");
+            });
 
             assertThat(actual).isFalse();
         }

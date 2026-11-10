@@ -9,22 +9,25 @@ in the compose profile `load`; a run on the host with `bootRun` is for developme
 
 | Service        | `cpuset` | `cpus` | Memory | Role                                                                                 |
 | -------------- | -------- | ------ | ------ | ------------------------------------------------------------------------------------ |
-| `game-server`  | 0-5      | 6      | 6 GB   | server under load; shares the network namespace of `login-server`                    |
-| `harness`      | 6-9      | 4      | 3 GB   | load bots and database commands, started on demand, reports in `build/load/`         |
+| `game-server`  | 0-3      | 4      | 6 GB   | server under load; shares the network namespace of `login-server`                    |
+| `harness`      | 4-9      | 6      | 3 GB   | load bots and database commands, started on demand, reports in `build/load/`         |
 | `load-db`      | 10-11    | 2      | 2 GB   | PostgreSQL on `127.0.0.1:5433`, volume `l2nx-load-db-data`                           |
 | `login-server` | 10-11    | 1.5    | 768 MB | idle in the steady phase                                                             |
 | `prometheus`   | 10-11    | 1      | 2 GB   | scrapes both servers every second, UI on `127.0.0.1:9090`, light in the steady phase |
 
+The harness gets more cores than the server: every load bot decodes the broadcasts of all it sees, so the generator
+work grows with the square of a spot, while the server's world loop is one thread. With 4 harness cores the generator
+gave out at 1,250 load bots before the server did (generator lag p99 13.8 ms, world loop 57% busy).
 The split is made for 12 logical cores with SMT siblings numbered next to each other, so no two groups share a physical
 core. Check the numbering with `cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list` inside any container
 (`0-1` means adjacent). On another machine set the variables below; all limits together take 13.75 GB of the Docker VM.
 
 | Variable                    | Default          | Meaning                                                              |
 | --------------------------- | ---------------- | -------------------------------------------------------------------- |
-| `L2NX_LOAD_GAME_CPUSET`     | `0-5`            | cores of `game-server`                                               |
-| `L2NX_LOAD_GAME_CPUS`       | `6`              | CPU limit of `game-server`, equal to its core count; `0.5` throttles the whole process, the loop included, for the sensitivity check |
-| `L2NX_LOAD_HARNESS_CPUSET`  | `6-9`            | cores of `harness`                                                   |
-| `L2NX_LOAD_HARNESS_CPUS`    | `4`              | CPU limit of `harness`, equal to its core count                      |
+| `L2NX_LOAD_GAME_CPUSET`     | `0-3`            | cores of `game-server`                                               |
+| `L2NX_LOAD_GAME_CPUS`       | `4`              | CPU limit of `game-server`, equal to its core count; `2` throttles the whole process, the loop included, for the sensitivity check |
+| `L2NX_LOAD_HARNESS_CPUSET`  | `4-9`            | cores of `harness`                                                   |
+| `L2NX_LOAD_HARNESS_CPUS`    | `6`              | CPU limit of `harness`, equal to its core count                      |
 | `L2NX_LOAD_SHARED_CPUSET`   | `10-11`          | cores of `load-db`, `login-server` and `prometheus`                  |
 | `L2NX_LOAD_SPRING_PROFILES` | `load`           | Spring profiles of both servers; `load,load-seed` while seeding      |
 | `L2NX_GEODATA_DIR`          | `./geodata`      | geodata, mounted read-only; a missing directory fails the start      |
@@ -139,18 +142,18 @@ walk, hit and cast. `login-server` hands the client `127.0.0.1` by matching the 
 `docker/game-server/ipconfig.xml`. Should the client stop after the server list, compare that address with the source
 address in the log of `login-server`. The published ports must be free of servers started on the host.
 
-**2. Sensitivity.** Five runs of each gated scenario with the game server under a CPU quota of half a core on its
-usual cpuset must fail criteria 1 and 3 against the baseline. The world loop is one thread, so fewer cores alone do not
-slow it; the quota throttles the whole process. It is set on the `up` line only and is not part of the environment the
-gate compares; keep these reports out of any baseline:
+**2. Sensitivity.** Five runs of each gated scenario with the game server under a CPU quota of half its cores on its
+usual cpuset must fail criteria 1 and 3 against the baseline on measured values. The world loop is one thread, so fewer
+cores alone do not slow it; the quota throttles the whole process. A quota of half a core drowns the server at the gate
+size and loses its meters. It is set on the `up` line only and is not part of the environment the gate compares; keep
+these reports out of any baseline:
 
 ```sh
-L2NX_LOAD_GAME_CPUS=0.5 docker compose --profile load up -d --wait login-server game-server
+L2NX_LOAD_GAME_CPUS=2 docker compose --profile load up -d --wait login-server game-server
 ```
 
-**3. Repeatability.** The five baseline runs spread the p99 of every gated value, world pass and input time per
-class, by at most 10%, the spread being (max − min) / median. A class whose baseline p99 is below `input-p99-floor`
-(0.5 ms) is left out. A wider spread widens the thresholds or the number of runs, recorded below with the reason.
+**3. Repeatability.** An A/A gate: five more runs of the same build, gated against the baseline, must pass. A false
+failure widens the failing threshold, recorded below with the reason.
 
 ## Profiling
 
@@ -220,6 +223,95 @@ L2NX_PROMETHEUS_CONFIG=prometheus-host.yml docker compose --profile load up -d l
 
 Every row names the reports it comes from; the values are those of `summary.json`. Reports are kept outside the
 repository, under their names.
+
+### Gate v2 (report version 2)
+
+Reports are kept outside the repository, under their names (`gate-v2` set of 2026-11-09).
+
+**Environment**
+
+| Operating system, kernel             | CPU model, logical cores        | cpusets                                                      | JVM                  | Commit      |
+| ------------------------------------ | ------------------------------- | ------------------------------------------------------------ | -------------------- | ----------- |
+| Docker Desktop, WSL2 6.6.87.2, Linux | AMD Ryzen 5 5600X, 12 (6 + SMT) | game-server 0-3, harness 4-9, load-db login prometheus 10-11 | OpenJDK 25.0.4.1 LTS | `f69f2d318` |
+
+**Capacity** (`load-crowd-pvp`, levels of 250 from 500, 30 s warm-up and 60 s measured per level; report
+`load-crowd-pvp-20261109-231250-42`)
+
+| Load bots | World loop busy | Pass p99 | Over budget | Timeouts | Generator lag p99 |
+| --------- | --------------- | -------- | ----------- | -------- | ----------------- |
+| 500       | 11%             | 1.2 ms   | 0           | 0.04%    | 0.12 ms           |
+| 750       | 17%             | 2.3 ms   | 0           | 0.08%    | 0.14 ms           |
+| 1,000     | 31%             | 9.1 ms   | 0           | 0.03%    | 0.16 ms           |
+| 1,250     | 72%             | 46.0 ms  | 0.68%       | 0.03%    | 0.24 ms           |
+| 1,500     | 94%             | 268 ms   | 22.9%       | 12.2%    | 0.30 ms           |
+| 1,750     | 101%            | 2,337 ms | 100%        | 24.6%    | 0.38 ms           |
+| 2,000     | 100%            | 3,844 ms | 100%        | 59.1%    | 0.42 ms           |
+
+Capacity **1,000** load bots in one spot, limited by the pass budget (level 1,250: pass p99 46 ms, 0.68% of passes
+over budget). The gate size **N = 1,000**: the highest level within the budget; 1,250 would fail criterion 2 by itself.
+With the earlier split (game-server 0-5, harness 6-9) the generator gave out first, at 1,250 (lag p99 13.8 ms).
+
+**Baseline `load-crowd-pvp`** (N = 1,000, ramp 120 s, steady 120 s, seed 42; gate without `--baseline`: PASS)
+
+| Run | Pass p99 | Over budget | World loop busy | Input p99: `ReportPosition`, `Action`, `RequestMagicSkillUse` | Timeouts | Report                              |
+| --- | -------- | ----------- | --------------- | ------------------------------------------------------------- | -------- | ----------------------------------- |
+| 1   | 7.95 ms  | 0           | 27.5%           | 9.5, 9.7, 10.0 ms                                             | 0.052%   | `load-crowd-pvp-20261109-233023-42` |
+| 2   | 9.54 ms  | 0           | 30.0%           | 10.1, 11.4, 11.7 ms                                           | 0.031%   | `load-crowd-pvp-20261109-233608-42` |
+| 3   | 10.59 ms | 1           | 32.1%           | 12.5, 13.0, 13.8 ms                                           | 0.032%   | `load-crowd-pvp-20261109-234151-42` |
+| 4   | 11.87 ms | 3           | 35.4%           | 16.9, 17.4, 19.0 ms                                           | 0.037%   | `load-crowd-pvp-20261109-234735-42` |
+| 5   | 8.74 ms  | 0           | 28.8%           | 10.6, 11.3, 11.7 ms                                           | 0.015%   | `load-crowd-pvp-20261109-235319-42` |
+
+**Baseline `load-login-storm`** (1,000 logins over 60 s up to `IN_GAME`, seed 42; gate without `--baseline`: PASS)
+
+| Run | Pass p99 | Over budget | World loop busy | JDBC share of the loop | Timeouts | Report                                |
+| --- | -------- | ----------- | --------------- | ---------------------- | -------- | ------------------------------------- |
+| 1   | 20.85 ms | 2           | 44.2%           | 42.6%                  | 0        | `load-login-storm-20261109-235908-42` |
+| 2   | 20.43 ms | 3           | 43.4%           | 42.1%                  | 0        | `load-login-storm-20261110-000347-42` |
+| 3   | 19.94 ms | 6           | 43.0%           | 43.2%                  | 0        | `load-login-storm-20261110-000825-42` |
+| 4   | 20.29 ms | 9           | 43.3%           | 42.4%                  | 0        | `load-login-storm-20261110-001304-42` |
+| 5   | 61.52 ms | 138         | 44.2%           | 45.6%                  | 0.2%     | `load-login-storm-20261110-001743-42` |
+
+JDBC is 42 to 46% of the world loop's busy time in the login ramp ([#204](https://github.com/l2nx/nx-l2/issues/204)).
+
+**Trust checks**
+
+| Check                         | Date       | Result                                                                                                                                                                                                                                                                                                                                                                                    | Reports                     |
+| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| Real client                   | -          | not run yet at N = 1,000                                                                                                                                                                                                                                                                                                                                                                  | -                           |
+| Sensitivity, `cpus` 0.5       | 2026-11-10 | **failed as expected, but on missing meters**: at N = 1,000 the server drowns (97.6% timeouts) and Prometheus gets no scrape; `load-login-storm` fails on measured values (pass p99 20 s, `EnterWorld` input p99 26.7 s)                                                                                                                                                                 | `crowd-slow`, `storm-slow`  |
+| Sensitivity, `cpus` 2         | 2026-11-10 | **failed on measured values**: `load-crowd-pvp` pass p99 83.5 ms against the 50 ms budget, over budget 4.2%, input p99 180 to 192 ms against limits of 11.7 to 13.7 ms, timeouts 22.9%                                                                                                                                                                                                    | `crowd-cpu2`                |
+| Repeatability, spread         | 2026-11-10 | **failed**: (max − min) / median of the five baseline runs is 41% for the pass p99 and 68 to 77% for input p99 of `load-crowd-pvp`; `load-login-storm` 4 runs within 3% on the pass p99 and one outlier (61.5 ms). All phases of a slow run slow down together (mean `deadlines` 0.51 to 0.78 ms) on fresh servers and data, so the spread is the host's speed, not the server's state | the baselines               |
+| Repeatability, A/A gate       | 2026-11-10 | five more runs of the same build against the baseline: `load-crowd-pvp` **PASS** (pass p99 9.27 against 9.54 ms; input p99 within 15% of their limits); `load-login-storm` **FAIL on one line**: `AuthenticationResult` input p99 2.54 ms against the limit 2.43 ms (baseline 1.93 ms + 0.5 ms floor), the other 12 lines pass; the floor is 1 ms since                                                         | `crowd-aa`, `storm-aa`      |
+
+**Network hand-off** ([#194](https://github.com/l2nx/nx-l2/issues/194): one event loop wakeup per pass, connection
+references held by the connection; same setup as the gate v2 baseline; reports `load-crowd-pvp-20261110-033826-42`
+(capacity) and `load-crowd-pvp-20261110-035520-42` (wall-clock profile of the steady phase at N = 1,000))
+
+| Load bots | World loop busy, before → after | Pass p99, before → after | Over budget, before → after |
+| --------- | ------------------------------- | ------------------------ | --------------------------- |
+| 1,000     | 31% → 26%                       | 9.1 → 5.5 ms             | 0 → 0                       |
+| 1,250     | 72% → 59%                       | 46.0 → 24.4 ms           | 0.68% → 0.07%               |
+| 1,500     | 94% → 94%                       | 268 → 304 ms             | 22.9% → 21.3%               |
+
+Capacity 1,000 → **1,250** load bots. In the steady profile the hand-off to the event loops (`execute`) falls from about
+54% of the loop's busy time (gate v1 profile, 500 load bots) to 2.4% (plus 0.2% `lazyExecute`), attribute lookups from
+about 8% to 0, `serializeLegacy` from about 20% to 5.2%.
+
+**#194 and #204 against the baseline** (five runs each on the uncommitted change of 2026-11-10 after the review fixes,
+gate against the gate v2 baseline above; reports listed in `crowd-after.ids` and `storm-after.ids` of the `gate-v2` set)
+
+| Scenario           | Gate | Pass p99 median, before → after | World loop busy | Input p99, before → after                                                         | Loop JDBC per run     |
+| ------------------ | ---- | ------------------------------- | --------------- | --------------------------------------------------------------------------------- | --------------------- |
+| `load-crowd-pvp`   | PASS | 9.54 → 5.55 ms                  | 30% → 25%       | `Action` 11.4 → 8.3 ms, `ReportPosition` 10.6 → 8.1 ms                            | 0                     |
+| `load-login-storm` | PASS | 20.43 → 11.64 ms                | 44% → 20%       | `SelectCharacter` 51.9 → 5.4 ms, `ListCharacters` 27.1 → 5.6 ms, `EnterWorld` 47 → 22 ms | 0 reads, ~4,950 writes |
+
+With the 0.5 ms floor `load-login-storm` failed on one line of the unchanged login path, `AuthenticationResult` input
+p99 2.81 ms against 2.43 ms, the same noise as the A/A run; with the 1 ms floor the gate passes, and so does the A/A
+run. The background executor stays idle in that ramp: at most 1 queued task and 7 active threads of
+`applicationTaskExecutor`, no value transaction in the window, so `spring.task.execution.pool.*` stays at the Boot
+default. The loop reads nothing from the database
+during the login ramp; the writes left are the listed exceptions until E4 (about five per login, 21% of the loop's
+busy time).
 
 ### Gate v1 (superseded by report version 2)
 

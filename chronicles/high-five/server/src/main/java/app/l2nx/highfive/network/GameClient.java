@@ -32,22 +32,18 @@ import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
-import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
-import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
-import app.l2nx.highfive.partition.WorldPartition;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.security.SecondaryPasswordAuth;
 import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.highfive.util.FloodProtectors;
 import app.l2nx.network.channel.Connections;
-import app.l2nx.network.channel.OutboundQueue;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
@@ -150,9 +146,8 @@ public class GameClient {
     }
 
     public void closeNow() {
-        final OutboundQueue outbound = connection.outbound();
         // A pending close-on-write closes after its last frame; closing now would drop that message.
-        if ((outbound != null) && outbound.isClosing()) {
+        if (connection.outbound().isClosing()) {
             return;
         }
         connection.channel().close();
@@ -221,11 +216,17 @@ public class GameClient {
      *         <li>0: character is not member of any clan, proceed with deletion
      *         <li>1: character is member of a clan, but not clan leader
      *         <li>2: character is clan leader
+     *         <li>3: character is loaded, such as an offline trader of the account, and stays
      */
     public byte markToDeleteChar(int characterSlot) {
         final int objectId = getObjectIdForSlot(characterSlot);
         if (objectId < 0) {
             return -1;
+        }
+        // A character in memory, such as an offline trader of the account, would save its row over the mark.
+        if (OfflineRows.isLoaded(objectId)) {
+            log.info("Character {} of {} is not deleted: it is loaded", objectId, this);
+            return 3;
         }
 
         try {
@@ -268,6 +269,11 @@ public class GameClient {
         if (objectId < 0) {
             return;
         }
+        // The protocol has no restore failure: the list shown next still counts the character down to deletion.
+        if (OfflineRows.isLoaded(objectId)) {
+            log.info("Character {} of {} is not restored: it is loaded", objectId, this);
+            return;
+        }
 
         try {
             PlayerPersistenceManager.getInstance().updateDeleteTime(objectId, 0);
@@ -288,45 +294,6 @@ public class GameClient {
                 CharInfoTable.getInstance().removeName(objectId);
             }
         });
-    }
-
-    public Player load(int characterSlot) {
-        final int objectId = getObjectIdForSlot(characterSlot);
-        if (objectId < 0) {
-            return null;
-        }
-
-        Player player = World.getPlayer(objectId);
-        if (player != null) {
-            if (player.isOnlineInt() == 1) {
-                log.error("Attempt of double login: {}({}) {}", player.getName(), objectId, accountName);
-            }
-
-            if (player.getClient() != null) {
-                Disconnection.of(player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
-            } else {
-                player.storeMe();
-                player.deleteMe();
-                final Player released = player;
-                IdManager.getInstance()
-                        .findId(objectId)
-                        .ifPresent(id -> WorldPartition.loadedCharacters().release(id, released));
-            }
-
-            return null;
-        }
-
-        player = Player.load(objectId);
-        if (player != null) {
-            player.setRunning();
-            player.standUp();
-            player.refreshOverloaded();
-            player.refreshExpertisePenalty();
-        } else {
-            log.error("Could not restore in slot: {}", characterSlot);
-        }
-
-        return player;
     }
 
     public void setCharSelection(List<CharacterSummary> characters) {

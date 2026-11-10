@@ -29,6 +29,7 @@ package app.l2nx.highfive.data.sql;
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
+import app.l2nx.highfive.character.CharacterLoader;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -40,6 +41,7 @@ import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
 import app.l2nx.highfive.entity.item.recipe.ManufactureItem;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
@@ -66,9 +68,11 @@ public class OfflineTraderTable {
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     private final OfflineTradeRepository offlineTradeRepository;
+    private final CharacterLoader characterLoader;
 
-    public OfflineTraderTable(OfflineTradeRepository offlineTradeRepository) {
+    public OfflineTraderTable(OfflineTradeRepository offlineTradeRepository, CharacterLoader characterLoader) {
         this.offlineTradeRepository = offlineTradeRepository;
+        this.characterLoader = characterLoader;
         instance = this;
     }
 
@@ -113,7 +117,12 @@ public class OfflineTraderTable {
                 Player player = null;
 
                 try {
-                    player = Player.load(trade.characterId());
+                    player = IdManager.getInstance()
+                            .findId(trade.characterId())
+                            .flatMap(characterLoader::read)
+                            .map(Player::load)
+                            .orElseThrow(() ->
+                                    new IllegalStateException("Character " + trade.characterId() + " has no row"));
                     player.setOnlineStatus(true, false);
                     player.setOfflineStartTime(time);
 

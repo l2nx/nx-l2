@@ -171,7 +171,8 @@ class CharacterMappersTest {
         @ParameterizedTest(name = "{0} -> {1}")
         @CsvSource({
             "CLAN_MEMBER, REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER",
-            "CLAN_LEADER, REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED"
+            "CLAN_LEADER, REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED",
+            "LOADED, REASON_DELETION_FAILED"
         })
         void map_shouldCarryTheClientReason_whenTheCharacterDeleteFailed(
                 DeleteFailure failure, CharDeleteFailReason expected) {

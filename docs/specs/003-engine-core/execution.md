@@ -33,7 +33,8 @@ One pass runs, in this order:
 4. **Side effects:** the deferred queue built during phases 1–3 ([entities.md §4](entities.md#4-events-and-side-effects)),
    then stat recalculation of creatures marked dirty ([effects.md §6](effects.md#6-stats-once-per-pass)).
 5. **Replication:** visibility diffs, outgoing events, coalesced state ([replication.md](replication.md)).
-6. **Flush:** per-connection buffers handed to Netty, one flush per connection.
+6. **Flush:** the network hand-off wakes once each event loop that got outbound drains during the pass
+   ([replication.md §6](replication.md#6-network-hand-off)).
 
 TODO: the inbox runs before the deadlines, so input is evaluated against timers that fell due up to one pass
 earlier; ordering input against due timers by arrival time removes this window ([#45](https://github.com/l2nx/nx-l2/issues/45)),
@@ -87,6 +88,11 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
   loop that check reads the player on its owner thread.
 - **Entity transfer between partitions:** while a session is transferring, its queue keeps filling; after the
   target partition attaches the entity, the queue is drained there in the same order. Nothing is lost or reordered.
+- **Character loading holds the session the same way:** from `CharacterSelect` until the selected character's rows
+  are read and its player built (or the load fails) the partition takes no input of the session (§7.1); the queue
+  keeps filling and is drained in the same order afterwards. A packet behind `CharacterSelect` still sees the
+  selected character, and a repeated `CharacterSelect` runs after the first one with its usual checks
+  ([#204](https://github.com/l2nx/nx-l2/issues/204)).
 - **Coalescing is opt-in.** Only command types explicitly marked as intent, where only the latest matters (movement
   requests), may be collapsed; `nx-physics` already keeps the last intent. Every other command executes, and a
   legacy packet is never collapsed.
@@ -308,7 +314,8 @@ listed here, and anything else is a defect found by the ownership check.
 
 - **Client input** of sessions in the world (§3). A session enters the world when the game server has
   authenticated it: character list, creation, deletion and selection load and create world objects, so they run on
-  the world loop too. Only the key exchange and the authentication stay in the session's own drain.
+  the world loop too; selection reads the character's rows off the loop (below). Only the key exchange and the
+  authentication stay in the session's own drain.
 - **Legacy scheduled and immediate work:** every former `ThreadPool` call site of game code and scripts uses the
   loop API of §4, including the task managers, which moved unchanged in E6; the AI think and movement ones are periodic systems since
   E7 (§5).
@@ -331,6 +338,32 @@ listed here, and anything else is a defect found by the ownership check.
   (`Executors.newFixedThreadPool` in try-with-resources); a parser builds immutable data and never arms a timer or
   draws a random number.
 
+**Character selection and world entry read nothing on the loop** ([#204](https://github.com/l2nx/nx-l2/issues/204)).
+The selection runs on the loop inside the in-flight registry's `whenIdle` ([persistence.md
+§3.1](persistence.md#31-online-and-offline-sides)): its checks; for a character still in the world, the kick and the
+synchronous save of the old session, so the read never sees rows older than that save; then the character is marked
+loading in `LoadedCharacters` and the session's input is held (§3). One `BackgroundQueries` call reads every row of
+the character into a `StoredCharacter` record (only data): the character, its subclasses, the names of the account's
+other characters, the items of inventory, warehouse and freight with their augmentations and elementals in batches by
+owner, skills, macros, shortcuts, hennas, bookmarks, recipes and the recipe shop list, premium items, whether pet items
+exist, item variables, item reuse, friends, contacts with their names, the block list, player and account
+variables, the premium end, transmog ids, rebirth skills, quests, recommendations and skill saves. The read starts
+after the save of the character's previous player: it queues in the same `whenIdle` registry, in arrival order. It is
+one `REPEATABLE READ` transaction that also marks the character online and is tried again up to 3 times on a
+serialization failure (`readAndMarkOnline`), so the flag commits before the player exists and the logout save, which
+can only follow the build, is never overtaken by it. On
+the loop the `Player` is built from the record; wire handles are allocated then, not by the row mappers, so a
+discarded result holds none ([persistence.md §2](persistence.md#2-wire-handles)). A failed read, or a read the
+executor refuses, reaches the loop as a failure: the loading mark is cleared, the error is logged with the character
+id, and the connection is closed with `ServerClosed`. A session that closed before the result discards it: nothing is
+built, the mark is cleared, and the character is marked offline again off the loop.
+
+The character list after authentication is read off the loop the same way: `CharacterSlots` through
+`BackgroundQueries`, the session held until the list is sent (lobby, restart, delete, restore, create), and the wire
+handles allocated on the loop when the list is built, not by the row mappers. A failed read closes the connection with
+`ServerClosed`. The deletion of an expired character (`GameClient.deleteCharByObjId`) still writes on the loop until
+E4.
+
 **Background tasks** are the explicit exception: work that never reads or writes game state and never reads game
 time or the partition RNG runs on Spring Boot's
 auto-configured `ThreadPoolTaskScheduler` for delayed and periodic work and `applicationTaskExecutor` (a
@@ -349,8 +382,13 @@ switch Tomcat and every other executor of the process, a decision of its own.
 
 TODO: drop once E4 moves JDBC off the loop ([#69](https://github.com/l2nx/nx-l2/issues/69)). Until write-behind
 (E4), the legacy code's synchronous JDBC runs on the world loop with the rest of its work: saves (autosave, items,
-quests, mail, clan ranks) and loads (character selection). It is a temporary state with a gate, not a design: a
-meter (`l2nx.engine.jdbc.on.loop{loop}`, a datasource-proxy method listener, so pool waits and commits count with the
+quests, mail, clan ranks) and the writes on the way into the world: the deletes of item reuse and skill save rows
+after the build, the recommendations upsert, the delete of an expired premium, the deletes of stale shortcuts,
+illegal skills and invalid quest data, the skill rewards of world entry (`storeSkill` skips a skill whose level did
+not change), the offline trader record and the save of the old session on a repeated login. Selection and world
+entry read nothing on the loop: the load harness reports the loop's JDBC statements by kind
+(`l2nx.engine.jdbc.on.loop.statements{loop, kind}`, report columns `jdbc r` and `jdbc w`), and the world loop's
+reads in the `load-login-storm` window must be 0. It is a temporary state with a gate, not a design: a meter (`l2nx.engine.jdbc.on.loop{loop}`, a datasource-proxy method listener, so pool waits and commits count with the
 statements) times every JDBC call on a loop thread and a warning names the caller, the E0 siege gate measures its
 cost, and if the world pass does not fit the budget with it, E4 comes before the cutover. E4 replaces each place
 with a snapshot taken on the loop and a write on the persistence executor, or a load on the executor whose result

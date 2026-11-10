@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.jctools.queues.atomic.SpscAtomicArrayQueue;
+import org.jctools.queues.atomic.SpscUnboundedAtomicArrayQueue;
 
 /**
  * The IO thread is the single producer, one drain at a time the single consumer. A {@link ContextBound} item's context,
@@ -42,7 +42,7 @@ public final class Session implements InputSource {
     private final long id = IDS.incrementAndGet();
     private final int queueLimit;
     private final int perDrain;
-    private final SpscAtomicArrayQueue<Input> queue;
+    private final SpscUnboundedAtomicArrayQueue<Input> queue;
     private final Bucket rate;
     private final Bucket failures;
     private final DrainScheduler connectedScheduler;
@@ -54,6 +54,9 @@ public final class Session implements InputSource {
     private final AtomicBoolean signalled = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean closeHandled = new AtomicBoolean();
+    // Drain thread only, like the reads of poll and hasInput.
+    private boolean held;
+    private volatile int sizeLimit;
     // Transitions are rare; holding the lock across the notification keeps the transport's view in transition order.
     private final ReentrantLock transitions = new ReentrantLock();
     private volatile SessionState state = SessionState.CONNECTED;
@@ -96,7 +99,8 @@ public final class Session implements InputSource {
             Runnable finished) {
         queueLimit = limits.queueLimit();
         perDrain = limits.perDrain();
-        queue = new SpscAtomicArrayQueue<>(limits.queueLimit());
+        sizeLimit = queueLimit;
+        queue = new SpscUnboundedAtomicArrayQueue<>(limits.queueLimit());
         // Only the IO thread takes tokens, so the rate bucket needs no synchronization.
         rate = Bucket.builder()
                 .addLimit(
@@ -147,14 +151,12 @@ public final class Session implements InputSource {
     }
 
     private boolean enqueue(Input input) {
-        // The queue rounds its capacity up to a power of two; the limit is enforced here.
-        if (queue.size() >= queueLimit) {
+        // The queue grows in chunks, so the limit is enforced here.
+        if (queue.size() >= sizeLimit) {
             return false;
         }
         input.enqueuedAt = metrics.now();
-        if (!queue.offer(input)) {
-            return false;
-        }
+        queue.offer(input);
         metrics.queued(queue.size());
         signal();
         return true;
@@ -219,6 +221,27 @@ public final class Session implements InputSource {
         onClosed = callback;
     }
 
+    /**
+     * Drain thread only: hands out no input until {@link #release()}, so input behind a command with a deferred outcome
+     * (character loading) runs after it. The queue then ignores the queue limit; only the rate limit bounds it.
+     */
+    public void hold() {
+        held = true;
+        sizeLimit = Integer.MAX_VALUE;
+    }
+
+    /**
+     * Drain thread only: until the backlog queued while held drains, the queue accepts a further queue limit of input.
+     */
+    public void release() {
+        if (!held) {
+            return;
+        }
+        held = false;
+        sizeLimit = queue.size() + queueLimit;
+        signal();
+    }
+
     public void attach(Object owner) {
         attachment = owner;
     }
@@ -244,11 +267,17 @@ public final class Session implements InputSource {
     }
 
     /**
-     * The next item, or {@code null} when the queue is empty or the session is closing. A run of coalescable
+     * The next item, or {@code null} when the queue is empty, the session is held or closing. A run of coalescable
      * commands of one type yields only its latest, timed from the enqueue of the oldest it replaced.
      */
     @Override
     public Message poll() {
+        if (held && !closed.get()) {
+            return null;
+        }
+        if ((sizeLimit != queueLimit) && (queue.size() < queueLimit)) {
+            sizeLimit = queueLimit;
+        }
         Input oldestReplaced = null;
         while (!closed.get()) {
             final Input input = queue.poll();
@@ -271,7 +300,7 @@ public final class Session implements InputSource {
 
     @Override
     public boolean hasInput() {
-        return closed.get() ? !closeHandled.get() : !queue.isEmpty();
+        return closed.get() ? !closeHandled.get() : !held && !queue.isEmpty();
     }
 
     @Override

@@ -31,6 +31,7 @@ import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.Sex;
 import app.l2nx.highfive.managers.SiegeManager;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 
@@ -172,6 +173,10 @@ public class ClanMember {
     public void setPledgeType(int pledgeType) {
         WorldPartition.checkOwner();
         this.pledgeType = pledgeType;
+        OfflineRows.whenSettled(getObjectId(), this::applyPledgeType);
+    }
+
+    private void applyPledgeType() {
         if (player != null) {
             player.setPledgeType(pledgeType);
         } else {
@@ -192,6 +197,10 @@ public class ClanMember {
     public void setPowerGrade(int powerGrade) {
         WorldPartition.checkOwner();
         this.powerGrade = powerGrade;
+        OfflineRows.whenSettled(getObjectId(), this::applyPowerGrade);
+    }
+
+    private void applyPowerGrade() {
         if (player != null) {
             player.setPowerGrade(powerGrade);
         } else {

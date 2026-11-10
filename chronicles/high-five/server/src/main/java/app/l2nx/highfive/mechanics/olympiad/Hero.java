@@ -41,12 +41,14 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.character.model.CharacterClanAlly;
 import app.l2nx.highfive.repository.item.ItemRepository;
@@ -65,6 +67,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.OptionalInt;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -560,26 +565,7 @@ public class Hero {
 
             player.setHero(false);
 
-            for (int i = 0; i < Inventory.PAPERDOLL_TOTALSLOTS; i++) {
-                final Item equippedItem = player.getInventory().getPaperdollItem(i);
-                if ((equippedItem != null) && equippedItem.isHeroItem()) {
-                    player.getInventory().unEquipItemInSlot(i);
-                }
-            }
-
-            final InventoryUpdate iu = new InventoryUpdate();
-            for (Item item : player.getInventory().getItems()) {
-                if ((item != null) && item.isHeroItem()) {
-                    player.destroyItem(ItemProcessType.DESTROY, item, null, true);
-                    iu.addRemovedItem(item);
-                }
-            }
-
-            if (!iu.getItems().isEmpty()) {
-                player.sendInventoryUpdate(iu);
-            }
-
-            player.broadcastUserInfo();
+            destroyHeroItems(player);
         }
 
         deleteItemsInDb();
@@ -729,11 +715,55 @@ public class Hero {
     }
 
     private void deleteItemsInDb() {
+        final Set<UUID> busy = WorldPartition.loadedCharacters().busy();
         try {
-            itemRepository.deleteExceptStaff(HERO_ITEM_IDS);
+            itemRepository.deleteExceptStaff(HERO_ITEM_IDS, busy);
+            for (UUID holder : itemRepository.findOwnersOfTemplates(HERO_ITEM_IDS, busy)) {
+                WorldPartition.loadedCharacters().whenSettled(holder, () -> removeHeroItems(holder));
+            }
         } catch (DataAccessException e) {
             log.warn("Heroes: {}", e.getMessage());
         }
+    }
+
+    private void removeHeroItems(UUID holder) {
+        final OptionalInt handle = IdManager.getInstance().findHandle(holder);
+        final Player player = handle.isPresent() ? World.getPlayer(handle.getAsInt()) : null;
+        if (player == null) {
+            try {
+                itemRepository.deleteOfOwnerExceptStaff(HERO_ITEM_IDS, holder);
+            } catch (DataAccessException e) {
+                log.warn("Heroes: {}", e.getMessage());
+            }
+            return;
+        }
+
+        if (player.getAccessLevel().getLevel() <= 0) {
+            destroyHeroItems(player);
+        }
+    }
+
+    private static void destroyHeroItems(Player player) {
+        for (int i = 0; i < Inventory.PAPERDOLL_TOTALSLOTS; i++) {
+            final Item equippedItem = player.getInventory().getPaperdollItem(i);
+            if ((equippedItem != null) && equippedItem.isHeroItem()) {
+                player.getInventory().unEquipItemInSlot(i);
+            }
+        }
+
+        final InventoryUpdate iu = new InventoryUpdate();
+        for (Item item : player.getInventory().getItems()) {
+            if ((item != null) && item.isHeroItem()) {
+                player.destroyItem(ItemProcessType.DESTROY, item, null, true);
+                iu.addRemovedItem(item);
+            }
+        }
+
+        if (!iu.getItems().isEmpty()) {
+            player.sendInventoryUpdate(iu);
+        }
+
+        player.broadcastUserInfo();
     }
 
     /**

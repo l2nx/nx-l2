@@ -466,8 +466,12 @@ public final class RebirthManager {
      * @return The validated selected skills list.
      */
     private List<Integer> loadValidatedSelectedSkills(Player player, Map<Integer, String> skillDefinitionMap) {
+        return validatedSelectedSkills(player, skillDefinitionMap, getSelectedSkills(player.getObjectId()));
+    }
+
+    private List<Integer> validatedSelectedSkills(
+            Player player, Map<Integer, String> skillDefinitionMap, List<Integer> storedSkills) {
         final int playerId = player.getObjectId();
-        final List<Integer> storedSkills = getSelectedSkills(playerId);
         if (storedSkills.isEmpty()) {
             return storedSkills;
         }
@@ -1252,8 +1256,13 @@ public final class RebirthManager {
      * @param player
      */
     public void grantRebirthSkills(Player player) {
+        grantRebirthSkills(player, getSelectedSkills(player.getObjectId()));
+    }
+
+    public void grantRebirthSkills(Player player, List<Integer> storedSkillIds) {
         final Map<Integer, String> skillDefinitionMap = createSkillDefinitionMap(getSkillPool(player), player);
-        grantRebirthSkills(player, skillDefinitionMap, loadValidatedSelectedSkills(player, skillDefinitionMap));
+        grantRebirthSkills(
+                player, skillDefinitionMap, validatedSelectedSkills(player, skillDefinitionMap, storedSkillIds));
     }
 
     /**

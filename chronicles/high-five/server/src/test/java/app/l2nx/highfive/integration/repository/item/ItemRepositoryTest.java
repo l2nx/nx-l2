@@ -14,10 +14,11 @@ import app.l2nx.highfive.integration.repository.RepositoryTest;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.repository.item.model.LotteryTicket;
-import app.l2nx.highfive.repository.item.model.PaperdollItem;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -113,22 +114,39 @@ class ItemRepositoryTest extends RepositoryTest {
     }
 
     @Nested
-    class FindPaperdoll {
+    class FindStored {
         @Test
-        void findPaperdoll_shouldReturnEquippedItemsOnly() {
+        void findStored_shouldReadTheRowsByOwnerAndAllocateNoHandle_whenTheOwnerHasItems() {
             final UUID owner = insertCharacter();
-            final UUID item = insertItem(owner, SWORD, ItemLocation.PAPERDOLL, 7, null);
-            insertItem(owner, ADENA, ItemLocation.INVENTORY, 0, null);
+            final UUID itemId = insertItem(owner, 57, 1_000);
+            final int allocatedBefore = registry.allocatedCount();
 
-            final List<PaperdollItem> actual = repository.findPaperdoll(handle(owner));
+            final List<StoredItem> actual =
+                    repository.findStored(owner, ItemLocation.INVENTORY, ItemLocation.PAPERDOLL);
 
-            assertThat(actual)
-                    .containsExactly(PaperdollItem.builder()
-                            .objectId(handle(item))
-                            .itemId(SWORD)
-                            .slot(7)
-                            .enchantLevel(0)
-                            .build());
+            assertThat(actual).singleElement().satisfies(item -> {
+                assertThat(item.id()).isEqualTo(itemId);
+                assertThat(item.itemTemplateId()).isEqualTo(57);
+                assertThat(item.count()).isEqualTo(1_000);
+                assertThat(item.augmentationId()).isNull();
+                assertThat(item.elementals()).isEmpty();
+                assertThat(item.variables()).isEmpty();
+            });
+            assertThat(registry.allocatedCount()).isEqualTo(allocatedBefore);
+        }
+
+        @Test
+        void findStored_shouldReadOneLocation_whenOneIsAsked() {
+            final UUID owner = insertCharacter();
+            insertItem(owner, 57, 1);
+            final UUID stored = insertItem(owner, 1_060, 3);
+            JDBC.sql("UPDATE items SET location = 'WAREHOUSE', location_slot = NULL WHERE id = ?")
+                    .param(stored)
+                    .update();
+
+            assertThat(repository.findStored(owner, ItemLocation.WAREHOUSE))
+                    .extracting(StoredItem::id)
+                    .containsExactly(stored);
         }
     }
 
@@ -410,6 +428,61 @@ class ItemRepositoryTest extends RepositoryTest {
             assertThat(count("SELECT count(*) FROM items WHERE item_template_id = ?", template))
                     .isZero();
         }
+
+        @Test
+        void deleteByItemIdExcept_shouldKeepTheRowsOfTheKeptOwners_andDeleteOwnerlessRows() {
+            final int template = uniqueTemplate();
+            final UUID keptOwner = insertCharacter();
+            final UUID kept = insertItem(keptOwner, template, 1);
+            insertItem(insertCharacter(), template, 1);
+            insertItem(null, template, ItemLocation.MAIL, null, insertMail(insertCharacter()));
+
+            repository.deleteByItemIdExcept(template, List.of(), Set.of(keptOwner));
+
+            assertThat(JDBC.sql("SELECT id FROM items WHERE item_template_id = ?")
+                            .param(template)
+                            .query(UUID.class)
+                            .list())
+                    .containsExactly(kept);
+        }
+
+        @Test
+        void deleteOfOwnerByItemIdExcept_shouldDeleteOnlyThatOwnersRows_exceptTheKeptItems() {
+            final int template = uniqueTemplate();
+            final UUID owner = insertCharacter();
+            final UUID kept = insertItem(owner, template, 1);
+            insertItem(owner, template, 1);
+            final UUID other = insertItem(insertCharacter(), template, 1);
+            final UUID otherTemplate = insertItem(owner, uniqueTemplate(), 1);
+
+            repository.deleteOfOwnerByItemIdExcept(template, owner, List.of(handle(kept)));
+
+            assertThat(JDBC.sql("SELECT id FROM items WHERE item_template_id = ? OR id = ?")
+                            .param(template)
+                            .param(otherTemplate)
+                            .query(UUID.class)
+                            .list())
+                    .containsExactlyInAnyOrder(kept, other, otherTemplate);
+        }
+    }
+
+    @Nested
+    class FindOwnersOfTemplate {
+        @Test
+        void findOwnersOfTemplate_shouldGiveOnlyTheAskedOwnersThatHaveTheTemplate() {
+            final int template = uniqueTemplate();
+            final UUID holder = insertCharacter();
+            final UUID other = insertCharacter();
+            final UUID notAsked = insertCharacter();
+            insertItem(holder, template, 1);
+            insertItem(holder, template, 1);
+            insertItem(other, ADENA, 1);
+            insertItem(notAsked, template, 1);
+
+            assertThat(repository.findOwnersOfTemplate(template, Set.of(holder, other)))
+                    .containsExactly(holder);
+            assertThat(repository.findOwnersOfTemplate(template, Set.of())).isEmpty();
+        }
     }
 
     @Nested
@@ -436,6 +509,38 @@ class ItemRepositoryTest extends RepositoryTest {
                     .containsExactly(kept);
             assertThat(count("SELECT count(*) FROM items WHERE id = ?", otherTemplate))
                     .isOne();
+        }
+
+        @Test
+        void deleteExceptStaff_shouldSpareTheKeptOwners() {
+            final int template = uniqueTemplate();
+            final UUID busy = insertCharacter();
+            final UUID kept = insertItem(busy, template, 1);
+            insertItem(insertCharacter(), template, 1);
+
+            repository.deleteExceptStaff(List.of(template), Set.of(busy));
+
+            assertThat(JDBC.sql("SELECT id FROM items WHERE item_template_id = ?")
+                            .param(template)
+                            .query(UUID.class)
+                            .list())
+                    .containsExactly(kept);
+        }
+
+        @Test
+        void deleteOfOwnerExceptStaff_shouldDeleteTheItemsOfOneOwner() {
+            final int template = uniqueTemplate();
+            final UUID owner = insertCharacter();
+            insertItem(owner, template, 1);
+            final UUID other = insertItem(insertCharacter(), template, 1);
+
+            repository.deleteOfOwnerExceptStaff(List.of(template), owner);
+
+            assertThat(JDBC.sql("SELECT id FROM items WHERE item_template_id = ?")
+                            .param(template)
+                            .query(UUID.class)
+                            .list())
+                    .containsExactly(other);
         }
 
         @Test

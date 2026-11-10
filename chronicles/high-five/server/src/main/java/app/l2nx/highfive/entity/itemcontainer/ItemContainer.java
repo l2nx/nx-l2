@@ -41,6 +41,7 @@ import app.l2nx.highfive.mechanics.variables.ItemVariables;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.item.model.ItemRow;
+import app.l2nx.highfive.repository.item.model.StoredItem;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
@@ -529,6 +530,18 @@ public abstract class ItemContainer {
         clearItems();
     }
 
+    public void discard() {
+        WorldPartition.checkOwner();
+        try (Snapshot<Item> snapshot = ScratchBuffers.snapshot(byObjectId.values())) {
+            for (Item item : snapshot) {
+                item.stopAllTasks();
+                World.removeObject(item);
+            }
+        }
+
+        clearItems();
+    }
+
     public void updateDatabase() {
         WorldPartition.checkOwner();
         if (getOwner() != null) {
@@ -544,25 +557,37 @@ public abstract class ItemContainer {
         WorldPartition.checkOwner();
         try {
             for (ItemRow row : ItemManager.getInstance().findItems(getOwnerId(), getBaseLocation())) {
-                final Item item = Item.restoreFromDb(getOwnerId(), row);
-                if (item == null) {
-                    continue;
-                }
-
-                World.addObject(item);
-
-                final Player owner = getOwner() != null ? getOwner().asPlayer() : null;
-
-                if (item.isStackable() && (findByItemId(item.getId(), null, true) != null)) {
-                    addItem(ItemProcessType.RESTORE, item, owner, null);
-                } else {
-                    addItem(item);
-                }
+                restoreItem(Item.restoreFromDb(getOwnerId(), row));
             }
 
             refreshWeight();
         } catch (DataAccessException e) {
             log.warn("Could not restore container:", e);
+        }
+    }
+
+    public void restore(List<StoredItem> stored) {
+        WorldPartition.checkOwner();
+        for (StoredItem row : stored) {
+            restoreItem(Item.restoreStored(getOwnerId(), IdManager.getInstance().handleOf(row.id()), row));
+        }
+
+        refreshWeight();
+    }
+
+    private void restoreItem(Item item) {
+        if (item == null) {
+            return;
+        }
+
+        World.addObject(item);
+
+        final Player owner = getOwner() != null ? getOwner().asPlayer() : null;
+
+        if (item.isStackable() && (findByItemId(item.getId(), null, true) != null)) {
+            addItem(ItemProcessType.RESTORE, item, owner, null);
+        } else {
+            addItem(item);
         }
     }
 

@@ -6,14 +6,19 @@ package app.l2nx.highfive.entity.actor.holders.player;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.repository.character.model.CharacterShortcut;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -72,6 +77,7 @@ class ShortcutsTest {
                     Named.of("deleteShortcut", shortcuts -> shortcuts.deleteShortcut(0, 0)),
                     Named.of("deleteShortcutByObjectId", shortcuts -> shortcuts.deleteShortcutByObjectId(1)),
                     Named.of("restoreMe", Shortcuts::restoreMe),
+                    Named.of("restore", shortcuts -> shortcuts.restore(List.of())),
                     Named.of("updateShortcuts", shortcuts -> shortcuts.updateShortcuts(SKILL_ID, 2)));
         }
     }
@@ -119,6 +125,37 @@ class ShortcutsTest {
             });
 
             assertThat(actual).containsExactly(first, second, third);
+        }
+    }
+
+    @Nested
+    class Restore {
+        @Test
+        void restore_shouldDeleteAnItemShortcut_whenTheItemIsNotInTheInventory() {
+            when(owner.getInventory()).thenReturn(mock(PlayerInventory.class));
+            final List<CharacterShortcut> stored = List.of(
+                    CharacterShortcut.builder()
+                            .slot(1)
+                            .page(0)
+                            .type(ShortcutType.SKILL)
+                            .id(SKILL_ID)
+                            .level(1)
+                            .build(),
+                    CharacterShortcut.builder()
+                            .slot(2)
+                            .page(0)
+                            .type(ShortcutType.ITEM)
+                            .id(0)
+                            .level(0)
+                            .build());
+
+            final List<Integer> actual = WorldLoopExtension.callInPass(() -> {
+                shortcuts.restore(stored);
+                return shortcuts.getAllShortcuts().stream().map(Shortcut::getId).toList();
+            });
+
+            assertThat(actual).containsExactly(SKILL_ID);
+            verify(persistence).deleteShortcut(anyInt(), anyInt(), eq(2), eq(0));
         }
     }
 

@@ -6,6 +6,7 @@ package app.l2nx.highfive.managers;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,14 @@ public class IdManager {
     /** @return the UUID of a stored entity; empty for an entity never saved */
     public Optional<UUID> findId(int objectId) {
         return registry.findId(objectId);
+    }
+
+    public int handleOf(UUID id) {
+        return registry.handleOf(id);
+    }
+
+    public OptionalInt findHandle(UUID id) {
+        return registry.findHandle(id);
     }
 
     public int getAllocatedIdCount() {

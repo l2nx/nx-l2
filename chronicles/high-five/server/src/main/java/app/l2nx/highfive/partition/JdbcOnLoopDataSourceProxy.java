@@ -25,6 +25,7 @@ class JdbcOnLoopDataSourceProxy implements BeanPostProcessor {
         if (bean instanceof DataSource dataSource && !(bean instanceof ProxyDataSource)) {
             return ProxyDataSourceBuilder.create(beanName, dataSource)
                     .methodListener(new JdbcOnLoopListener(registry.getObject()))
+                    .listener(new JdbcOnLoopStatementListener(registry.getObject()))
                     .build();
         }
         return bean;

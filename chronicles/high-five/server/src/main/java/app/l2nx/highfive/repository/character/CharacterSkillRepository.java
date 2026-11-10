@@ -37,18 +37,20 @@ public class CharacterSkillRepository {
     private final JdbcTemplate jdbcTemplate;
     private final IdentityRegistry registry;
 
+    public List<CharacterSkill> findAll(UUID characterId, int classIndex) {
+        return jdbcClient
+                .sql(SELECT_SKILLS)
+                .param(characterId)
+                .param(classIndex)
+                .query((rs, rowNum) -> CharacterSkill.builder()
+                        .skillId(rs.getInt("skill_id"))
+                        .skillLevel(rs.getInt("skill_level"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterSkill> findAll(int objectId, int classIndex) {
-        return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_SKILLS)
-                        .param(id)
-                        .param(classIndex)
-                        .query((rs, rowNum) -> CharacterSkill.builder()
-                                .skillId(rs.getInt("skill_id"))
-                                .skillLevel(rs.getInt("skill_level"))
-                                .build())
-                        .list())
-                .orElse(List.of());
+        return registry.findId(objectId).map(id -> findAll(id, classIndex)).orElse(List.of());
     }
 
     public void updateLevel(int objectId, int classIndex, int skillId, int skillLevel) {

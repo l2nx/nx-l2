@@ -79,6 +79,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeSkillListAdd;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import app.l2nx.highfive.repository.clan.model.ClanRow;
@@ -454,7 +455,8 @@ public class Clan {
             exLeader.getClanPrivileges().disableAll();
             exLeader.broadcastUserInfo();
         } else {
-            ClanTable.getInstance().updateMemberPrivileges(getLeaderId(), 0);
+            final int exLeaderId = getLeaderId();
+            OfflineRows.whenSettled(exLeaderId, () -> lostLeadership(exLeaderId));
         }
 
         setLeader(member);
@@ -480,7 +482,8 @@ public class Clan {
 
             newLeader.broadcastUserInfo();
         } else {
-            ClanTable.getInstance().updateMemberPrivileges(getLeaderId(), ClanPrivileges.getCompleteMask());
+            final int leaderId = getLeaderId();
+            OfflineRows.whenSettled(leaderId, () -> tookLeadership(leaderId));
         }
 
         broadcastClanStatus();
@@ -488,6 +491,35 @@ public class Clan {
                 .addString(member.getName()));
 
         log.info("Leader of Clan: {} changed to: {} ex leader: {}", getName(), member.getName(), exMember.getName());
+    }
+
+    private void lostLeadership(int exLeaderId) {
+        final Player exLeader = World.getPlayer(exLeaderId);
+        if (exLeader == null) {
+            ClanTable.getInstance().updateMemberPrivileges(exLeaderId, 0);
+            return;
+        }
+
+        exLeader.getClanPrivileges().disableAll();
+        exLeader.setPledgeClass(ClanMember.calculatePledgeClass(exLeader));
+        exLeader.broadcastUserInfo();
+        exLeader.checkItemRestriction();
+    }
+
+    private void tookLeadership(int leaderId) {
+        final Player newLeader = World.getPlayer(leaderId);
+        if (newLeader == null) {
+            ClanTable.getInstance().updateMemberPrivileges(leaderId, ClanPrivileges.getCompleteMask());
+            return;
+        }
+
+        newLeader.setPledgeClass(ClanMember.calculatePledgeClass(newLeader));
+        newLeader.getClanPrivileges().enableAll();
+        if (getLevel() >= SiegeManager.getInstance().getSiegeClanMinLevel()) {
+            SiegeManager.getInstance().addSiegeSkills(newLeader);
+        }
+
+        newLeader.broadcastUserInfo();
     }
 
     /**
@@ -567,89 +599,97 @@ public class Clan {
         if (exMember.getApprentice() != 0) {
             final ClanMember apprentice = getClanMember(exMember.getApprentice());
             if (apprentice != null) {
-                if (apprentice.getPlayer() != null) {
-                    apprentice.getPlayer().setSponsor(0);
-                } else {
-                    apprentice.setApprenticeAndSponsor(0, 0);
-                }
+                OfflineRows.whenSettled(apprentice.getObjectId(), () -> {
+                    if (apprentice.getPlayer() != null) {
+                        apprentice.getPlayer().setSponsor(0);
+                    } else {
+                        apprentice.setApprenticeAndSponsor(0, 0);
+                    }
 
-                apprentice.saveApprenticeAndSponsor(0, 0);
+                    apprentice.saveApprenticeAndSponsor(0, 0);
+                });
             }
         }
 
         if (exMember.getSponsor() != 0) {
             final ClanMember sponsor = getClanMember(exMember.getSponsor());
             if (sponsor != null) {
-                if (sponsor.getPlayer() != null) {
-                    sponsor.getPlayer().setApprentice(0);
-                } else {
-                    sponsor.setApprenticeAndSponsor(0, 0);
-                }
+                OfflineRows.whenSettled(sponsor.getObjectId(), () -> {
+                    if (sponsor.getPlayer() != null) {
+                        sponsor.getPlayer().setApprentice(0);
+                    } else {
+                        sponsor.setApprenticeAndSponsor(0, 0);
+                    }
 
-                sponsor.saveApprenticeAndSponsor(0, 0);
+                    sponsor.saveApprenticeAndSponsor(0, 0);
+                });
             }
         }
 
-        exMember.saveApprenticeAndSponsor(0, 0);
+        OfflineRows.whenSettled(objectId, () -> exMember.saveApprenticeAndSponsor(0, 0));
         if (PlayerConfig.REMOVE_CASTLE_CIRCLETS) {
             CastleManager.getInstance().removeCirclet(exMember, getCastleId());
         }
 
-        final Player player = exMember.getPlayer();
-        if (player != null) {
-            if (!player.isNoble()) {
-                player.setTitle("");
+        final long createPenaltyEndsAt = getLeaderId() == objectId
+                ? ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS)
+                : 0;
+        OfflineRows.whenSettled(objectId, () -> {
+            final Player player = World.getPlayer(objectId);
+            if (player != null) {
+                leftWhileOnline(exMember, player, clanJoinExpiryTime);
+            } else {
+                removeMemberInDatabase(exMember.getObjectId(), clanJoinExpiryTime, createPenaltyEndsAt);
             }
-
-            player.setApprentice(0);
-            player.setSponsor(0);
-
-            if (player.isClanLeader()) {
-                SiegeManager.getInstance().removeSiegeSkills(player);
-                player.setClanCreateExpiryTime(
-                        ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS));
-            }
-
-            removeSkillEffects(player);
-
-            if (getCastleId() > 0) {
-                final Castle castle = CastleManager.getInstance().getCastleByOwner(this);
-                if (castle != null) {
-                    castle.removeResidentialSkills(player);
-                }
-            }
-
-            if (getFortId() > 0) {
-                final Fort fort = FortManager.getInstance().getFortByOwner(this);
-                if (fort != null) {
-                    fort.removeResidentialSkills(player);
-                }
-            }
-
-            player.sendSkillList();
-            player.setClan(null);
-
-            // Players leaving from clan academy have no penalty.
-            if (exMember.getPledgeType() != -1) {
-                player.setClanJoinExpiryTime(clanJoinExpiryTime);
-            }
-
-            player.setPledgeClass(ClanMember.calculatePledgeClass(player));
-            player.broadcastUserInfo();
-
-            player.sendPacket(PledgeShowMemberListDeleteAll.STATIC_PACKET);
-        } else {
-            removeMemberInDatabase(
-                    exMember.getObjectId(),
-                    clanJoinExpiryTime,
-                    getLeaderId() == objectId
-                            ? ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS)
-                            : 0);
-        }
+        });
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_LEFT)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerClanLeft(exMember, this));
         }
+    }
+
+    private void leftWhileOnline(ClanMember exMember, Player player, long clanJoinExpiryTime) {
+        if (!player.isNoble()) {
+            player.setTitle(null);
+        }
+
+        player.setApprentice(0);
+        player.setSponsor(0);
+
+        if (player.isClanLeader()) {
+            SiegeManager.getInstance().removeSiegeSkills(player);
+            player.setClanCreateExpiryTime(
+                    ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS));
+        }
+
+        removeSkillEffects(player);
+
+        if (getCastleId() > 0) {
+            final Castle castle = CastleManager.getInstance().getCastleByOwner(this);
+            if (castle != null) {
+                castle.removeResidentialSkills(player);
+            }
+        }
+
+        if (getFortId() > 0) {
+            final Fort fort = FortManager.getInstance().getFortByOwner(this);
+            if (fort != null) {
+                fort.removeResidentialSkills(player);
+            }
+        }
+
+        player.sendSkillList();
+        player.setClan(null);
+
+        // Players leaving from clan academy have no penalty.
+        if (exMember.getPledgeType() != -1) {
+            player.setClanJoinExpiryTime(clanJoinExpiryTime);
+        }
+
+        player.setPledgeClass(ClanMember.calculatePledgeClass(player));
+        player.broadcastUserInfo();
+
+        player.sendPacket(PledgeShowMemberListDeleteAll.STATIC_PACKET);
     }
 
     /** A read-only snapshot in member order; {@link #getClanMember(int)} and the counts copy nothing. */

@@ -173,41 +173,46 @@ public class MacroList {
 
     public boolean restoreMe() {
         WorldPartition.checkOwner();
-        macros.clear();
         try {
-            for (CharacterMacro stored : PlayerPersistenceManager.getInstance().findMacros(owner.getObjectId())) {
-                final List<MacroCmd> commands = new ArrayList<>();
-                if (stored.commands() != null) {
-                    final StringTokenizer st1 = new StringTokenizer(stored.commands(), ";");
-                    while (st1.hasMoreTokens()) {
-                        final StringTokenizer st = new StringTokenizer(st1.nextToken(), ",");
-                        if (st.countTokens() < 3) {
-                            continue;
-                        }
-
-                        final MacroType type = MacroType.values()[Integer.parseInt(st.nextToken())];
-                        final int d1 = Integer.parseInt(st.nextToken());
-                        final int d2 = Integer.parseInt(st.nextToken());
-                        final String cmd = st.hasMoreTokens() ? st.nextToken() : null;
-                        commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
-                    }
-                }
-
-                macros.put(
-                        stored.macroId(),
-                        new Macro(
-                                stored.macroId(),
-                                stored.icon(),
-                                stored.name(),
-                                stored.description(),
-                                stored.acronym(),
-                                commands));
-            }
+            restore(PlayerPersistenceManager.getInstance().findMacros(owner.getObjectId()));
         } catch (DataAccessException e) {
             log.warn("could not restore macros:", e);
             return false;
         }
 
         return true;
+    }
+
+    public void restore(List<CharacterMacro> stored) {
+        WorldPartition.checkOwner();
+        macros.clear();
+        for (CharacterMacro macro : stored) {
+            final List<MacroCmd> commands = new ArrayList<>();
+            if (macro.commands() != null) {
+                final StringTokenizer st1 = new StringTokenizer(macro.commands(), ";");
+                while (st1.hasMoreTokens()) {
+                    final StringTokenizer st = new StringTokenizer(st1.nextToken(), ",");
+                    if (st.countTokens() < 3) {
+                        continue;
+                    }
+
+                    final MacroType type = MacroType.values()[Integer.parseInt(st.nextToken())];
+                    final int d1 = Integer.parseInt(st.nextToken());
+                    final int d2 = Integer.parseInt(st.nextToken());
+                    final String cmd = st.hasMoreTokens() ? st.nextToken() : null;
+                    commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
+                }
+            }
+
+            macros.put(
+                    macro.macroId(),
+                    new Macro(
+                            macro.macroId(),
+                            macro.icon(),
+                            macro.name(),
+                            macro.description(),
+                            macro.acronym(),
+                            commands));
+        }
     }
 }

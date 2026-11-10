@@ -30,6 +30,7 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.AdminCharacterManager;
+import app.l2nx.highfive.partition.OfflineRows;
 
 /**
  * This class handles following admin commands: - delete = deletes target
@@ -56,16 +57,21 @@ public class AdminRepairChar implements IAdminCommandHandler {
             return;
         }
 
+        final String name = parts[1];
+        OfflineRows.whenSettled(name, () -> repair(activeChar, name));
+    }
+
+    private void repair(Player activeChar, String name) {
         // An online character would write its position and equipment back over the repair.
-        if (World.getPlayer(parts[1]) != null) {
-            activeChar.sendSysMessage("Character " + parts[1] + " is online: only an offline character is repaired.");
+        if (World.getPlayer(name) != null) {
+            activeChar.sendSysMessage("Character " + name + " is online: only an offline character is repaired.");
             return;
         }
 
-        if (AdminCharacterManager.getInstance().repairCharacter(parts[1], -84318, 244579, -3730)) {
-            activeChar.sendSysMessage("Character " + parts[1] + " is repaired.");
+        if (AdminCharacterManager.getInstance().repairCharacter(name, -84318, 244579, -3730)) {
+            activeChar.sendSysMessage("Character " + name + " is repaired.");
         } else {
-            activeChar.sendSysMessage("Character " + parts[1] + " does not exist.");
+            activeChar.sendSysMessage("Character " + name + " does not exist.");
         }
     }
 }

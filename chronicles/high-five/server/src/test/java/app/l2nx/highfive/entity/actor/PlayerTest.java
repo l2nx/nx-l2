@@ -68,7 +68,7 @@ class PlayerTest {
 
         static Stream<Named<Consumer<Player>>> ownerCheckedCalls() {
             return Stream.of(
-                    Named.of("load (static)", _ -> Player.load(1)),
+                    Named.of("load (static)", _ -> Player.load(null)),
                     Named.of("create (static)", _ -> Player.create(null, UUID.randomUUID(), "name", null)),
                     Named.of("getClient (accessor)", Player::getClient),
                     Named.of("isOnline (accessor)", Player::isOnline),

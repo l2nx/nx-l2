@@ -60,6 +60,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySmallWindowAll;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.PartySmallWindowDeleteAll;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -501,26 +502,8 @@ public class AdminEditChar implements IAdminCommandHandler {
 
                 final boolean changeCreateExpiryTime = st.nextToken().equalsIgnoreCase("create");
                 final String playerName = st.nextToken();
-                Player player = null;
-                player = World.getPlayer(playerName);
-                if (player == null) {
-                    final boolean found = changeCreateExpiryTime
-                            ? AdminCharacterManager.getInstance().clearClanCreatePenalty(playerName)
-                            : AdminCharacterManager.getInstance().clearClanJoinPenalty(playerName);
-                    if (!found) {
-                        activeChar.sendSysMessage("Character not found: " + playerName);
-                        return false;
-                    }
-                } else {
-                    // removing penalty
-                    if (changeCreateExpiryTime) {
-                        player.setClanCreateExpiryTime(0);
-                    } else {
-                        player.setClanJoinExpiryTime(0);
-                    }
-                }
-
-                activeChar.sendSysMessage("Clan penalty successfully removed to character: " + playerName);
+                OfflineRows.whenSettled(
+                        playerName, () -> removeClanPenalty(activeChar, playerName, changeCreateExpiryTime));
             } catch (Exception e) {
                 log.warn("Problem with AdminEditChar: {}", e.getMessage());
             }
@@ -749,6 +732,25 @@ public class AdminEditChar implements IAdminCommandHandler {
         }
 
         return true;
+    }
+
+    private static void removeClanPenalty(Player activeChar, String playerName, boolean createPenalty) {
+        final Player player = World.getPlayer(playerName);
+        if (player == null) {
+            final boolean found = createPenalty
+                    ? AdminCharacterManager.getInstance().clearClanCreatePenalty(playerName)
+                    : AdminCharacterManager.getInstance().clearClanJoinPenalty(playerName);
+            if (!found) {
+                activeChar.sendSysMessage("Character not found: " + playerName);
+                return;
+            }
+        } else if (createPenalty) {
+            player.setClanCreateExpiryTime(0);
+        } else {
+            player.setClanJoinExpiryTime(0);
+        }
+
+        activeChar.sendSysMessage("Clan penalty successfully removed to character: " + playerName);
     }
 
     @Override

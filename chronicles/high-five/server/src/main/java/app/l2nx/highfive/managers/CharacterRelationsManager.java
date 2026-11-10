@@ -31,10 +31,6 @@ public class CharacterRelationsManager {
         instance = this;
     }
 
-    public List<Integer> findFriendIds(int characterId) {
-        return relationRepository.findTargetIds(characterId, RelationType.FRIEND);
-    }
-
     public List<Integer> findBlockedIds(int characterId) {
         return relationRepository.findTargetIds(characterId, RelationType.BLOCK);
     }
@@ -60,10 +56,6 @@ public class CharacterRelationsManager {
 
     public Optional<CharacterSummaryRow> findFriendSummary(int friendId) {
         return characterRepository.findSummary(friendId);
-    }
-
-    public List<Integer> findContactIds(int characterId) {
-        return contactRepository.findContactIds(characterId);
     }
 
     public void addContact(int characterId, int contactId) {

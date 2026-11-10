@@ -57,9 +57,12 @@ Mobius has no known lists: visibility is computed per query by scanning neighbou
 ## 6. Network hand-off
 
 - **Events and legacy packets emitted earlier in the pass are buffered per session** and released by the
-  replication phase in emission order, after the spawns of the pass; the phase then schedules each connection's
-  outbound drain once, so a pass ends with one flush per connection. Serialization per session, encryption on the IO
-  thread and buffer ownership are [spec 008 §6](../008-network.md#6-outbound-path).
+  replication phase in emission order, after the spawns of the pass, into each connection's outbound queue.
+- **The hand-off wakes per event loop, not per connection:** drains queued during the pass wait in their event
+  loops' queues without a wake-up, and the flush phase wakes each such event loop once; a send from a thread other
+  than the world loop wakes at once ([#194](https://github.com/l2nx/nx-l2/issues/194)). Serialization per session,
+  encryption on the IO thread, the drain batch and buffer ownership are
+  [spec 008 §6](../008-network.md#6-outbound-path).
 
 ## 7. Movement contract
 

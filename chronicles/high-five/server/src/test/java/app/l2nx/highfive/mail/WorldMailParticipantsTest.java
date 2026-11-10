@@ -177,7 +177,7 @@ class WorldMailParticipantsTest {
         @Test
         void online_shouldFindALoadedCharacter_beforeItEntersTheWorld() {
             world.when(() -> World.getPlayer(handle)).thenReturn(null);
-            WorldPartition.loadedCharacters().register(characterId, player);
+            WorldPartition.loadedCharacters().loaded(characterId, player);
             try {
                 assertThat(participants.online(characterId))
                         .map(MailActor::characterHandle)
@@ -185,6 +185,20 @@ class WorldMailParticipantsTest {
             } finally {
                 WorldPartition.loadedCharacters().release(characterId, player);
             }
+        }
+    }
+
+    @Nested
+    class Loading {
+        @Test
+        void loading_shouldAnswerTrue_whileTheCharacterIsLoading() {
+            WorldLoopExtension.runInPass(() -> WorldPartition.loadedCharacters().startLoading(characterId));
+
+            assertThat(WorldLoopExtension.callInPass(() -> participants.loading(characterId)))
+                    .isTrue();
+            WorldLoopExtension.runInPass(() -> WorldPartition.loadedCharacters().loadEnded(characterId));
+            assertThat(WorldLoopExtension.callInPass(() -> participants.loading(characterId)))
+                    .isFalse();
         }
     }
 

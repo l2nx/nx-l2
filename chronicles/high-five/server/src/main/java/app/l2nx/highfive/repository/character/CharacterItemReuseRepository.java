@@ -8,6 +8,7 @@ import app.l2nx.database.JdbcTimes;
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterItemReuse;
+import app.l2nx.highfive.repository.character.model.StoredItemReuse;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,18 +35,24 @@ public class CharacterItemReuseRepository {
     private final JdbcTemplate jdbcTemplate;
     private final IdentityRegistry registry;
 
+    public List<StoredItemReuse> findStored(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_REUSES)
+                .param(characterId)
+                .query((rs, rowNum) -> StoredItemReuse.builder()
+                        .itemId(rs.getObject("item_id", UUID.class))
+                        .itemTemplateId(rs.getInt("item_template_id"))
+                        .reuseDelayMs(rs.getLong("reuse_delay_ms"))
+                        .reuseEndsAt(JdbcTimes.instant(rs, "reuse_ends_at"))
+                        .build())
+                .list();
+    }
+
     public List<CharacterItemReuse> findAll(int objectId) {
         return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_REUSES)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterItemReuse.builder()
-                                .itemObjectId(registry.handleOf(rs.getObject("item_id", UUID.class)))
-                                .itemTemplateId(rs.getInt("item_template_id"))
-                                .reuseDelayMs(rs.getLong("reuse_delay_ms"))
-                                .reuseEndsAt(JdbcTimes.instant(rs, "reuse_ends_at"))
-                                .build())
-                        .list())
+                .map(id -> findStored(id).stream()
+                        .map(stored -> stored.toReuse(registry.handleOf(stored.itemId())))
+                        .toList())
                 .orElse(List.of());
     }
 

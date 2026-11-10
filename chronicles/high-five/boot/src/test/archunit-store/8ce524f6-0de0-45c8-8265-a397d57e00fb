@@ -568,7 +568,6 @@ app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam references app.l2nx.highf
 app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam references app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket
 app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.network.Disconnection references app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket
-app.l2nx.highfive.network.GameClient references app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld
 app.l2nx.highfive.network.GameClient references app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket
 app.l2nx.highfive.network.GameClient references app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage
 app.l2nx.highfive.network.NpcStringId references app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage

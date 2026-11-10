@@ -27,6 +27,7 @@ import app.l2nx.engine.mail.view.MailNotice;
 import app.l2nx.engine.mail.view.MailRefused;
 import app.l2nx.engine.mail.view.MailStateChanged;
 import app.l2nx.engine.mail.view.ReceivedMailList;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -100,6 +101,30 @@ class ReceiveAttachmentsFlowTest {
             assertThat(world.items.pending()).isFalse();
             assertThat(world.participants.inFlight(receiver.characterId())).isZero();
             assertThat(world.participants.inFlight(sender)).isZero();
+        }
+
+        @Test
+        void handle_shouldPayTheSenderAsOnlineAfterItsLoad_whenTheSenderWasLoading() {
+            final UUID senderId = world.character("Sender");
+            world.give(receiver, FakeItems.ADENA, 5_000);
+            final UUID mailId = attachedMail(senderId, 700L);
+            world.participants.startLoading(senderId);
+
+            receive(mailId);
+            assertThat(world.row(mailId).attachments())
+                    .as("nothing moves while the sender's rows are read")
+                    .isEqualTo(AttachmentState.ATTACHED);
+            assertThat(world.scheduler.delays()).containsExactly(Duration.ofSeconds(1));
+
+            world.participants.loaded(senderId);
+            final MailActor sender = world.enter(senderId, "Sender");
+            world.give(sender, FakeItems.ADENA, 1_000);
+            world.scheduler.runDue();
+
+            assertThat(world.row(mailId).attachments()).isEqualTo(AttachmentState.RECEIVED);
+            assertThat(world.count(Holder.inventory(senderId), FakeItems.ADENA)).isEqualTo(1_700);
+            assertThat(FakeParticipants.port(sender).events())
+                    .contains(new MailDone(MailNotice.COD_PAID, "Receiver", 700));
         }
 
         @Test

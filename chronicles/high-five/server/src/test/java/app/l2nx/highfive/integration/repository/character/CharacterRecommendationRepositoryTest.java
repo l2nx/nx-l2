@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import app.l2nx.highfive.integration.repository.RepositoryTest;
 import app.l2nx.highfive.repository.character.CharacterRecommendationRepository;
 import app.l2nx.highfive.repository.character.model.CharacterRecommendation;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -73,6 +75,34 @@ class CharacterRecommendationRepositoryTest extends RepositoryTest {
             repository.resetDaily(20, 3600000, 20);
 
             assertThat(repository.find(objectId)).get().isEqualTo(recommendation(expected, 20, 3600000));
+        }
+
+        @Test
+        void resetDaily_shouldSpareTheExceptedCharacters() {
+            final UUID spared = insertCharacter();
+            final int sparedId = registry.handleOf(spared);
+            final int resetId = registry.handleOf(insertCharacter());
+            repository.save(sparedId, recommendation(25, 0, 0));
+            repository.save(resetId, recommendation(25, 0, 0));
+
+            repository.resetDaily(20, 3600000, 20, Set.of(spared));
+
+            assertThat(repository.find(sparedId)).get().isEqualTo(recommendation(25, 0, 0));
+            assertThat(repository.find(resetId)).get().isEqualTo(recommendation(5, 20, 3600000));
+        }
+
+        @Test
+        void resetDaily_shouldResetOneCharacter() {
+            final UUID reset = insertCharacter();
+            final int resetId = registry.handleOf(reset);
+            final int otherId = registry.handleOf(insertCharacter());
+            repository.save(resetId, recommendation(25, 0, 0));
+            repository.save(otherId, recommendation(25, 0, 0));
+
+            repository.resetDaily(reset, 20, 3600000, 20);
+
+            assertThat(repository.find(resetId)).get().isEqualTo(recommendation(5, 20, 3600000));
+            assertThat(repository.find(otherId)).get().isEqualTo(recommendation(25, 0, 0));
         }
     }
 

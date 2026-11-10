@@ -8,6 +8,7 @@ import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterShortcut;
+import app.l2nx.highfive.repository.character.model.StoredShortcut;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -45,14 +46,21 @@ public class CharacterShortcutRepository {
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public List<StoredShortcut> findStored(UUID characterId, int classIndex) {
+        return jdbcClient
+                .sql(SELECT_SHORTCUTS)
+                .param(characterId)
+                .param(classIndex)
+                .query(CharacterShortcutRepository::mapStored)
+                .list();
+    }
+
     public List<CharacterShortcut> findAll(int objectId, int classIndex) {
         return registry.findId(objectId)
-                .map(id -> jdbcClient
-                        .sql(SELECT_SHORTCUTS)
-                        .param(id)
-                        .param(classIndex)
-                        .query(this::mapShortcut)
-                        .list())
+                .map(id -> findStored(id, classIndex).stream()
+                        .map(stored ->
+                                stored.toShortcut(stored.itemId() == null ? 0 : registry.handleOf(stored.itemId())))
+                        .toList())
                 .orElse(List.of());
     }
 
@@ -103,16 +111,15 @@ public class CharacterShortcutRepository {
                 .ifPresent(id -> jdbcClient.sql(DELETE_ALL_SHORTCUTS).param(id).update());
     }
 
-    private CharacterShortcut mapShortcut(ResultSet rs, int rowNum) throws SQLException {
+    private static StoredShortcut mapStored(ResultSet rs, int rowNum) throws SQLException {
         final ShortcutType type = ShortcutType.valueOf(rs.getString("shortcut_type"));
-        return CharacterShortcut.builder()
+        final boolean item = type == ShortcutType.ITEM;
+        return StoredShortcut.builder()
                 .slot(rs.getInt("slot"))
                 .page(rs.getInt("page"))
                 .type(type)
-                .id(
-                        type == ShortcutType.ITEM
-                                ? registry.handleOf(rs.getObject("item_id", UUID.class))
-                                : rs.getInt("target_id"))
+                .targetId(item ? 0 : rs.getInt("target_id"))
+                .itemId(item ? rs.getObject("item_id", UUID.class) : null)
                 .level(rs.getInt("skill_level"))
                 .build();
     }

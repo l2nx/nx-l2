@@ -33,6 +33,7 @@ import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.FriendPacket;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
+import app.l2nx.highfive.partition.OfflineRows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
@@ -79,11 +80,15 @@ public class RequestFriendDel extends ClientPacket {
             player.removeFriend(id);
             player.sendPacket(new FriendPacket(false, id));
 
-            final Player target = World.getPlayer(name);
-            if (target != null) {
-                target.removeFriend(player.getObjectId());
-                target.sendPacket(new FriendPacket(false, player.getObjectId()));
-            }
+            // A friend being loaded read the friendship before the delete; its memory forgets it once it is settled.
+            final int playerId = player.getObjectId();
+            OfflineRows.whenSettled(id, () -> {
+                final Player target = World.getPlayer(id);
+                if (target != null) {
+                    target.removeFriend(playerId);
+                    target.sendPacket(new FriendPacket(false, playerId));
+                }
+            });
         } catch (DataAccessException e) {
             log.warn("Could not delete friend objectId: {}", e.getMessage());
         }

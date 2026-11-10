@@ -57,6 +57,13 @@ public class PlayerVariables extends AbstractVariables {
         restoreMe();
     }
 
+    public PlayerVariables(int objectId, Map<String, String> stored) {
+        WorldPartition.checkOwner();
+        this.objectId = objectId;
+        stored.forEach((name, value) -> set(name, value, false));
+        markSaved();
+    }
+
     public boolean restoreMe() {
         WorldPartition.checkOwner();
         try {

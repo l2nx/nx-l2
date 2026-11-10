@@ -7,7 +7,9 @@ package app.l2nx.highfive.repository.character;
 import app.l2nx.engine.core.identity.IdentityRegistry;
 import app.l2nx.highfive.repository.References;
 import app.l2nx.highfive.repository.character.model.CharacterRecommendation;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -37,21 +39,35 @@ public class CharacterRecommendationRepository {
         UPDATE character_recommendations
         SET left_to_give = ?, bonus_time_left_ms = ?, received = GREATEST(received - ?, 0)\
         """;
+    private static final String RESET_DAILY_EXCEPT = """
+        UPDATE character_recommendations
+        SET left_to_give = :leftToGive, bonus_time_left_ms = :bonusTimeLeftMs,
+            received = GREATEST(received - :receivedDecrease, 0)
+        WHERE character_id NOT IN (:except)\
+        """;
+    private static final String RESET_DAILY_ONE = """
+        UPDATE character_recommendations
+        SET left_to_give = ?, bonus_time_left_ms = ?, received = GREATEST(received - ?, 0)
+        WHERE character_id = ?\
+        """;
 
     private final JdbcClient jdbcClient;
     private final IdentityRegistry registry;
 
+    public Optional<CharacterRecommendation> find(UUID characterId) {
+        return jdbcClient
+                .sql(SELECT_RECOMMENDATION)
+                .param(characterId)
+                .query((rs, rowNum) -> CharacterRecommendation.builder()
+                        .received(rs.getInt("received"))
+                        .leftToGive(rs.getInt("left_to_give"))
+                        .bonusTimeLeftMs(rs.getLong("bonus_time_left_ms"))
+                        .build())
+                .optional();
+    }
+
     public Optional<CharacterRecommendation> find(int objectId) {
-        return registry.findId(objectId)
-                .flatMap(id -> jdbcClient
-                        .sql(SELECT_RECOMMENDATION)
-                        .param(id)
-                        .query((rs, rowNum) -> CharacterRecommendation.builder()
-                                .received(rs.getInt("received"))
-                                .leftToGive(rs.getInt("left_to_give"))
-                                .bonusTimeLeftMs(rs.getLong("bonus_time_left_ms"))
-                                .build())
-                        .optional());
+        return registry.findId(objectId).flatMap(this::find);
     }
 
     public void save(int objectId, CharacterRecommendation recommendation) {
@@ -86,6 +102,30 @@ public class CharacterRecommendationRepository {
                 .param(leftToGive)
                 .param(bonusTimeLeftMs)
                 .param(receivedDecrease)
+                .update();
+    }
+
+    public void resetDaily(int leftToGive, long bonusTimeLeftMs, int receivedDecrease, Collection<UUID> except) {
+        if (except.isEmpty()) {
+            resetDaily(leftToGive, bonusTimeLeftMs, receivedDecrease);
+            return;
+        }
+        jdbcClient
+                .sql(RESET_DAILY_EXCEPT)
+                .param("leftToGive", leftToGive)
+                .param("bonusTimeLeftMs", bonusTimeLeftMs)
+                .param("receivedDecrease", receivedDecrease)
+                .param("except", except)
+                .update();
+    }
+
+    public void resetDaily(UUID characterId, int leftToGive, long bonusTimeLeftMs, int receivedDecrease) {
+        jdbcClient
+                .sql(RESET_DAILY_ONE)
+                .param(leftToGive)
+                .param(bonusTimeLeftMs)
+                .param(receivedDecrease)
+                .param(characterId)
                 .update();
     }
 }

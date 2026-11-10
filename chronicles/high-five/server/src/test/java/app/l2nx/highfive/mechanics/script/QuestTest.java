@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.engine.core.identity.IdentityRegistry;
@@ -26,8 +27,11 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
+import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.partition.WorldLoopExtension;
 import app.l2nx.highfive.partition.WorldPartition;
+import app.l2nx.highfive.repository.character.model.CharacterQuestVariable;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
@@ -39,6 +43,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +62,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ResourceLock(WorldLoopExtension.LOCK)
 class QuestTest {
     private static final int RING_ID = 20_000_055;
+    private static final String QUEST = "Q00999_Stored";
 
     private final IdentityRegistry registry =
             new IdentityRegistry(new WireHandleAllocator(Clock.systemUTC(), Duration.ofMinutes(5)));
@@ -202,6 +208,42 @@ class QuestTest {
 
             assertThat(taken[0]).isTrue();
             assertThat(actual).containsExactly(kept[0]);
+        }
+    }
+
+    @Nested
+    class PlayerEnter {
+        @Test
+        void playerEnter_shouldCreateTheStoredStatesAndVariables_withoutReading() {
+            final Quest quest = mock(Quest.class);
+            when(quest.getName()).thenReturn(QUEST);
+            final AtomicReference<QuestState> created = new AtomicReference<>();
+            doAnswer(call -> {
+                        created.set(call.getArgument(0));
+                        return null;
+                    })
+                    .when(player)
+                    .setQuestState(any());
+            when(quest.getQuestState(player, true)).thenAnswer(_ -> created.get());
+            final ScriptManager scripts = mock(ScriptManager.class);
+            when(scripts.getScript(QUEST)).thenReturn(quest);
+            when(scripts.getScripts()).thenReturn(Map.of());
+            final PlayerPersistenceManager persistence = mock(PlayerPersistenceManager.class);
+
+            try (MockedStatic<ScriptManager> scriptManager = mockStatic(ScriptManager.class);
+                    MockedStatic<PlayerPersistenceManager> persistenceManager =
+                            mockStatic(PlayerPersistenceManager.class)) {
+                scriptManager.when(ScriptManager::getInstance).thenReturn(scripts);
+                persistenceManager.when(PlayerPersistenceManager::getInstance).thenReturn(persistence);
+                WorldLoopExtension.runInPass(() -> Quest.playerEnter(
+                        player,
+                        List.of(new CharacterQuestVariable(QUEST, "<state>", "Started")),
+                        List.of(new CharacterQuestVariable(QUEST, "cond", "2"))));
+            }
+
+            assertThat(created.get().isStarted()).isTrue();
+            assertThat(created.get().get("cond")).isEqualTo("2");
+            verifyNoInteractions(persistence);
         }
     }
 

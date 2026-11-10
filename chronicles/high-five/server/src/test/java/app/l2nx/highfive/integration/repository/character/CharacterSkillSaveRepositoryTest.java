@@ -12,6 +12,7 @@ import app.l2nx.highfive.repository.character.model.CharacterSkillSave;
 import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import app.l2nx.highfive.repository.character.model.SkillRestoreType;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -134,6 +135,39 @@ class CharacterSkillSaveRepositoryTest extends RepositoryTest {
 
             assertThat(repository.findAll(registry.handleOf(offline), 0)).containsExactly(EFFECT);
             assertThat(repository.findAll(registry.handleOf(online), 0)).containsExactly(EFFECT, REUSE);
+        }
+
+        @Test
+        void deleteSkillOfOfflineCharacters_shouldSpareTheExceptedCharacters() {
+            final UUID spared = insertCharacter();
+            final UUID offline = insertCharacter();
+            for (UUID id : List.of(spared, offline)) {
+                TRANSACTIONS.executeWithoutResult(
+                        status -> repository.replaceAll(registry.handleOf(id), 0, List.of(EFFECT, REUSE)));
+            }
+
+            repository.deleteSkillOfOfflineCharacters(REUSE.skillId(), Set.of(spared));
+
+            assertThat(repository.findAll(registry.handleOf(spared), 0)).containsExactly(EFFECT, REUSE);
+            assertThat(repository.findAll(registry.handleOf(offline), 0)).containsExactly(EFFECT);
+        }
+    }
+
+    @Nested
+    class DeleteSkill {
+        @Test
+        void deleteSkill_shouldDeleteTheSkillOfOneCharacter() {
+            final UUID character = insertCharacter();
+            final UUID other = insertCharacter();
+            for (UUID id : List.of(character, other)) {
+                TRANSACTIONS.executeWithoutResult(
+                        status -> repository.replaceAll(registry.handleOf(id), 0, List.of(EFFECT, REUSE)));
+            }
+
+            repository.deleteSkill(character, REUSE.skillId());
+
+            assertThat(repository.findAll(registry.handleOf(character), 0)).containsExactly(EFFECT);
+            assertThat(repository.findAll(registry.handleOf(other), 0)).containsExactly(EFFECT, REUSE);
         }
     }
 

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import app.l2nx.highfive.character.CharacterLoader;
 import app.l2nx.highfive.data.holders.SellBuffHolder;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
@@ -32,7 +33,7 @@ class OfflineTraderTableTest {
     private static final long STARTED_AT = 1_760_000_000_000L;
 
     private final OfflineTradeRepository trades = mock(OfflineTradeRepository.class);
-    private final OfflineTraderTable table = new OfflineTraderTable(trades);
+    private final OfflineTraderTable table = new OfflineTraderTable(trades, mock(CharacterLoader.class));
     private final Player trader = mock(Player.class);
 
     @Nested
