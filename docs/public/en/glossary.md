@@ -83,7 +83,7 @@ timers) are concepts as well.
 | Game term               | Name used by players in English     |
 | Collisions              | Other meanings or conflicting names |
 
-The glossary has 298 terms in 10 areas; the collisions of widely reused words are collected at the end.
+The glossary has 299 terms in 11 areas; the collisions of widely reused words are collected at the end.
 
 ## 1. World objects and hierarchy
 
@@ -433,6 +433,12 @@ The glossary has 298 terms in 10 areas; the collisions of widely reused words ar
 | <a id="auto-hunt"></a>`auto-hunt` (concept)                             | Mode in which a character picks targets, attacks and uses skills and items by itself while the client stays connected.                                                                                                                         | Mobius `AutoPlayTaskManager`; aCis forks `AutofarmManager`                                                             | Essence `ExAutoPlaySetting`                                                                        | Auto Play                | Some builds call it autofarm, which is also a paid add-on.                                               |
 | <a id="offline-hunt"></a>`offline-hunt` (concept)                       | Auto-hunt that continues after the client disconnects.                                                                                                                                                                                         | Mobius `OfflinePlayTable`                                                                                              | -                                                                                                  | -                        | Offline trade is something else.                                                                         |
 
+## 11. Platform
+
+| Term | Definition | Names in build families | Client / protocol | Game term | Collisions |
+| --- | --- | --- | --- | --- | --- |
+| <a id="tenant"></a>`tenant` (unique entity) | Customer of the L2NX platform: one game server project with its slug, hosts, game servers, API keys and data; every platform record belongs to one tenant. | - | - | - | Technical term: code, integration API docs and specs say `tenant` («тенант»). Public pages for players and server owners say project («проект»). |
+
 ## Collisions
 
 Words that carry several meanings in code, data or the client, and the meaning this glossary chooses.
@@ -463,6 +469,7 @@ Words that carry several meanings in code, data or the client, and the meaning t
 | **ban**       | (1) an in-game punishment; (2) an account ban on a web service.                                                                                                                                                                                 | `punishment` for in-game; web-service bans are out of scope.                                                                                                           |
 | **recipe**    | (1) a recipe item that teaches a recipe; (2) the recipe record.                                                                                                                                                                                 | `recipe` is the record; the teaching item is a recipe item.                                                                                                            |
 | **trade**     | (1) player-to-player exchange; (2) the trade chat channel; (3) merchant trade.                                                                                                                                                                  | `trade-list` for exchange and shop lists, `chat-type` for channels.                                                                                                    |
+| **project**   | (1) a tenant of the platform; (2) a game server project as players know it (brand, site); (3) the L2NX Core repository itself. | (1) and (2) are one entity: `tenant` («тенант») in code, integration API docs and specs; project («проект») on public pages. (3) is named L2NX Core. |
 
 ### Synonyms collapsed
 
