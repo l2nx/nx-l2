@@ -5,7 +5,7 @@
 #   ./gradlew :login:boot:installDist
 #   docker build -t l2nx/login-server login/boot
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:25-jre@sha256:a640968ae55027b322cedd5f8228b01a84baff0b9e9360e47601c6a111ba1699
 
 RUN groupadd --system l2nx && useradd --system --gid l2nx --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin l2nx
 
