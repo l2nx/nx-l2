@@ -1,7 +1,7 @@
 [versions]
 archunit = "1.5.1"
 assertj = "3.27.7"
-bouncycastle = "1.86"
+bouncycastle = "1.87"
 bucket4j = "8.22.0"
 classgraph = "6.0.2"
 datasource-proxy = "1.11.1"
