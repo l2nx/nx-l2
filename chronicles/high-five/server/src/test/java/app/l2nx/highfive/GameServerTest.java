@@ -6,6 +6,7 @@ package app.l2nx.highfive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -18,18 +19,18 @@ import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
+import app.l2nx.network.bootstrap.NetworkServer;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.transport.NetworkEventLoops;
 import app.l2nx.network.transport.TransportResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -72,18 +73,18 @@ class GameServerTest {
         }
     }
 
+    // A freed port number belongs to the whole machine: another process may listen on it at once, so the stopped and
+    // released checks read the server's own listening state instead of probing the number.
     @Nested
     class Port {
         private NetworkEventLoops eventLoops;
         private int previousPort;
-        private int port;
 
         @BeforeEach
-        void bindTheLoops() throws IOException {
+        void bindTheLoops() {
             eventLoops = new NetworkEventLoops(properties, TransportResolver.nativeAvailability());
             previousPort = ServerConfig.PORT_GAME;
-            port = freePort();
-            ServerConfig.PORT_GAME = port;
+            ServerConfig.PORT_GAME = 0;
         }
 
         @AfterEach
@@ -98,7 +99,7 @@ class GameServerTest {
 
             server.openPort();
 
-            try (Socket socket = connect(port)) {
+            try (Socket socket = connect(server.clientPort().localAddress().getPort())) {
                 assertThat(socket.isConnected()).isTrue();
             }
             verify(link).start();
@@ -106,24 +107,31 @@ class GameServerTest {
         }
 
         @Test
-        void openPort_shouldReleaseThePort_whenTheLinkFailsToStart() throws IOException {
-            doThrow(new IllegalStateException("thrown by the test")).when(link).start();
+        void openPort_shouldReleaseThePort_whenTheLinkFailsToStart() {
             final GameServer server = server(eventLoops);
+            final AtomicReference<NetworkServer> opened = new AtomicReference<>();
+            doAnswer(invocation -> {
+                        opened.set(server.clientPort());
+                        throw new IllegalStateException("thrown by the test");
+                    })
+                    .when(link)
+                    .start();
 
             assertThatIllegalStateException().isThrownBy(server::openPort).withMessage("thrown by the test");
 
-            // Not a rebind: in a full build another JVM may take the freed ephemeral port for an outgoing connection.
-            assertThat(canConnect(port)).isFalse();
+            assertThat(opened.get().isListening()).isFalse();
+            assertThat(server.clientPort()).isNull();
         }
 
         @Test
         void stopPort_shouldRefuseNewConnections_whenOpen() {
             final GameServer server = server(eventLoops);
             server.openPort();
+            final NetworkServer port = server.clientPort();
 
             server.stopPort();
 
-            assertThat(canConnect(port)).isFalse();
+            assertThat(port.isListening()).isFalse();
             server.stop();
         }
     }
@@ -188,12 +196,6 @@ class GameServerTest {
         }
     }
 
-    private static int freePort() throws IOException {
-        try (ServerSocket probe = new ServerSocket(0)) {
-            return probe.getLocalPort();
-        }
-    }
-
     private static Socket connect(int port) throws IOException {
         final Socket socket = new Socket();
         try {
@@ -203,15 +205,5 @@ class GameServerTest {
             throw e;
         }
         return socket;
-    }
-
-    private static boolean canConnect(int port) {
-        try (Socket socket = connect(port)) {
-            return socket.isConnected();
-        } catch (ConnectException e) {
-            return false;
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

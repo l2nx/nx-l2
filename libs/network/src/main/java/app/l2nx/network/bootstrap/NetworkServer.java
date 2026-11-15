@@ -108,6 +108,10 @@ public final class NetworkServer implements AutoCloseable {
         return (InetSocketAddress) serverChannel.localAddress();
     }
 
+    public boolean isListening() {
+        return serverChannel.isActive();
+    }
+
     public ChannelGroup clients() {
         return clients;
     }

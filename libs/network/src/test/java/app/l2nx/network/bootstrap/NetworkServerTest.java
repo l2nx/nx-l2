@@ -94,6 +94,19 @@ class NetworkServerTest {
     }
 
     @Nested
+    class StopAccepting {
+        @Test
+        void stopAccepting_shouldStopListening() {
+            server = bind();
+            assertThat(server.isListening()).isTrue();
+
+            server.stopAccepting();
+
+            assertThat(server.isListening()).isFalse();
+        }
+    }
+
+    @Nested
     class Close {
         @Test
         void close_shouldDeliverEachFarewell_beforeTheConnectionCloses() throws Exception {

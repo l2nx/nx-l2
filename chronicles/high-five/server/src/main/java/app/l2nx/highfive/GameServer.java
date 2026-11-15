@@ -139,6 +139,11 @@ public class GameServer implements SmartLifecycle {
         }
     }
 
+    /** The open client port, {@code null} before {@link #openPort()} and after a failed one. */
+    NetworkServer clientPort() {
+        return gameServer;
+    }
+
     public void stopPort() {
         final NetworkServer server = gameServer;
         if (server != null) {
