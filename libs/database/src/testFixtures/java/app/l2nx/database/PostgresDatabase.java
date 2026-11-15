@@ -19,7 +19,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * so test classes neither share rows nor need cleanup.
  */
 public final class PostgresDatabase {
-    public static final String IMAGE = "postgres:18.6";
+    public static final String IMAGE = "postgres:18.7";
     private static final String PASSWORD = "l2nx";
 
     private static final PostgreSQLContainer CONTAINER = start();
