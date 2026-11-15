@@ -4,25 +4,33 @@
  */
 package app.l2nx.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.util.UUID;
-import javax.sql.DataSource;
 import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;
-import org.postgresql.Driver;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * One PostgreSQL container per test JVM. Each caller gets its own role and schema, as an operator would create them,
  * so test classes neither share rows nor need cleanup.
+ *
+ * <p>Every data source handed out is a connection pool owned by the caller: one held in a static field lives as long
+ * as the JVM, one made per test is closed after that test. An unpooled source opens a TCP connection per statement,
+ * and the thousands of ports a module run leaves in TIME_WAIT can exhaust the host's ephemeral range, which fails a
+ * later connect with {@code BindException}.
  */
 public final class PostgresDatabase {
     public static final String IMAGE = "postgres:18.7";
     private static final String PASSWORD = "l2nx";
+    // JUnit's default parallelism, so a pool shared by every test class never makes a worker wait for a connection.
+    private static final int POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     private static final PostgreSQLContainer CONTAINER = start();
+    private static final JdbcClient ADMIN =
+            JdbcClient.create(pool("admin", CONTAINER.getUsername(), CONTAINER.getPassword(), null));
 
     private PostgresDatabase() {}
 
@@ -31,12 +39,12 @@ public final class PostgresDatabase {
     }
 
     /**
-     * @return a data source connected as that role, with the schema as its search path
+     * @return a pool connected as that role, with the schema as its search path
      */
-    public static DataSource migratedSchema(String prefix, String changelog) {
+    public static HikariDataSource migratedSchema(String prefix, String changelog) {
         final String schema =
                 prefix + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        final DataSource dataSource = createSchema(schema);
+        final HikariDataSource dataSource = createSchema(schema);
         migrate(dataSource, schema, changelog);
         return dataSource;
     }
@@ -45,16 +53,16 @@ public final class PostgresDatabase {
      * Migrates a schema of the container's superuser ahead of a server start, so a test can store the state the
      * server then loads.
      *
-     * @return a data source connected as the superuser, with the schema as its search path
+     * @return a pool connected as the superuser, with the schema as its search path
      */
-    public static DataSource migratedSuperuserSchema(String schema, String changelog) {
+    public static HikariDataSource migratedSuperuserSchema(String schema, String changelog) {
         ensureSuperuserSchema(schema);
-        final DataSource dataSource = dataSource(CONTAINER.getUsername(), CONTAINER.getPassword(), schema);
+        final HikariDataSource dataSource = pool(schema, CONTAINER.getUsername(), CONTAINER.getPassword(), schema);
         migrate(dataSource, schema, changelog);
         return dataSource;
     }
 
-    private static void migrate(DataSource dataSource, String schema, String changelog) {
+    private static void migrate(HikariDataSource dataSource, String schema, String changelog) {
         final SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog("classpath:" + changelog);
@@ -64,34 +72,36 @@ public final class PostgresDatabase {
         try {
             liquibase.afterPropertiesSet();
         } catch (LiquibaseException e) {
+            dataSource.close();
             throw new IllegalStateException("Unable to migrate schema " + schema, e);
         }
     }
 
     public static void ensureSuperuserSchema(String schema) {
-        JdbcClient.create(dataSource(CONTAINER.getUsername(), CONTAINER.getPassword(), null))
-                .sql("CREATE SCHEMA IF NOT EXISTS " + schema)
-                .update();
+        ADMIN.sql("CREATE SCHEMA IF NOT EXISTS " + schema).update();
     }
 
-    public static DataSource createSchema(String schema) {
-        final JdbcClient admin = JdbcClient.create(dataSource(CONTAINER.getUsername(), CONTAINER.getPassword(), null));
-        admin.sql("CREATE ROLE " + schema + " LOGIN PASSWORD '" + PASSWORD + "'")
+    /**
+     * @return a pool connected as the schema's new owner role, with the schema as its search path
+     */
+    public static HikariDataSource createSchema(String schema) {
+        ADMIN.sql("CREATE ROLE " + schema + " LOGIN PASSWORD '" + PASSWORD + "'")
                 .update();
-        admin.sql("CREATE SCHEMA " + schema + " AUTHORIZATION " + schema).update();
-        return dataSource(schema, PASSWORD, schema);
+        ADMIN.sql("CREATE SCHEMA " + schema + " AUTHORIZATION " + schema).update();
+        return pool(schema, schema, PASSWORD, schema);
     }
 
-    private static DataSource dataSource(String user, String password, String schema) {
-        final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
-        dataSource.setDriverClass(Driver.class);
-        dataSource.setUrl(CONTAINER.getJdbcUrl());
-        dataSource.setUsername(user);
-        dataSource.setPassword(password);
-        if (schema != null) {
-            dataSource.setSchema(schema);
-        }
-        return dataSource;
+    private static HikariDataSource pool(String name, String user, String password, String schema) {
+        final HikariConfig config = new HikariConfig();
+        config.setPoolName(name);
+        config.setJdbcUrl(CONTAINER.getJdbcUrl());
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setSchema(schema);
+        config.setMaximumPoolSize(POOL_SIZE);
+        // Connections open on demand: a pool made per test would otherwise open all of them up front.
+        config.setMinimumIdle(0);
+        return new HikariDataSource(config);
     }
 
     private static PostgreSQLContainer start() {

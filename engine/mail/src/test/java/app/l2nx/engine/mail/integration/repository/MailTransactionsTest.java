@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,10 @@ class MailTransactionsTest {
     static final int SWORD = 1000;
 
     private final ExecutorService runner = Executors.newFixedThreadPool(2);
+
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults(), runner);
+
     private final UUID sender = world.character("Sender");
     private final UUID receiver = world.character("Receiver");
     private final Queue<ValueOutcome<?>> outcomes = new ConcurrentLinkedQueue<>();

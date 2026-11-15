@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,7 +35,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 class MailRepositoryTest {
     private static final Instant LATER = MailWorld.START.plus(Duration.ofMinutes(5));
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final UUID sender = world.character("Sender");
     private final UUID receiver = world.character("Receiver");
     private final UUID other = world.character("Other");

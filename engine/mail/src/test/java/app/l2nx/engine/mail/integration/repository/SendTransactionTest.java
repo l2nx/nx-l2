@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,8 +41,10 @@ class SendTransactionTest {
     static final long FEE = 100;
 
     // One mail per box, so a single stored mail fills it.
+    @AutoClose
     private final MailWorld world =
             new MailWorld(MailSettings.defaults().toBuilder().mailboxLimit(1).build());
+
     private final UUID sender = world.character("Sender");
     private final UUID receiver = world.character("Receiver");
     private final ItemRowState adena = stored(FakeItems.ADENA, 1_000);

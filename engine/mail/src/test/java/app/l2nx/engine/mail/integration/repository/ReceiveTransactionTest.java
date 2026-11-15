@@ -23,6 +23,7 @@ import app.l2nx.engine.mail.repository.ReceiveTransaction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,7 +33,9 @@ class ReceiveTransactionTest {
     static final int ARROW = 17;
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final UUID sender = world.character("Sender");
     private final UUID receiver = world.character("Receiver");
 

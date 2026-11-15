@@ -29,6 +29,7 @@ import app.l2nx.engine.mail.view.MailStateChanged;
 import app.l2nx.engine.mail.view.ReceivedMailList;
 import java.time.Duration;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,7 +39,9 @@ class ReceiveAttachmentsFlowTest {
     static final int ARROW = 17;
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final MailActor receiver = world.online("Receiver");
 
     private UUID attachedMail(UUID senderId, Long codAdena) {

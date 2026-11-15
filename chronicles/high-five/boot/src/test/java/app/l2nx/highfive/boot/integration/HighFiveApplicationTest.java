@@ -32,6 +32,7 @@ import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import app.l2nx.highfive.session.SessionKey;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.crypt.GameXorCipher;
+import com.zaxxer.hikari.HikariDataSource;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -535,30 +536,32 @@ class HighFiveApplicationTest extends BootSmokeTest {
     }
 
     private static void storeWorldState() {
-        final JdbcClient jdbc =
-                JdbcClient.create(PostgresDatabase.migratedSuperuserSchema("game", "db/liquibase-changelog.yaml"));
-        jdbc.sql("""
-            INSERT INTO castle_states (castle_id, tax_percent, treasury, siege_at, registration_ends_at)
-            VALUES (1, 10, 1000, now() + interval '7 days', now() + interval '6 days')\
-            """).update();
-        jdbc.sql("INSERT INTO fort_states (fort_id, siege_at) VALUES (101, now() + interval '1 day')")
-                .update();
-        jdbc.sql("INSERT INTO clan_hall_states (clan_hall_id, paid_until, paid) VALUES (22, now() + interval '7"
-                        + " days', true)")
-                .update();
-        jdbc.sql("""
-            INSERT INTO siegable_clan_hall_states (clan_hall_id, next_siege_at)
-            VALUES (21, now() + interval '7 days')\
-            """).update();
-        jdbc.sql("""
-            INSERT INTO grand_boss_states (npc_id, status, respawn_at, current_hp, current_mp)
-            VALUES (29001, 3, now() + interval '1 day', 1, 1)\
-            """).update();
-        jdbc.sql("""
-            INSERT INTO raid_boss_states (npc_id, respawn_at, current_hp, current_mp)
-            VALUES (25001, now() + interval '1 day', 1, 1)\
-            """).update();
-        jdbc.sql("INSERT INTO territory_states (territory_id, owned_ward_territory_ids) VALUES (81, '{81}')")
-                .update();
+        try (HikariDataSource dataSource =
+                PostgresDatabase.migratedSuperuserSchema("game", "db/liquibase-changelog.yaml")) {
+            final JdbcClient jdbc = JdbcClient.create(dataSource);
+            jdbc.sql("""
+                INSERT INTO castle_states (castle_id, tax_percent, treasury, siege_at, registration_ends_at)
+                VALUES (1, 10, 1000, now() + interval '7 days', now() + interval '6 days')\
+                """).update();
+            jdbc.sql("INSERT INTO fort_states (fort_id, siege_at) VALUES (101, now() + interval '1 day')")
+                    .update();
+            jdbc.sql("INSERT INTO clan_hall_states (clan_hall_id, paid_until, paid) VALUES (22, now() + interval '7"
+                            + " days', true)")
+                    .update();
+            jdbc.sql("""
+                INSERT INTO siegable_clan_hall_states (clan_hall_id, next_siege_at)
+                VALUES (21, now() + interval '7 days')\
+                """).update();
+            jdbc.sql("""
+                INSERT INTO grand_boss_states (npc_id, status, respawn_at, current_hp, current_mp)
+                VALUES (29001, 3, now() + interval '1 day', 1, 1)\
+                """).update();
+            jdbc.sql("""
+                INSERT INTO raid_boss_states (npc_id, respawn_at, current_hp, current_mp)
+                VALUES (25001, now() + interval '1 day', 1, 1)\
+                """).update();
+            jdbc.sql("INSERT INTO territory_states (territory_id, owned_ward_territory_ids) VALUES (81, '{81}')")
+                    .update();
+        }
     }
 }

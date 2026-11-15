@@ -24,6 +24,7 @@ import app.l2nx.engine.mail.repository.SystemSendTransaction;
 import app.l2nx.engine.mail.view.AttachmentSnapshot;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,9 @@ class SystemSendTransactionTest {
     static final int ARROW = 17;
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final UUID receiver = world.character("Receiver");
 
     private SystemSendTransaction send(UUID receiverId, List<NewItem> items) {

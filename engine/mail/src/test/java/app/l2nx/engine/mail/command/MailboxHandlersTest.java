@@ -33,13 +33,16 @@ import app.l2nx.engine.mail.view.SentMailOpened;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class MailboxHandlersTest {
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final MailActor sender = world.online("Sender");
     private final MailActor receiver = world.online("Receiver");
 
@@ -101,63 +104,67 @@ class MailboxHandlersTest {
 
         @Test
         void handle_shouldListAtMostTheMailboxLimit_whenTheBoxHoldsMore() {
-            final MailWorld small = new MailWorld(
-                    MailSettings.defaults().toBuilder().mailboxLimit(2).build());
-            final MailActor owner = small.online("Owner");
-            for (int i = 0; i < 3; i++) {
-                small.insert(small.mail(null, owner.characterId())
-                        .type(MailType.SYSTEM)
-                        .build());
+            try (MailWorld small = new MailWorld(
+                    MailSettings.defaults().toBuilder().mailboxLimit(2).build())) {
+                final MailActor owner = small.online("Owner");
+                for (int i = 0; i < 3; i++) {
+                    small.insert(small.mail(null, owner.characterId())
+                            .type(MailType.SYSTEM)
+                            .build());
+                }
+
+                MailHandlers.listReceived(small).handle(owner, new ListReceivedMail());
+
+                assertThat(FakeParticipants.port(owner).events())
+                        .singleElement()
+                        .isInstanceOfSatisfying(
+                                ReceivedMailList.class,
+                                list -> assertThat(list.mails()).hasSize(2));
             }
-
-            MailHandlers.listReceived(small).handle(owner, new ListReceivedMail());
-
-            assertThat(FakeParticipants.port(owner).events())
-                    .singleElement()
-                    .isInstanceOfSatisfying(
-                            ReceivedMailList.class,
-                            list -> assertThat(list.mails()).hasSize(2));
         }
 
         @Test
         void handle_shouldListTheMailsWithAttachmentsFirst_whenTheBoxHoldsMore() {
-            final MailWorld small = new MailWorld(
-                    MailSettings.defaults().toBuilder().mailboxLimit(2).build());
-            final MailActor owner = small.online("Owner");
-            final UUID attached = small.insert(small.mail(null, owner.characterId())
-                    .type(MailType.SYSTEM)
-                    .attachments(AttachmentState.ATTACHED)
-                    .sentAt(MailWorld.START.minus(Duration.ofHours(2)))
-                    .build());
-            final UUID older = small.insert(small.mail(null, owner.characterId())
-                    .type(MailType.SYSTEM)
-                    .sentAt(MailWorld.START.minus(Duration.ofHours(1)))
-                    .build());
-            final UUID newest = small.insert(
-                    small.mail(null, owner.characterId()).type(MailType.SYSTEM).build());
+            try (MailWorld small = new MailWorld(
+                    MailSettings.defaults().toBuilder().mailboxLimit(2).build())) {
+                final MailActor owner = small.online("Owner");
+                final UUID attached = small.insert(small.mail(null, owner.characterId())
+                        .type(MailType.SYSTEM)
+                        .attachments(AttachmentState.ATTACHED)
+                        .sentAt(MailWorld.START.minus(Duration.ofHours(2)))
+                        .build());
+                final UUID older = small.insert(small.mail(null, owner.characterId())
+                        .type(MailType.SYSTEM)
+                        .sentAt(MailWorld.START.minus(Duration.ofHours(1)))
+                        .build());
+                final UUID newest = small.insert(small.mail(null, owner.characterId())
+                        .type(MailType.SYSTEM)
+                        .build());
 
-            MailHandlers.listReceived(small).handle(owner, new ListReceivedMail());
+                MailHandlers.listReceived(small).handle(owner, new ListReceivedMail());
 
-            assertThat(FakeParticipants.port(owner).events())
-                    .singleElement()
-                    .isInstanceOfSatisfying(
-                            ReceivedMailList.class,
-                            list -> assertThat(list.mails())
-                                    .extracting(MailSummary::mailId)
-                                    .containsExactly(newest, attached)
-                                    .doesNotContain(older));
+                assertThat(FakeParticipants.port(owner).events())
+                        .singleElement()
+                        .isInstanceOfSatisfying(
+                                ReceivedMailList.class,
+                                list -> assertThat(list.mails())
+                                        .extracting(MailSummary::mailId)
+                                        .containsExactly(newest, attached)
+                                        .doesNotContain(older));
+            }
         }
 
         @Test
         void handle_shouldRefuse_whenThePostboxIsOff() {
-            final MailWorld off = new MailWorld(
-                    MailSettings.defaults().toBuilder().enabled(false).build());
-            final MailActor owner = off.online("Owner");
+            try (MailWorld off = new MailWorld(
+                    MailSettings.defaults().toBuilder().enabled(false).build())) {
+                final MailActor owner = off.online("Owner");
 
-            MailHandlers.listReceived(off).handle(owner, new ListReceivedMail());
+                MailHandlers.listReceived(off).handle(owner, new ListReceivedMail());
 
-            assertThat(FakeParticipants.port(owner).events())
-                    .containsExactly(MailRefused.of(MailAction.READ, MailRefusal.DISABLED));
+                assertThat(FakeParticipants.port(owner).events())
+                        .containsExactly(MailRefused.of(MailAction.READ, MailRefusal.DISABLED));
+            }
         }
     }
 

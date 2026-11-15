@@ -14,6 +14,7 @@ dependencies {
 
     testFixturesImplementation(platform(libs.spring.boot.dependencies))
     testFixturesApi(libs.testcontainers.postgresql)
+    testFixturesApi(libs.hikaricp)
     testFixturesImplementation(libs.spring.boot.starter.jdbc)
     testFixturesImplementation(libs.liquibase.core)
     testFixturesImplementation(libs.postgresql)

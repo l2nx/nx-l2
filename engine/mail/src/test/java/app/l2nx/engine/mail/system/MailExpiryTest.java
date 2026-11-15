@@ -23,6 +23,7 @@ import app.l2nx.engine.mail.view.MailNotice;
 import app.l2nx.engine.mail.view.MailStateChanged;
 import java.time.Duration;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,9 @@ class MailExpiryTest {
     static final int ARROW = 17;
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final MailExpiry expiry = new MailExpiry(
             world.settings,
             null,

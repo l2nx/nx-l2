@@ -39,6 +39,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,8 +58,11 @@ class MailFlowsOffLoopTest {
     private final AtomicInteger connectionsOnLoop = new AtomicInteger();
     private final ExecutorService runner = Executors.newSingleThreadExecutor();
     private final ExecutorService background = Executors.newSingleThreadExecutor();
+
+    @AutoClose
     private final MailWorld world =
             new MailWorld(MailSettings.defaults(), runner, background, this::countingConnectionsOnLoop);
+
     private final Loop loop =
             new Loop("world", world.clock, 42L, EngineProperties.defaults(), new SimpleMeterRegistry());
     private final MailActor sender = world.online("Sender");

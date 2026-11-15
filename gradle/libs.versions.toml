@@ -42,6 +42,7 @@ grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf" }
 grpc-stub = { module = "io.grpc:grpc-stub" }
 hdrhistogram = { module = "org.hdrhistogram:HdrHistogram", version.ref = "hdrhistogram" }
+hikaricp = { module = "com.zaxxer:HikariCP" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }

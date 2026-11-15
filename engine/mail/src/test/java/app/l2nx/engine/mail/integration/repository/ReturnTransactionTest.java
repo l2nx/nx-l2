@@ -19,6 +19,7 @@ import app.l2nx.engine.mail.fixture.TestItemStore;
 import app.l2nx.engine.mail.repository.MailRow;
 import app.l2nx.engine.mail.repository.ReturnTransaction;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,9 @@ class ReturnTransactionTest {
     static final int ARROW = 17;
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final UUID sender = world.character("Sender");
     private final UUID receiver = world.character("Receiver");
 

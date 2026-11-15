@@ -24,6 +24,7 @@ import app.l2nx.engine.mail.repository.MailRepository;
 import app.l2nx.engine.mail.repository.MailRow;
 import app.l2nx.engine.mail.repository.MailWriter;
 import app.l2nx.engine.mail.view.AttachmentSnapshot;
+import com.zaxxer.hikari.HikariDataSource;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -41,13 +42,15 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 /**
- * Every loop and executor runs work at once on the caller unless a test swaps them.
+ * Every loop and executor runs work at once on the caller unless a test swaps them. Each world owns its schema's
+ * connection pool, so a test closes the world it made.
  */
-public final class MailWorld {
+public final class MailWorld implements AutoCloseable {
     public static final Instant START = Instant.parse("2026-11-01T12:00:00Z");
     private static final Duration OUTCOME_TIMEOUT = Duration.ofSeconds(20);
 
     public final DataSource dataSource;
+    private final HikariDataSource pool;
     public final JdbcClient jdbc;
     public final ManualGameClock clock = new ManualGameClock(START, ZoneOffset.UTC);
     public final MailSettings settings;
@@ -78,7 +81,8 @@ public final class MailWorld {
             Executor queryExecutor,
             UnaryOperator<DataSource> wrapDataSource) {
         this.settings = settings;
-        this.dataSource = wrapDataSource.apply(PostgresDatabase.migratedSchema("mail", "db/mail-test-changelog.yaml"));
+        this.pool = PostgresDatabase.migratedSchema("mail", "db/mail-test-changelog.yaml");
+        this.dataSource = wrapDataSource.apply(pool);
         this.jdbc = JdbcClient.create(dataSource);
         this.mails = new MailRepository(jdbc);
         this.attachments = new MailAttachmentRepository(jdbc);
@@ -247,5 +251,10 @@ public final class MailWorld {
                 .param(type)
                 .query(Integer.class)
                 .single();
+    }
+
+    @Override
+    public void close() {
+        pool.close();
     }
 }

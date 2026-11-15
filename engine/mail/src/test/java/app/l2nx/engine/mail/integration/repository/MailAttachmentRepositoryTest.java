@@ -18,11 +18,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class MailAttachmentRepositoryTest {
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final UUID sender = world.character("Sender");
     private final UUID receiver = world.character("Receiver");
 

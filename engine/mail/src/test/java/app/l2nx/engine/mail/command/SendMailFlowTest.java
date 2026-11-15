@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +41,9 @@ class SendMailFlowTest {
     static final int ARROW = 17;
     static final int SWORD = 1000;
 
+    @AutoClose
     private final MailWorld world = new MailWorld(MailSettings.defaults());
+
     private final MailActor sender = world.online("Sender");
 
     private SendMail mail(String receiverName, List<ItemCount> items, Long codAdena) {
@@ -199,33 +202,35 @@ class SendMailFlowTest {
 
         @Test
         void handle_shouldRefuse_whenTheReceiversBoxIsFull() {
-            final MailWorld small = new MailWorld(
-                    MailSettings.defaults().toBuilder().mailboxLimit(1).build());
-            final MailActor from = small.online("Sender");
-            final UUID receiver = small.character("Receiver");
-            small.insert(small.mail(small.character("Other"), receiver).build());
-            small.give(from, FakeItems.ADENA, 10_000);
+            try (MailWorld small = new MailWorld(
+                    MailSettings.defaults().toBuilder().mailboxLimit(1).build())) {
+                final MailActor from = small.online("Sender");
+                final UUID receiver = small.character("Receiver");
+                small.insert(small.mail(small.character("Other"), receiver).build());
+                small.give(from, FakeItems.ADENA, 10_000);
 
-            MailHandlers.send(small).handle(from, mail("Receiver", List.of(), null));
+                MailHandlers.send(small).handle(from, mail("Receiver", List.of(), null));
 
-            assertThat(FakeParticipants.port(from).events())
-                    .containsExactly(MailRefused.of(MailAction.SEND, MailRefusal.RECEIVER_MAILBOX_FULL));
+                assertThat(FakeParticipants.port(from).events())
+                        .containsExactly(MailRefused.of(MailAction.SEND, MailRefusal.RECEIVER_MAILBOX_FULL));
+            }
         }
 
         @Test
         void handle_shouldRefuse_whenTheSendersBoxIsFull() {
-            final MailWorld small = new MailWorld(
-                    MailSettings.defaults().toBuilder().mailboxLimit(1).build());
-            final MailActor from = small.online("Sender");
-            small.character("Receiver");
-            small.insert(
-                    small.mail(from.characterId(), small.character("Other")).build());
-            small.give(from, FakeItems.ADENA, 10_000);
+            try (MailWorld small = new MailWorld(
+                    MailSettings.defaults().toBuilder().mailboxLimit(1).build())) {
+                final MailActor from = small.online("Sender");
+                small.character("Receiver");
+                small.insert(
+                        small.mail(from.characterId(), small.character("Other")).build());
+                small.give(from, FakeItems.ADENA, 10_000);
 
-            MailHandlers.send(small).handle(from, mail("Receiver", List.of(), null));
+                MailHandlers.send(small).handle(from, mail("Receiver", List.of(), null));
 
-            assertThat(FakeParticipants.port(from).events())
-                    .containsExactly(MailRefused.of(MailAction.SEND, MailRefusal.SENDER_MAILBOX_FULL));
+                assertThat(FakeParticipants.port(from).events())
+                        .containsExactly(MailRefused.of(MailAction.SEND, MailRefusal.SENDER_MAILBOX_FULL));
+            }
         }
     }
 }
