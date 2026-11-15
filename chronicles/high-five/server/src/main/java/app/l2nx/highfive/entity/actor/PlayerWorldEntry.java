@@ -636,8 +636,8 @@ public final class PlayerWorldEntry {
                                         client.setHardwareInfo(hwInfo);
                                     } else {
                                         final String storedInfo =
-                                                player.getAccountVariables().getString(AccountVariables.HWID, "");
-                                        if (!storedInfo.isEmpty()) {
+                                                player.getAccountVariables().getString(AccountVariables.HWID, null);
+                                        if (storedInfo != null) {
                                             try {
                                                 hwInfo = new ClientHardwareInfoHolder(storedInfo);
                                                 TRACE_HWINFO.put(trace, hwInfo);
