@@ -107,21 +107,12 @@ class RunTimelineTest {
 
     @Nested
     class Counts {
-        @ParameterizedTest(name = "{0}: load bot {1}, sample at {2} ms counts: {3}")
-        @CsvSource({
-            "STEADY, 0, 2999, false",
-            "STEADY, 0, 3000, true",
-            "STEADY, 3, 12999, true",
-            "STEADY, 3, 13000, false",
-            "RAMP, 0, 0, true",
-            "RAMP, 3, 750, true",
-            "RAMP, 3, 5000, true"
-        })
-        void countsArrival_shouldTakeTheSampleTimeInSteadyAndTheIntendedStartInTheRamp(
-                MeasuredPhase phase, int index, long millis, boolean expected) {
+        @ParameterizedTest(name = "{0}: load bot {1} counts its arrival: {2}")
+        @CsvSource({"STEADY, 0, false", "STEADY, 3, false", "RAMP, 0, true", "RAMP, 3, true"})
+        void countsArrival_shouldTakeTheIntendedStart(MeasuredPhase phase, int index, boolean expected) {
             final RunTimeline actual = new RunTimeline(PROFILE, phase, () -> START);
 
-            assertThat(actual.countsArrival(index, at(millis))).isEqualTo(expected);
+            assertThat(actual.countsArrival(index)).isEqualTo(expected);
         }
 
         @ParameterizedTest(name = "{0}: action at {1} ms counts: {2}")
@@ -291,6 +282,12 @@ class RunTimelineTest {
         void inMeasured_shouldFollowTheLevelWindows(long millis, boolean expected) {
             assertThat(levelled.inMeasured(at(millis))).isEqualTo(expected);
             assertThat(levelled.countsAction(at(millis))).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "load bot {0} counts its arrival: false")
+        @CsvSource({"0", "4", "7"})
+        void countsArrival_shouldCountNoArrival_whenItStartsInTheRampOfItsLevel(int index) {
+            assertThat(levelled.countsArrival(index)).isFalse();
         }
 
         @ParameterizedTest(name = "load bot {0} leaves at {1} ms")

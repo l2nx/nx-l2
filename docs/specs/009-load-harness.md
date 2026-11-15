@@ -136,7 +136,8 @@ gate settings, so one scenario runs at any size and against any baseline. Ids ca
   (§8).
 - **Measured phase:** a load scenario measures either the steady window (actions of load bots already in the game)
   or the ramp (load bots arriving: every lifecycle step and arrival intent, `Login` to `EnterWorld`, of a load bot whose
-  intended start lies in the ramp, however late it completes). The server meter window and the generator self-check follow the same
+  intended start lies in the ramp, however late it completes, so a ramp arrival stalled into the steady window is not
+  counted there). The server meter window and the generator self-check follow the same
   phase; for the ramp they run until every load bot reached its final state or stopped.
 - **Final state:** the lifecycle state at which a load bot is done and closes without an error; `IN_GAME` by default,
   where it plays until the ramp-down. A protocol must express only the lifecycle intents up to the final state.

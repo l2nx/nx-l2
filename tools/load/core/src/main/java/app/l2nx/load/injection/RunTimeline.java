@@ -214,11 +214,11 @@ public final class RunTimeline {
     }
 
     /**
-     * The steady window takes each sample by its own time; the ramp takes the whole arrival of a load bot whose
-     * intended start lies in it, however late each sample completes.
+     * The whole arrival of a load bot belongs to the phase of its intended start, however late each sample completes:
+     * a ramp arrival stalled into the steady window is not an action of a load bot already in the game.
      */
-    public boolean countsArrival(int index, long time) {
-        return inMeasured(phase == MeasuredPhase.RAMP ? startAt(index) : time);
+    public boolean countsArrival(int index) {
+        return inMeasured(startAt(index));
     }
 
     public boolean countsAction(long time) {

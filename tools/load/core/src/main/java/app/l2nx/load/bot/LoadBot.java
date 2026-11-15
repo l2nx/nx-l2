@@ -388,7 +388,7 @@ public final class LoadBot implements LoadBotView {
         if (left.inLifecycle()
                 && next.inLifecycle()
                 && left != finalState
-                && timeline.countsArrival(identity.index(), enteredAt)) {
+                && timeline.countsArrival(identity.index())) {
             latencies.recordStep(left, now - enteredAt);
         }
         enteredAt = now;
@@ -417,7 +417,7 @@ public final class LoadBot implements LoadBotView {
         if (finished) {
             return;
         }
-        if (timeline.countsArrival(identity.index(), enteredAt)) {
+        if (timeline.countsArrival(identity.index())) {
             latencies.recordStepTimeout(state, lifecycleTimeoutNanos);
         } else {
             latencies.recordStepTimeout(state);
@@ -501,7 +501,7 @@ public final class LoadBot implements LoadBotView {
 
     private void sendArrival(Intent intent) {
         final long now = timeline.now();
-        send(intent, now, timeline.countsArrival(identity.index(), now), true);
+        send(intent, now, timeline.countsArrival(identity.index()), true);
     }
 
     /**

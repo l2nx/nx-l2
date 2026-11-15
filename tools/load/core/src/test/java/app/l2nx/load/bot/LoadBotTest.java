@@ -385,6 +385,21 @@ class LoadBotTest {
         }
 
         @Test
+        void stateChanged_shouldRecordNoArrival_whenTheEventLoopStallsTheRampLifecycleIntoTheSteadyWindow() {
+            final Harness harness = new Harness().ramp(RAMP);
+            harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
+
+            harness.ticker.advance(RAMP.plus(WARM_UP).plusSeconds(1).toNanos(), TimeUnit.NANOSECONDS);
+            harness.runToEnd();
+
+            assertThat(harness.latencies.stepStats())
+                    .as("the intended start lies in the ramp")
+                    .isEmpty();
+            assertThat(harness.latencies.sent(IntentKind.LOGIN)).isZero();
+            assertThat(harness.latencies.sent(IntentKind.ENTER_WORLD)).isZero();
+        }
+
+        @Test
         void stateChanged_shouldRecordNoStep_whenTheLifecycleRunsBeforeTheSteadyWindow() {
             final Harness harness = new Harness();
             harness.start(new FakeScenario(INTERVAL, Duration.ZERO));
