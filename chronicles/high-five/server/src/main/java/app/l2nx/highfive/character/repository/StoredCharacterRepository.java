@@ -119,7 +119,8 @@ public class StoredCharacterRepository {
                 .blocked(relations.findTargets(characterId, RelationType.BLOCK))
                 .contacts(contacts.findContactNames(characterId))
                 .variables(variables.findAll(characterId))
-                .accountVariables(accountVariables.findAllWithoutPrefix(accountId, SecondaryPasswordAuth.VARIABLE_PREFIX))
+                .accountVariables(
+                        accountVariables.findAllWithoutPrefix(accountId, SecondaryPasswordAuth.VARIABLE_PREFIX))
                 .rebirthSkillIds(
                         RebirthConfig.REBIRTH_ALLOW_REBIRTH ? rebirths.findSelectedSkillIds(characterId) : List.of())
                 .worldEntry(StoredCharacter.WorldEntry.builder()

@@ -112,7 +112,9 @@ class CharacterLoaderTest {
             load(built::add);
 
             assertThat(loading()).isTrue();
-            assertThat(accountLoaded()).as("the account stays pinned while its snapshot is read").isTrue();
+            assertThat(accountLoaded())
+                    .as("the account stays pinned while its snapshot is read")
+                    .isTrue();
             verify(rows, never()).find(characterId);
             verify(session, never()).release();
         }

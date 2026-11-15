@@ -58,6 +58,7 @@ public class SecondaryPasswordAuth {
 
     /** Its variables are written by database here, so account variables never load them. */
     public static final String VARIABLE_PREFIX = "secauth_";
+
     private static final String VAR_PWD = VARIABLE_PREFIX + "pwd";
     private static final String VAR_WTE = VARIABLE_PREFIX + "wte";
 
