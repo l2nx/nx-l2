@@ -7,19 +7,23 @@ package app.l2nx.network.test;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import java.util.List;
-import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public final class NettyLeakCheck implements AfterAllCallback {
+/**
+ * Checks the test JVM for leaked buffers once, after its last test: the forced full GC the check needs stops every
+ * test running beside it, so a check per test container stalled parallel tests for seconds.
+ */
+public final class NettyLeakCheck implements BeforeAllCallback {
     private static final int TRIGGER_ALLOCATIONS = 64;
+    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(NettyLeakCheck.class);
 
     @Override
-    public void afterAll(ExtensionContext context) {
-        final List<String> leaks = collectLeaks();
-        if (!leaks.isEmpty()) {
-            throw new AssertionError(
-                    "Netty buffer leak during " + context.getDisplayName() + ":\n" + String.join("\n---\n", leaks));
-        }
+    public void beforeAll(ExtensionContext context) {
+        // The root store closes its values when the engine finishes, after every test of the JVM.
+        context.getRoot()
+                .getStore(NAMESPACE)
+                .computeIfAbsent(FinalCheck.class, key -> new FinalCheck(), FinalCheck.class);
     }
 
     /**
@@ -29,8 +33,7 @@ public final class NettyLeakCheck implements AfterAllCallback {
         return collectLeaks(System::gc);
     }
 
-    // The extension runs after every test container; a full GC per container stalls a parallel JVM, so GC only while
-    // a tracked buffer is unreleased.
+    // GC only while a tracked buffer is unreleased: otherwise nothing can leak.
     static List<String> collectLeaks(Runnable gc) {
         if (LeakRecorder.openTrackers() == 0) {
             return LeakRecorder.drain();
@@ -43,5 +46,15 @@ public final class NettyLeakCheck implements AfterAllCallback {
             }
         }
         return LeakRecorder.drain();
+    }
+
+    private static final class FinalCheck implements AutoCloseable {
+        @Override
+        public void close() {
+            final List<String> leaks = collectLeaks();
+            if (!leaks.isEmpty()) {
+                throw new AssertionError("Netty buffer leak in this test JVM:\n" + String.join("\n---\n", leaks));
+            }
+        }
     }
 }

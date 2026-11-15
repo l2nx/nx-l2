@@ -604,7 +604,8 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
 - **GS-link tests on gRPC's in-process transport:** registration, a wrong or missing secret, the registration
   timeout, refusal of a live hex id, re-registration after a dropped stream, ordering on shutdown, a key accepted
   only on the stream of the server its PlayOk named; one test over TLS with a test certificate.
-- **Leak detection** at `paranoid` in every test JVM.
+- **Leak detection** at `paranoid` in every test JVM, checked once after the JVM's last test: the check forces a
+  full GC, which stops every test running beside it, so a check per test class stalls parallel tests for seconds.
 - **Golden tests** of the ciphers, of each adapter's decoders (bytes in, command out) and mappers (event in, bytes
   out).
 - **Adapter completeness** (§8) and the legacy-route gate: references to server packet classes outside the
