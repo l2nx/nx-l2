@@ -5,16 +5,11 @@
   ],
   "packageRules": [
     {
-      "description": "protoc and protoc-gen-grpc-java must equal the protobuf-java and grpc-java runtime of the Spring Boot BOM; they move with Spring Boot, never alone",
-      "matchManagers": ["gradle"],
-      "matchPackageNames": ["com.google.protobuf:protoc", "io.grpc:protoc-gen-grpc-java"],
-      "enabled": false
-    },
-    {
-      "description": "Prometheus stays on its LTS line (3.13 until the next LTS on prometheus.io/docs/introduction/release-cycle); raise the bound with the next LTS",
+      "description": "Prometheus stays on its LTS line (prometheus.io/docs/introduction/release-cycle): patches of the line come as PRs, every minor or major is shown on the Dependency Dashboard and waits for approval, given only to the next LTS",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["prom/prometheus"],
-      "allowedVersions": "<3.14"
+      "matchUpdateTypes": ["minor", "major"],
+      "dependencyDashboardApproval": true
     }
   ]
 }

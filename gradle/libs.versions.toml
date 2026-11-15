@@ -8,8 +8,6 @@ datasource-proxy = "1.11.1"
 disruptor = "4.0.0"
 fastutil = "8.5.19"
 gradle-git-properties = "4.0.1"
-# protoc-gen-grpc-java only: the grpc-java jars come from the Spring Boot BOM, keep both equal.
-grpc = "1.83.1"
 hdrhistogram = "2.2.2"
 jctools = "4.0.7"
 jmh-plugin = "0.7.4"
@@ -21,8 +19,6 @@ lombok = "1.18.48"
 palantir = "2.103.0"
 pmd = "7.29.0"
 postgresql = "42.7.14"
-# protoc only: protobuf-java comes from the Spring Boot BOM, keep both equal.
-protobuf = "4.35.1"
 protobuf-plugin = "0.10.1"
 spotless = "8.11.0"
 spring-boot = "4.1.1"
@@ -66,8 +62,8 @@ netty-transport-native-io-uring = { module = "io.netty:netty-transport-native-io
 pmd-java = { module = "net.sourceforge.pmd:pmd-java", version.ref = "pmd" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java" }
-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
-protoc-gen-grpc-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
+protoc = { module = "com.google.protobuf:protoc" }
+protoc-gen-grpc-java = { module = "io.grpc:protoc-gen-grpc-java" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 spring-boot = { module = "org.springframework.boot:spring-boot" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }

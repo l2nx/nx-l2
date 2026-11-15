@@ -37,9 +37,10 @@ The reformat broke line-level diffs against upstream Mobius. Accepted: fixes are
 ## 4. Versions
 
 One palantir-java-format version for the Claude Code hook (`~/.claude/tools/fetch-format-jar.js`) and every Spotless
-consumer of the platform; otherwise the hook and `spotlessCheck` format the same file differently. Renovate does not
-track `palantir` (a bare version key): a bump is a deliberate change of the hook jar and the catalog of every repo
-together. Current: Spotless 8.10.4, palantir-java-format 2.102.0.
+consumer of the platform; otherwise the hook and `spotlessCheck` format the same file differently. Renovate tracks
+`palantir` (a bare version key) through a regex manager of the shared preset and moves the catalog; the hook jar is
+bumped separately, so a palantir update is merged together with the hook bump. Current: Spotless 8.11.0,
+palantir-java-format 2.103.0.
 
 ## 5. Line endings and blame
 

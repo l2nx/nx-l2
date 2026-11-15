@@ -27,13 +27,27 @@ dependencies {
     testFixturesApi(libs.grpc.stub)
 }
 
+// protoc and its grpc plugin generate code for the protobuf-java and grpc-java runtime the Spring Boot BOM pins, so
+// they take their versions from that BOM: a Boot update moves them, and no version is kept equal by hand.
+fun bomVersionOf(library: Provider<MinimalExternalModuleDependency>): String {
+    val module = library.get().module
+    val graph = configurations.detachedConfiguration(
+        dependencies.platform(libs.spring.boot.dependencies.get()),
+        dependencies.create(module.toString()),
+    )
+    return graph.incoming.resolutionResult.allComponents
+        .mapNotNull { it.moduleVersion }
+        .single { it.group == module.group && it.name == module.name }
+        .version
+}
+
 protobuf {
     protoc {
-        artifact = libs.protoc.asProvider().get().toString()
+        artifact = "${libs.protoc.asProvider().get().module}:${bomVersionOf(libs.protobuf.java)}"
     }
     plugins {
         create("grpc") {
-            artifact = libs.protoc.gen.grpc.java.get().toString()
+            artifact = "${libs.protoc.gen.grpc.java.get().module}:${bomVersionOf(libs.grpc.stub)}"
         }
     }
     generateProtoTasks {

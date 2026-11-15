@@ -299,7 +299,9 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 | Docs     | English; the public pages on `l2nx.dev` also in Russian                      |
 
 **Versions:** every library, image and tool takes its latest LTS line, or its latest stable release where the
-project has no LTS (PostgreSQL); Renovate keeps them current.
+project has no LTS (PostgreSQL); Renovate keeps them current. A tool whose version must equal a runtime library takes
+it from the Spring Boot BOM instead of pinning its own (`protoc` and `protoc-gen-grpc-java` follow `protobuf-java`
+and grpc-java), so a Boot update moves it.
 
 ### 5.1. Database
 
