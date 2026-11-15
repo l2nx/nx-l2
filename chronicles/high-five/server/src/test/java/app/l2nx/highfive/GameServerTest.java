@@ -112,9 +112,8 @@ class GameServerTest {
 
             assertThatIllegalStateException().isThrownBy(server::openPort).withMessage("thrown by the test");
 
-            try (ServerSocket rebound = new ServerSocket(port)) {
-                assertThat(rebound.isBound()).isTrue();
-            }
+            // Not a rebind: in a full build another JVM may take the freed ephemeral port for an outgoing connection.
+            assertThat(canConnect(port)).isFalse();
         }
 
         @Test
