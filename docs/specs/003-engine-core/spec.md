@@ -13,6 +13,7 @@ state reaches clients and the database, and the order in which the imported Mobi
 | [replication.md](replication.md)     | client view, visibility grid, event classes, per-connection budgets, network hand-off     |
 | [persistence.md](persistence.md)     | identity (UUIDv7, wire handles), value transactions, ledger, write-behind, outbox, schema |
 | [wiring-layout.md](wiring-layout.md) | Spring wiring, lifecycle, module and package layout                                       |
+| [roadmap.md](roadmap.md)             | status of the migration steps: done, in progress, left                                    |
 
 The research behind these decisions (tick models, mature MMO server cores, ECS, spatial scaling, persistence) is
 published on l2nx.dev: `docs/public/{en,ru}/engine-research.md`.
