@@ -49,6 +49,11 @@ public final class WorldPartition {
     }
 
     /** World loop only. */
+    public static LoadedGameAccounts loadedGameAccounts() {
+        return bound().gameAccounts();
+    }
+
+    /** World loop only. */
     public static PendingItems pendingItems() {
         return bound().pending();
     }
@@ -66,16 +71,22 @@ public final class WorldPartition {
         return bound;
     }
 
-    // The registries live and die with the loop that owns them.
     @Builder(toBuilder = true)
     private record Bound(
             Loop loop,
             InFlightCharacters inFlight,
             LoadedCharacters loaded,
+            LoadedGameAccounts gameAccounts,
             PendingItems pending,
             AwaitedStacks awaited) {
         Bound(Loop loop) {
-            this(loop, new InFlightCharacters(), new LoadedCharacters(), new PendingItems(), new AwaitedStacks());
+            this(
+                    loop,
+                    new InFlightCharacters(),
+                    new LoadedCharacters(),
+                    new LoadedGameAccounts(),
+                    new PendingItems(),
+                    new AwaitedStacks());
         }
     }
 }

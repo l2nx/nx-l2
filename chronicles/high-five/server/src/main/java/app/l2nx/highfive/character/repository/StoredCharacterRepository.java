@@ -42,6 +42,7 @@ import app.l2nx.highfive.repository.item.model.StoredItem;
 import app.l2nx.highfive.repository.social.CharacterContactRepository;
 import app.l2nx.highfive.repository.social.CharacterRelationRepository;
 import app.l2nx.highfive.repository.social.model.RelationType;
+import app.l2nx.highfive.security.SecondaryPasswordAuth;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +119,7 @@ public class StoredCharacterRepository {
                 .blocked(relations.findTargets(characterId, RelationType.BLOCK))
                 .contacts(contacts.findContactNames(characterId))
                 .variables(variables.findAll(characterId))
-                .accountVariables(accountVariables.findAll(accountId))
+                .accountVariables(accountVariables.findAllWithoutPrefix(accountId, SecondaryPasswordAuth.VARIABLE_PREFIX))
                 .rebirthSkillIds(
                         RebirthConfig.REBIRTH_ALLOW_REBIRTH ? rebirths.findSelectedSkillIds(characterId) : List.of())
                 .worldEntry(StoredCharacter.WorldEntry.builder()

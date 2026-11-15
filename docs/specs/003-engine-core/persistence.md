@@ -4,6 +4,23 @@ How game objects are identified, how values move without duplication, and how th
 PostgreSQL. Part of [spec 003](spec.md). Database choice: [spec 001 §5.1](../001-project-design.md#51-database). Schemas, migrations and repositories:
 [spec 006](../006-database.md).
 
+## Summary
+
+Every persistent object has a UUIDv7 key; the client sees short wire handles mapped to it (§1, §2). Items and adena
+move only through value transactions: the partition reserves the items in memory, the persistence executor commits
+the move and the ledger, the partition applies the outcome (§3). Everything else is saved write-behind: dirty state
+is snapshotted on the loop and written off it (§4). Platform events leave through an outbox in the same transaction
+(§5). A character's rows have one writer at a time: the partition while the character is loaded, the database while
+it is offline, and writers wait while it loads (§3.1, §6).
+
+```mermaid
+flowchart TB
+    Loop["World loop (owns loaded characters)"] -->|"reserve, snapshot"| Exec["Persistence executor"]
+    Exec -->|"commit move + ledger + outbox"| DB[("PostgreSQL")]
+    Exec -->|"outcome, loaded rows"| Loop
+    DB -->|"outbox relay"| Platform["Adapter / Kafka"]
+```
+
 ## 1. Persistent identity
 
 - **Everything persistent is keyed by UUIDv7:** accounts (the login server's table gets a UUIDv7 key; game tables
@@ -174,8 +191,21 @@ rolled-back operation.
     would overwrite the mark (`OfflineRows.isLoaded`), as is the expiry deletion of a marked character;
   - **daily resets on the loop** (skill reuse by `online_status`, recommendations): skip a busy character and apply
     to it once it is settled, since its read may predate the bulk write;
-  - **known gap:** account variables of two loaded characters of one account are written by both saves
-    ([#206](https://github.com/l2nx/nx-l2/issues/206));
   - not affected: tables a manager owns whole (heroes, nobles, Seven Signs, raid points, fishing championship,
     grand boss zones, couples), which the load does not read; offline traders, which are loaded players; the start-up
     cleanup, which runs before any load.
+- **Account variables have one instance per account** in the partition, shared by every loaded character of the
+  account (an offline trader and a character in play, two offline traders), so a change made through one character
+  is the state the others read and save ([#206](https://github.com/l2nx/nx-l2/issues/206)). `LoadedGameAccounts`
+  holds, per account, the instance, the players holding it and the pins:
+  - **attach:** building a player takes the live instance of its account and drops the snapshot its load read; with
+    no live instance the snapshot becomes it. No other code creates account variables;
+  - **detach:** releasing a player from memory (`Disconnection`, or a build that fails) saves the instance and drops
+    the player from it; the instance leaves memory when no player holds it, no load pins it and it is saved. A failed
+    save keeps it and is retried every minute, so the next load takes it instead of the older row;
+  - **pin:** a character load pins its account from `startLoading` until `loadEnded`. The load reads its snapshot off
+    the loop, so a character of the account released meanwhile saves after that read; the pin keeps the released
+    instance, and the build attaches it instead of the stale snapshot. Loads read on the loop at start-up (offline
+    traders, offline play) need no pin;
+  - **the secondary password** (`secauth_*`) is owned by `SecondaryPasswordAuth`, which reads and writes it by
+    database in the lobby; account variables do not load these names, so no stale copy sits in memory.

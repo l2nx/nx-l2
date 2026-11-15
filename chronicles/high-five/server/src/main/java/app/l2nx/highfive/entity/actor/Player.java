@@ -351,6 +351,7 @@ import app.l2nx.highfive.network.protocol.p267.serverpackets.TradeOtherDone;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.TradeStart;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.UserInfo;
 import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
+import app.l2nx.highfive.partition.LoadedGameAccounts;
 import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterHenna;
 import app.l2nx.highfive.repository.character.model.CharacterItemReuse;
@@ -496,7 +497,6 @@ public class Player extends Playable {
     private ScheduledFuture<?> dismountTask;
     private boolean petItems = false;
 
-    /** The list of sub-classes this character has, by class index. */
     private final Int2ObjectSortedMap<SubClassHolder> subClasses = new Int2ObjectRBTreeMap<>();
 
     private final PlayerAppearance appearance;
@@ -3187,7 +3187,7 @@ public class Player extends Playable {
                         SystemMessageId
                                 .CONGRATULATIONS_YOU_WILL_NOW_GRADUATE_FROM_THE_CLAN_ACADEMY_AND_LEAVE_YOUR_CURRENT_CLAN_AS_A_GRADUATE_OF_THE_ACADEMY_YOU_CAN_IMMEDIATELY_JOIN_A_CLAN_AS_A_REGULAR_MEMBER_WITHOUT_BEING_SUBJECT_TO_ANY_PENALTIES);
 
-                inventory.addItem(ItemProcessType.REWARD, 8181, 1, this, null); // give academy circlet
+                inventory.addItem(ItemProcessType.REWARD, 8181, 1, this, null);
             }
 
             if (isSubClassActive()) {
@@ -3772,9 +3772,7 @@ public class Player extends Playable {
                     fort.getSiege()
                             .announceToPlayer(new SystemMessage(SystemMessageId.C1_HAS_ACQUIRED_THE_FLAG), getName());
                 }
-            }
-            // Territory Ward
-            else if ((item.getId() >= 13560) && (item.getId() <= 13568)) {
+            } else if ((item.getId() >= 13560) && (item.getId() <= 13568)) {
                 final TerritoryWard ward = TerritoryWarManager.getInstance().getTerritoryWard(item.getId() - 13479);
                 if (ward != null) {
                     ward.activate(this, item);
@@ -3854,9 +3852,7 @@ public class Player extends Playable {
                     dropItem(ItemProcessType.DROP, createdItem, null, true);
                 } else if (CursedWeaponsManager.getInstance().isCursed(createdItem.getId())) {
                     CursedWeaponsManager.getInstance().activate(this, createdItem);
-                }
-                // Territory Ward
-                else if ((createdItem.getId() >= 13560) && (createdItem.getId() <= 13568)) {
+                } else if ((createdItem.getId() >= 13560) && (createdItem.getId() <= 13568)) {
                     final TerritoryWard ward =
                             TerritoryWarManager.getInstance().getTerritoryWard(createdItem.getId() - 13479);
                     if (ward != null) {
@@ -6517,6 +6513,11 @@ public class Player extends Playable {
             player.getInventory().discard();
             player.getWarehouse().discard();
             player.getFreight().discard();
+            try {
+                WorldPartition.loadedGameAccounts().detach(player, character.accountId());
+            } catch (RuntimeException detachFailure) {
+                e.addSuppressed(detachFailure);
+            }
             throw e;
         }
         return player;
@@ -6528,7 +6529,8 @@ public class Player extends Playable {
         final int activeClassId = character.classId();
         // Before anything asks for them: the lazy getters would read.
         player.addScript(new PlayerVariables(objectId, stored.variables()));
-        player.addScript(new AccountVariables(character.accountId(), stored.accountVariables()));
+        player.addScript(
+                WorldPartition.loadedGameAccounts().attach(player, character.accountId(), stored.accountVariables()));
         player.storedWorldEntry = stored.worldEntry();
         player.setName(character.name());
         player.setLastAccess(epochMillisOrZero(character.lastAccessAt()));
@@ -9820,8 +9822,6 @@ public class Player extends Playable {
 
         getVariables().saveNow();
 
-        getAccountVariables().saveNow();
-
         // Recommendations must be saved before task (timer) is canceled.
         try {
             storeRecommendations(false);
@@ -11998,15 +11998,14 @@ public class Player extends Playable {
         return vars != null ? vars : addScript(new PlayerVariables(getObjectId()));
     }
 
-    public boolean hasAccountVariables() {
-        WorldPartition.checkOwner();
-        return getScript(AccountVariables.class) != null;
-    }
-
+    /** Attached by the load from {@link LoadedGameAccounts}; a created character never loaded has none. */
     public AccountVariables getAccountVariables() {
         WorldPartition.checkOwner();
         final AccountVariables vars = getScript(AccountVariables.class);
-        return vars != null ? vars : addScript(new AccountVariables(accountId));
+        if (vars == null) {
+            throw new IllegalStateException("Account variables of " + this + " are attached by its load");
+        }
+        return vars;
     }
 
     @Override

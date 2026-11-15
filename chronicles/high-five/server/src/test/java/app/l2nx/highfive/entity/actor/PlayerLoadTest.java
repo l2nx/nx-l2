@@ -45,6 +45,7 @@ import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.partition.WorldLoopExtension;
+import app.l2nx.highfive.partition.WorldPartition;
 import app.l2nx.highfive.repository.character.model.CharacterRecommendation;
 import app.l2nx.highfive.repository.character.model.CharacterRow;
 import app.l2nx.highfive.repository.item.model.StoredItem;
@@ -93,6 +94,7 @@ class PlayerLoadTest {
     private final UUID characterId = EntityIds.next();
     private final UUID friendId = EntityIds.next();
     private final UUID adenaId = EntityIds.next();
+    private final UUID accountId = EntityIds.next();
 
     @Nested
     class Load {
@@ -128,6 +130,41 @@ class PlayerLoadTest {
             assertThat(writes())
                     .as("item writes of the failed build")
                     .noneMatch(call -> call.startsWith("ItemManager."));
+        }
+
+        @Test
+        void load_shouldLeaveTheAccountVariablesOfTheAccount_whenARestoreStepFails() {
+            final StoredCharacter broken =
+                    stored(null).toBuilder().friends(null).build();
+
+            final boolean actual = inWorld(() -> {
+                assertThatThrownBy(() -> Player.load(broken)).isInstanceOf(NullPointerException.class);
+                return WorldPartition.loadedGameAccounts().isLoaded(accountId);
+            });
+
+            assertThat(actual).isFalse();
+        }
+
+        @Test
+        void load_shouldShareTheAccountVariables_betweenTwoCharactersOfOneAccount() {
+            final UUID otherId = EntityIds.next();
+
+            final List<Object> actual = inWorld(() -> {
+                final Player trader = Player.load(stored(null));
+                trader.setGamePoints(40);
+                final Player playing = Player.load(stored(null).toBuilder()
+                        .characterId(otherId)
+                        .character(stored(null).character().toBuilder()
+                                .objectId(registry.handleOf(otherId))
+                                .name("Other")
+                                .build())
+                        .inventory(List.of())
+                        .accountVariables(Map.of("PRIME_POINTS", "100"))
+                        .build());
+                return List.of(playing.getAccountVariables() == trader.getAccountVariables(), playing.getGamePoints());
+            });
+
+            assertThat(actual).containsExactly(true, 40L);
         }
     }
 
@@ -188,7 +225,7 @@ class PlayerLoadTest {
     private StoredCharacter stored(StoredCharacter.WorldEntry worldEntry) {
         final CharacterRow character = CharacterRow.builder()
                 .objectId(registry.handleOf(characterId))
-                .accountId(EntityIds.next())
+                .accountId(accountId)
                 .name("Loaded")
                 .classId(PlayerClass.FIGHTER.getId())
                 .baseClassId(PlayerClass.FIGHTER.getId())

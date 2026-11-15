@@ -60,6 +60,7 @@ class CharacterLoaderTest {
     static final WorldLoopExtension WORLD = WorldLoopExtension.perTest();
 
     private final UUID characterId = EntityIds.next();
+    private final UUID accountId = EntityIds.next();
     private final StoredCharacterRepository rows = mock(StoredCharacterRepository.class);
     private final List<Runnable> executor = new ArrayList<>();
     private final CharacterLoader loader = new CharacterLoader(
@@ -80,6 +81,7 @@ class CharacterLoaderTest {
         when(client.session()).thenReturn(session);
         when(client.port()).thenReturn(port);
         when(client.getConnectionState()).thenReturn(SessionState.AUTHED);
+        when(client.getAccountId()).thenReturn(accountId);
         when(rows.find(characterId)).thenReturn(Optional.of(stored));
     }
 
@@ -94,6 +96,11 @@ class CharacterLoaderTest {
                 () -> WorldPartition.loadedCharacters().isLoading(characterId));
     }
 
+    private boolean accountLoaded() {
+        return WorldLoopExtension.callInPass(
+                () -> WorldPartition.loadedGameAccounts().isLoaded(accountId));
+    }
+
     private void load(Consumer<Player> onBuilt) {
         WorldLoopExtension.runInPass(() -> loader.load(characterId, client, onBuilt));
     }
@@ -105,6 +112,7 @@ class CharacterLoaderTest {
             load(built::add);
 
             assertThat(loading()).isTrue();
+            assertThat(accountLoaded()).as("the account stays pinned while its snapshot is read").isTrue();
             verify(rows, never()).find(characterId);
             verify(session, never()).release();
         }
@@ -123,6 +131,7 @@ class CharacterLoaderTest {
                                 () -> WorldPartition.loadedCharacters().find(characterId)))
                         .containsSame(player);
                 assertThat(loading()).isFalse();
+                assertThat(accountLoaded()).isFalse();
                 verify(rows).updateOnlineStatus(eq(characterId), eq(OnlineStatus.ONLINE), any());
                 verify(session).release();
             }
@@ -140,6 +149,7 @@ class CharacterLoaderTest {
             verify(session).release();
             assertThat(built).isEmpty();
             assertThat(loading()).isFalse();
+            assertThat(accountLoaded()).isFalse();
         }
 
         @Test
@@ -157,6 +167,7 @@ class CharacterLoaderTest {
             WorldLoopExtension.runInPass(() -> {});
             verify(rows).updateOnlineStatus(eq(characterId), eq(OnlineStatus.OFFLINE), any());
             assertThat(loading()).isFalse();
+            assertThat(accountLoaded()).isFalse();
         }
 
         @Test
@@ -174,6 +185,7 @@ class CharacterLoaderTest {
                 verify(session).release();
                 verify(rows).updateOnlineStatus(eq(characterId), eq(OnlineStatus.OFFLINE), any());
                 assertThat(loading()).isFalse();
+                assertThat(accountLoaded()).isFalse();
             }
         }
 
@@ -195,6 +207,7 @@ class CharacterLoaderTest {
                 verify(disconnection).storeAndDelete();
                 verify(session).release();
                 assertThat(loading()).isFalse();
+                assertThat(accountLoaded()).isFalse();
             }
         }
 

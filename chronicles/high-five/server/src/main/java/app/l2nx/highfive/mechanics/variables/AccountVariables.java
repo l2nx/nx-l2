@@ -28,17 +28,15 @@ package app.l2nx.highfive.mechanics.variables;
 
 import app.l2nx.engine.core.loop.SingleWriter;
 import app.l2nx.highfive.managers.AccountVariablesManager;
+import app.l2nx.highfive.partition.LoadedGameAccounts;
 import app.l2nx.highfive.partition.WorldPartition;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 
 /**
  * @author UnAfraid, Mobius
  */
-@Slf4j
 @SingleWriter
 public class AccountVariables extends AbstractVariables {
 
@@ -47,32 +45,12 @@ public class AccountVariables extends AbstractVariables {
 
     private final UUID accountId;
 
-    public AccountVariables(UUID accountId) {
-        this.accountId = accountId;
-        restoreMe();
-    }
-
+    /** Through {@link LoadedGameAccounts} only: one instance per account. */
     public AccountVariables(UUID accountId, Map<String, String> stored) {
         WorldPartition.checkOwner();
         this.accountId = accountId;
         stored.forEach((name, value) -> set(name, value, false));
         markSaved();
-    }
-
-    public boolean restoreMe() {
-        WorldPartition.checkOwner();
-        try {
-            AccountVariablesManager.getInstance()
-                    .findVariables(accountId)
-                    .forEach((name, value) -> set(name, value, false));
-        } catch (DataAccessException e) {
-            log.warn("Could not restore variables for: {}", accountId, e);
-            return false;
-        } finally {
-            markSaved();
-        }
-
-        return true;
     }
 
     @Override
@@ -83,19 +61,5 @@ public class AccountVariables extends AbstractVariables {
     @Override
     protected String variablesKey() {
         return accountId.toString();
-    }
-
-    public boolean deleteMe() {
-        WorldPartition.checkOwner();
-        try {
-            AccountVariablesManager.getInstance().deleteVariables(accountId);
-        } catch (DataAccessException e) {
-            log.warn("Could not delete variables for: {}", accountId, e);
-            return false;
-        }
-
-        clearValues();
-        clearChangeTracking();
-        return true;
     }
 }

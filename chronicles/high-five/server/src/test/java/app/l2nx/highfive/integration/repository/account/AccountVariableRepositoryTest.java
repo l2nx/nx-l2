@@ -23,15 +23,16 @@ class AccountVariableRepositoryTest extends RepositoryTest {
     private final AccountVariableRepository repository = new AccountVariableRepository(JDBC, JDBC_TEMPLATE);
 
     @Nested
-    class FindAll {
+    class FindAllWithoutPrefix {
         @Test
-        void findAll_shouldReturnAccountVariables_whenStored() {
+        void findAllWithoutPrefix_shouldReturnTheAccountVariablesOutsideThePrefix() {
             final UUID accountId = EntityIds.next();
             insertVariable(accountId, "HWID", "abc");
             insertVariable(accountId, "empty", null);
+            insertVariable(accountId, "secauth_pwd", "hash");
             insertVariable(EntityIds.next(), "HWID", "other");
 
-            final Map<String, String> actual = repository.findAll(accountId);
+            final Map<String, String> actual = repository.findAllWithoutPrefix(accountId, "secauth_");
 
             assertThat(actual).containsOnly(entry("HWID", "abc"), entry("empty", null));
         }
@@ -146,22 +147,6 @@ class AccountVariableRepositoryTest extends RepositoryTest {
             repository.saveChanges(accountId, List.of(), Map.of());
 
             assertThat(variables(accountId)).containsOnly(entry("kept", "1"));
-        }
-    }
-
-    @Nested
-    class DeleteAll {
-        @Test
-        void deleteAll_shouldDeleteOnlyThatAccount() {
-            final UUID accountId = EntityIds.next();
-            final UUID otherId = EntityIds.next();
-            insertVariable(accountId, "a", "1");
-            insertVariable(otherId, "a", "1");
-
-            repository.deleteAll(accountId);
-
-            assertThat(variables(accountId)).isEmpty();
-            assertThat(variables(otherId)).containsOnly(entry("a", "1"));
         }
     }
 

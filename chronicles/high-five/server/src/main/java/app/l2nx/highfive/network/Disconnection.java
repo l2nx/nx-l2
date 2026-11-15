@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handles the disconnection process for a player or client.
  * @author NB4L1, Mobius
  */
 @Slf4j
@@ -48,23 +47,14 @@ public class Disconnection {
     private final GameClient client;
     private final Player player;
 
-    /**
-     * Constructs a new Disconnection instance for the given client and player.<br>
-     * Resolves the client and player references and performs initial cleanup tasks.
-     * @param client the GameClient to disconnect (can be null if player is provided).
-     * @param player the Player to disconnect (can be null if client is provided).
-     */
     private Disconnection(GameClient client, Player player) {
-        // Resolve client and player.
         this.client = client != null ? client : player != null ? player.getClient() : null;
         this.player = player != null ? player : client != null ? client.getPlayer() : null;
 
-        // Stop player tasks.
         if (this.player != null) {
             this.player.stopAllTasks();
         }
 
-        // Anti Feed.
         AntiFeedManager.getInstance().onDisconnect(this.client);
 
         if (this.client != null) {
@@ -76,38 +66,21 @@ public class Disconnection {
         }
     }
 
-    /**
-     * Creates a Disconnection instance for the given GameClient.
-     * @param client the GameClient to disconnect.
-     * @return a new Disconnection instance.
-     */
     public static Disconnection of(GameClient client) {
         return new Disconnection(client, null);
     }
 
-    /**
-     * Creates a Disconnection instance for the given Player.
-     * @param player the Player to disconnect.
-     * @return a new Disconnection instance.
-     */
     public static Disconnection of(Player player) {
         return new Disconnection(null, player);
     }
 
-    /**
-     * Creates a Disconnection instance for the given GameClient and Player.
-     * @param client the GameClient to disconnect.
-     * @param player the Player to disconnect.
-     * @return a new Disconnection instance.
-     */
     public static Disconnection of(GameClient client, Player player) {
         return new Disconnection(client, player);
     }
 
     /**
      * Stores the player's data and deletes it if the player is online, once no value transaction of the character is
-     * in flight: a save of the memory before its outcome would undo the committed move.<br>
-     * If an error occurs during the process, a warning is logged.
+     * in flight: a save of the memory before its outcome would undo the committed move.
      */
     public void storeAndDelete() {
         if (player == null) {
@@ -143,13 +116,13 @@ public class Disconnection {
             }
         } catch (Exception e) {
             log.warn("Problem with storeAndDelete: {}", e.getMessage());
+        } finally {
+            if (player != null) {
+                WorldPartition.loadedGameAccounts().detach(player, player.getAccountId());
+            }
         }
     }
 
-    /**
-     * Stores and deletes the player's data, then closes the connection with the given packet.
-     * @param packet the ServerPacket to send before closing the connection (can be null).
-     */
     public void storeAndDeleteWith(ServerPacket packet) {
         storeAndDelete();
 
@@ -166,11 +139,6 @@ public class Disconnection {
         }
     }
 
-    /**
-     * Handles the disconnection process based on the player's state.<br>
-     * If the player can logout immediately, the player's data is stored and deleted.<br>
-     * Otherwise, the process is scheduled after a delay.
-     */
     public void onDisconnection() {
         if (player == null) {
             return;

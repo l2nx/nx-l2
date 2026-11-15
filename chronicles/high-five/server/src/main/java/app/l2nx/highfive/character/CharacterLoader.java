@@ -55,20 +55,28 @@ public class CharacterLoader {
         if (!WorldPartition.loadedCharacters().startLoading(characterId)) {
             throw new IllegalStateException("Character " + characterId + " is loading already");
         }
-        WorldPartition.inFlightCharacters()
-                .whenIdle(
-                        characterId,
-                        () -> queries.run(
-                                () -> readAndMarkOnline(characterId),
-                                WorldPartition::offer,
-                                stored -> built(characterId, client, stored, onBuilt),
-                                failure -> failed(characterId, client, failure)));
+        final UUID accountId = client.getAccountId();
+        WorldPartition.loadedGameAccounts().pin(accountId);
+        try {
+            WorldPartition.inFlightCharacters()
+                    .whenIdle(
+                            characterId,
+                            () -> queries.run(
+                                    () -> readAndMarkOnline(characterId),
+                                    WorldPartition::offer,
+                                    stored -> built(characterId, accountId, client, stored, onBuilt),
+                                    failure -> failed(characterId, accountId, client, failure)));
+        } catch (RuntimeException e) {
+            loadEnded(characterId, accountId);
+            throw e;
+        }
     }
 
-    private void built(UUID characterId, GameClient client, StoredCharacter stored, Consumer<Player> onBuilt) {
+    private void built(
+            UUID characterId, UUID accountId, GameClient client, StoredCharacter stored, Consumer<Player> onBuilt) {
         if (client.getConnectionState() != SessionState.AUTHED) {
             client.session().release();
-            discard(characterId);
+            discard(characterId, accountId);
             return;
         }
         final Player player;
@@ -78,7 +86,7 @@ public class CharacterLoader {
             log.error("Character {} could not be built from its rows", characterId, e);
             client.port().emitAndClose(ServerClosed.INSTANCE);
             client.session().release();
-            discard(characterId);
+            discard(characterId, accountId);
             return;
         }
         WorldPartition.loadedCharacters().loaded(characterId, player);
@@ -90,33 +98,38 @@ public class CharacterLoader {
             Disconnection.of(client, player).storeAndDelete();
         } finally {
             client.session().release();
-            WorldPartition.loadedCharacters().loadEnded(characterId);
+            loadEnded(characterId, accountId);
         }
     }
 
-    private void failed(UUID characterId, GameClient client, RuntimeException failure) {
-        WorldPartition.loadedCharacters().loadEnded(characterId);
+    private void failed(UUID characterId, UUID accountId, GameClient client, RuntimeException failure) {
+        loadEnded(characterId, accountId);
         log.error("Character {} could not be loaded", characterId, failure);
         client.port().emitAndClose(ServerClosed.INSTANCE);
         client.session().release();
     }
 
     // The load ends only after the offline mark, so a waiting next load never has its online mark overtaken.
-    private void discard(UUID characterId) {
+    private void discard(UUID characterId, UUID accountId) {
         queries.run(
                 () -> {
                     markOffline(characterId);
                     return characterId;
                 },
                 WorldPartition::offer,
-                done -> WorldPartition.loadedCharacters().loadEnded(characterId),
+                done -> loadEnded(characterId, accountId),
                 failure -> {
                     log.error(
                             "Character {} stays marked online: its discarded load was not marked offline",
                             characterId,
                             failure);
-                    WorldPartition.loadedCharacters().loadEnded(characterId);
+                    loadEnded(characterId, accountId);
                 });
+    }
+
+    private static void loadEnded(UUID characterId, UUID accountId) {
+        WorldPartition.loadedCharacters().loadEnded(characterId);
+        WorldPartition.loadedGameAccounts().unpin(accountId);
     }
 
     public Optional<StoredCharacter> read(UUID characterId) {

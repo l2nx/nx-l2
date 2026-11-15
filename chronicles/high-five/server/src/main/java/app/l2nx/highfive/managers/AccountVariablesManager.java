@@ -21,13 +21,6 @@ public class AccountVariablesManager {
         instance = this;
     }
 
-    /**
-     * @return the variable values by name; a value stored empty is {@code null}
-     */
-    public Map<String, String> findVariables(UUID accountId) {
-        return variableRepository.findAll(accountId);
-    }
-
     public Map<String, String> findVariables(UUID accountId, String namePrefix) {
         return variableRepository.findByNamePrefix(accountId, namePrefix);
     }
@@ -52,10 +45,6 @@ public class AccountVariablesManager {
 
     public void saveVariable(UUID accountId, String name, String content) {
         variableRepository.upsert(accountId, name, content);
-    }
-
-    public void deleteVariables(UUID accountId) {
-        variableRepository.deleteAll(accountId);
     }
 
     // TODO: callers receive the bean through their constructor (#41).

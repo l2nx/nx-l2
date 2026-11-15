@@ -41,15 +41,14 @@ class AccountVariablesTest {
     private final AccountVariableRepository repository = mock(AccountVariableRepository.class);
 
     private AccountVariables load(Map<String, String> stored) {
-        when(repository.findAll(ACCOUNT_ID)).thenReturn(stored);
         new AccountVariablesManager(repository);
-        return WorldLoopExtension.callInPass(() -> new AccountVariables(ACCOUNT_ID));
+        return WorldLoopExtension.callInPass(() -> new AccountVariables(ACCOUNT_ID, stored));
     }
 
     @Nested
-    class RestoreMe {
+    class Constructor {
         @Test
-        void restoreMe_shouldLeaveVariableUnset_whenStoredValueIsEmpty() {
+        void new_shouldLeaveVariableUnset_whenStoredValueIsEmpty() {
             final Map<String, String> stored = new HashMap<>();
             stored.put("HWID", null);
             stored.put("PRIME_POINTS", "15");

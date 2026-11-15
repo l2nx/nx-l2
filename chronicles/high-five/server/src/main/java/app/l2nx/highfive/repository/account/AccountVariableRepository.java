@@ -23,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @RequiredArgsConstructor
 public class AccountVariableRepository {
-    private static final String SELECT_ALL = "SELECT name, content FROM account_variables WHERE account_id = ?";
+    private static final String SELECT_ALL_WITHOUT_PREFIX =
+            "SELECT name, content FROM account_variables WHERE account_id = ? AND NOT starts_with(name, ?)";
     private static final String SELECT_BY_NAME_PREFIX =
             "SELECT name, content FROM account_variables WHERE account_id = ? AND starts_with(name, ?)";
     private static final String INSERT = "INSERT INTO account_variables (account_id, name, content) VALUES (?, ?, ?)";
@@ -34,14 +35,17 @@ public class AccountVariableRepository {
         ON CONFLICT (account_id, name) DO UPDATE SET content = EXCLUDED.content\
         """;
     private static final String DELETE = "DELETE FROM account_variables WHERE account_id = ? AND name = ?";
-    private static final String DELETE_ALL = "DELETE FROM account_variables WHERE account_id = ?";
     private static final String DELETE_BY_NAME = "DELETE FROM account_variables WHERE name = ?";
 
     private final JdbcClient jdbcClient;
     private final JdbcTemplate jdbcTemplate;
 
-    public Map<String, String> findAll(UUID accountId) {
-        return toMap(jdbcClient.sql(SELECT_ALL).param(accountId));
+    /**
+     * @return the variable values by name, without the names starting with {@code excludedPrefix}; a value stored empty
+     *     is {@code null}
+     */
+    public Map<String, String> findAllWithoutPrefix(UUID accountId, String excludedPrefix) {
+        return toMap(jdbcClient.sql(SELECT_ALL_WITHOUT_PREFIX).param(accountId).param(excludedPrefix));
     }
 
     public Map<String, String> findByNamePrefix(UUID accountId, String namePrefix) {
@@ -60,9 +64,6 @@ public class AccountVariableRepository {
                 .update();
     }
 
-    /**
-     * @return whether the variable existed
-     */
     public boolean update(UUID accountId, String name, String content) {
         return jdbcClient
                         .sql(UPDATE)
@@ -102,10 +103,6 @@ public class AccountVariableRepository {
                     .toList();
             jdbcTemplate.batchUpdate(UPSERT, rows);
         }
-    }
-
-    public void deleteAll(UUID accountId) {
-        jdbcClient.sql(DELETE_ALL).param(accountId).update();
     }
 
     public void deleteByName(String name) {

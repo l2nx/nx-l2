@@ -56,9 +56,10 @@ public class SecondaryPasswordAuth {
     @Getter
     private boolean authed;
 
-    private static final String VAR_PREFIX = "secauth_";
-    private static final String VAR_PWD = VAR_PREFIX + "pwd";
-    private static final String VAR_WTE = VAR_PREFIX + "wte";
+    /** Its variables are written by database here, so account variables never load them. */
+    public static final String VARIABLE_PREFIX = "secauth_";
+    private static final String VAR_PWD = VARIABLE_PREFIX + "pwd";
+    private static final String VAR_WTE = VARIABLE_PREFIX + "wte";
 
     public SecondaryPasswordAuth(GameClient activeClient) {
         this.activeClient = activeClient;
@@ -71,7 +72,7 @@ public class SecondaryPasswordAuth {
     private void loadPassword() {
         try {
             final Map<String, String> variables =
-                    AccountVariablesManager.getInstance().findVariables(activeClient.getAccountId(), VAR_PREFIX);
+                    AccountVariablesManager.getInstance().findVariables(activeClient.getAccountId(), VARIABLE_PREFIX);
             password = variables.get(VAR_PWD);
             final String attempts = variables.get(VAR_WTE);
             if (attempts != null) {
