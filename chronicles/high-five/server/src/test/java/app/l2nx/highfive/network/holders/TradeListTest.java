@@ -60,6 +60,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("PlayerConfig")
 @ResourceLock(WorldLoopExtension.LOCK)
 class TradeListTest {
     private static final int OWNER = 268_435_600;

@@ -45,6 +45,7 @@ import org.mockito.MockedStatic;
 @ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock("PlayerConfig")
 @ResourceLock(WorldLoopExtension.LOCK)
 class PartyTest {
     private final Player leader = player(268_200_001, "Leader");

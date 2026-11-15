@@ -60,6 +60,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 @ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock("PlayerConfig")
 @ResourceLock(WorldLoopExtension.LOCK)
 class ClanHallAuctionTest {
     private static final int HALL = 22;

@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 // initializers skipped, so each test installs the collections it reads.
 @ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("PlayerConfig")
 @ResourceLock(WorldLoopExtension.LOCK)
 class PlayerTest {
     private final Player player = mock(Player.class, CALLS_REAL_METHODS);

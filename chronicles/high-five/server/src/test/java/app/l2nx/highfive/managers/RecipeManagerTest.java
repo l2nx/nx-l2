@@ -57,6 +57,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock(ClockBridgeExtension.LOCK)
+@ResourceLock("PlayerConfig")
 @ResourceLock(WorldLoopExtension.LOCK)
 class RecipeManagerTest {
     private static final int CRAFTER = 268_435_700;
