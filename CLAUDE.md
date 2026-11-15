@@ -31,7 +31,8 @@ recorded in the spec with its reason, not a silent choice.
 **Every bug found and not fixed in the current change is filed at once**, so it is not lost in a report: a GitHub
 issue in `l2nx/nx-l2` with issue type **Bug** (the org type, not a label), added to Project "L2NX" with status
 Backlog, plus its line in [docs/TODO.md](docs/TODO.md). This includes pre-existing Mobius bugs noticed in passing
-and review findings left out of scope. The issue holds the failure scenario with file and line.
+and review findings left out of scope. The issue holds the failure scenario with file and line. A flaky test is not
+filed: it is fixed at once, in the session that met it.
 
 ## Pointers
 
