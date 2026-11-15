@@ -29,7 +29,6 @@ import app.l2nx.network.transport.NetworkEventLoops;
 import app.l2nx.network.transport.TransportResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
@@ -54,6 +53,8 @@ import org.springframework.grpc.server.lifecycle.GrpcServerLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
 class LoginServerTest {
+    // The system picks the port at bind time: a number probed in advance may be taken by another process first.
+    private static final int EPHEMERAL_PORT = 0;
     private static final Duration RESTART_DELAY = Duration.ofHours(6);
     private static final ScrambledKeyPair RSA_KEYS = new ScrambledKeyPair(keyPair("RSA"));
 
@@ -102,8 +103,8 @@ class LoginServerTest {
             final ScheduledFuture<?> restartTask = mock(ScheduledFuture.class);
             when(taskScheduler.schedule(any(Runnable.class), any(Instant.class)))
                     .thenAnswer(invocation -> restartTask);
-            final LoginServer server = server(
-                    TestLoginProperties.create(freePort(), new LoginProperties.ScheduledRestart(true, RESTART_DELAY)));
+            final LoginServer server = server(TestLoginProperties.create(
+                    EPHEMERAL_PORT, new LoginProperties.ScheduledRestart(true, RESTART_DELAY)));
 
             final Instant before = Instant.now();
             server.start();
@@ -128,7 +129,8 @@ class LoginServerTest {
             final ScrambledKeyPair notRsa = mock(ScrambledKeyPair.class);
             when(notRsa.getPrivateKey()).thenReturn(keyPair("EC").getPrivate());
             when(loginController.getScrambledRSAKeyPair()).thenReturn(notRsa);
-            final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
+            final LoginServer server =
+                    server(TestLoginProperties.create(EPHEMERAL_PORT, TestLoginProperties.noRestart()));
 
             assertThatThrownBy(server::start)
                     .isInstanceOf(IllegalStateException.class)
@@ -140,7 +142,8 @@ class LoginServerTest {
 
         @Test
         void start_shouldNotScheduleRestart_whenScheduledRestartDisabled() throws Exception {
-            final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
+            final LoginServer server =
+                    server(TestLoginProperties.create(EPHEMERAL_PORT, TestLoginProperties.noRestart()));
 
             server.start();
             server.stop();
@@ -156,7 +159,8 @@ class LoginServerTest {
             final GrpcServerLifecycle grpcServer = new GrpcServerLifecycle(
                     mock(GrpcServerFactory.class), Duration.ZERO, mock(ApplicationEventPublisher.class));
 
-            final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
+            final LoginServer server =
+                    server(TestLoginProperties.create(EPHEMERAL_PORT, TestLoginProperties.noRestart()));
 
             assertThat(server.getPhase()).isLessThan(grpcServer.getPhase());
         }
@@ -182,7 +186,7 @@ class LoginServerTest {
         void loadBanFile_shouldBanOnlyAValidLine(String line, int expected) throws Exception {
             final Path file = Files.writeString(directory.resolve("banned_ip.cfg"), line + "\n");
 
-            server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()))
+            server(TestLoginProperties.create(EPHEMERAL_PORT, TestLoginProperties.noRestart()))
                     .loadBanFile(file);
 
             assertThat(addressBans.size()).isEqualTo(expected);
@@ -190,7 +194,7 @@ class LoginServerTest {
 
         @Test
         void loadBanFile_shouldBanNothing_whenTheFileIsMissing() throws Exception {
-            server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()))
+            server(TestLoginProperties.create(EPHEMERAL_PORT, TestLoginProperties.noRestart()))
                     .loadBanFile(directory.resolve("banned_ip.cfg"));
 
             assertThat(addressBans.size()).isZero();
@@ -218,12 +222,6 @@ class LoginServerTest {
             return KeyPairGenerator.getInstance(algorithm).generateKeyPair();
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException(e);
-        }
-    }
-
-    private static int freePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-            return socket.getLocalPort();
         }
     }
 }

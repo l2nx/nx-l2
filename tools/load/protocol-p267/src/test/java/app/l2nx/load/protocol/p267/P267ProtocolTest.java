@@ -22,7 +22,7 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
+import java.net.Socket;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -162,33 +162,35 @@ class P267ProtocolTest {
 
         @Test
         void open_shouldFail_whenTheGameServerRefusesTheConnection() throws IOException {
-            final int closedPort;
-            try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-                closedPort = socket.getLocalPort();
+            try (Socket closed = closedPort()) {
+                server = new FakeLoginServer("load0", "secret", false, closed.getLocalPort());
+
+                final Run run = run(server.address(), false);
+
+                assertThat(run.events()).endsWith("ack SELECT_SERVER", "state GAME_CONNECT", "failed");
+                assertThat(run.listener().failures())
+                        .singleElement(InstanceOfAssertFactories.THROWABLE)
+                        .isInstanceOf(IOException.class);
             }
-            server = new FakeLoginServer("load0", "secret", false, closedPort);
-
-            final Run run = run(server.address(), false);
-
-            assertThat(run.events()).endsWith("ack SELECT_SERVER", "state GAME_CONNECT", "failed");
-            assertThat(run.listener().failures())
-                    .singleElement(InstanceOfAssertFactories.THROWABLE)
-                    .isInstanceOf(IOException.class);
         }
 
         @Test
         void open_shouldFail_whenTheLoginServerRefusesTheConnection() throws IOException {
-            final InetSocketAddress closed;
-            try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-                closed = new InetSocketAddress(InetAddress.getLoopbackAddress(), socket.getLocalPort());
+            try (Socket closed = closedPort()) {
+                final Run run = run((InetSocketAddress) closed.getLocalSocketAddress(), true);
+
+                assertThat(run.events()).containsExactly("failed");
+                assertThat(run.listener().failures())
+                        .singleElement(InstanceOfAssertFactories.THROWABLE)
+                        .isInstanceOf(IOException.class);
             }
+        }
 
-            final Run run = run(closed, true);
-
-            assertThat(run.events()).containsExactly("failed");
-            assertThat(run.listener().failures())
-                    .singleElement(InstanceOfAssertFactories.THROWABLE)
-                    .isInstanceOf(IOException.class);
+        // Bound but not listening: connections are refused, and no other process can listen on the port while held.
+        private static Socket closedPort() throws IOException {
+            final Socket socket = new Socket();
+            socket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+            return socket;
         }
 
         @Test

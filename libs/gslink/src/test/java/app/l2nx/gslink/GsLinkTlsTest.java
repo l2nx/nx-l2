@@ -15,9 +15,6 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.netty.pkitesting.CertificateBuilder;
 import io.netty.pkitesting.X509Bundle;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,7 +25,10 @@ import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
 import org.springframework.boot.grpc.client.autoconfigure.CompositeChannelFactoryAutoConfiguration;
 import org.springframework.boot.grpc.client.autoconfigure.GrpcClientAutoConfiguration;
 import org.springframework.boot.grpc.server.autoconfigure.GrpcServerAutoConfiguration;
+import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.runner.ContextConsumer;
+import org.springframework.grpc.server.lifecycle.GrpcServerLifecycle;
 
 class GsLinkTlsTest {
     @TempDir
@@ -52,8 +52,8 @@ class GsLinkTlsTest {
     }
 
     @Test
-    void connect_shouldRegisterOverTls_whenTheCertificateNamesTheHost() throws Exception {
-        runner(freePort(), "localhost").run(context -> {
+    void connect_shouldRegisterOverTls_whenTheCertificateNamesTheHost() {
+        run("localhost", context -> {
             final RecordingStreamObserver<LoginServerMessage> responses = new RecordingStreamObserver<>();
             final StreamObserver<GameServerMessage> requests =
                     GsLinkGrpc.newStub(context.getBean(ManagedChannel.class)).connect(responses);
@@ -67,9 +67,9 @@ class GsLinkTlsTest {
     }
 
     @Test
-    void connect_shouldFail_whenTheCertificateDoesNotNameTheHost() throws Exception {
+    void connect_shouldFail_whenTheCertificateDoesNotNameTheHost() {
         // The certificate names localhost only; 127.0.0.1 is the same server under a name it does not carry.
-        runner(freePort(), "127.0.0.1").run(context -> {
+        run("127.0.0.1", context -> {
             final RecordingStreamObserver<LoginServerMessage> responses = new RecordingStreamObserver<>();
 
             GsLinkGrpc.newStub(context.getBean(ManagedChannel.class))
@@ -80,34 +80,43 @@ class GsLinkTlsTest {
         });
     }
 
-    private static ApplicationContextRunner runner(int port, String host) {
-        return new ApplicationContextRunner()
+    /**
+     * The login server binds a port the system picks, then the game server's channel targets the bound port: the
+     * channel bean needs the port at startup, and a number probed in advance may be taken by another process first.
+     */
+    private static void run(String host, ContextConsumer<AssertableApplicationContext> test) {
+        withTls(new ApplicationContextRunner())
                 .withConfiguration(AutoConfigurations.of(
-                        SslAutoConfiguration.class,
-                        GrpcServerAutoConfiguration.class,
-                        GrpcClientAutoConfiguration.class,
-                        CompositeChannelFactoryAutoConfiguration.class,
-                        GsLinkAutoConfiguration.class))
+                        SslAutoConfiguration.class, GrpcServerAutoConfiguration.class, GsLinkAutoConfiguration.class))
                 .withUserConfiguration(EchoLoginServer.class)
                 .withPropertyValues(
-                        "l2nx.gslink.secret=tls-test-secret-0123456789abcdefgh",
-                        "spring.ssl.bundle.pem.gslink.keystore.certificate="
-                                + certificates.resolve("gslink.crt").toUri(),
-                        "spring.ssl.bundle.pem.gslink.keystore.private-key="
-                                + certificates.resolve("gslink.key").toUri(),
-                        "spring.ssl.bundle.pem.gslink.truststore.certificate="
-                                + certificates.resolve("ca.crt").toUri(),
                         "spring.grpc.server.address=127.0.0.1",
-                        "spring.grpc.server.port=" + port,
-                        "spring.grpc.server.ssl.bundle=gslink",
-                        "spring.grpc.client.channel.login.target=static://" + host + ":" + port,
-                        "spring.grpc.client.channel.login.ssl.bundle=gslink");
+                        "spring.grpc.server.port=0",
+                        "spring.grpc.server.ssl.bundle=gslink")
+                .run(loginServer -> {
+                    final int port =
+                            loginServer.getBean(GrpcServerLifecycle.class).getPort();
+                    withTls(new ApplicationContextRunner())
+                            .withConfiguration(AutoConfigurations.of(
+                                    SslAutoConfiguration.class,
+                                    GrpcClientAutoConfiguration.class,
+                                    CompositeChannelFactoryAutoConfiguration.class,
+                                    GsLinkAutoConfiguration.class))
+                            .withPropertyValues(
+                                    "spring.grpc.client.channel.login.target=static://" + host + ":" + port,
+                                    "spring.grpc.client.channel.login.ssl.bundle=gslink")
+                            .run(test);
+                });
     }
 
-    // The channel bean needs the port before the server binds it, so the test picks a free one first.
-    private static int freePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-            return socket.getLocalPort();
-        }
+    private static ApplicationContextRunner withTls(ApplicationContextRunner runner) {
+        return runner.withPropertyValues(
+                "l2nx.gslink.secret=tls-test-secret-0123456789abcdefgh",
+                "spring.ssl.bundle.pem.gslink.keystore.certificate="
+                        + certificates.resolve("gslink.crt").toUri(),
+                "spring.ssl.bundle.pem.gslink.keystore.private-key="
+                        + certificates.resolve("gslink.key").toUri(),
+                "spring.ssl.bundle.pem.gslink.truststore.certificate="
+                        + certificates.resolve("ca.crt").toUri());
     }
 }
