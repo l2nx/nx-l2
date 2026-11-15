@@ -63,6 +63,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(WorldLoopExtension.class)
 @Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("GeneralConfig")
 @ResourceLock("PlayerConfig")
 @ResourceLock(WorldLoopExtension.LOCK)
 class RequestSellItemTest {

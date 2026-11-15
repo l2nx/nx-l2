@@ -43,6 +43,7 @@ import org.springframework.context.support.GenericApplicationContext;
 @ExtendWith({ClockBridgeExtension.class, WorldLoopExtension.class})
 @ResourceLock(ClockBridgeExtension.LOCK)
 @ResourceLock(WorldLoopExtension.LOCK)
+@ResourceLock("GeneralConfig")
 @ResourceLock("LoginService")
 @ResourceLock("Shutdown")
 class ShutdownTest {

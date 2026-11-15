@@ -19,6 +19,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+@ResourceLock("GeneralConfig")
 @ResourceLock("ServerConfig")
 class ServerListingTest {
     private final ServerListing listing = new ServerListing();

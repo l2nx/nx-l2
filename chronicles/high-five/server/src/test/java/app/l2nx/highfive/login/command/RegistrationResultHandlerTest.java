@@ -21,6 +21,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.MockedStatic;
 
 // The listing reads ServerConfig statics other tests write.
+@ResourceLock("GeneralConfig")
 @ResourceLock("ServerConfig")
 class RegistrationResultHandlerTest {
     private static final RegistrationResult RESULT = RegistrationResult.builder()
