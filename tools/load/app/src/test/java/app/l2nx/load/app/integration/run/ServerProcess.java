@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 /** A server started from its distribution, as the deployment runs it: the working directory holds config and data. */
 final class ServerProcess implements AutoCloseable {
     private static final Duration POLL = Duration.ofMillis(250);
+    private static final int LOG_TAIL_LINES = 40;
 
     private final String name;
     private final Process process;
@@ -60,11 +61,18 @@ final class ServerProcess implements AutoCloseable {
             }
             if (!process.isAlive()) {
                 throw new IllegalStateException(
-                        name + " exited with " + process.exitValue() + " before logging " + line + ", see " + log);
+                        name + " exited with " + process.exitValue() + " before logging " + line + ", " + logTail());
             }
             TimeUnit.MILLISECONDS.sleep(POLL.toMillis());
         }
-        throw new IllegalStateException(name + " did not log " + line + " in " + timeout + ", see " + log);
+        throw new IllegalStateException(name + " did not log " + line + " in " + timeout + ", " + logTail());
+    }
+
+    /** The log of a CI runner is gone with its workspace, so a failure carries the end of it. */
+    private String logTail() throws IOException {
+        final List<String> lines = Files.readAllLines(log, StandardCharsets.ISO_8859_1);
+        return "the last lines of " + log + ":\n"
+                + String.join("\n", lines.subList(Math.max(0, lines.size() - LOG_TAIL_LINES), lines.size()));
     }
 
     /** Forcibly: every load bot has logged out by now, and nothing the servers still hold matters to the test. */

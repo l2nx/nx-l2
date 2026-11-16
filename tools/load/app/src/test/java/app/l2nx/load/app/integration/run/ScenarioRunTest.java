@@ -22,8 +22,6 @@ import app.l2nx.load.protocol.p267.P267Protocol;
 import app.l2nx.load.report.ReportWriter;
 import app.l2nx.load.report.model.RunSummary;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -72,6 +70,12 @@ class ScenarioRunTest {
     private static final String GSLINK_SECRET = "load-harness-integration-test-secret";
     private static final Pattern LOGIN_READY = Pattern.compile("Started LoginApplication");
     private static final Pattern GAME_REGISTERED = Pattern.compile("Registered on login as Server (\\d+)");
+    // Every listener binds port 0 and the test reads the bound port from the line its server logs on binding: a port
+    // number probed free and bound later can be taken in between by any outgoing connection on the machine.
+    private static final Pattern MANAGEMENT_PORT = Pattern.compile("Tomcat started on port (\\d+)");
+    private static final Pattern LOGIN_CLIENT_PORT = Pattern.compile("login-c621 listening on \\S+:(\\d+)");
+    private static final Pattern GSLINK_PORT =
+            Pattern.compile("gRPC Server started, listening on address: .*, port: (\\d+)");
     private static final Duration START_TIMEOUT = Duration.ofMinutes(4);
     private static final Duration SCRAPE_TIMEOUT = Duration.ofSeconds(30);
     private static final int BOTS = 20;
@@ -86,8 +90,6 @@ class ScenarioRunTest {
     private final List<ServerProcess> servers = new ArrayList<>();
     private GenericContainer<?> prometheus;
     private int loginPort;
-    private int gamePort;
-    private int gsLinkPort;
     private int loginManagementPort;
     private int gameManagementPort;
     private int serverId;
@@ -102,17 +104,12 @@ class ScenarioRunTest {
     @AfterEach
     void stop() throws InterruptedException {
         stopServers();
-        if (prometheus != null) {
-            prometheus.stop();
-        }
     }
 
     @Test
     @Timeout(value = 12, unit = TimeUnit.MINUTES)
     void run_shouldPlayEveryScenario_onASeededDatabase() throws Exception {
-        allocatePorts();
         prepareGameDistribution();
-        startPrometheus();
         assertThat(harness("db-create")).isZero();
 
         startServers("seed", "load,load-seed");
@@ -180,7 +177,6 @@ class ScenarioRunTest {
     private Path play(String scenario) throws IOException, InterruptedException {
         assertThat(harness("db-reset")).isZero();
         startServers(scenario, "load");
-        awaitScrapes();
         final int exit = harness(
                 "run",
                 "--l2nx.load.scenario=" + scenario,
@@ -197,41 +193,25 @@ class ScenarioRunTest {
         return reportOf(scenario);
     }
 
-    private void allocatePorts() throws IOException {
-        try (ServerSocket login = freeSocket();
-                ServerSocket game = freeSocket();
-                ServerSocket gsLink = freeSocket();
-                ServerSocket loginManagement = freeSocket();
-                ServerSocket gameManagement = freeSocket()) {
-            loginPort = login.getLocalPort();
-            gamePort = game.getLocalPort();
-            gsLinkPort = gsLink.getLocalPort();
-            loginManagementPort = loginManagement.getLocalPort();
-            gameManagementPort = gameManagement.getLocalPort();
-        }
-    }
-
-    private static ServerSocket freeSocket() throws IOException {
-        return new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
-    }
-
     private void prepareGameDistribution() throws IOException {
         final Path config = gameDistribution.resolve("config");
         Files.deleteIfExists(config.resolve("hexid.txt"));
         final Path server = config.resolve("Server.ini");
         final String patched = Files.readString(server, StandardCharsets.ISO_8859_1)
-                .replaceAll("(?m)^GameserverPort = .*$", "GameserverPort = " + gamePort)
+                .replaceAll("(?m)^GameserverPort = .*$", "GameserverPort = 0")
                 .replaceAll("(?m)^GameserverHostname = .*$", "GameserverHostname = 127.0.0.1");
         Files.writeString(server, patched, StandardCharsets.ISO_8859_1);
     }
 
-    private void startPrometheus() {
+    /** One per start of the servers: their management ports are new each time. */
+    private void startPrometheus() throws IOException, InterruptedException {
         Testcontainers.exposeHostPorts(gameManagementPort, loginManagementPort);
         prometheus = new GenericContainer<>(DockerImageName.parse(PROMETHEUS_IMAGE))
                 .withCopyToContainer(Transferable.of(prometheusConfig()), "/etc/prometheus/prometheus.yml")
                 .withExposedPorts(9090)
                 .waitingFor(Wait.forHttp("/-/ready").forStatusCode(200));
         prometheus.start();
+        awaitScrapes();
     }
 
     private String prometheusConfig() {
@@ -264,13 +244,15 @@ class ScenarioRunTest {
                 serverArguments(
                         profiles,
                         "l2nx_login",
-                        loginManagementPort,
                         "--l2nx.login.client.host=127.0.0.1",
-                        "--l2nx.login.client.ports[0].port=" + loginPort,
+                        "--l2nx.login.client.ports[0].port=0",
                         "--l2nx.login.client.ports[0].variant=c621",
-                        "--spring.grpc.server.port=" + gsLinkPort));
+                        "--spring.grpc.server.port=0"));
         servers.add(login);
         login.awaitLog(LOGIN_READY, START_TIMEOUT);
+        loginPort = Integer.parseInt(login.awaitLog(LOGIN_CLIENT_PORT, START_TIMEOUT));
+        loginManagementPort = Integer.parseInt(login.awaitLog(MANAGEMENT_PORT, START_TIMEOUT));
+        final int gsLinkPort = Integer.parseInt(login.awaitLog(GSLINK_PORT, START_TIMEOUT));
         final ServerProcess game = ServerProcess.start(
                 "game server",
                 gameDistribution,
@@ -279,14 +261,15 @@ class ScenarioRunTest {
                 serverArguments(
                         profiles,
                         "l2nx_game",
-                        gameManagementPort,
                         "--spring.grpc.client.channel.login.target=static://127.0.0.1:" + gsLinkPort));
         servers.add(game);
         serverId = Integer.parseInt(game.awaitLog(GAME_REGISTERED, START_TIMEOUT));
+        gameManagementPort = Integer.parseInt(game.awaitLog(MANAGEMENT_PORT, START_TIMEOUT));
         awaitReadiness(gameManagementPort);
+        startPrometheus();
     }
 
-    private List<String> serverArguments(String profiles, String role, int managementPort, String... extra) {
+    private List<String> serverArguments(String profiles, String role, String... extra) {
         final PostgreSQLContainer container = PostgresDatabase.container();
         final String url = "jdbc:postgresql://" + container.getHost() + ":" + container.getFirstMappedPort() + "/"
                 + database.name();
@@ -296,7 +279,7 @@ class ScenarioRunTest {
                 // The roles of LoadPostgres cannot log in; the superuser stands in for them.
                 "--spring.datasource.username=" + container.getUsername(),
                 "--spring.datasource.password=" + container.getPassword(),
-                "--server.port=" + managementPort,
+                "--server.port=0",
                 "--l2nx.gslink.secret=" + GSLINK_SECRET));
         arguments.addAll(List.of(extra));
         return arguments;
@@ -338,6 +321,10 @@ class ScenarioRunTest {
     }
 
     private void stopServers() throws InterruptedException {
+        if (prometheus != null) {
+            prometheus.stop();
+            prometheus = null;
+        }
         for (int index = servers.size() - 1; index >= 0; index--) {
             servers.get(index).close();
         }
@@ -351,14 +338,17 @@ class ScenarioRunTest {
                 "--l2nx.load.bots=" + BOTS,
                 "--l2nx.load.event-loop-threads=2",
                 "--l2nx.load.output-dir=" + root.resolve("reports"),
-                "--l2nx.load.p267.login-host=127.0.0.1",
-                "--l2nx.load.p267.login-port=" + loginPort,
-                "--l2nx.load.p267.server-id=" + Math.max(1, serverId),
                 "--l2nx.load.database.admin-url=" + database.adminUrl(),
                 "--l2nx.load.database.user=" + database.user(),
                 "--l2nx.load.database.password=" + database.password(),
                 "--l2nx.load.database.name=" + database.name(),
                 "--l2nx.load.database.template=" + database.template()));
+        // The database commands run with the servers down, before their ports exist; they keep the defaults.
+        if (!servers.isEmpty()) {
+            arguments.add("--l2nx.load.p267.login-host=127.0.0.1");
+            arguments.add("--l2nx.load.p267.login-port=" + loginPort);
+            arguments.add("--l2nx.load.p267.server-id=" + serverId);
+        }
         if (prometheus != null) {
             arguments.add("--l2nx.load.prometheus.url=" + prometheusUrl());
             arguments.add("--l2nx.load.prometheus.targets[0].job=game");
