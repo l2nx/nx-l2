@@ -77,6 +77,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @ExtendWith(WorldLoopExtension.class)
 class LoginServerLinkTest {
     private static final byte[] HEX_ID = {1, 2, 3};
+    private static final int GAME_PORT = 7777;
     private static final UUID FIRST = UUID.fromString("0192f0a0-0000-7000-8000-000000000011");
     private static final UUID SECOND = UUID.fromString("0192f0a0-0000-7000-8000-000000000012");
     private static final UUID FAILING = UUID.fromString("0192f0a0-0000-7000-8000-000000000013");
@@ -99,7 +100,6 @@ class LoginServerLinkTest {
     private volatile CountDownLatch connectEntered;
     private volatile CountDownLatch connectReleased;
 
-    private int savedPort;
     private boolean savedAcceptAlternate;
     private List<String> savedSubnets;
     private List<String> savedHosts;
@@ -109,14 +109,12 @@ class LoginServerLinkTest {
 
     @BeforeEach
     void start() throws Exception {
-        savedPort = ServerConfig.PORT_GAME;
         savedAcceptAlternate = ServerConfig.ACCEPT_ALTERNATE_ID;
         savedSubnets = ServerConfig.GAME_SERVER_SUBNETS;
         savedHosts = ServerConfig.GAME_SERVER_HOSTS;
         savedMaxPlayers = ServerConfig.MAXIMUM_ONLINE_USERS;
         savedHexId = ServerConfig.HEX_ID;
         savedServerId = ServerConfig.SERVER_ID;
-        ServerConfig.PORT_GAME = 7777;
         ServerConfig.ACCEPT_ALTERNATE_ID = true;
         ServerConfig.GAME_SERVER_SUBNETS = List.of("0.0.0.0/0");
         ServerConfig.GAME_SERVER_HOSTS = List.of("127.0.0.1");
@@ -182,7 +180,6 @@ class LoginServerLinkTest {
         logs.stop();
         scheduler.shutdown();
         server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-        ServerConfig.PORT_GAME = savedPort;
         ServerConfig.ACCEPT_ALTERNATE_ID = savedAcceptAlternate;
         ServerConfig.GAME_SERVER_SUBNETS = savedSubnets;
         ServerConfig.GAME_SERVER_HOSTS = savedHosts;
@@ -195,7 +192,7 @@ class LoginServerLinkTest {
     class Start {
         @Test
         void start_shouldRegisterFirstWithTheServerIniData() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
 
             final GsLinkProto.GameServerMessage actual =
                     loginServer.nextConnection().received().next();
@@ -206,7 +203,7 @@ class LoginServerLinkTest {
                             .setAcceptAlternativeId(true)
                             .setHexId(ByteString.copyFrom(HEX_ID))
                             .setChronicle(LoginServerLink.CHRONICLE)
-                            .setPort(7777)
+                            .setPort(GAME_PORT)
                             .setMaxPlayers(100)
                             .addAddresses(GsLinkProto.GameServerAddress.newBuilder()
                                     .setSubnet("0.0.0.0/0")
@@ -219,7 +216,7 @@ class LoginServerLinkTest {
     class OnNext {
         @Test
         void onNext_shouldTurnEveryLoginMessageIntoItsCommand() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
 
@@ -294,7 +291,7 @@ class LoginServerLinkTest {
 
         @Test
         void onNext_shouldSubmitAKickInAWorldPassAndOtherMessagesOnTheLinkThread(Loop world) throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
 
@@ -318,7 +315,7 @@ class LoginServerLinkTest {
 
         @Test
         void onNext_shouldKeepTheStream_whenACommandHandlerFails() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
 
@@ -353,7 +350,7 @@ class LoginServerLinkTest {
         })
         void onNext_shouldDropTheMessageWithOneWarn_whenAnIdIsNotAUuid(MessageCase type, String field, String value)
                 throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
             final LoginServerMessage message = message(type, field, value);
@@ -421,7 +418,7 @@ class LoginServerLinkTest {
         void authenticate_shouldReportTheLinkDownAndLeaveRegisterFirst_whenTheStreamOpens() throws Exception {
             connectEntered = new CountDownLatch(1);
             connectReleased = new CountDownLatch(1);
-            final Thread starting = Thread.ofPlatform().start(link::start);
+            final Thread starting = Thread.ofPlatform().start(() -> link.start(GAME_PORT));
             assertThat(connectEntered.await(5, TimeUnit.SECONDS)).isTrue();
 
             final boolean actual = link.authenticate(REQUEST, "player", KEY);
@@ -443,7 +440,7 @@ class LoginServerLinkTest {
     class Stream {
         @Test
         void stream_shouldReportTheLinkLost_whenItEndsAfterAnAuthenticateWentOut() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
             assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
@@ -457,7 +454,7 @@ class LoginServerLinkTest {
 
         @Test
         void stream_shouldRegisterWithTheGrantedId_whenTheLoginServerEndsIt() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection first = loginServer.nextConnection();
             first.received().next();
             first.responses()
@@ -480,7 +477,7 @@ class LoginServerLinkTest {
 
         @Test
         void stream_shouldBeReopenedAndRegisterAgain_whenTheLoginServerEndsIt() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection first = loginServer.nextConnection();
             first.received().next();
 
@@ -495,7 +492,7 @@ class LoginServerLinkTest {
     class Shutdown {
         @Test
         void shutdown_shouldSendTheLogoutsThenDownThenEndTheStreamAndTheChannel() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
             link.accountLeft(FIRST);
@@ -520,7 +517,7 @@ class LoginServerLinkTest {
         @Test
         void shutdown_shouldStopWaiting_whenTheShutdownTimeoutIsSpent() throws Exception {
             loginServer.setEndsItsSide(false);
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
             scheduler.setClock(spentAfterFirstRead(SHUTDOWN_TIMEOUT));
@@ -537,7 +534,7 @@ class LoginServerLinkTest {
     class PublishListing {
         @Test
         void publishListing_shouldSendOnlyTheGivenAttributes() throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
 
@@ -554,7 +551,7 @@ class LoginServerLinkTest {
         @ParameterizedTest(name = "{0}")
         @EnumSource(ListingStatus.class)
         void publishListing_shouldSendTheProtoStatusForEachListingStatus(ListingStatus status) throws Exception {
-            link.start();
+            link.start(GAME_PORT);
             final FakeLoginServer.Connection connection = loginServer.nextConnection();
             connection.received().next();
 

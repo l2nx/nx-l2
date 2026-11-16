@@ -130,7 +130,7 @@ public class GameServer implements SmartLifecycle {
         gameServer = server;
 
         try {
-            loginServerLink.start();
+            loginServerLink.start(server.localAddress().getPort());
         } catch (RuntimeException | Error e) {
             // No client may connect while the failed start closes the context and the world saves.
             gameServer = null;

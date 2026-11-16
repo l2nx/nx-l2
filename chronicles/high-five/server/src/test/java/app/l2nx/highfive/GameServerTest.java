@@ -6,6 +6,7 @@ package app.l2nx.highfive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -94,15 +95,16 @@ class GameServerTest {
         }
 
         @Test
-        void openPort_shouldListenAndStartTheLink() throws IOException {
+        void openPort_shouldListenAndRegisterTheBoundPort() throws IOException {
             final GameServer server = server(eventLoops);
 
             server.openPort();
 
-            try (Socket socket = connect(server.clientPort().localAddress().getPort())) {
+            final int bound = server.clientPort().localAddress().getPort();
+            try (Socket socket = connect(bound)) {
                 assertThat(socket.isConnected()).isTrue();
             }
-            verify(link).start();
+            verify(link).start(bound);
             server.stop();
         }
 
@@ -115,7 +117,7 @@ class GameServerTest {
                         throw new IllegalStateException("thrown by the test");
                     })
                     .when(link)
-                    .start();
+                    .start(anyInt());
 
             assertThatIllegalStateException().isThrownBy(server::openPort).withMessage("thrown by the test");
 

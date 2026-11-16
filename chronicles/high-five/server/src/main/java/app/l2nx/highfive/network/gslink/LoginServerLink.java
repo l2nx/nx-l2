@@ -122,7 +122,9 @@ public class LoginServerLink implements LoginPort, DisposableBean {
         this.commands = commands;
     }
 
-    public void start() {
+    /** @param gamePort the port the game server bound, which a configured port 0 leaves to the system */
+    public void start(int gamePort) {
+        this.gamePort = gamePort;
         load();
         open();
     }
@@ -369,7 +371,6 @@ public class LoginServerLink implements LoginPort, DisposableBean {
     }
 
     private void load() {
-        gamePort = ServerConfig.PORT_GAME;
         acceptAlternate = ServerConfig.ACCEPT_ALTERNATE_ID;
         subnets = ServerConfig.GAME_SERVER_SUBNETS;
         hosts = ServerConfig.GAME_SERVER_HOSTS;
