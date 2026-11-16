@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux, nexus]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -29,7 +29,7 @@ jobs:
           retention-days: 14
 
   licenses:
-    runs-on: [self-hosted, linux, nexus]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: fsfe/reuse-action@v6

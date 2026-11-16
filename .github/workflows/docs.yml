@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   docs:
-    runs-on: [self-hosted, linux, nexus]
+    runs-on: ubuntu-latest
     steps:
       # Full history: the regress guard checks the source sha against the last synced one with merge-base.
       - uses: actions/checkout@v7
