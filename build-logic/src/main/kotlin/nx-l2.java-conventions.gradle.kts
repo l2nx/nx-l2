@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
     `java-library`
     id("com.diffplug.spotless")
@@ -51,4 +54,9 @@ tasks.withType<Test>().configureEach {
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
     systemProperty("junit.jupiter.extensions.autodetection.enabled", "true")
     systemProperty("io.netty.leakDetection.level", "paranoid")
+    // CI keeps only the console: a failure must carry its message, causes and stack, not just class and line.
+    testLogging {
+        events(TestLogEvent.FAILED)
+        exceptionFormat = TestExceptionFormat.FULL
+    }
 }
