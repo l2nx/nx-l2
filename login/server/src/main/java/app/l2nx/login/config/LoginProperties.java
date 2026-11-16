@@ -44,16 +44,24 @@ public record LoginProperties(
             @NotBlank String host,
             @NotEmpty List<@Valid ClientListener> ports,
             @Positive @DefaultValue("32") int maxConcurrentTasks) {
+        // Port 0 is a fresh free port for each listener, so only the fixed ones can collide.
         @AssertTrue(message = "l2nx.login.client.ports must not repeat a port")
         public boolean isPortsDistinct() {
-            return (ports == null)
-                    || (ports.stream().map(ClientListener::port).distinct().count() == ports.size());
+            if (ports == null) {
+                return true;
+            }
+            final List<Integer> fixed = ports.stream()
+                    .map(ClientListener::port)
+                    .filter(port -> port != 0)
+                    .toList();
+            return fixed.stream().distinct().count() == fixed.size();
         }
     }
 
+    /** @param port {@code 0} binds a free port the system picks; the listener logs the one it bound */
     @Builder(toBuilder = true)
     public record ClientListener(
-            @Min(1) @Max(65535) int port, @NotNull LoginVariant variant) {}
+            @Min(0) @Max(65535) int port, @NotNull LoginVariant variant) {}
 
     @Builder(toBuilder = true)
     public record GameServer(boolean acceptNew) {}

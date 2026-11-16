@@ -61,7 +61,7 @@ class LoginPropertiesTest {
 
         // A source that lists ports replaces the shipped list whole, so each case lists complete entries.
         @ParameterizedTest(name = "port {0}")
-        @ValueSource(ints = {0, 65536})
+        @ValueSource(ints = {-1, 65536})
         void bind_shouldFailStartup_whenPortIsOutOfRange(int port) {
             runner.withPropertyValues(
                             "l2nx.login.client.ports[0].port=" + port, "l2nx.login.client.ports[0].variant=c621")
@@ -70,6 +70,20 @@ class LoginPropertiesTest {
                             .getFailure()
                             .rootCause()
                             .isInstanceOf(BindValidationException.class));
+        }
+
+        @Test
+        void bind_shouldAcceptPortZeroOnEveryListener_whenTheSystemPicksThePorts() {
+            runner.withPropertyValues(
+                            "l2nx.login.client.ports[0].port=0",
+                            "l2nx.login.client.ports[0].variant=c621",
+                            "l2nx.login.client.ports[1].port=0",
+                            "l2nx.login.client.ports[1].variant=c621")
+                    .run(context -> assertThat(context.getBean(LoginProperties.class)
+                                    .client()
+                                    .ports())
+                            .extracting(LoginProperties.ClientListener::port)
+                            .containsExactly(0, 0));
         }
 
         @Test
