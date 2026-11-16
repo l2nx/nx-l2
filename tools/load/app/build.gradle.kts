@@ -31,19 +31,27 @@ application {
     mainClass = "app.l2nx.load.app.LoadApplication"
 }
 
-// The integration test starts the real servers from their test distributions; -Pchronicles may leave the game out.
-tasks.withType<Test>().configureEach {
-    val distributions = mapOf(
-        "login" to ":login:boot",
-        "game" to ":chronicles:high-five:boot",
-    ).mapValues { findProject(it.value) }
-    distributions.forEach { (name, server) ->
-        if (server != null) {
-            dependsOn("${server.path}:testDistribution")
-            systemProperty(
-                "l2nx.load.test.$name-distribution",
-                server.layout.buildDirectory.dir("test-distribution").get().asFile.absolutePath,
-            )
+// The integration test starts the real servers in its own copies of their distributions: it patches the game config
+// and the servers write into their working dirs, while the servers' own tests run in their test-distribution in
+// parallel. -Pchronicles may leave the game out.
+val scenarioDistributions = mapOf(
+    "login" to ":login:boot",
+    "game" to ":chronicles:high-five:boot",
+).mapNotNull { (name, path) -> findProject(path)?.let { name to it } }
+    .associate { (name, server) ->
+        val destination = layout.buildDirectory.dir("scenario-distributions/$name")
+        val sync = tasks.register<Sync>("${name}ScenarioDistribution") {
+            from(server.tasks.named("installDist")) {
+                exclude("data/geodata/**", "log/**")
+            }
+            into(destination)
         }
+        name to (sync to destination)
+    }
+
+tasks.withType<Test>().configureEach {
+    scenarioDistributions.forEach { (name, distribution) ->
+        dependsOn(distribution.first)
+        systemProperty("l2nx.load.test.$name-distribution", distribution.second.get().asFile.absolutePath)
     }
 }

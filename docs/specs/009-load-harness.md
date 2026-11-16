@@ -400,7 +400,8 @@ baseline × `max-step-p99-ratio` (1.10) and baseline plus `step-p99-floor` (10 m
   Testcontainers test where a real Prometheus scrapes a stub endpoint and the harness reads known quantiles back.
 - **Gate:** report fixtures for pass, fail, invalid and too few runs.
 - **One integration test** (`ScenarioRunTest`): the login and game servers started as separate processes from their
-  test distributions (`ServerProcess`), PostgreSQL and Prometheus in Testcontainers; the test seeds the characters
+  own copies of the distributions (`ServerProcess`; never the servers' `test-distribution`, where their own tests run
+  in parallel and would read the patched game config), PostgreSQL and Prometheus in Testcontainers; the test seeds the characters
   itself and plays `load-roam`, `load-crowd-pvp` and `load-pve`.
 
 **Before the gate is trusted** (with every new baseline, results in `load-baseline.md`):
