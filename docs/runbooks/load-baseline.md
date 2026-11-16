@@ -22,16 +22,16 @@ The split is made for 12 logical cores with SMT siblings numbered next to each o
 core. Check the numbering with `cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list` inside any container
 (`0-1` means adjacent). On another machine set the variables below; all limits together take 13.75 GB of the Docker VM.
 
-| Variable                    | Default          | Meaning                                                              |
-| --------------------------- | ---------------- | -------------------------------------------------------------------- |
-| `L2NX_LOAD_GAME_CPUSET`     | `0-3`            | cores of `game-server`                                               |
+| Variable                    | Default          | Meaning                                                                                                                            |
+| --------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `L2NX_LOAD_GAME_CPUSET`     | `0-3`            | cores of `game-server`                                                                                                             |
 | `L2NX_LOAD_GAME_CPUS`       | `4`              | CPU limit of `game-server`, equal to its core count; `2` throttles the whole process, the loop included, for the sensitivity check |
-| `L2NX_LOAD_HARNESS_CPUSET`  | `4-9`            | cores of `harness`                                                   |
-| `L2NX_LOAD_HARNESS_CPUS`    | `6`              | CPU limit of `harness`, equal to its core count                      |
-| `L2NX_LOAD_SHARED_CPUSET`   | `10-11`          | cores of `load-db`, `login-server` and `prometheus`                  |
-| `L2NX_LOAD_SPRING_PROFILES` | `load`           | Spring profiles of both servers; `load,load-seed` while seeding      |
-| `L2NX_GEODATA_DIR`          | `./geodata`      | geodata, mounted read-only; a missing directory fails the start      |
-| `L2NX_PROMETHEUS_CONFIG`    | `prometheus.yml` | file in `docker/prometheus/`; `prometheus-host.yml` for host servers |
+| `L2NX_LOAD_HARNESS_CPUSET`  | `4-9`            | cores of `harness`                                                                                                                 |
+| `L2NX_LOAD_HARNESS_CPUS`    | `6`              | CPU limit of `harness`, equal to its core count                                                                                    |
+| `L2NX_LOAD_SHARED_CPUSET`   | `10-11`          | cores of `load-db`, `login-server` and `prometheus`                                                                                |
+| `L2NX_LOAD_SPRING_PROFILES` | `load`           | Spring profiles of both servers; `load,load-seed` while seeding                                                                    |
+| `L2NX_GEODATA_DIR`          | `./geodata`      | geodata, mounted read-only; a missing directory fails the start                                                                    |
+| `L2NX_PROMETHEUS_CONFIG`    | `prometheus.yml` | file in `docker/prometheus/`; `prometheus-host.yml` for host servers                                                               |
 
 **Always name the services.** The compose project also holds the development database `db`: a bare
 `docker compose --profile load up` may recreate `l2nx-db` and `docker compose down` removes it. Stop the load services
@@ -251,6 +251,11 @@ Capacity **1,000** load bots in one spot, limited by the pass budget (level 1,25
 over budget). The gate size **N = 1,000**: the highest level within the budget; 1,250 would fail criterion 2 by itself.
 With the earlier split (game-server 0-5, harness 6-9) the generator gave out first, at 1,250 (lag p99 13.8 ms).
 
+The generator lag of every report up to 2026-11-16 was taken from load bot tasks (how late an action, connect or leave
+ran against its intended time); later reports take it from the 1 ms probe of every event loop (spec 009, generator
+self-check). The probe also counts the idle stretches between actions, so its p99 is not comparable with these
+numbers; a new baseline measures it afresh.
+
 **Baseline `load-crowd-pvp`** (N = 1,000, ramp 120 s, steady 120 s, seed 42; gate without `--baseline`: PASS)
 
 | Run | Pass p99 | Over budget | World loop busy | Input p99: `ReportPosition`, `Action`, `RequestMagicSkillUse` | Timeouts | Report                              |
@@ -275,13 +280,13 @@ JDBC is 42 to 46% of the world loop's busy time in the login ramp ([#204](https:
 
 **Trust checks**
 
-| Check                         | Date       | Result                                                                                                                                                                                                                                                                                                                                                                                    | Reports                     |
-| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| Real client                   | -          | not run yet at N = 1,000                                                                                                                                                                                                                                                                                                                                                                  | -                           |
-| Sensitivity, `cpus` 0.5       | 2026-11-10 | **failed as expected, but on missing meters**: at N = 1,000 the server drowns (97.6% timeouts) and Prometheus gets no scrape; `load-login-storm` fails on measured values (pass p99 20 s, `EnterWorld` input p99 26.7 s)                                                                                                                                                                 | `crowd-slow`, `storm-slow`  |
-| Sensitivity, `cpus` 2         | 2026-11-10 | **failed on measured values**: `load-crowd-pvp` pass p99 83.5 ms against the 50 ms budget, over budget 4.2%, input p99 180 to 192 ms against limits of 11.7 to 13.7 ms, timeouts 22.9%                                                                                                                                                                                                    | `crowd-cpu2`                |
-| Repeatability, spread         | 2026-11-10 | **failed**: (max − min) / median of the five baseline runs is 41% for the pass p99 and 68 to 77% for input p99 of `load-crowd-pvp`; `load-login-storm` 4 runs within 3% on the pass p99 and one outlier (61.5 ms). All phases of a slow run slow down together (mean `deadlines` 0.51 to 0.78 ms) on fresh servers and data, so the spread is the host's speed, not the server's state | the baselines               |
-| Repeatability, A/A gate       | 2026-11-10 | five more runs of the same build against the baseline: `load-crowd-pvp` **PASS** (pass p99 9.27 against 9.54 ms; input p99 within 15% of their limits); `load-login-storm` **FAIL on one line**: `AuthenticationResult` input p99 2.54 ms against the limit 2.43 ms (baseline 1.93 ms + 0.5 ms floor), the other 12 lines pass; the floor is 1 ms since                                                         | `crowd-aa`, `storm-aa`      |
+| Check                   | Date       | Result                                                                                                                                                                                                                                                                                                                                                                                 | Reports                    |
+| ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Real client             | -          | not run yet at N = 1,000                                                                                                                                                                                                                                                                                                                                                               | -                          |
+| Sensitivity, `cpus` 0.5 | 2026-11-10 | **failed as expected, but on missing meters**: at N = 1,000 the server drowns (97.6% timeouts) and Prometheus gets no scrape; `load-login-storm` fails on measured values (pass p99 20 s, `EnterWorld` input p99 26.7 s)                                                                                                                                                               | `crowd-slow`, `storm-slow` |
+| Sensitivity, `cpus` 2   | 2026-11-10 | **failed on measured values**: `load-crowd-pvp` pass p99 83.5 ms against the 50 ms budget, over budget 4.2%, input p99 180 to 192 ms against limits of 11.7 to 13.7 ms, timeouts 22.9%                                                                                                                                                                                                 | `crowd-cpu2`               |
+| Repeatability, spread   | 2026-11-10 | **failed**: (max − min) / median of the five baseline runs is 41% for the pass p99 and 68 to 77% for input p99 of `load-crowd-pvp`; `load-login-storm` 4 runs within 3% on the pass p99 and one outlier (61.5 ms). All phases of a slow run slow down together (mean `deadlines` 0.51 to 0.78 ms) on fresh servers and data, so the spread is the host's speed, not the server's state | the baselines              |
+| Repeatability, A/A gate | 2026-11-10 | five more runs of the same build against the baseline: `load-crowd-pvp` **PASS** (pass p99 9.27 against 9.54 ms; input p99 within 15% of their limits); `load-login-storm` **FAIL on one line**: `AuthenticationResult` input p99 2.54 ms against the limit 2.43 ms (baseline 1.93 ms + 0.5 ms floor), the other 12 lines pass; the floor is 1 ms since                                | `crowd-aa`, `storm-aa`     |
 
 **Network hand-off** ([#194](https://github.com/l2nx/nx-l2/issues/194): one event loop wakeup per pass, connection
 references held by the connection; same setup as the gate v2 baseline; reports `load-crowd-pvp-20261110-033826-42`
@@ -300,9 +305,9 @@ about 8% to 0, `serializeLegacy` from about 20% to 5.2%.
 **#194 and #204 against the baseline** (five runs each on the uncommitted change of 2026-11-10 after the review fixes,
 gate against the gate v2 baseline above; reports listed in `crowd-after.ids` and `storm-after.ids` of the `gate-v2` set)
 
-| Scenario           | Gate | Pass p99 median, before → after | World loop busy | Input p99, before → after                                                         | Loop JDBC per run     |
-| ------------------ | ---- | ------------------------------- | --------------- | --------------------------------------------------------------------------------- | --------------------- |
-| `load-crowd-pvp`   | PASS | 9.54 → 5.55 ms                  | 30% → 25%       | `Action` 11.4 → 8.3 ms, `ReportPosition` 10.6 → 8.1 ms                            | 0                     |
+| Scenario           | Gate | Pass p99 median, before → after | World loop busy | Input p99, before → after                                                                | Loop JDBC per run      |
+| ------------------ | ---- | ------------------------------- | --------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| `load-crowd-pvp`   | PASS | 9.54 → 5.55 ms                  | 30% → 25%       | `Action` 11.4 → 8.3 ms, `ReportPosition` 10.6 → 8.1 ms                                   | 0                      |
 | `load-login-storm` | PASS | 20.43 → 11.64 ms                | 44% → 20%       | `SelectCharacter` 51.9 → 5.4 ms, `ListCharacters` 27.1 → 5.6 ms, `EnterWorld` 47 → 22 ms | 0 reads, ~4,950 writes |
 
 With the 0.5 ms floor `load-login-storm` failed on one line of the unchanged login path, `AuthenticationResult` input
@@ -335,11 +340,11 @@ JDBC on the loop is 0 in all three steady phases.
 
 **Trust checks**
 
-| Check         | Date       | Result                                                                                                                                                                           | Reports                                                                                                   |
-| ------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Real client   | 2026-11-07 | passed: account `load500` in the arena; load bots visible, run up, hit and cast; the client was killed and offered `To Village` and `Use Feather`                                | `load-crowd-pvp-20261107-205017-42` (with `client-*.png`)                                                 |
-| Sensitivity   | 2026-11-07 | **failed**: on two physical cores (`0-3`) the gate passes, world pass p99 1.11 ms; only on one physical core (`0-1`) it fails, on `ResurrectInPlace` p99 24.9 ms against 17.3 ms | `0-3`: `…20261107-195659-42`, `…200246-42`, `…200834-42`; `0-1`: `…201448-42`, `…202040-42`, `…202633-42` |
-| Repeatability | 2026-11-07 | **failed**: p99 spread over the baseline runs is `Attack` 12.1%, `UseSkill` 0.2%, `ResurrectInPlace` 176% (6.3 to 19.1 ms, a spread of 12.8 ms; it passed only because the 10 ms floor is added to the baseline, the limit being the larger of baseline × 1.10 and baseline + 10 ms), world pass 42.6% | the baseline runs |
+| Check         | Date       | Result                                                                                                                                                                                                                                                                                                 | Reports                                                                                                   |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Real client   | 2026-11-07 | passed: account `load500` in the arena; load bots visible, run up, hit and cast; the client was killed and offered `To Village` and `Use Feather`                                                                                                                                                      | `load-crowd-pvp-20261107-205017-42` (with `client-*.png`)                                                 |
+| Sensitivity   | 2026-11-07 | **failed**: on two physical cores (`0-3`) the gate passes, world pass p99 1.11 ms; only on one physical core (`0-1`) it fails, on `ResurrectInPlace` p99 24.9 ms against 17.3 ms                                                                                                                       | `0-3`: `…20261107-195659-42`, `…200246-42`, `…200834-42`; `0-1`: `…201448-42`, `…202040-42`, `…202633-42` |
+| Repeatability | 2026-11-07 | **failed**: p99 spread over the baseline runs is `Attack` 12.1%, `UseSkill` 0.2%, `ResurrectInPlace` 176% (6.3 to 19.1 ms, a spread of 12.8 ms; it passed only because the 10 ms floor is added to the baseline, the limit being the larger of baseline × 1.10 and baseline + 10 ms), world pass 42.6% | the baseline runs                                                                                         |
 
 **Where the world pass goes** (wall-clock profile of `l2nx-loop-world`, 5 ms interval, 500 load bots; shares of the
 loop's busy time)

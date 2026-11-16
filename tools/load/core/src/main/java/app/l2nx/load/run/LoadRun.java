@@ -22,6 +22,7 @@ import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.report.model.ServerWindow;
 import app.l2nx.load.scenario.LoadScenario;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.EventExecutor;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -96,6 +97,10 @@ public final class LoadRun {
         final CountDownLatch stopped = new CountDownLatch(bots);
         final List<LoadBot> loadBots = new ArrayList<>(bots);
         final EventLoopGroup group = loops.open(settings.eventLoopThreads(), protocol.ioHandlerFactory());
+        final List<GeneratorLagProbe> probes = new ArrayList<>();
+        for (EventExecutor loop : group) {
+            probes.add(new GeneratorLagProbe(loop, timeline, lag));
+        }
         log.info(
                 "Load run {} on {} started: {} load bots, seed {}",
                 scenario.id(),
@@ -108,6 +113,7 @@ public final class LoadRun {
         final List<ServerStats> levelServers = new ArrayList<>();
         Throwable failure = null;
         try {
+            probes.forEach(GeneratorLagProbe::start);
             for (LoadBotIdentity identity : botIdentities) {
                 final LoadBot bot = new LoadBot(
                         identity,
@@ -117,7 +123,6 @@ public final class LoadRun {
                         scenario,
                         timeline,
                         latencies,
-                        lag,
                         settings.intentTimeout(),
                         settings.lifecycleTimeout(),
                         stopped::countDown);
@@ -154,6 +159,9 @@ public final class LoadRun {
                             "The measured phase did not end before the drain, the report has no server meters over {}",
                             serverWindow);
                 }
+            } else {
+                // The generator lag is measured over the whole phase, even when every load bot stopped before it.
+                timeline.awaitMeasuredEnd(drainedAt);
             }
             // Load bots that close on a final state before the game may all be done long before the run's end.
             if (!clock.await(stopped, drainedAt)) {
@@ -164,6 +172,7 @@ public final class LoadRun {
             throw e;
         } finally {
             loadBots.forEach(LoadBot::close);
+            probes.forEach(GeneratorLagProbe::close);
             try {
                 // The summary reads load bot state written on the event loops: safe only once they terminated.
                 loops.close(group);
@@ -263,7 +272,12 @@ public final class LoadRun {
         final double stoppedShare = (double) stoppedOnError / loadBots.size();
         final int reachedFinalState =
                 (int) loadBots.stream().filter(LoadBot::reachedFinalState).count();
-        final long lagP99 = lag.p99Nanos();
+        final Histogram runLag = lag.histogram();
+        if (runLag.getTotalCount() == 0) {
+            // Every probe ticks at the start of the measured phase or records that tick as owed when it closes.
+            throw new IllegalStateException("The generator lag probes recorded no sample over the measured phase");
+        }
+        final long lagP99 = runLag.getValueAtPercentile(99.0);
         final List<InvalidReason> reasons = new ArrayList<>();
         if (lagP99 > settings.maxGeneratorLagP99().toNanos()) {
             reasons.add(InvalidReason.GENERATOR_LAG);

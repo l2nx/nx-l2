@@ -31,7 +31,6 @@ import app.l2nx.load.bot.observation.Revived;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.injection.InjectionProfile;
 import app.l2nx.load.injection.RunTimeline;
-import app.l2nx.load.latency.GeneratorLagMonitor;
 import app.l2nx.load.latency.LatencyRecorder;
 import app.l2nx.load.protocol.ClientProtocol;
 import app.l2nx.load.protocol.ClientSession;
@@ -444,41 +443,6 @@ class LoadBotTest {
                     .as("late actions keep their intended times")
                     .isEqualTo(STEADY_INTENTS);
             assertThat(actual.maxMillis()).isBetween(1_890.0, 2_010.0);
-            assertThat(harness.lag.histogram().getMaxValue()).isBetween(1_890_000_000L, 2_010_000_000L);
-        }
-    }
-
-    @Nested
-    class GeneratorLag {
-        @Test
-        void schedule_shouldRecordTheLag_whileALoadBotIsStillArrivingAfterTheRamp() {
-            final Harness harness = new Harness().ramp(RAMP);
-            harness.protocol.connectDelay(Duration.ofSeconds(8));
-            harness.start(new FakeScenario(INTERVAL, Duration.ZERO)
-                    .measuredPhase(MeasuredPhase.RAMP)
-                    .finalState(LoadBotState.SERVER_LIST));
-            harness.runUntil(harness.timeline.end() - TimeUnit.MILLISECONDS.toNanos(10));
-
-            harness.ticker.advance(500, TimeUnit.MILLISECONDS);
-            harness.runToEnd();
-
-            assertThat(harness.lag.histogram().getMaxValue())
-                    .as("the leave task, run late")
-                    .isBetween(480_000_000L, 500_000_000L);
-        }
-
-        @Test
-        void schedule_shouldRecordNoLag_whenEveryLoadBotIsDoneArriving() {
-            final Harness harness = new Harness().ramp(RAMP);
-            harness.start(new FakeScenario(INTERVAL, Duration.ZERO).measuredPhase(MeasuredPhase.RAMP));
-            harness.runUntil(harness.timeline.start() + TimeUnit.SECONDS.toNanos(3));
-
-            harness.ticker.advance(2, TimeUnit.SECONDS);
-            harness.runToEnd();
-
-            assertThat(harness.lag.histogram().getMaxValue())
-                    .as("only the connect, on time")
-                    .isLessThan(TimeUnit.MILLISECONDS.toNanos(2));
         }
     }
 
@@ -1076,7 +1040,6 @@ class LoadBotTest {
                 EmbeddedChannel.builder().ticker(ticker).build();
         private final FakeProtocol protocol = new FakeProtocol(ticker::nanoTime);
         private final LatencyRecorder latencies = new LatencyRecorder();
-        private final GeneratorLagMonitor lag = new GeneratorLagMonitor();
         private Duration ramp = Duration.ZERO;
         private Duration lifecycleTimeout = DEFAULT_LIFECYCLE_TIMEOUT;
         private RunTimeline timeline;
@@ -1124,7 +1087,6 @@ class LoadBotTest {
                     scenario,
                     timeline,
                     latencies,
-                    lag,
                     intentTimeout,
                     lifecycleTimeout,
                     () -> stops++);

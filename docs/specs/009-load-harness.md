@@ -272,7 +272,14 @@ The profile works as is on Docker Desktop. On native Linux both servers run with
 management ports then need the host firewall) or with the bridge address, the same address set in each target's
 `metrics-url`.
 
-**Generator self-check:** the harness measures its own event loop lag (scheduled against actual action time). A p99
+**Generator self-check:** the harness measures its own event loop lag with a probe, the method of jHiccup: every
+event loop runs a 1 ms fixed-rate tick through the measured phase, and the lag of a tick is its actual run time against
+its schedule. A stalled loop owes every tick it missed, each with its own lag, and a tick still due when the run
+closes is recorded with the lag it has so far. The probe does not depend on what load bots do, so the lag is
+measured however few of them act: a server that lets no load bot in leaves the run valid and fails criterion 4. For
+the same reason a run lasts through its measured phase even when every load bot stopped before it; a measured ramp
+still ends once every arrival is over.
+A run whose probes recorded no sample is a harness defect and fails instead of producing a report. A p99
 lag above 10 ms (the default limit) marks the run invalid: the generator, not the server, was saturated. The check is
 on the measured lag, not on the operating system, so a host whose timers cannot fire on time produces invalid runs by
 itself: on Windows the 15.6 ms timer tick puts the generator lag p99 over the default limit, so even `in-memory` runs

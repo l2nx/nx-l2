@@ -27,7 +27,6 @@ import app.l2nx.load.bot.observation.Revived;
 import app.l2nx.load.bot.observation.RunSpeedChanged;
 import app.l2nx.load.bot.observation.StatusChanged;
 import app.l2nx.load.injection.RunTimeline;
-import app.l2nx.load.latency.GeneratorLagMonitor;
 import app.l2nx.load.latency.LatencyRecorder;
 import app.l2nx.load.protocol.ClientProtocol;
 import app.l2nx.load.protocol.ClientSession;
@@ -80,7 +79,6 @@ public final class LoadBot implements LoadBotView {
     private final LoadBotState finalState;
     private final RunTimeline timeline;
     private final LatencyRecorder latencies;
-    private final GeneratorLagMonitor lag;
     private final long intentTimeoutNanos;
     private final long lifecycleTimeoutNanos;
     private final Runnable onStopped;
@@ -131,7 +129,6 @@ public final class LoadBot implements LoadBotView {
             LoadScenario scenario,
             RunTimeline timeline,
             LatencyRecorder latencies,
-            GeneratorLagMonitor lag,
             Duration intentTimeout,
             Duration lifecycleTimeout,
             Runnable onStopped) {
@@ -143,7 +140,6 @@ public final class LoadBot implements LoadBotView {
         finalState = requireFinalState(scenario.finalState());
         this.timeline = timeline;
         this.latencies = latencies;
-        this.lag = lag;
         intentTimeoutNanos = intentTimeout.toNanos();
         lifecycleTimeoutNanos = lifecycleTimeout.toNanos();
         this.onStopped = onStopped;
@@ -298,24 +294,7 @@ public final class LoadBot implements LoadBotView {
     }
 
     private ScheduledFuture<?> schedule(long intended, Runnable task) {
-        return loop.schedule(
-                () -> {
-                    recordLag(intended);
-                    task.run();
-                },
-                Math.max(0, intended - timeline.now()),
-                TimeUnit.NANOSECONDS);
-    }
-
-    private void recordLag(long intended) {
-        final long lagNanos = timeline.now() - intended;
-        if (timeline.countsLag(intended)) {
-            lag.record(lagNanos);
-        }
-        final int level = timeline.levelAt(intended);
-        if (level >= 0) {
-            lag.recordLevel(level, lagNanos);
-        }
+        return loop.schedule(task, Math.max(0, intended - timeline.now()), TimeUnit.NANOSECONDS);
     }
 
     private void connect() {

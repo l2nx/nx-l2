@@ -375,8 +375,25 @@ class LoadRunTest {
             final RunSummary actual = execute(SETTINGS, blocking, null);
 
             assertThat(actual.validity()).isEqualTo(RunValidity.INVALID);
-            assertThat(actual.invalidReasons()).contains(InvalidReason.GENERATOR_LAG);
+            assertThat(actual.invalidReasons()).containsExactly(InvalidReason.GENERATOR_LAG);
             assertThat(actual.generatorLagP99Millis()).isGreaterThan(10.0);
+        }
+
+        @Test
+        void execute_shouldMeasureTheGeneratorThroughTheSteadyWindow_whenEveryLoadBotStoppedBeforeIt()
+                throws InterruptedException {
+            protocol.failOnEnter(index -> true);
+            final long startedAt = loops.now();
+
+            final RunSummary actual = execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), null);
+
+            assertThat(Duration.ofNanos(loops.now() - startedAt))
+                    .as("the run lasts through the steady window")
+                    .isGreaterThanOrEqualTo(Duration.ofMillis(500));
+            assertThat(actual.validity())
+                    .as("the probes measured the generator with no load bot in the game")
+                    .isEqualTo(RunValidity.VALID);
+            assertThat(actual.stoppedShare()).isEqualTo(1);
         }
 
         @Test
