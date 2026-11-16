@@ -33,19 +33,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** Real runs on a real event loop group with sub-second phases; isolated so other tests do not add generator lag. */
-@Isolated
+/** Whole runs in virtual time on Netty's test event loop: a busy machine cannot move a sample across a phase. */
 class LoadRunTest {
     private static final Instant STARTED_AT = Instant.parse("2026-10-21T08:15:30Z");
     private static final Instant SERVER_STARTED_AT = Instant.parse("2026-10-21T08:10:00Z");
@@ -71,8 +70,9 @@ class LoadRunTest {
             .characterSlot(0)
             .build();
 
-    private final LoadRun run = new LoadRun(System::nanoTime, InstantSource.fixed(STARTED_AT));
-    private final FakeProtocol protocol = new FakeProtocol(System::nanoTime).ackDelay(Duration.ofMillis(2));
+    private final VirtualGeneratorLoops loops = new VirtualGeneratorLoops();
+    private final LoadRun run = new LoadRun(loops, InstantSource.fixed(STARTED_AT));
+    private final FakeProtocol protocol = new FakeProtocol(loops::now).ackDelay(Duration.ofMillis(2));
     private final LatencyRecorder latencies = new LatencyRecorder();
 
     private RunSummary execute(RunSettings settings, FakeScenario scenario, ServerMeterWindow serverMeters)
@@ -237,7 +237,6 @@ class LoadRunTest {
                                     .ramp(Duration.ofMillis(50))
                                     .build())
                             .build())
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
             final RecordingMeterWindow meters = new RecordingMeterWindow();
 
@@ -281,7 +280,6 @@ class LoadRunTest {
                                     .ramp(Duration.ofMillis(50))
                                     .build())
                             .build())
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
 
             final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null);
@@ -305,12 +303,7 @@ class LoadRunTest {
 
         @Test
         void execute_shouldReturnValidSummary_whenLoadBotsActOnTime() throws InterruptedException {
-            // A 15.6 ms Windows timer tick alone can exceed the 10 ms lag limit; the limit has a test of its own.
-            final RunSettings settings = SETTINGS.toBuilder()
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
-                    .build();
-
-            final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ofMillis(2)), null);
+            final RunSummary actual = execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ofMillis(2)), null);
 
             assertThat(actual.validity())
                     .as("lag p99 %s ms", actual.generatorLagP99Millis())
@@ -343,20 +336,18 @@ class LoadRunTest {
             protocol.capabilities(Set.of(IntentKind.LOGIN, IntentKind.SELECT_SERVER, IntentKind.MOVE_TO));
             final RunSettings settings = SETTINGS.toBuilder()
                     .injection(SETTINGS.injection().toBuilder()
-                            // Wide enough that a 15.6 ms Windows timer tick never pushes a step out of the ramp.
                             .ramp(Duration.ofSeconds(1))
                             .steady(Duration.ofSeconds(30))
                             .build())
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
             final FakeScenario scenario = new FakeScenario(INTERVAL, Duration.ZERO)
                     .measuredPhase(MeasuredPhase.RAMP)
                     .finalState(LoadBotState.GAME_CONNECT);
-            final long startedAt = System.nanoTime();
+            final long startedAt = loops.now();
 
             final RunSummary actual = execute(settings, scenario, null);
 
-            assertThat(Duration.ofNanos(System.nanoTime() - startedAt))
+            assertThat(Duration.ofNanos(loops.now() - startedAt))
                     .as("done once every load bot closed, long before the steady window ends")
                     .isLessThan(Duration.ofSeconds(10));
             assertThat(actual.validity())
@@ -378,7 +369,8 @@ class LoadRunTest {
 
         @Test
         void execute_shouldMarkRunInvalid_whenGeneratorLags() throws InterruptedException {
-            final FakeScenario blocking = new FakeScenario(INTERVAL, Duration.ZERO, LoadRunTest::sleepTwentyMillis);
+            final FakeScenario blocking =
+                    new FakeScenario(INTERVAL, Duration.ZERO, () -> loops.block(20, TimeUnit.MILLISECONDS));
 
             final RunSummary actual = execute(SETTINGS, blocking, null);
 
@@ -390,9 +382,7 @@ class LoadRunTest {
         @Test
         void execute_shouldStayValidAndReportTheShares_whenLoadBotsStopOnErrors() throws InterruptedException {
             protocol.failOnEnter(index -> index % 4 == 0);
-            final RunSettings settings = SETTINGS.toBuilder()
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
-                    .build();
+            final RunSettings settings = SETTINGS.toBuilder().build();
 
             final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null);
 
@@ -413,7 +403,6 @@ class LoadRunTest {
             protocol.neverAcknowledge(IntentKind.LOGIN);
             final RunSettings settings = SETTINGS.toBuilder()
                     .lifecycleTimeout(Duration.ofMillis(250))
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
 
             final RunSummary actual = execute(settings, new FakeScenario(INTERVAL, Duration.ZERO), null);
@@ -438,7 +427,7 @@ class LoadRunTest {
 
         @Test
         void execute_shouldReportRejectedShare_whenServerRejectsIntents() throws InterruptedException {
-            // Alternating ordinals: the share stays the same wherever the timers cut the measured phase.
+            // Alternating ordinals: rejected and acknowledged intents differ by at most one per load bot.
             for (int ordinal = 1; ordinal < 1_000; ordinal += 2) {
                 protocol.reject(ordinal);
             }
@@ -453,11 +442,8 @@ class LoadRunTest {
             assertThat(Math.abs(moves.errors() - moves.acknowledged()))
                     .as("alternating answers differ by at most one per load bot")
                     .isLessThanOrEqualTo(SETTINGS.injection().bots());
-            // Over all kinds: on a cold JVM the event loops start late, so arrival intents land in the measured phase.
-            final long sent = actual.intents().values().stream()
-                    .mapToLong(IntentStats::sent)
-                    .sum();
-            assertThat(actual.rejectedShare()).isEqualTo((double) moves.errors() / sent);
+            assertThat(actual.intents()).as("the lifecycle ran in the ramp").containsOnlyKeys(IntentKind.MOVE_TO);
+            assertThat(actual.rejectedShare()).isEqualTo((double) moves.errors() / moves.sent());
             assertThat(actual.timeoutShare()).isZero();
         }
 
@@ -476,7 +462,7 @@ class LoadRunTest {
         @Test
         void execute_shouldQueryServerMetersOverTheSteadyWindow() throws InterruptedException {
             final RecordingMeterWindow meters = new RecordingMeterWindow();
-            final long startedAt = System.nanoTime();
+            final long startedAt = loops.now();
 
             final RunSummary actual = execute(SETTINGS, new FakeScenario(INTERVAL, Duration.ZERO), meters);
 
@@ -520,13 +506,12 @@ class LoadRunTest {
                             .ramp(Duration.ofMillis(200))
                             .steady(Duration.ofSeconds(30))
                             .build())
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
             final FakeScenario scenario = new FakeScenario(INTERVAL, Duration.ZERO)
                     .measuredPhase(MeasuredPhase.RAMP)
                     .finalState(LoadBotState.GAME_CONNECT);
             final RecordingMeterWindow meters = new RecordingMeterWindow();
-            final long startedAt = System.nanoTime();
+            final long startedAt = loops.now();
 
             final RunSummary actual = execute(settings, scenario, meters);
 
@@ -552,7 +537,6 @@ class LoadRunTest {
                             .ramp(Duration.ofMillis(200))
                             .steady(Duration.ofMillis(50))
                             .build())
-                    .maxGeneratorLagP99(Duration.ofMillis(100))
                     .build();
             final FakeScenario scenario = new FakeScenario(INTERVAL, Duration.ZERO)
                     .measuredPhase(MeasuredPhase.RAMP)
@@ -568,15 +552,7 @@ class LoadRunTest {
         }
     }
 
-    private static void sleepTwentyMillis() {
-        try {
-            Thread.sleep(20);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private static final class RecordingMeterWindow implements ServerMeterWindow {
+    private final class RecordingMeterWindow implements ServerMeterWindow {
         static final ServerStats STATS = ServerStats.builder().loops(Map.of()).build();
 
         private final List<String> calls = new CopyOnWriteArrayList<>();
@@ -607,7 +583,7 @@ class LoadRunTest {
 
         @Override
         public void start() {
-            startedAt.set(System.nanoTime());
+            startedAt.set(loops.now());
             calls.add("start");
         }
 
@@ -618,7 +594,7 @@ class LoadRunTest {
 
         @Override
         public ServerStats finish(ServerWindow finished) {
-            finishedAt.set(System.nanoTime());
+            finishedAt.set(loops.now());
             window.set(finished);
             calls.add("finish");
             return readable ? STATS : null;

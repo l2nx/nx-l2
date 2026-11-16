@@ -8,8 +8,6 @@ import app.l2nx.load.scenario.model.MeasuredPhase;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
 
 /**
  * Phase boundaries of one run in nanoseconds of the monotonic clock all load bots read; the run starts at creation.
@@ -17,7 +15,7 @@ import java.util.function.LongSupplier;
  * levels, the measured phase is the union of the level windows.
  */
 public final class RunTimeline {
-    private final LongSupplier clock;
+    private final RunClock clock;
     private final int bots;
     private final int firstLevel;
     private final int increment;
@@ -35,7 +33,7 @@ public final class RunTimeline {
     private final long[] levelEnds;
 
     /** @throws IllegalArgumentException when the profile is invalid or its measured phase is empty */
-    public RunTimeline(InjectionProfile profile, MeasuredPhase phase, LongSupplier clock) {
+    public RunTimeline(InjectionProfile profile, MeasuredPhase phase, RunClock clock) {
         check(profile, phase);
         this.clock = clock;
         this.phase = phase;
@@ -46,7 +44,7 @@ public final class RunTimeline {
         final long steadyNanos = profile.steady().toNanos();
         rampDownNanos = profile.rampDown().toNanos();
         arriving = new CountDownLatch(bots);
-        start = clock.getAsLong();
+        start = clock.now();
         final InjectionProfile.Levels levels = profile.levels();
         if (levels == null) {
             increment = 0;
@@ -133,7 +131,7 @@ public final class RunTimeline {
     }
 
     public long now() {
-        return clock.getAsLong();
+        return clock.now();
     }
 
     public long start() {
@@ -238,13 +236,10 @@ public final class RunTimeline {
     /** The ramp is over once every load bot's arrival is over. */
     public boolean awaitMeasuredEnd(long time) throws InterruptedException {
         if (phase == MeasuredPhase.RAMP) {
-            return arriving.await(Math.max(0, time - now()), TimeUnit.NANOSECONDS);
+            return clock.await(arriving, time);
         }
         final boolean over = measuredEnd - time <= 0;
-        final long delay = (over ? measuredEnd : time) - now();
-        if (delay > 0) {
-            TimeUnit.NANOSECONDS.sleep(delay);
-        }
+        clock.sleepUntil(over ? measuredEnd : time);
         return over;
     }
 }

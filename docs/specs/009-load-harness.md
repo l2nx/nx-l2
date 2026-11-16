@@ -384,7 +384,9 @@ baseline × `max-step-p99-ratio` (1.10) and baseline plus `step-p99-floor` (10 m
 - **Core** on a fake `ClientProtocol` with fault injection (`FakeProtocol`, test code of `tools/load/core`: stalls,
   slow answers, rejections, decode failures, drops, refused identities) and Netty `EmbeddedEventLoop`: latency taken
   from the intended time, including a stalled fake server (a 2 s stall must show in the latency); injection profile
-  phases; the invalid mark on generator lag. The runnable `in-memory` protocol of the application
+  phases; the invalid mark on generator lag. Whole runs (`LoadRun`) play in virtual time too: their event loops and the
+  clock the run waits on are swappable, and the test runs them on one `EmbeddedEventLoop` over a Netty `MockTicker`,
+  so a busy machine cannot move a sample across a phase; a stalled loop is a task that advances the ticker. The runnable `in-memory` protocol of the application
   (`InMemoryProtocol`) measures the generator's own overhead and drives the application's tests; core cannot depend
   on it, and it injects no faults.
 - **Server meters:** the PromQL text of every value, the mapping of recorded `/api/v1/query` and `/api/v1/targets` answers, and one

@@ -7,6 +7,7 @@ package app.l2nx.load.run;
 import app.l2nx.load.bot.LoadBot;
 import app.l2nx.load.bot.intent.IntentKind;
 import app.l2nx.load.bot.model.LoadBotIdentity;
+import app.l2nx.load.injection.RunClock;
 import app.l2nx.load.injection.RunTimeline;
 import app.l2nx.load.latency.GeneratorLagMonitor;
 import app.l2nx.load.latency.LatencyRecorder;
@@ -21,9 +22,6 @@ import app.l2nx.load.report.model.ServerStats;
 import app.l2nx.load.report.model.ServerWindow;
 import app.l2nx.load.scenario.LoadScenario;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.MultiThreadIoEventLoopGroup;
-import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.Future;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -34,10 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
-import java.util.function.LongSupplier;
 import lombok.extern.slf4j.Slf4j;
 import org.HdrHistogram.Histogram;
 
@@ -45,18 +41,18 @@ import org.HdrHistogram.Histogram;
 public final class LoadRun {
     private static final double NANOS_PER_MILLI = 1_000_000.0;
     private static final Duration LOGOUT_ROUND_TRIP = Duration.ofSeconds(2);
-    private static final Duration SHUTDOWN_QUIET_PERIOD = Duration.ofMillis(100);
-    private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
 
-    private final LongSupplier clock;
+    private final GeneratorLoops loops;
+    private final RunClock clock;
     private final InstantSource wallClock;
 
     public LoadRun() {
-        this(System::nanoTime, InstantSource.system());
+        this(new SystemGeneratorLoops(), InstantSource.system());
     }
 
-    LoadRun(LongSupplier clock, InstantSource wallClock) {
-        this.clock = clock;
+    LoadRun(GeneratorLoops loops, InstantSource wallClock) {
+        this.loops = loops;
+        clock = loops.clock();
         this.wallClock = wallClock;
     }
 
@@ -99,8 +95,7 @@ public final class LoadRun {
         final GeneratorLagMonitor lag = new GeneratorLagMonitor(timeline.levels());
         final CountDownLatch stopped = new CountDownLatch(bots);
         final List<LoadBot> loadBots = new ArrayList<>(bots);
-        final EventLoopGroup group = new MultiThreadIoEventLoopGroup(
-                settings.eventLoopThreads(), new DefaultThreadFactory("l2nx-load"), protocol.ioHandlerFactory());
+        final EventLoopGroup group = loops.open(settings.eventLoopThreads(), protocol.ioHandlerFactory());
         log.info(
                 "Load run {} on {} started: {} load bots, seed {}",
                 scenario.id(),
@@ -131,12 +126,12 @@ public final class LoadRun {
             }
             final long drainedAt = timeline.end() + settings.intentTimeout().toNanos() + LOGOUT_ROUND_TRIP.toNanos();
             if (serverMeters != null && timeline.levels() > 0) {
-                sleepUntil(timeline.measuredStart());
+                clock.sleepUntil(timeline.measuredStart());
                 serverMeters.start();
                 for (int level = 0; level < timeline.levels(); level++) {
-                    sleepUntil(timeline.levelMeasuredStart(level));
+                    clock.sleepUntil(timeline.levelMeasuredStart(level));
                     final Instant levelStart = wallClock.instant();
-                    sleepUntil(timeline.levelEnd(level));
+                    clock.sleepUntil(timeline.levelEnd(level));
                     levelWindows.add(ServerWindow.of(levelStart, wallClock.instant()));
                 }
                 // Values over every level would mix their loads: the levels carry the server values, the run none.
@@ -146,7 +141,7 @@ public final class LoadRun {
                     levelServers.add(serverMeters.measure(window));
                 }
             } else if (serverMeters != null) {
-                sleepUntil(timeline.measuredStart());
+                clock.sleepUntil(timeline.measuredStart());
                 final Instant windowStart = wallClock.instant();
                 serverMeters.start();
                 final boolean measuredEnded = timeline.awaitMeasuredEnd(drainedAt);
@@ -161,7 +156,7 @@ public final class LoadRun {
                 }
             }
             // Load bots that close on a final state before the game may all be done long before the run's end.
-            if (!stopped.await(Math.max(0, drainedAt - clock.getAsLong()), TimeUnit.NANOSECONDS)) {
+            if (!clock.await(stopped, drainedAt)) {
                 log.info("{} load bots did not log out in time and are closed", stopped.getCount());
             }
         } catch (Throwable e) {
@@ -170,7 +165,8 @@ public final class LoadRun {
         } finally {
             loadBots.forEach(LoadBot::close);
             try {
-                shutDown(group);
+                // The summary reads load bot state written on the event loops: safe only once they terminated.
+                loops.close(group);
             } catch (RuntimeException e) {
                 if (failure == null) {
                     throw e;
@@ -239,24 +235,6 @@ public final class LoadRun {
             checked.add(identity);
         }
         return checked;
-    }
-
-    private void sleepUntil(long time) throws InterruptedException {
-        final long delay = time - clock.getAsLong();
-        if (delay > 0) {
-            TimeUnit.NANOSECONDS.sleep(delay);
-        }
-    }
-
-    private static void shutDown(EventLoopGroup group) {
-        final Future<?> terminated = group.shutdownGracefully(
-                SHUTDOWN_QUIET_PERIOD.toMillis(), SHUTDOWN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        // The quiet period may run up to the timeout, so wait for both plus a margin.
-        final long waitMillis = SHUTDOWN_QUIET_PERIOD.toMillis() + SHUTDOWN_TIMEOUT.toMillis() + 1_000;
-        // The summary reads load bot state written on the event loops: it is safe only once they terminated.
-        if (!terminated.awaitUninterruptibly(waitMillis)) {
-            throw new IllegalStateException("Load bot event loops did not terminate in " + waitMillis + " ms");
-        }
     }
 
     private static RunSummary summarize(
