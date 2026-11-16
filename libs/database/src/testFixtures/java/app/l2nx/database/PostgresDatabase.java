@@ -25,8 +25,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 public final class PostgresDatabase {
     public static final String IMAGE = "postgres:18.7";
     private static final String PASSWORD = "l2nx";
-    // JUnit's default parallelism, so a pool shared by every test class never makes a worker wait for a connection.
-    private static final int POOL_SIZE = Runtime.getRuntime().availableProcessors();
+    // Fixed, not the host's processor count: a test may hold several connections at once (a key holder next to the
+    // transactions under test) and the tests of a class share one pool, so a pool sized to a 4-core runner starves.
+    // Twice JUnit's parallelism on a 16-thread machine; MAX_CONNECTIONS leaves room for the pools one JVM keeps open.
+    private static final int POOL_SIZE = 32;
+    private static final int MAX_CONNECTIONS = 400;
 
     private static final PostgreSQLContainer CONTAINER = start();
     private static final JdbcClient ADMIN =
@@ -106,6 +109,8 @@ public final class PostgresDatabase {
 
     private static PostgreSQLContainer start() {
         final PostgreSQLContainer container = new PostgreSQLContainer(IMAGE);
+        // Testcontainers' own default command, plus the connection ceiling.
+        container.setCommand("postgres", "-c", "fsync=off", "-c", "max_connections=" + MAX_CONNECTIONS);
         container.start();
         return container;
     }
