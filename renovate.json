@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>l2nx/renovate-config"
+    "github>l2nx/renovate-config-public"
   ],
   "packageRules": [
     {
