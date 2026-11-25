@@ -7,7 +7,7 @@
 # The stop saves every online player and runs until the save is done, so the container needs a stop timeout well above the
 # save time instead of the Docker default of 10 s (docker stop --time, Compose stop_grace_period).
 
-FROM eclipse-temurin:25-jre@sha256:a640968ae55027b322cedd5f8228b01a84baff0b9e9360e47601c6a111ba1699
+FROM eclipse-temurin:25-jre@sha256:4ed132f6832e9804b123e89a849a7b4502756ae64a4ee08ebab939d9d5d0a9fa
 
 RUN groupadd --system l2nx && useradd --system --gid l2nx --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin l2nx
 
