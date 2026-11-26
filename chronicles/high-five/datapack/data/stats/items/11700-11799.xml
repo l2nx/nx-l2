@@ -83,7 +83,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11703" type="Weapon" name="Common Item - Winged Spear">
@@ -187,7 +187,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3005" level="1" type_chance="50" type="ON_CRITICAL_SKILL" /> <!-- Bleed -->
+			<skill id="3005" level="1" type_chance="50" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Bleed -->
 		</skills>
 	</item>
 	<item id="11707" type="Weapon" name="Common Item - Katzbalger">
@@ -643,7 +643,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11725" type="Weapon" name="Common Item - Glaive">
@@ -1391,7 +1391,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11754" type="Weapon" name="Common Item - Schlager">
@@ -2203,7 +2203,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11785" type="Weapon" name="Common Item - Chevalier Rapier">
@@ -2235,7 +2235,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11786" type="Weapon" name="Common Item - Chevalier Rapier">
@@ -2267,7 +2267,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11787" type="Weapon" name="Common Item - Chevalier Rapier">
@@ -2299,7 +2299,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11788" type="Weapon" name="Common Item - Stiletto">
@@ -2404,7 +2404,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="2" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="2" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="11792" type="Weapon" name="Common Item - Horn of Glory">
@@ -2507,7 +2507,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="2" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="2" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11796" type="Weapon" name="Common Item - Sword of Revolution*Sword of Revolution">
@@ -2534,7 +2534,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="11797" type="Weapon" name="Common Item - Sword of Revolution*Elven Long Sword">
@@ -2561,7 +2561,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="3" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="3" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11798" type="Weapon" name="Common Item - Elven Long Sword*Elven Long Sword">
@@ -2588,7 +2588,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="4" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="4" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11799" type="Weapon" name="Common Item - Stick of Eternity">

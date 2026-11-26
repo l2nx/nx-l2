@@ -148,7 +148,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3571" level="1" type_chance="27" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="1" type_chance="27" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="6605" type="Weapon" name="Heavens Divider - Haste">
@@ -367,7 +367,7 @@
 		</stats>
 		<skills>
 			<skill id="3578" level="1" /> <!-- Special Ability: Infinity Blade -->
-			<skill id="3579" level="1" type="ON_CRITICAL_SKILL" /> <!-- Decrease P. Def. -->
+			<skill id="3579" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Decrease P. Def. -->
 		</skills>
 	</item>
 	<item id="6612" type="Weapon" name="Infinity Cleaver">
@@ -439,7 +439,7 @@
 		</stats>
 		<skills>
 			<skill id="3580" level="1" /> <!-- Special Ability: Infinity Axe -->
-			<skill id="3581" level="1" type="ON_CRITICAL_SKILL" /> <!-- Discord -->
+			<skill id="3581" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Discord -->
 		</skills>
 	</item>
 	<item id="6614" type="Weapon" name="Infinity Rod">
@@ -476,7 +476,7 @@
 		</stats>
 		<skills>
 			<skill id="3597" level="1" /> <!-- Special Ability: Infinity Rod -->
-			<skill id="3598" level="1" type_chance="3" type="ON_MAGIC_SKILL" /> <!-- Full Recover -->
+			<skill id="3598" level="1" type_chance="3" type="ON_MAGIC_SKILL_CAST" /> <!-- Full Recover -->
 		</skills>
 	</item>
 	<item id="6615" type="Weapon" name="Infinity Crusher">
@@ -513,7 +513,7 @@
 		</stats>
 		<skills>
 			<skill id="3583" level="1" /> <!-- Special Ability: Infinity Crusher -->
-			<skill id="3584" level="1" type="ON_CRITICAL_SKILL" /> <!-- Shock -->
+			<skill id="3584" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Shock -->
 		</skills>
 	</item>
 	<item id="6616" type="Weapon" name="Infinity Scepter">
@@ -550,7 +550,7 @@
 		</stats>
 		<skills>
 			<skill id="3595" level="1" /> <!-- Special Ability: Infinity Scepter -->
-			<skill id="3596" level="1" type_chance="3" type="ON_MAGIC_SKILL" /> <!-- Full Recover -->
+			<skill id="3596" level="1" type_chance="3" type="ON_MAGIC_SKILL_CAST" /> <!-- Full Recover -->
 		</skills>
 	</item>
 	<item id="6617" type="Weapon" name="Infinity Stinger">
@@ -587,7 +587,7 @@
 		</stats>
 		<skills>
 			<skill id="3589" level="1" /> <!-- Special Ability: Infinity Stinger -->
-			<skill id="3590" level="1" type="ON_CRITICAL_SKILL" /> <!-- Silence -->
+			<skill id="3590" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Silence -->
 		</skills>
 	</item>
 	<item id="6618" type="Weapon" name="Infinity Fang">
@@ -624,7 +624,7 @@
 		</stats>
 		<skills>
 			<skill id="3587" level="1" /> <!-- Special Ability: Infinity Fang -->
-			<skill id="3588" level="1" type="ON_CRITICAL_SKILL" /> <!-- Shock -->
+			<skill id="3588" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Shock -->
 		</skills>
 	</item>
 	<item id="6619" type="Weapon" name="Infinity Bow">
@@ -663,7 +663,7 @@
 		</stats>
 		<skills>
 			<skill id="3593" level="1" /> <!-- Special Ability: Infinity Bow -->
-			<skill id="3594" level="1" type="ON_CRITICAL_SKILL" /> <!-- Slow -->
+			<skill id="3594" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Slow -->
 		</skills>
 	</item>
 	<item id="6620" type="Weapon" name="Infinity Wing">
@@ -699,7 +699,7 @@
 		</stats>
 		<skills>
 			<skill id="3585" level="1" /> <!-- Special Ability: Infinity Wing -->
-			<skill id="3586" level="1" type="ON_CRITICAL_SKILL" /> <!-- Physical Skill Restraint -->
+			<skill id="3586" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Physical Skill Restraint -->
 		</skills>
 	</item>
 	<item id="6621" type="Weapon" name="Infinity Spear">
@@ -736,7 +736,7 @@
 		</stats>
 		<skills>
 			<skill id="3591" level="1" /> <!-- Special Ability: Infinity Spear -->
-			<skill id="3592" level="1" type="ON_CRITICAL_SKILL" /> <!-- Dispell -->
+			<skill id="3592" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Dispell -->
 		</skills>
 	</item>
 	<item id="6622" type="EtcItem" name="Giant's Codex">

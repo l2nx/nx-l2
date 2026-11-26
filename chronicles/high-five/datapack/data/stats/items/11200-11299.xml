@@ -66,7 +66,7 @@
 		<skills>
 			<skill id="3867" level="1" /> <!-- Bow of Boost HP -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="1" type_chance="16" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="1" type_chance="16" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="11202" type="Weapon" name="Dragon Hunter Axe - Thunder">
@@ -224,7 +224,7 @@
 		</stats>
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11207" type="Weapon" name="Laevateinn - Lightning - Haste">
@@ -260,7 +260,7 @@
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
 			<skill id="3564" level="1" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11208" type="Weapon" name="Laevateinn - Lightning - Health">
@@ -296,7 +296,7 @@
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11209" type="Weapon" name="Laevateinn - Lightning - Focus">
@@ -332,7 +332,7 @@
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
 			<skill id="3566" level="1" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11210" type="Weapon" name="Basalt Battlehammer - Concentration">
@@ -600,7 +600,7 @@
 		<skills>
 			<skill id="3872" level="1" /> <!-- Crossbow of Boost HP -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="1" type_chance="16" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="1" type_chance="16" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="11218" type="Weapon" name="Saint Spear - Destruction">
@@ -1102,7 +1102,7 @@
 		<skills>
 			<skill id="3901" level="2" /> <!-- Staff of Mana Boost -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="1" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="1" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="11234" type="Weapon" name="Tallum Blade*Dark Legion's Edge - Lightning">
@@ -1133,7 +1133,7 @@
 		<skills>
 			<skill id="3838" level="1" /> <!-- Dual-Blade Weapon of Critical Chance -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3570" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Robust Health -->
+			<skill id="3570" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Robust Health -->
 		</skills>
 	</item>
 	<item id="11235" type="Weapon" name="Forgotten Blade - Lightning">
@@ -1674,7 +1674,7 @@
 		<skills>
 			<skill id="3836" level="2" /> <!-- Dual-Blade Weapon of Boost HP -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11252" type="Weapon" name="Dynasty Rapier - Earth">
@@ -1709,7 +1709,7 @@
 		</stats>
 		<skills>
 			<skill id="3831" level="2" /> <!-- Rapier of Boost HP -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11253" type="Weapon" name="Dynasty Rapier - Earth - Focus">
@@ -1745,7 +1745,7 @@
 		<skills>
 			<skill id="3831" level="2" /> <!-- Rapier of Boost HP -->
 			<skill id="3566" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11254" type="Weapon" name="Dynasty Rapier - Earth - Health">
@@ -1781,7 +1781,7 @@
 		<skills>
 			<skill id="3831" level="2" /> <!-- Rapier of Boost HP -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11255" type="Weapon" name="Dynasty Rapier - Earth - Light">
@@ -1818,7 +1818,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3498" level="1" /> <!-- Special Ability: Light -->
 			<skill id="3831" level="2" /> <!-- Rapier of Boost HP -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11256" type="Weapon" name="Dynasty Mace - Earth">
@@ -3187,7 +3187,7 @@
 		<skills>
 			<skill id="3877" level="2" /> <!-- Polearm of Boost HP -->
 			<skill id="3552" level="2" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="4" type_chance="48" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="4" type_chance="48" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="11299" type="Weapon" name="Dynasty Halberd - Earth - Light">

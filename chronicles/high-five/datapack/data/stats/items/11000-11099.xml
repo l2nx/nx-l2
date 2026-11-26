@@ -62,7 +62,7 @@
 		</stats>
 		<skills>
 			<skill id="3831" level="1" /> <!-- Rapier of Boost HP -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11002" type="Weapon" name="Colichemarde - Earth - Focus">
@@ -97,7 +97,7 @@
 		<skills>
 			<skill id="3831" level="1" /> <!-- Rapier of Boost HP -->
 			<skill id="3010" level="6" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11003" type="Weapon" name="Colichemarde - Earth - Critical Damage">
@@ -132,7 +132,7 @@
 		<skills>
 			<skill id="3831" level="1" /> <!-- Rapier of Boost HP -->
 			<skill id="3023" level="6" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11004" type="Weapon" name="Colichemarde - Earth - Haste">
@@ -167,7 +167,7 @@
 		<skills>
 			<skill id="3831" level="1" /> <!-- Rapier of Boost HP -->
 			<skill id="3036" level="6" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11005" type="Weapon" name="Wizard's Tear - Cleverness">
@@ -783,7 +783,7 @@
 		<skills>
 			<skill id="3868" level="2" /> <!-- Crossbow of Guidance -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3053" level="1" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3053" level="1" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11024" type="Weapon" name="Doomchanter - Concentration - Mana Up">
@@ -852,7 +852,7 @@
 		</stats>
 		<skills>
 			<skill id="3830" level="2" /> <!-- Rapier of Might -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11026" type="Weapon" name="White Lightning - Destruction - Critical Poison">
@@ -887,8 +887,8 @@
 		<skills>
 			<skill id="3830" level="2" /> <!-- Rapier of Might -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3061" level="1" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3061" level="1" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="11027" type="Weapon" name="White Lightning - Destruction - Haste">
@@ -923,7 +923,7 @@
 		<skills>
 			<skill id="3830" level="2" /> <!-- Rapier of Might -->
 			<skill id="3068" level="2" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11028" type="Weapon" name="White Lightning - Destruction - Anger">
@@ -958,7 +958,7 @@
 		<skills>
 			<skill id="3830" level="2" /> <!-- Rapier of Might -->
 			<skill id="3057" level="1" /> <!-- Special Ability: Anger -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11029" type="Weapon" name="Meteor Shower - Earth">
@@ -1048,7 +1048,7 @@
 		<skills>
 			<skill id="3884" level="2" /> <!-- Blunt Weapon of Boost HP -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3052" level="1" type_chance="42" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3052" level="1" type_chance="42" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11032" type="Weapon" name="Meteor Shower - Earth - Rsk. Haste">
@@ -1317,7 +1317,7 @@
 		<skills>
 			<skill id="3858" level="2" /> <!-- Dagger of Avoid -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3054" level="1" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3054" level="1" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11041" type="Weapon" name="Elemental Sword - Hail">
@@ -1407,7 +1407,7 @@
 		<skills>
 			<skill id="3854" level="1" /> <!-- Sword of Empower -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3075" level="1" type_chance="5" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Paralyze -->
+			<skill id="3075" level="1" type_chance="5" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Paralyze -->
 		</skills>
 	</item>
 	<item id="11044" type="Weapon" name="Elemental Sword - Hail - Empower">
@@ -1530,7 +1530,7 @@
 		<skills>
 			<skill id="3889" level="2" /> <!-- Blunt Weapon of Empower -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1168" level="6" type_chance="8" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="8" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="11048" type="Weapon" name="Spiritual Eye - Hail - Acumen">
@@ -1780,7 +1780,7 @@
 		<skills>
 			<skill id="3863" level="2" /> <!-- Bow of Guidance -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3053" level="1" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3053" level="1" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11056" type="Weapon" name="Carnage Bow - Concentration - Mana Up">
@@ -1842,7 +1842,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="2" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3045" level="17" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="17" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11058" type="Weapon" name="Tallum Blade - Destruction">
@@ -1902,7 +1902,7 @@
 		<skills>
 			<skill id="3825" level="2" /> <!-- Sword of Might -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3061" level="1" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3061" level="1" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="11060" type="Weapon" name="Tallum Blade - Destruction - Haste">
@@ -2082,7 +2082,7 @@
 		<skills>
 			<skill id="3895" level="2" /> <!-- Two-handed Blunt Weapon of Critical Chance -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3059" level="1" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3059" level="1" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="11066" type="Weapon" name="Divine Pain - Concentration">
@@ -2308,7 +2308,7 @@
 		<skills>
 			<skill id="3874" level="1" /> <!-- Polearm of Critical Chance -->
 			<skill id="3552" level="2" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="1" type_chance="25" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="1" type_chance="25" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="11073" type="Weapon" name="Halberd - Lightning - Wide Blow">
@@ -2367,7 +2367,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="2" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3013" level="3" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="3" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="11075" type="Weapon" name="Lacerator - Thunder">
@@ -2401,7 +2401,7 @@
 		</stats>
 		<skills>
 			<skill id="3832" level="1" /> <!-- Rapier of Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11076" type="Weapon" name="Lacerator - Thunder - Critical Damage">
@@ -2436,7 +2436,7 @@
 		<skills>
 			<skill id="3832" level="1" /> <!-- Rapier of Critical Damage -->
 			<skill id="3067" level="2" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11077" type="Weapon" name="Lacerator - Thunder - Health">
@@ -2471,7 +2471,7 @@
 		<skills>
 			<skill id="3832" level="1" /> <!-- Rapier of Critical Damage -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11078" type="Weapon" name="Lacerator - Thunder - Rsk. Focus">
@@ -2506,7 +2506,7 @@
 		<skills>
 			<skill id="3832" level="1" /> <!-- Rapier of Critical Damage -->
 			<skill id="3071" level="2" /> <!-- Special Ability: Rsk. Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11079" type="Weapon" name="Damascus*Damascus - Thunder">
@@ -2535,7 +2535,7 @@
 		</stats>
 		<skills>
 			<skill id="3837" level="1" /> <!-- Dual-Blade Weapon of Critical Damage -->
-			<skill id="3046" level="20" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="20" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11080" type="Weapon" name="Dark Legion's Edge - Thunder">
@@ -2756,7 +2756,7 @@
 		<skills>
 			<skill id="3848" level="1" /> <!-- Ancient Sword of Vampiric Rage -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3055" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3055" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11087" type="Weapon" name="Undertaker - Evil Spirit - Critical Drain">
@@ -2791,7 +2791,7 @@
 		<skills>
 			<skill id="3848" level="1" /> <!-- Ancient Sword of Vampiric Rage -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3060" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3060" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="11088" type="Weapon" name="Doom Crusher - Thunder">
@@ -3119,7 +3119,7 @@
 		<skills>
 			<skill id="3842" level="1" /> <!-- Two-handed Sword of Vampiric Rage -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3055" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3055" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11099" type="Weapon" name="Dragon Slayer - Evil Spirit - Critical Drain">
@@ -3150,7 +3150,7 @@
 		<skills>
 			<skill id="3842" level="1" /> <!-- Two-handed Sword of Vampiric Rage -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3060" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3060" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 </list>

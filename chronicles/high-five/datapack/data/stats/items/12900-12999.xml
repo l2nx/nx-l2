@@ -33,7 +33,7 @@
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3571" level="1" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="12901" type="Weapon" name="Draconic Bow - Earth {PvP} - Cheap Shot">
@@ -144,7 +144,7 @@
 			<skill id="3867" level="1" /> <!-- Bow of Boost HP -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="1" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="12904" type="Weapon" name="Dragon Hunter Axe - Thunder {PvP} - HP Regeneration">
@@ -288,7 +288,7 @@
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3564" level="1" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="12908" type="Weapon" name="Laevateinn - Lightning {PvP} - Health">
@@ -327,7 +327,7 @@
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="12909" type="Weapon" name="Laevateinn - Lightning {PvP} - Focus">
@@ -366,7 +366,7 @@
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3566" level="1" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="12910" type="Weapon" name="Basalt Battlehammer - Concentration {PvP} - HP Drain">
@@ -588,7 +588,7 @@
 			<skill id="3872" level="1" /> <!-- Crossbow of Boost HP -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="1" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="1" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="12916" type="Weapon" name="Saint Spear - Destruction {PvP} - Health">
@@ -1017,7 +1017,7 @@
 			<skill id="3901" level="2" /> <!-- Staff of Mana Boost -->
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="1" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="1" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="12928" type="Weapon" name="Tallum Blade*Dark Legion's Edge - Lightning {PvP}">
@@ -1051,7 +1051,7 @@
 			<skill id="3838" level="1" /> <!-- Dual-Blade Weapon of Critical Chance -->
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3570" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Robust Health -->
+			<skill id="3570" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Robust Health -->
 		</skills>
 	</item>
 	<item id="12929" type="Weapon" name="Forgotten Blade - Lightning {PvP} - Haste">
@@ -1511,7 +1511,7 @@
 			<skill id="3836" level="2" /> <!-- Dual-Blade Weapon of Boost HP -->
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="12942" type="Weapon" name="Dynasty Rapier - Earth {PvP} - Focus">
@@ -1550,7 +1550,7 @@
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3566" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="12943" type="Weapon" name="Dynasty Rapier - Earth {PvP} - Health">
@@ -1589,7 +1589,7 @@
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="12944" type="Weapon" name="Dynasty Rapier - Earth {PvP} - Light">
@@ -1628,7 +1628,7 @@
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3498" level="1" /> <!-- Special Ability: Light -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="12945" type="Weapon" name="Dynasty Mace - Earth {PvP} - Mana Up">
@@ -2769,7 +2769,7 @@
 			<skill id="3877" level="2" /> <!-- Polearm of Boost HP -->
 			<skill id="3653" level="1" /> <!-- PvP Weapon - Attack Chance -->
 			<skill id="3552" level="4" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="4" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="4" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="12977" type="Weapon" name="Dynasty Halberd - Earth {PvP} - Light">

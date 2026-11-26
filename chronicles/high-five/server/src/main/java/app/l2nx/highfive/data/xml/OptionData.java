@@ -19,8 +19,8 @@
  */
 package app.l2nx.highfive.data.xml;
 
+import app.l2nx.highfive.entity.item.enums.ItemSkillType;
 import app.l2nx.highfive.mechanics.options.OptionSkillHolder;
-import app.l2nx.highfive.mechanics.options.OptionSkillType;
 import app.l2nx.highfive.mechanics.options.Options;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Stat;
@@ -36,7 +36,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 /**
- * Item Option data.
  * @author UnAfraid
  */
 @Slf4j
@@ -127,7 +126,7 @@ public class OptionData implements IXmlReader {
                                         option.addActivationSkill(OptionSkillHolder.builder()
                                                 .skill(skill)
                                                 .chance(parseDouble(cd.getAttributes(), "chance"))
-                                                .skillType(OptionSkillType.ATTACK)
+                                                .skillType(ItemSkillType.ON_PHYSICAL_HIT)
                                                 .build());
                                     } else {
                                         log.info(
@@ -146,7 +145,7 @@ public class OptionData implements IXmlReader {
                                         option.addActivationSkill(OptionSkillHolder.builder()
                                                 .skill(skill)
                                                 .chance(parseDouble(cd.getAttributes(), "chance"))
-                                                .skillType(OptionSkillType.MAGIC)
+                                                .skillType(ItemSkillType.ON_MAGIC_SKILL_CAST)
                                                 .build());
                                     } else {
                                         log.info(
@@ -165,7 +164,7 @@ public class OptionData implements IXmlReader {
                                         option.addActivationSkill(OptionSkillHolder.builder()
                                                 .skill(skill)
                                                 .chance(parseDouble(cd.getAttributes(), "chance"))
-                                                .skillType(OptionSkillType.CRITICAL)
+                                                .skillType(ItemSkillType.ON_NORMAL_ATTACK_CRITICAL_HIT)
                                                 .build());
                                     } else {
                                         log.info(
@@ -206,10 +205,6 @@ public class OptionData implements IXmlReader {
         return null;
     }
 
-    /**
-     * Gets the single instance of OptionsData.
-     * @return single instance of OptionsData
-     */
     public static OptionData getInstance() {
         return SingletonHolder.INSTANCE;
     }

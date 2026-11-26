@@ -49,7 +49,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="14302" type="EtcItem" name="Berserker Blade">
@@ -208,7 +208,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14308" type="EtcItem" name="Saber Tooth">
@@ -497,7 +497,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="14" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="14" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="14319" type="EtcItem" name="Demon's Dagger">
@@ -656,7 +656,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14325" type="EtcItem" name="Dismantler">
@@ -1020,7 +1020,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="17" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="17" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="14339" type="EtcItem" name="Éclair Bijou">
@@ -1051,7 +1051,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14340" type="EtcItem" name="Durendal">
@@ -1725,7 +1725,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14373" type="Weapon" name="Icarus Wingblade {PvP}">
@@ -1832,7 +1832,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="14376" type="Weapon" name="Icarus Sawsword {PvP} - Focus">
@@ -2413,7 +2413,7 @@
 		<skills>
 			<skill id="3552" level="4" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3653" level="1" /> <!-- PvP Weapon - Attack Chance -->
-			<skill id="3070" level="4" type_chance="48" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="4" type_chance="48" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="14393" type="Weapon" name="Icarus Trident {PvP} - Light">

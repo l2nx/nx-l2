@@ -1064,7 +1064,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="1" type_chance="16" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="1" type_chance="16" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="7579" type="EtcItem" name="Draconic Bow Shaft">

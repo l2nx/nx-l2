@@ -95,7 +95,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" />
-			<skill id="3574" level="1" type_chance="16" type="ON_CRITICAL_SKILL" />
+			<skill id="3574" level="1" type_chance="16" type="ON_NORMAL_ATTACK_CRITICAL_HIT" />
 		</skills>
 	</item>
 </list>

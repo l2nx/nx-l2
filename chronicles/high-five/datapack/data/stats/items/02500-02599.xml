@@ -1253,7 +1253,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="2" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="2" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2555" type="Weapon" name="Elven Sword*Elven Sword">
@@ -1329,7 +1329,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="2" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="2" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2558" type="Weapon" name="Sword of Revolution*Sword of Revolution">
@@ -1357,7 +1357,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2559" type="Weapon" name="Sword of Revolution*Elven Long Sword">
@@ -1385,7 +1385,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="3" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="3" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2560" type="Weapon" name="Elven Long Sword*Elven Long Sword">
@@ -1413,7 +1413,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="4" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="4" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2561" type="Weapon" name="Stormbringer*Stormbringer">
@@ -1441,7 +1441,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="6" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="6" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2562" type="Weapon" name="Stormbringer*Shamshir">
@@ -1469,7 +1469,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="7" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="7" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2563" type="Weapon" name="Stormbringer*Katana">
@@ -1497,7 +1497,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2564" type="Weapon" name="Stormbringer*Spirit Sword">
@@ -1525,7 +1525,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="7" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="7" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2565" type="Weapon" name="Stormbringer*Raid Sword">
@@ -1553,7 +1553,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="7" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="7" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2566" type="Weapon" name="Stormbringer*Caliburs">
@@ -1581,7 +1581,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="9" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="9" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2567" type="Weapon" name="Stormbringer*Sword of Limit">
@@ -1609,7 +1609,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="9" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="9" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2568" type="Weapon" name="Stormbringer*Sword of Delusion">
@@ -1637,7 +1637,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2569" type="Weapon" name="Stormbringer*Sword of Nightmare">
@@ -1665,7 +1665,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="9" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="9" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2570" type="Weapon" name="Stormbringer*Tsurugi">
@@ -1693,7 +1693,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="9" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="9" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2571" type="Weapon" name="Stormbringer*Samurai Long sword">
@@ -1721,7 +1721,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2572" type="Weapon" name="Shamshir*Shamshir">
@@ -1749,7 +1749,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2573" type="Weapon" name="Shamshir*Katana">
@@ -1777,7 +1777,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2574" type="Weapon" name="Shamshir*Spirit Sword">
@@ -1805,7 +1805,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2575" type="Weapon" name="Shamshir*Raid Sword">
@@ -1833,7 +1833,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2576" type="Weapon" name="Shamshir*Caliburs">
@@ -1861,7 +1861,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2577" type="Weapon" name="Shamshir*Sword of Limit">
@@ -1889,7 +1889,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2578" type="Weapon" name="Shamshir*Sword of Delusion">
@@ -1917,7 +1917,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2579" type="Weapon" name="Shamshir*Sword of Nightmare">
@@ -1945,7 +1945,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2580" type="Weapon" name="Shamshir*Tsurugi">
@@ -1973,7 +1973,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2581" type="Weapon" name="Shamshir*Samurai Long Sword">
@@ -2001,7 +2001,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2582" type="Weapon" name="Katana*Katana">
@@ -2029,7 +2029,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2583" type="Weapon" name="Katana*Spirit Sword">
@@ -2057,7 +2057,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2584" type="Weapon" name="Katana*Raid Sword">
@@ -2085,7 +2085,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2585" type="Weapon" name="Katana*Caliburs">
@@ -2113,7 +2113,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2586" type="Weapon" name="Katana*Sword of Limit">
@@ -2141,7 +2141,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2587" type="Weapon" name="Katana*Sword of Delusion">
@@ -2169,7 +2169,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2588" type="Weapon" name="Katana*Sword of Nightmare">
@@ -2197,7 +2197,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2589" type="Weapon" name="Katana*Tsurugi">
@@ -2225,7 +2225,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2590" type="Weapon" name="Katana*Samurai Long Sword">
@@ -2253,7 +2253,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2591" type="Weapon" name="Spirit Sword*Spirit Sword">
@@ -2281,7 +2281,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2592" type="Weapon" name="Spirit Sword*Raid Sword">
@@ -2309,7 +2309,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2593" type="Weapon" name="Spirit Sword*Caliburs">
@@ -2337,7 +2337,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2594" type="Weapon" name="Spirit Sword*Sword of Limit">
@@ -2365,7 +2365,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2595" type="Weapon" name="Spirit Sword*Sword of Delusion">
@@ -2393,7 +2393,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2596" type="Weapon" name="Spirit Sword*Sword of Nightmare">
@@ -2421,7 +2421,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2597" type="Weapon" name="Spirit Sword*Tsurugi">
@@ -2449,7 +2449,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2598" type="Weapon" name="Spirit Sword*Samurai Long Sword">
@@ -2477,7 +2477,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2599" type="Weapon" name="Raid Sword*Raid Sword">
@@ -2505,7 +2505,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 </list>

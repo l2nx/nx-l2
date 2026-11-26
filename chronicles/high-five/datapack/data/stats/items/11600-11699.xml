@@ -170,7 +170,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11608" type="Weapon" name="Common Item - Bagh-Nakh">
@@ -1244,7 +1244,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11649" type="Weapon" name="Common Item - Fleuret">
@@ -1276,7 +1276,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11650" type="Weapon" name="Common Item - Fleuret">
@@ -1308,7 +1308,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11651" type="Weapon" name="Common Item - Fleuret">
@@ -1340,7 +1340,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11652" type="Weapon" name="Common Item - Hand Crossbow">
@@ -1796,7 +1796,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11669" type="Weapon" name="Common Item - Estoc">
@@ -1828,7 +1828,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11670" type="Weapon" name="Common Item - Elven Sword">

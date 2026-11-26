@@ -105,7 +105,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3570" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Robust Health -->
+			<skill id="3570" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Robust Health -->
 		</skills>
 	</item>
 	<item id="12004" type="Weapon" name="Common Item - Forgotten Blade">

@@ -25,7 +25,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2601" type="Weapon" name="Raid Sword*Sword of Limit">
@@ -53,7 +53,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2602" type="Weapon" name="Raid Sword*Sword of Delusion">
@@ -81,7 +81,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2603" type="Weapon" name="Raid Sword*Sword of Nightmare">
@@ -109,7 +109,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2604" type="Weapon" name="Raid Sword*Tsurugi">
@@ -137,7 +137,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="10" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="10" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2605" type="Weapon" name="Raid Sword*Samurai Long Sword">
@@ -165,7 +165,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2606" type="Weapon" name="Caliburs*Caliburs">
@@ -193,7 +193,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2607" type="Weapon" name="Caliburs*Sword of Limit">
@@ -221,7 +221,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2608" type="Weapon" name="Caliburs*Sword of Delusion">
@@ -249,7 +249,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2609" type="Weapon" name="Caliburs*Sword of Nightmare">
@@ -277,7 +277,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2610" type="Weapon" name="Caliburs*Tsurugi">
@@ -305,7 +305,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2611" type="Weapon" name="Caliburs*Samurai Long Sword">
@@ -333,7 +333,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2612" type="Weapon" name="Sword of Limit*Sword of Limit">
@@ -361,7 +361,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2613" type="Weapon" name="Sword of Limit*Sword of Delusion">
@@ -389,7 +389,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2614" type="Weapon" name="Sword of Limit*Sword of Nightmare">
@@ -417,7 +417,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2615" type="Weapon" name="Sword of Limit*Tsurugi">
@@ -445,7 +445,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2616" type="Weapon" name="Sword of Limit*Samurai Long Sword">
@@ -473,7 +473,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2617" type="Weapon" name="Sword of Delusion*Sword of Delusion">
@@ -501,7 +501,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="2618" type="Weapon" name="Sword of Delusion*Sword of Nightmare">
@@ -529,7 +529,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2619" type="Weapon" name="Sword of Delusion*Tsurugi">
@@ -557,7 +557,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2620" type="Weapon" name="Sword of Delusion*Samurai Long Sword">
@@ -585,7 +585,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="2621" type="Weapon" name="Sword of Nightmare*Sword of Nightmare">
@@ -613,7 +613,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2622" type="Weapon" name="Sword of Nightmare*Tsurugi">
@@ -641,7 +641,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2623" type="Weapon" name="Sword of Nightmare*Samurai Long Sword">
@@ -669,7 +669,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="2624" type="Weapon" name="Tsurugi*Tsurugi">
@@ -697,7 +697,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2625" type="Weapon" name="Tsurugi*Samurai Long Sword">
@@ -725,7 +725,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="2626" type="Weapon" name="Samurai Long Sword*Samurai Long Sword">
@@ -753,7 +753,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="14" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="14" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="2627" type="EtcItem" name="Mark of Challenger">

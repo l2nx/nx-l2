@@ -28,7 +28,7 @@
 		<skills>
 			<skill id="3835" level="3" /> <!-- Dual-Blade Weapon of Might -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11301" type="Weapon" name="Icarus Disperser - Confusion">
@@ -454,7 +454,7 @@
 		</stats>
 		<skills>
 			<skill id="3830" level="3" /> <!-- Rapier of Might -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11314" type="Weapon" name="Icarus Stinger - Destruction - Focus">
@@ -490,7 +490,7 @@
 		<skills>
 			<skill id="3830" level="3" /> <!-- Rapier of Might -->
 			<skill id="3566" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11315" type="Weapon" name="Icarus Stinger - Destruction - Health">
@@ -526,7 +526,7 @@
 		<skills>
 			<skill id="3830" level="3" /> <!-- Rapier of Might -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11316" type="Weapon" name="Icarus Stinger - Destruction - Light">
@@ -563,7 +563,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3498" level="1" /> <!-- Special Ability: Light -->
 			<skill id="3830" level="3" /> <!-- Rapier of Might -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11317" type="Weapon" name="Icarus Spirit - Nature">
@@ -1056,7 +1056,7 @@
 		<skills>
 			<skill id="3873" level="2" /> <!-- Polearm of Critical Damage -->
 			<skill id="3552" level="2" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="4" type_chance="48" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="4" type_chance="48" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="11332" type="Weapon" name="Icarus Trident - Thunder - Light">

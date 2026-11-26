@@ -184,7 +184,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9210" type="Weapon" name="Talwar">
@@ -308,7 +308,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9214" type="Weapon" name="Fleuret">
@@ -341,7 +341,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9215" type="Weapon" name="Fleuret">
@@ -374,7 +374,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9216" type="Weapon" name="Military Talwar">
@@ -467,7 +467,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9219" type="Weapon" name="Estoc">
@@ -500,7 +500,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9220" type="Weapon" name="Field Sword">
@@ -594,7 +594,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9223" type="Weapon" name="Katzbalger">
@@ -688,7 +688,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9226" type="Weapon" name="General's Katzbalger">
@@ -782,7 +782,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9229" type="Weapon" name="Soldat Estoc - Critical Anger">
@@ -816,8 +816,8 @@
 		</stats>
 		<skills>
 			<skill id="3026" level="1" /> <!-- Special Ability: Critical Anger -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3025" level="1" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Anger -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3025" level="1" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Anger -->
 		</skills>
 	</item>
 	<item id="9230" type="Weapon" name="Soldat Estoc - Focus">
@@ -851,7 +851,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="1" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9231" type="Weapon" name="Soldat Estoc - Light">
@@ -885,7 +885,7 @@
 		</stats>
 		<skills>
 			<skill id="3498" level="1" /> <!-- Special Ability: Light -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9232" type="Weapon" name="Schlager">
@@ -1177,7 +1177,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9241" type="Weapon" name="Chevalier Rapier - Guidance">
@@ -1211,7 +1211,7 @@
 		</stats>
 		<skills>
 			<skill id="3007" level="2" /> <!-- Special Ability: Guidance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9242" type="Weapon" name="Chevalier Rapier - Back Blow">
@@ -1245,7 +1245,7 @@
 		</stats>
 		<skills>
 			<skill id="3018" level="2" /> <!-- Special Ability: Back Blow -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9243" type="Weapon" name="Chevalier Rapier - Rsk. Evasion">
@@ -1279,7 +1279,7 @@
 		</stats>
 		<skills>
 			<skill id="3028" level="2" /> <!-- Special Ability: Rsk. Evasion -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9244" type="Weapon" name="Chevalier Rapier">
@@ -1312,7 +1312,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9245" type="Weapon" name="Chevalier Rapier - Focus">
@@ -1346,7 +1346,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9246" type="Weapon" name="Chevalier Rapier - Critical Damage">
@@ -1380,7 +1380,7 @@
 		</stats>
 		<skills>
 			<skill id="3023" level="2" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9247" type="Weapon" name="Chevalier Rapier - Haste">
@@ -1414,7 +1414,7 @@
 		</stats>
 		<skills>
 			<skill id="3036" level="2" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9248" type="Weapon" name="Chevalier Rapier">
@@ -1447,7 +1447,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9249" type="Weapon" name="Chevalier Rapier - Critical Damage">
@@ -1481,7 +1481,7 @@
 		</stats>
 		<skills>
 			<skill id="3023" level="2" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9250" type="Weapon" name="Chevalier Rapier - Critical Poison">
@@ -1514,8 +1514,8 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3024" level="2" type_chance="15" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3024" level="2" type_chance="15" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="9251" type="Weapon" name="Chevalier Rapier - Haste">
@@ -1549,7 +1549,7 @@
 		</stats>
 		<skills>
 			<skill id="3036" level="2" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9252" type="Weapon" name="Chevalier Rapier">
@@ -1582,7 +1582,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9253" type="Weapon" name="Chevalier Rapier - Focus">
@@ -1616,7 +1616,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9254" type="Weapon" name="Chevalier Rapier - Critical Drain">
@@ -1649,8 +1649,8 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3022" level="2" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3022" level="2" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="9255" type="Weapon" name="Chevalier Rapier - Critical Poison">
@@ -1683,8 +1683,8 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3024" level="2" type_chance="15" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3024" level="2" type_chance="15" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="9256" type="Weapon" name="Ballista">
@@ -1976,7 +1976,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9265" type="Weapon" name="Blinzlasher - Guidance">
@@ -2010,7 +2010,7 @@
 		</stats>
 		<skills>
 			<skill id="3007" level="3" /> <!-- Special Ability: Guidance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9266" type="Weapon" name="Blinzlasher - Focus">
@@ -2044,7 +2044,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="3" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9267" type="Weapon" name="Blinzlasher - Critical Damage">
@@ -2078,7 +2078,7 @@
 		</stats>
 		<skills>
 			<skill id="3023" level="3" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9268" type="Weapon" name="Blinzlasher">
@@ -2111,7 +2111,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9269" type="Weapon" name="Blinzlasher - Focus">
@@ -2145,7 +2145,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="3" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9270" type="Weapon" name="Blinzlasher - Health">
@@ -2179,7 +2179,7 @@
 		</stats>
 		<skills>
 			<skill id="3013" level="1" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9271" type="Weapon" name="Blinzlasher - Rsk. Haste">
@@ -2213,7 +2213,7 @@
 		</stats>
 		<skills>
 			<skill id="3032" level="3" /> <!-- Special Ability: Rsk. Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9272" type="Weapon" name="Blinzlasher">
@@ -2246,7 +2246,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9273" type="Weapon" name="Blinzlasher - Focus">
@@ -2280,7 +2280,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="3" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9274" type="Weapon" name="Blinzlasher - Critical Damage">
@@ -2314,7 +2314,7 @@
 		</stats>
 		<skills>
 			<skill id="3023" level="3" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9275" type="Weapon" name="Blinzlasher - Haste">
@@ -2348,7 +2348,7 @@
 		</stats>
 		<skills>
 			<skill id="3036" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9276" type="Weapon" name="Blinzlasher">
@@ -2381,7 +2381,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9277" type="Weapon" name="Blinzlasher - Health">
@@ -2415,7 +2415,7 @@
 		</stats>
 		<skills>
 			<skill id="3013" level="1" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9278" type="Weapon" name="Blinzlasher - Focus">
@@ -2449,7 +2449,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="3" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9279" type="Weapon" name="Blinzlasher - Light">
@@ -2483,7 +2483,7 @@
 		</stats>
 		<skills>
 			<skill id="3498" level="1" /> <!-- Special Ability: Light -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9280" type="Weapon" name="Blinzlasher">
@@ -2516,7 +2516,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9281" type="Weapon" name="Blinzlasher - Guidance">
@@ -2550,7 +2550,7 @@
 		</stats>
 		<skills>
 			<skill id="3007" level="3" /> <!-- Special Ability: Guidance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9282" type="Weapon" name="Blinzlasher - Critical Drain">
@@ -2583,8 +2583,8 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3022" level="3" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3022" level="3" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="9283" type="Weapon" name="Blinzlasher - Health">
@@ -2618,7 +2618,7 @@
 		</stats>
 		<skills>
 			<skill id="3013" level="1" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9284" type="Weapon" name="Immortal Edge">
@@ -2747,7 +2747,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3022" level="3" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3022" level="3" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="9288" type="Weapon" name="Tathlum">
@@ -2911,7 +2911,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9293" type="Weapon" name="Admiral's Estoc - Focus">
@@ -2945,7 +2945,7 @@
 		</stats>
 		<skills>
 			<skill id="3010" level="4" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9294" type="Weapon" name="Admiral's Estoc - Critical Damage">
@@ -2979,7 +2979,7 @@
 		</stats>
 		<skills>
 			<skill id="3023" level="4" /> <!-- Special Ability: Critical Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9295" type="Weapon" name="Admiral's Estoc - Haste">
@@ -3013,7 +3013,7 @@
 		</stats>
 		<skills>
 			<skill id="3036" level="4" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="9296" type="Weapon" name="Saber Tooth">

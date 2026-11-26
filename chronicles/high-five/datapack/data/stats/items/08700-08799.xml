@@ -1117,7 +1117,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3061" level="3" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3061" level="3" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="8791" type="Weapon" name="Sword of Ipos - Focus">

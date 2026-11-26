@@ -191,7 +191,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="18" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="18" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="7812" type="Weapon" name="Soulfire Dirk - Magic Silence">
@@ -221,7 +221,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="7813" type="Weapon" name="Hell Knife - Magic Regeneration">
@@ -251,7 +251,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="7814" type="Weapon" name="Hell Knife - Mental Shield">
@@ -281,7 +281,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="7815" type="Weapon" name="Hell Knife - Magic Weakness">
@@ -311,7 +311,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="7816" type="Weapon" name="Apprentice Adventurer's Staff">

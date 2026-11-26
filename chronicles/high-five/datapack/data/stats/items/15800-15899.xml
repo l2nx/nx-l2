@@ -885,7 +885,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3571" level="2" type_chance="43" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="2" type_chance="43" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="15846" type="Weapon" name="Octo Claw - Focus">
@@ -1161,7 +1161,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="15855" type="Weapon" name="Black Visage - Empower">
@@ -1253,7 +1253,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="15858" type="Weapon" name="Veniplant Sword - Mana Up">
@@ -1350,7 +1350,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="3" type_chance="33" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="3" type_chance="33" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="15861" type="Weapon" name="Skull Carnium Bow - Cheap Shot">
@@ -1420,7 +1420,7 @@
 		</stats>
 		<skills>
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15863" type="Weapon" name="Gemtail Rapier - Focus">
@@ -1456,7 +1456,7 @@
 		</stats>
 		<skills>
 			<skill id="8289" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15864" type="Weapon" name="Gemtail Rapier - Haste">
@@ -1492,7 +1492,7 @@
 		</stats>
 		<skills>
 			<skill id="3564" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15865" type="Weapon" name="Finale Blade - Health">
@@ -1665,7 +1665,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="3" type_chance="33" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="3" type_chance="33" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="15870" type="Weapon" name="Dominion Crossbow - Cheap Shot">
@@ -2182,7 +2182,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3571" level="2" type_chance="43" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="2" type_chance="43" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="15887" type="Weapon" name="Jade Claw - Focus">
@@ -2457,7 +2457,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="15896" type="Weapon" name="Cyclic Cane - Empower">
@@ -2550,7 +2550,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="15899" type="Weapon" name="Archangel Sword - Mana Up">

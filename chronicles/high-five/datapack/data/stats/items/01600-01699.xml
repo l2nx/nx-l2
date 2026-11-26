@@ -738,7 +738,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3005" level="1" type_chance="50" type="ON_CRITICAL_SKILL" /> <!-- Bleed -->
+			<skill id="3005" level="1" type_chance="50" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Bleed -->
 		</skills>
 	</item>
 	<item id="1661" type="EtcItem" name="Thief Key">

@@ -125,7 +125,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3022" level="3" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3022" level="3" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="6309" type="Weapon" name="Sword of Limit - Health">
@@ -241,7 +241,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3078" level="3" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3078" level="3" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="6313" type="Weapon" name="Homunkulus's Sword - Acumen">
@@ -328,7 +328,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3079" level="3" type_chance="5" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Paralyze -->
+			<skill id="3079" level="3" type_chance="5" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Paralyze -->
 		</skills>
 	</item>
 	<item id="6316" type="EtcItem" name="Food for Wyvern">

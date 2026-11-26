@@ -821,7 +821,7 @@
 			<stat type="pDef">28</stat>
 		</stats>
 		<skills>
-			<skill id="8324" level="1" type="ON_ENCHANT_4" /> <!-- Warrior's Shirt -->
+			<skill id="8324" level="1" type="EQUIPPED_ENCHANT" /> <!-- Warrior's Shirt -->
 		</skills>
 	</item>
 	<item id="13752" type="Armor" name="Olympiad Warrior's Ring">

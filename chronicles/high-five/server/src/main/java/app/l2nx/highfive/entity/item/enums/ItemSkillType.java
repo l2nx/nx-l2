@@ -23,12 +23,20 @@
 package app.l2nx.highfive.entity.item.enums;
 
 /**
+ * When a skill that an item or an item option brings is in effect or is cast. A constant without a prefix is a grant
+ * held while its condition lasts; a constant with {@code ON_} is a one-time cast on that event.
+ *
  * @author Mobius
  */
 public enum ItemSkillType {
-    NORMAL, // item_skill
-    ON_ENCHANT_4, // enchant4_skill
-    ON_UNEQUIP, // unequip_skill
-    ON_CRITICAL_SKILL, // oncrit_skill
-    ON_MAGIC_SKILL; // onmagic_skill
+    EQUIPPED,
+    /** Held from enchant level 4: HighFive has this one threshold. */
+    EQUIPPED_ENCHANT,
+    ON_USE,
+    ON_UNEQUIP,
+    /** Option skills only: a non-critical normal-attack hit or a physical skill of the owner. */
+    ON_PHYSICAL_HIT,
+    /** A critical normal-attack hit; a critical hit of a skill does not fire it. */
+    ON_NORMAL_ATTACK_CRITICAL_HIT,
+    ON_MAGIC_SKILL_CAST
 }

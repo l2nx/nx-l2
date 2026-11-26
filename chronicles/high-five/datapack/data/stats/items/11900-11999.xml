@@ -49,7 +49,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11902" type="Weapon" name="Common Item - Spell Breaker">
@@ -152,7 +152,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11906" type="Weapon" name="Common Item - Sword of Nightmare*Tsurugi">
@@ -179,7 +179,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11907" type="Weapon" name="Common Item - Military Fleuret">
@@ -211,7 +211,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11908" type="Weapon" name="Common Item - Sprite's Staff">
@@ -264,7 +264,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11910" type="Weapon" name="Common Item - Caliburs*Sword of Limit">
@@ -291,7 +291,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="11911" type="Weapon" name="Common Item - Caliburs*Sword of Delusion">
@@ -318,7 +318,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11912" type="Weapon" name="Common Item - Caliburs*Sword of Nightmare">
@@ -345,7 +345,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11913" type="Weapon" name="Common Item - Caliburs*Tsurugi">
@@ -372,7 +372,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11914" type="Weapon" name="Common Item - Caliburs*Caliburs">
@@ -399,7 +399,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="11915" type="Weapon" name="Common Item - Kris">
@@ -557,7 +557,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11921" type="Weapon" name="Common Item - Shamshir*Samurai Long Sword">
@@ -584,7 +584,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11922" type="Weapon" name="Common Item - Spirit Sword*Samurai Long Sword">
@@ -611,7 +611,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="11923" type="Weapon" name="Common Item - Katana*Samurai Long Sword">
@@ -638,7 +638,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="11924" type="Weapon" name="Common Item - Sword of Limit*Samurai Long Sword">
@@ -665,7 +665,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11925" type="Weapon" name="Common Item - Sword of Delusion*Samurai Long Sword">
@@ -692,7 +692,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3042" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="11926" type="Weapon" name="Common Item - Sword of Nightmare*Samurai Long Sword">
@@ -719,7 +719,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="11927" type="Weapon" name="Common Item - Tsurugi*Samurai Long Sword">
@@ -746,7 +746,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="11928" type="Weapon" name="Common Item - Caliburs*Samurai Long Sword">
@@ -773,7 +773,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11929" type="Weapon" name="Common Item - Guardian Sword">
@@ -1008,7 +1008,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="14" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="14" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11938" type="Weapon" name="Common Item - Art of Battle Axe">
@@ -1086,7 +1086,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3020" level="6" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="6" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="11941" type="Weapon" name="Common Item - Kaim Vanul's Bones">
@@ -1144,7 +1144,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11943" type="Weapon" name="Common Item - Wizard's Tear">
@@ -1315,7 +1315,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11949" type="Weapon" name="Common Item - Meteor Shower">
@@ -1521,7 +1521,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="17" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="17" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11957" type="Weapon" name="Common Item - Tallum Blade">
@@ -1655,7 +1655,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="3" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="3" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="11962" type="Weapon" name="Common Item - Lacerator">
@@ -1687,7 +1687,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11963" type="Weapon" name="Common Item - Damascus*Damascus">
@@ -1714,7 +1714,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="20" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="20" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="11964" type="Weapon" name="Common Item - Dark Legion's Edge">
@@ -2351,7 +2351,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11988" type="Weapon" name="Common Item - Tiphon's Spear">
@@ -2406,7 +2406,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="17" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="17" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11990" type="Weapon" name="Common Item - Themis' Tongue">
@@ -2601,7 +2601,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11997" type="Weapon" name="Common Item - Basalt Battlehammer">

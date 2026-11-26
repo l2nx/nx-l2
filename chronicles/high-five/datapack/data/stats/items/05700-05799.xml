@@ -107,7 +107,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3013" level="3" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="3" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="5706" type="Weapon" name="Damascus*Damascus">
@@ -135,7 +135,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3046" level="20" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="20" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="5707" type="EtcItem" name="Record of Seven Signs">

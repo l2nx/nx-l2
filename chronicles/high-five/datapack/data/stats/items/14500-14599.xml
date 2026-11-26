@@ -275,7 +275,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="14508" type="Weapon" name="Vesper Thrower {PvP} - Cheap Shot">
@@ -383,7 +383,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
-			<skill id="3574" level="3" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="3" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="14511" type="Weapon" name="Vesper Pincer {PvP} - Haste">
@@ -421,7 +421,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3564" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14512" type="Weapon" name="Vesper Pincer {PvP} - Health">
@@ -459,7 +459,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14513" type="Weapon" name="Vesper Pincer {PvP} - Focus">
@@ -497,7 +497,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="8289" level="1" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="14514" type="Weapon" name="Vesper Shooter {PvP} - Cheap Shot">
@@ -611,7 +611,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
-			<skill id="3574" level="2" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="2" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="14517" type="Weapon" name="Vesper Nagan {PvP} - Haste">
@@ -888,7 +888,7 @@
 		<skills>
 			<skill id="3859" level="2" /> <!-- Dagger of Haste -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8295" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8295" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="14527" type="Weapon" name="Icarus Dual Daggers - Confusion">
@@ -926,7 +926,7 @@
 		<skills>
 			<skill id="3858" level="3" /> <!-- Dagger of Avoid -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="14528" type="Weapon" name="Dynasty Dual Daggers - Great Gale {PvP}">
@@ -968,7 +968,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
-			<skill id="8295" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8295" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="14529" type="Weapon" name="Icarus Dual Daggers - Confusion {PvP}">
@@ -1010,7 +1010,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="14530" type="EtcItem" name="Maxwell House Pack">
@@ -1503,7 +1503,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
-			<skill id="8295" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8295" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="14559" type="EtcItem" name="PC Points">

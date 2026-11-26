@@ -55,7 +55,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3040" level="5" type_chance="14" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3040" level="5" type_chance="14" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4802" type="Weapon" name="Arthro Nail - Rsk. Evasion">
@@ -142,7 +142,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3039" level="6" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3039" level="6" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="4805" type="Weapon" name="Bellion Cestus - Critical Poison">
@@ -171,7 +171,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3040" level="6" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3040" level="6" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4806" type="Weapon" name="Bellion Cestus - Rsk. Haste">
@@ -804,7 +804,7 @@
 			<stat type="pAtkRange">500</stat>
 		</stats>
 		<skills>
-			<skill id="3021" level="5" type_chance="41" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3021" level="5" type_chance="41" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="4827" type="Weapon" name="Dark Elven Long Bow - Miser">
@@ -1068,7 +1068,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="1" type_chance="34" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="1" type_chance="34" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4836" type="Weapon" name="Scythe - Light">
@@ -1157,7 +1157,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="1" type_chance="34" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="1" type_chance="34" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4839" type="Weapon" name="Orcish Glaive - Towering Blow">
@@ -1216,7 +1216,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="1" type_chance="34" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="1" type_chance="34" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4841" type="Weapon" name="Body Slasher - Towering Blow">
@@ -1304,7 +1304,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="2" type_chance="32" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="2" type_chance="32" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4844" type="Weapon" name="Bec de Corbin - Towering Blow">
@@ -1422,7 +1422,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="3" type_chance="31" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="3" type_chance="31" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4848" type="Weapon" name="Scorpion - Towering Blow">
@@ -1481,7 +1481,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="3" type_chance="31" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="3" type_chance="31" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4850" type="Weapon" name="Widow Maker - Towering Blow">
@@ -1569,7 +1569,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="4" type_chance="29" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="4" type_chance="29" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4853" type="Weapon" name="Orcish Poleaxe - Towering Blow">
@@ -1686,7 +1686,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="5" type_chance="27" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="5" type_chance="27" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4857" type="Weapon" name="Great Axe - Light">
@@ -1775,7 +1775,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="6" type_chance="25" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="6" type_chance="25" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="4860" type="Weapon" name="Lance - Towering Blow">
@@ -1921,7 +1921,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1044" level="1" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="1" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="4865" type="Weapon" name="Heavy Doom Hammer - Mental Shield">
@@ -1951,7 +1951,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="2" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="2" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="4866" type="Weapon" name="Heavy Doom Hammer - Magic Hold">
@@ -1981,7 +1981,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="16" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="16" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="4867" type="Weapon" name="Crystal Staff - Rsk. Evasion">
@@ -2071,7 +2071,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1045" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Bless the Body -->
+			<skill id="1045" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Bless the Body -->
 		</skills>
 	</item>
 	<item id="4870" type="Weapon" name="Heavy Doom Axe - Magic Poison">
@@ -2101,7 +2101,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1168" level="6" type_chance="8" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="8" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="4871" type="Weapon" name="Heavy Doom Axe - Magic Weakness">
@@ -2131,7 +2131,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="7" type_chance="8" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="7" type_chance="8" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="4872" type="Weapon" name="Heavy Doom Axe - Magic Chaos">
@@ -2161,7 +2161,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1222" level="4" type_chance="8" type="ON_MAGIC_SKILL" /> <!-- Curse Chaos -->
+			<skill id="1222" level="4" type_chance="8" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Chaos -->
 		</skills>
 	</item>
 	<item id="4873" type="Weapon" name="Cursed Staff - Magic Hold">
@@ -2191,7 +2191,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="18" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="18" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="4874" type="Weapon" name="Cursed Staff - Magic Poison">
@@ -2221,7 +2221,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1168" level="6" type_chance="8" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="8" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="4875" type="Weapon" name="Cursed Staff - Magic Weakness">
@@ -2251,7 +2251,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="8" type_chance="8" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="8" type_chance="8" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="4876" type="Weapon" name="Paradia Staff - Magic Regeneration">
@@ -2281,7 +2281,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1044" level="2" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="2" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="4877" type="Weapon" name="Paradia Staff - Mental Shield">
@@ -2311,7 +2311,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="3" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="3" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="4878" type="Weapon" name="Paradia Staff - Magic Hold">
@@ -2341,7 +2341,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="21" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="21" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="4879" type="Weapon" name="Pa'agrian Hammer - Rsk. Evasion">
@@ -2401,7 +2401,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="4881" type="Weapon" name="Pa'agrian Hammer - Magic Weakness">
@@ -2431,7 +2431,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="4882" type="Weapon" name="Sage's Staff - Magic Hold">
@@ -2461,7 +2461,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="21" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="21" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="4883" type="Weapon" name="Sage's Staff - Magic Poison">
@@ -2491,7 +2491,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="4884" type="Weapon" name="Sage's Staff - Magic Weakness">
@@ -2521,7 +2521,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="4885" type="Weapon" name="Pa'agrian Axe - Mana Up">
@@ -2581,7 +2581,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="4887" type="Weapon" name="Pa'agrian Axe - Magic Chaos">
@@ -2611,7 +2611,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1222" level="5" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Chaos -->
+			<skill id="1222" level="5" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Chaos -->
 		</skills>
 	</item>
 	<item id="4888" type="Weapon" name="Deadman's Staff - Magic Regeneration">
@@ -2641,7 +2641,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1044" level="2" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="2" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="4889" type="Weapon" name="Deadman's Staff - Mental Shield">
@@ -2671,7 +2671,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="3" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="3" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="4890" type="Weapon" name="Deadman's Staff - Magic Hold">
@@ -2701,7 +2701,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="23" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="23" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="4891" type="Weapon" name="Ghoul's Staff - Rsk. Evasion">
@@ -2791,7 +2791,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1045" level="4" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Bless the Body -->
+			<skill id="1045" level="4" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Bless the Body -->
 		</skills>
 	</item>
 	<item id="4894" type="Weapon" name="Demon's Staff - Magic Poison">
@@ -2821,7 +2821,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="4895" type="Weapon" name="Demon's Staff - Magic Weakness">
@@ -2851,7 +2851,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="10" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="10" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="4896" type="Weapon" name="Demon's Staff - Magic Chaos">
@@ -2881,7 +2881,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1222" level="5" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Chaos -->
+			<skill id="1222" level="5" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Chaos -->
 		</skills>
 	</item>
 	<item id="4897" type="Weapon" name="Sprite's Staff - Magic Regeneration">
@@ -2911,7 +2911,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="4898" type="Weapon" name="Sprite's Staff - Mental Shield">
@@ -2941,7 +2941,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="4899" type="Weapon" name="Sprite's Staff - Magic Hold">
@@ -2971,7 +2971,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="25" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="25" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 </list>

@@ -203,7 +203,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10416" type="Armor" name="Blue Talisman - Explosion">
@@ -1004,7 +1004,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="2" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="4" type_chance="48" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="4" type_chance="48" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="10451" type="Weapon" name="Icarus Trident - Light">
@@ -1344,7 +1344,7 @@
 		</stats>
 		<skills>
 			<skill id="3566" level="2" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10462" type="Weapon" name="Icarus Stinger - Health">
@@ -1379,7 +1379,7 @@
 		</stats>
 		<skills>
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10463" type="Weapon" name="Icarus Stinger - Light">
@@ -1415,7 +1415,7 @@
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3498" level="1" /> <!-- Special Ability: Light -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10464" type="Weapon" name="Icarus Wingblade - Focus">
@@ -2058,7 +2058,7 @@
 			<stat type="pDef">17</stat>
 		</stats>
 		<skills>
-			<skill id="3439" level="1" type="ON_ENCHANT_4" /> <!-- Silk Shirt -->
+			<skill id="3439" level="1" type="EQUIPPED_ENCHANT" /> <!-- Silk Shirt -->
 		</skills>
 	</item>
 	<item id="10492" type="Armor" name="Silk Shirt - MP">
@@ -2077,7 +2077,7 @@
 			<stat type="pDef">17</stat>
 		</stats>
 		<skills>
-			<skill id="3440" level="1" type="ON_ENCHANT_4" /> <!-- Silk Shirt -->
+			<skill id="3440" level="1" type="EQUIPPED_ENCHANT" /> <!-- Silk Shirt -->
 		</skills>
 	</item>
 	<item id="10493" type="Armor" name="Silk Shirt - CP">
@@ -2096,7 +2096,7 @@
 			<stat type="pDef">17</stat>
 		</stats>
 		<skills>
-			<skill id="3441" level="1" type="ON_ENCHANT_4" /> <!-- Silk Shirt -->
+			<skill id="3441" level="1" type="EQUIPPED_ENCHANT" /> <!-- Silk Shirt -->
 		</skills>
 	</item>
 	<item id="10494" type="Armor" name="Thin Leather Shirt - HP">
@@ -2115,7 +2115,7 @@
 			<stat type="pDef">21</stat>
 		</stats>
 		<skills>
-			<skill id="3445" level="1" type="ON_ENCHANT_4" /> <!-- Thin Leather Shirt -->
+			<skill id="3445" level="1" type="EQUIPPED_ENCHANT" /> <!-- Thin Leather Shirt -->
 		</skills>
 	</item>
 	<item id="10495" type="Armor" name="Thin Leather Shirt - MP">
@@ -2134,7 +2134,7 @@
 			<stat type="pDef">21</stat>
 		</stats>
 		<skills>
-			<skill id="3446" level="1" type="ON_ENCHANT_4" /> <!-- Thin Leather Shirt -->
+			<skill id="3446" level="1" type="EQUIPPED_ENCHANT" /> <!-- Thin Leather Shirt -->
 		</skills>
 	</item>
 	<item id="10496" type="Armor" name="Thin Leather Shirt - CP">
@@ -2153,7 +2153,7 @@
 			<stat type="pDef">21</stat>
 		</stats>
 		<skills>
-			<skill id="3447" level="1" type="ON_ENCHANT_4" /> <!-- Thin Leather Shirt -->
+			<skill id="3447" level="1" type="EQUIPPED_ENCHANT" /> <!-- Thin Leather Shirt -->
 		</skills>
 	</item>
 	<item id="10497" type="Armor" name="Scale Shirt - HP">
@@ -2172,7 +2172,7 @@
 			<stat type="pDef">23</stat>
 		</stats>
 		<skills>
-			<skill id="3451" level="1" type="ON_ENCHANT_4" /> <!-- Scale Shirt -->
+			<skill id="3451" level="1" type="EQUIPPED_ENCHANT" /> <!-- Scale Shirt -->
 		</skills>
 	</item>
 	<item id="10498" type="Armor" name="Scale Shirt - MP">
@@ -2191,7 +2191,7 @@
 			<stat type="pDef">23</stat>
 		</stats>
 		<skills>
-			<skill id="3452" level="1" type="ON_ENCHANT_4" /> <!-- Scale Shirt -->
+			<skill id="3452" level="1" type="EQUIPPED_ENCHANT" /> <!-- Scale Shirt -->
 		</skills>
 	</item>
 	<item id="10499" type="Armor" name="Scale Shirt - CP">
@@ -2210,7 +2210,7 @@
 			<stat type="pDef">23</stat>
 		</stats>
 		<skills>
-			<skill id="3453" level="1" type="ON_ENCHANT_4" /> <!-- Scale Shirt -->
+			<skill id="3453" level="1" type="EQUIPPED_ENCHANT" /> <!-- Scale Shirt -->
 		</skills>
 	</item>
 </list>

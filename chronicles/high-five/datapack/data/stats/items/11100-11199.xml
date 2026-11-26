@@ -121,7 +121,7 @@
 		<skills>
 			<skill id="3892" level="1" /> <!-- Blunt Weapon of Clarity -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="11104" type="Weapon" name="Branch of the Mother Tree - Nature">
@@ -214,7 +214,7 @@
 		<skills>
 			<skill id="3901" level="1" /> <!-- Staff of Mana Boost -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3049" level="2" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Damage -->
+			<skill id="3049" level="2" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Damage -->
 		</skills>
 	</item>
 	<item id="11107" type="Weapon" name="Branch of the Mother Tree - Nature - Acumen">
@@ -335,7 +335,7 @@
 		<skills>
 			<skill id="3856" level="1" /> <!-- Sword of Divine Power -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="11111" type="Weapon" name="Sword of Miracles - Holy Spirit - Acumen">
@@ -506,7 +506,7 @@
 		<skills>
 			<skill id="3870" level="1" /> <!-- Crossbow of Long Shot -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3062" level="2" type_chance="18" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3062" level="2" type_chance="18" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="11116" type="Weapon" name="Soul Separator - On Fire">
@@ -745,7 +745,7 @@
 		<skills>
 			<skill id="3886" level="1" /> <!-- Blunt Weapon of Haste -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3059" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3059" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="11124" type="Weapon" name="Soul Bow - Clairvoyance">
@@ -878,7 +878,7 @@
 		<skills>
 			<skill id="3865" level="1" /> <!-- Bow of Long Shot -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3062" level="2" type_chance="18" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3062" level="2" type_chance="18" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="11128" type="Weapon" name="Tallum Glaive - On Fire">
@@ -1264,7 +1264,7 @@
 		<skills>
 			<skill id="3902" level="1" /> <!-- Staff of Clarity -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="11141" type="Weapon" name="Barakiel's Axe - On Fire">
@@ -2148,7 +2148,7 @@
 		<skills>
 			<skill id="3882" level="1" /> <!-- Fist Weapon of Stun -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3039" level="7" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3039" level="7" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="11169" type="Weapon" name="Sirra's Blade - Landslide">
@@ -2268,7 +2268,7 @@
 		<skills>
 			<skill id="3829" level="1" /> <!-- Sword of Stun -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3061" level="3" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3061" level="3" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="11173" type="Weapon" name="Éclair Bijou - Landslide">
@@ -2302,7 +2302,7 @@
 		</stats>
 		<skills>
 			<skill id="3834" level="1" /> <!-- Rapier of Stun -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11174" type="Weapon" name="Éclair Bijou - Landslide - Haste">
@@ -2337,7 +2337,7 @@
 		<skills>
 			<skill id="3834" level="1" /> <!-- Rapier of Stun -->
 			<skill id="3068" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11175" type="Weapon" name="Éclair Bijou - Landslide - Health">
@@ -2372,7 +2372,7 @@
 		<skills>
 			<skill id="3834" level="1" /> <!-- Rapier of Stun -->
 			<skill id="3013" level="5" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="11176" type="Weapon" name="Éclair Bijou - Landslide - Critical Poison">
@@ -2407,8 +2407,8 @@
 		<skills>
 			<skill id="3834" level="1" /> <!-- Rapier of Stun -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3061" level="3" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3061" level="3" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="11177" type="Weapon" name="Tiphon's Spear - Landslide">
@@ -2469,7 +2469,7 @@
 		<skills>
 			<skill id="3876" level="1" /> <!-- Polearm of Stun -->
 			<skill id="3552" level="2" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="3" type_chance="25" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="3" type_chance="25" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="11179" type="Weapon" name="Tiphon's Spear - Landslide - Towering Blow">
@@ -2559,7 +2559,7 @@
 		<skills>
 			<skill id="3839" level="1" /> <!-- Dual-Blade Weapon of Stun -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3045" level="17" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="17" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="11182" type="Weapon" name="Themis' Tongue - Cleverness">
@@ -2649,7 +2649,7 @@
 		<skills>
 			<skill id="3853" level="2" /> <!-- Sword of Mana Regeneration -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="11185" type="Weapon" name="Themis' Tongue - Cleverness - Magic Focus">
@@ -2680,7 +2680,7 @@
 		<skills>
 			<skill id="3853" level="2" /> <!-- Sword of Mana Regeneration -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1077" level="3" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Focus -->
+			<skill id="1077" level="3" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Focus -->
 		</skills>
 	</item>
 	<item id="11186" type="Weapon" name="Cabrio's Hand - Cleverness">
@@ -2804,7 +2804,7 @@
 		<skills>
 			<skill id="3893" level="1" /> <!-- Blunt Weapon of Mana Regeneration -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="11190" type="Weapon" name="Gram - Thunder">
@@ -3067,7 +3067,7 @@
 		<skills>
 			<skill id="3883" level="1" /> <!-- Fist Weapon of Critical Damage -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3571" level="1" type_chance="27" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="1" type_chance="27" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="11198" type="Weapon" name="Draconic Bow - Earth">

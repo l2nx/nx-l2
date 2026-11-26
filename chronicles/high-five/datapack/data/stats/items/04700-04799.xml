@@ -1716,7 +1716,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3020" level="1" type_chance="17" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="1" type_chance="17" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="4760" type="Weapon" name="Cursed Dagger - Critical Poison">
@@ -1745,7 +1745,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3041" level="1" type_chance="9" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3041" level="1" type_chance="9" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4761" type="Weapon" name="Cursed Dagger - Rsk. Haste">
@@ -1890,7 +1890,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3020" level="2" type_chance="17" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="2" type_chance="17" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="4766" type="Weapon" name="Stiletto - Critical Poison">
@@ -1919,7 +1919,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3041" level="2" type_chance="9" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3041" level="2" type_chance="9" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4767" type="Weapon" name="Stiletto - Mortal Strike">
@@ -2122,7 +2122,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3020" level="3" type_chance="14" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="3" type_chance="14" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="4774" type="Weapon" name="Crystal Dagger - Critical Bleed">
@@ -2151,7 +2151,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3020" level="4" type_chance="14" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="4" type_chance="14" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="4775" type="Weapon" name="Crystal Dagger - Critical Poison">
@@ -2180,7 +2180,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3041" level="4" type_chance="7" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3041" level="4" type_chance="7" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4776" type="Weapon" name="Crystal Dagger - Mortal Strike">
@@ -2325,7 +2325,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3020" level="6" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="6" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="4781" type="Weapon" name="Demon's Dagger - Critical Poison">
@@ -2354,7 +2354,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3041" level="6" type_chance="6" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3041" level="6" type_chance="6" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4782" type="Weapon" name="Demon's Dagger - Mortal Strike">
@@ -2580,7 +2580,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3039" level="1" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3039" level="1" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="4790" type="Weapon" name="Chakram - Critical Poison">
@@ -2609,7 +2609,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3040" level="1" type_chance="17" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3040" level="1" type_chance="17" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4791" type="Weapon" name="Chakram - Rsk. Haste">
@@ -2754,7 +2754,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3039" level="4" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3039" level="4" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="4796" type="Weapon" name="Great Pata - Critical Poison">
@@ -2783,7 +2783,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3040" level="4" type_chance="14" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3040" level="4" type_chance="14" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4797" type="Weapon" name="Great Pata - Rsk. Haste">

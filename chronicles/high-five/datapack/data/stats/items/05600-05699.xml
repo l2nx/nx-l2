@@ -27,7 +27,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3052" level="1" type_chance="42" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3052" level="1" type_chance="42" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="5601" type="Weapon" name="Meteor Shower - Rsk. Haste">
@@ -144,7 +144,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3059" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3059" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="5605" type="Weapon" name="Branch of the Mother Tree - Conversion">
@@ -205,7 +205,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3049" level="2" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Damage -->
+			<skill id="3049" level="2" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Damage -->
 		</skills>
 	</item>
 	<item id="5607" type="Weapon" name="Branch of the Mother Tree - Acumen">
@@ -301,7 +301,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3053" level="1" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3053" level="1" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="5610" type="Weapon" name="Carnage Bow - Mana Up">
@@ -431,7 +431,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3062" level="2" type_chance="18" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3062" level="2" type_chance="18" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="5614" type="Weapon" name="Bloody Orchid - Focus">
@@ -519,7 +519,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3054" level="1" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3054" level="1" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="5617" type="Weapon" name="Soul Separator - Guidance">
@@ -839,7 +839,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="2" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="1" type_chance="25" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="1" type_chance="25" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="5628" type="Weapon" name="Halberd - Wide Blow">
@@ -1069,7 +1069,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3061" level="1" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3061" level="1" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="5636" type="Weapon" name="Tallum Blade - Haste">
@@ -1186,7 +1186,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3075" level="1" type_chance="5" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Paralyze -->
+			<skill id="3075" level="1" type_chance="5" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Paralyze -->
 		</skills>
 	</item>
 	<item id="5640" type="Weapon" name="Elemental Sword - Empower">
@@ -1274,7 +1274,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="5643" type="Weapon" name="Sword of Miracles - Acumen">
@@ -1362,7 +1362,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3055" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3055" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="5646" type="Weapon" name="Dragon Slayer - Critical Drain">
@@ -1392,7 +1392,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3060" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3060" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="5647" type="Weapon" name="Dark Legion's Edge - Critical Damage">

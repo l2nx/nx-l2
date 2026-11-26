@@ -1571,7 +1571,7 @@
 			<stat type="pDef">23</stat>
 		</stats>
 		<skills>
-			<skill id="3453" level="1" type="ON_ENCHANT_4" /> <!-- Scale Shirt -->
+			<skill id="3453" level="1" type="EQUIPPED_ENCHANT" /> <!-- Scale Shirt -->
 		</skills>
 	</item>
 	<item id="13390" type="Armor" name="Kratei Mithril Shirt - CP">
@@ -1591,7 +1591,7 @@
 			<stat type="pDef">28</stat>
 		</stats>
 		<skills>
-			<skill id="3459" level="1" type="ON_ENCHANT_4" /> <!-- Mithril Shirt -->
+			<skill id="3459" level="1" type="EQUIPPED_ENCHANT" /> <!-- Mithril Shirt -->
 		</skills>
 	</item>
 	<item id="13391" type="Armor" name="Kratei Striped Barbed Shirt - CP">
@@ -1611,7 +1611,7 @@
 			<stat type="pDef">26</stat>
 		</stats>
 		<skills>
-			<skill id="3477" level="1" type="ON_ENCHANT_4" /> <!-- Striped Scale Shirt -->
+			<skill id="3477" level="1" type="EQUIPPED_ENCHANT" /> <!-- Striped Scale Shirt -->
 		</skills>
 	</item>
 	<item id="13392" type="Armor" name="Kratei Striped Mithril Shirt - CP">
@@ -1631,7 +1631,7 @@
 			<stat type="pDef">30</stat>
 		</stats>
 		<skills>
-			<skill id="3483" level="1" type="ON_ENCHANT_4" /> <!-- Striped Mithril Shirt -->
+			<skill id="3483" level="1" type="EQUIPPED_ENCHANT" /> <!-- Striped Mithril Shirt -->
 		</skills>
 	</item>
 	<item id="13393" type="Armor" name="Shadow Item - Monkey Hat">

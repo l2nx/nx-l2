@@ -49,9 +49,6 @@ public class Options {
 
     private final List<OptionSkillHolder> activationSkills = new ArrayList<>();
 
-    /**
-     * @param id
-     */
     public Options(int id) {
         this.id = id;
     }
@@ -100,29 +97,8 @@ public class Options {
         return !activationSkills.isEmpty();
     }
 
-    public boolean hasActivationSkills(OptionSkillType type) {
-        for (OptionSkillHolder holder : activationSkills) {
-            if (holder.skillType() == type) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public List<OptionSkillHolder> getActivationSkills() {
         return activationSkills;
-    }
-
-    public List<OptionSkillHolder> getActivationSkills(OptionSkillType type) {
-        final List<OptionSkillHolder> temp = new ArrayList<>();
-        for (OptionSkillHolder holder : activationSkills) {
-            if (holder.skillType() == type) {
-                temp.add(holder);
-            }
-        }
-
-        return temp;
     }
 
     public void addActivationSkill(OptionSkillHolder holder) {

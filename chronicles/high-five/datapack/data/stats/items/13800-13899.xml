@@ -1083,7 +1083,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8295" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8295" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="13883" type="Weapon" name="Icarus Dual Daggers">
@@ -1120,7 +1120,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="13884" type="Weapon" name="Vesper Dual Daggers">
@@ -1157,7 +1157,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="13885" type="Armor" name="Sealed Arcana Sigil">

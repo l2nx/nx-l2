@@ -1533,7 +1533,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="17" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="17" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="15061" type="Weapon" name="Samurai Long Sword*Samurai Long Sword of Fortune - 30-day limited period">
@@ -1564,7 +1564,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3045" level="14" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="14" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="15062" type="Weapon" name="Spirit Sword*Raid Sword of Fortune - 30-day limited period">
@@ -1595,7 +1595,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3044" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="15063" type="Weapon" name="Bastard Sword*Elven Sword of Fortune - 30-day limited period">
@@ -1924,7 +1924,7 @@
 		</stats>
 		<skills>
 			<skill id="3068" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15073" type="Weapon" name="Colichemarde of Fortune - 30-day limited period">
@@ -1960,7 +1960,7 @@
 		</stats>
 		<skills>
 			<skill id="3036" level="6" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15074" type="Weapon" name="Admiral's Estoc of Fortune - 30-day limited period">
@@ -1996,7 +1996,7 @@
 		</stats>
 		<skills>
 			<skill id="3036" level="4" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15075" type="Weapon" name="Grand Epee of Fortune - 30-day limited period">
@@ -2031,7 +2031,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15076" type="Weapon" name="Screaming Vengeance of Fortune - 30-day limited period">

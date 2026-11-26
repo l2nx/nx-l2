@@ -274,7 +274,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="16008" type="Weapon" name="Cyclic Cane {PvP} - Empower">
@@ -378,7 +378,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="16011" type="Weapon" name="Archangel Sword {PvP} - Mana Up">
@@ -482,7 +482,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
-			<skill id="3574" level="3" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="3" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="16014" type="Weapon" name="Recurve Thorne Bow {PvP} - Cheap Shot">
@@ -592,7 +592,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="8289" level="3" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16017" type="Weapon" name="Heavenstare Rapier {PvP} - Haste">
@@ -630,7 +630,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3564" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16018" type="Weapon" name="Heavenstare Rapier {PvP} - Health">
@@ -668,7 +668,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16019" type="Weapon" name="Pyseal Blade {PvP} - Focus">
@@ -817,7 +817,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
-			<skill id="3574" level="3" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="3" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="16023" type="Weapon" name="Thorne Crossbow {PvP} - Cheap Shot">
@@ -1637,7 +1637,7 @@
 		</stats>
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16054" type="Weapon" name="Vesper Shooter - Clairvoyance">
@@ -1986,7 +1986,7 @@
 		<skills>
 			<skill id="3853" level="2" /> <!-- Sword of Mana Regeneration -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="16065" type="Weapon" name="Vesper Shaper - Gale - Critical Damage">
@@ -2173,7 +2173,7 @@
 		<skills>
 			<skill id="3880" level="2" /> <!-- Fist Weapon of Haste -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3571" level="2" type_chance="43" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="2" type_chance="43" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="16071" type="Weapon" name="Vesper Stormer - Thunder - Health">
@@ -2645,7 +2645,7 @@
 		<skills>
 			<skill id="3899" level="3" /> <!-- Staff of Empower -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="16086" type="Weapon" name="Vesper Thrower - Clairvoyance - Cheap Shot">
@@ -2749,7 +2749,7 @@
 		<skills>
 			<skill id="3865" level="1" /> <!-- Bow of Long Shot -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="3" type_chance="33" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="3" type_chance="33" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="16089" type="Weapon" name="Vesper Pincer - Thunder - Haste">
@@ -2785,7 +2785,7 @@
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
 			<skill id="3564" level="3" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16090" type="Weapon" name="Vesper Pincer - Thunder - Health">
@@ -2821,7 +2821,7 @@
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
 			<skill id="3013" level="3" /> <!-- Special Ability: Health -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16091" type="Weapon" name="Vesper Pincer - Thunder - Focus">
@@ -2857,7 +2857,7 @@
 		<skills>
 			<skill id="3833" level="1" /> <!-- Rapier of Critical Chance -->
 			<skill id="8289" level="1" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16092" type="Weapon" name="Vesper Shooter - Clairvoyance - Cheap Shot">
@@ -2967,7 +2967,7 @@
 		<skills>
 			<skill id="3870" level="1" /> <!-- Crossbow of Long Shot -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3574" level="2" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Slow -->
+			<skill id="3574" level="2" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Slow -->
 		</skills>
 	</item>
 	<item id="16095" type="Weapon" name="Vesper Nagan - Gale - Haste">

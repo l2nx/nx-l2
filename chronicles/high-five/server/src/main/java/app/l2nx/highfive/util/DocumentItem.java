@@ -119,7 +119,6 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
             if ((n.getNodeType() == Node.ELEMENT_NODE)
                     && (n.getFirstChild() != null)
                     && (n.getAttributes().getLength() == 0)) {
-                // First check if this node has any child ELEMENT nodes (not just text/whitespace).
                 boolean hasChildElements = false;
                 for (Node child = n.getFirstChild(); child != null; child = child.getNextSibling()) {
                     if (child.getNodeType() == Node.ELEMENT_NODE) {
@@ -128,12 +127,10 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
                     }
                 }
 
-                // Only parse as element value if it has NO child elements AND has text content.
                 if (!hasChildElements && (n.getFirstChild().getNodeType() == Node.TEXT_NODE)) {
                     // Parse element value, regardless of whether the item is created or not.
                     parseElementValue(n, currentItem.set, 1);
 
-                    // If the item is already created, update it with the modified StatSet.
                     if (currentItem.item != null) {
                         currentItem.item.set(currentItem.set);
                     }
@@ -205,7 +202,6 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
                     }
                 }
 
-                // Enable enchant functions.
                 if (currentItem.item.isArmor()) {
                     if (!currentItem.item.hasFunction(FuncEnchant.class)) {
                         if (currentItem.item.getItemType() == ArmorType.SHIELD) {
@@ -232,10 +228,20 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
                         final int id = parseInteger(b.getAttributes(), "id");
                         final int level = parseInteger(b.getAttributes(), "level");
                         final int chance = parseInteger(b.getAttributes(), "type_chance", 100);
-                        final ItemSkillType type =
-                                parseEnum(b.getAttributes(), ItemSkillType.class, "type", ItemSkillType.NORMAL);
+                        final Node typeNode = b.getAttributes().getNamedItem("type");
+                        final ItemSkillType type = typeNode == null ? untypedSkillType() : itemSkillType(typeNode);
+                        if ((type == null) || (type == ItemSkillType.ON_PHYSICAL_HIT)) {
+                            log.warn(
+                                    "Skipped skill {}-{} of item {}: type {} is not valid for an item",
+                                    id,
+                                    level,
+                                    currentItem.id,
+                                    typeNode.getNodeValue());
+                            continue;
+                        }
+
                         switch (type) {
-                            case NORMAL: {
+                            case EQUIPPED, ON_USE: {
                                 if (currentItem.set.getString("item_skill", null) == null) {
                                     currentItem.set.set("item_skill", id + "-" + level);
                                 } else {
@@ -245,7 +251,7 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
                                 }
                                 break;
                             }
-                            case ON_ENCHANT_4: {
+                            case EQUIPPED_ENCHANT: {
                                 currentItem.set.set("enchant4_skill", id + "-" + level);
                                 break;
                             }
@@ -253,12 +259,12 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
                                 currentItem.set.set("unequip_skill", id + "-" + level);
                                 break;
                             }
-                            case ON_CRITICAL_SKILL: {
+                            case ON_NORMAL_ATTACK_CRITICAL_HIT: {
                                 currentItem.set.set("oncrit_skill", id + "-" + level);
                                 currentItem.set.set("oncrit_chance", chance);
                                 break;
                             }
-                            case ON_MAGIC_SKILL: {
+                            case ON_MAGIC_SKILL_CAST: {
                                 currentItem.set.set("onmagic_skill", id + "-" + level);
                                 currentItem.set.set("onmagic_chance", chance);
                                 break;
@@ -299,12 +305,23 @@ public class DocumentItem extends DocumentBase implements IXmlReader {
             }
         }
 
-        // Bah! In this point item doesn't have to be still created.
+        // The item is still uncreated here when the element had no stats or conditions.
         makeItem();
     }
 
+    private ItemSkillType untypedSkillType() {
+        return "EtcItem".equals(currentItem.type) ? ItemSkillType.ON_USE : ItemSkillType.EQUIPPED;
+    }
+
+    private static ItemSkillType itemSkillType(Node typeNode) {
+        try {
+            return ItemSkillType.valueOf(typeNode.getNodeValue());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     private void makeItem() throws InvocationTargetException {
-        // If item exists just reload the data.
         if (currentItem.item != null) {
             currentItem.item.set(currentItem.set);
             return;

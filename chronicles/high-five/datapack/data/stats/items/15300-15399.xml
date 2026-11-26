@@ -683,7 +683,7 @@
 		</stats>
 		<skills>
 			<skill id="3564" level="1" /> <!-- Special Ability: Haste -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="15324" type="Weapon" name="Player Commendation - Gram - Player Recommendation Weapon">
@@ -791,7 +791,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3570" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Robust Health -->
+			<skill id="3570" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Robust Health -->
 		</skills>
 	</item>
 	<item id="15327" type="EtcItem" name="Seed: Sea Coba">

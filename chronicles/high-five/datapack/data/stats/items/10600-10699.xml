@@ -938,7 +938,7 @@
 		<skills>
 			<skill id="3650" level="1" /> <!-- PvP Weapon - CP Drain -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3061" level="3" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3061" level="3" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="10670" type="Weapon" name="Sword of Ipos {PvP} - Focus">
@@ -1380,7 +1380,7 @@
 		<skills>
 			<skill id="3653" level="1" /> <!-- PvP Weapon - Attack Chance -->
 			<skill id="3552" level="4" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3070" level="3" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3070" level="3" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="10683" type="Weapon" name="Tiphon's Spear {PvP} - Towering Blow">
@@ -1658,7 +1658,7 @@
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3039" level="7" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3039" level="7" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="10691" type="Weapon" name="Themis' Tongue {PvP} - Mana Up">
@@ -1726,7 +1726,7 @@
 		<skills>
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="10693" type="Weapon" name="Themis' Tongue {PvP} - Magic Focus">
@@ -1760,7 +1760,7 @@
 		<skills>
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1077" level="3" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Focus -->
+			<skill id="1077" level="3" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Focus -->
 		</skills>
 	</item>
 	<item id="10694" type="Weapon" name="Cabrio's Hand {PvP} - Conversion">
@@ -1865,7 +1865,7 @@
 		<skills>
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="10697" type="Weapon" name="Daimon Crystal {PvP} - Mana Up">
@@ -1970,7 +1970,7 @@
 		<skills>
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 </list>

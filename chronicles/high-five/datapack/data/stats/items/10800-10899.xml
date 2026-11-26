@@ -1640,7 +1640,7 @@
 		<skills>
 			<skill id="3873" level="1" /> <!-- Polearm of Critical Damage -->
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="5" type_chance="27" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="5" type_chance="27" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="10877" type="Weapon" name="Great Axe - Thunder - Light">
@@ -1700,7 +1700,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="10879" type="Weapon" name="Sword of Limit*Sword of Delusion - Destruction">
@@ -1729,7 +1729,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="10880" type="Weapon" name="Sword of Limit*Sword of Nightmare - Destruction">
@@ -1758,7 +1758,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10881" type="Weapon" name="Sword of Limit*Tsurugi - Destruction">
@@ -1787,7 +1787,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="10882" type="Weapon" name="Innominate Victory - Lightning">
@@ -2020,7 +2020,7 @@
 		</stats>
 		<skills>
 			<skill id="3863" level="1" /> <!-- Bow of Guidance -->
-			<skill id="3021" level="5" type_chance="41" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3021" level="5" type_chance="41" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="10889" type="Weapon" name="Dark Elven Long Bow - Concentration - Miser">
@@ -2082,7 +2082,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="10891" type="Weapon" name="Sword of Delusion*Sword of Nightmare - Destruction">
@@ -2111,7 +2111,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="10892" type="Weapon" name="Sword of Delusion*Tsurugi - Destruction">
@@ -2140,7 +2140,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="10893" type="Weapon" name="Sword of Valhalla - Nature">
@@ -2229,7 +2229,7 @@
 		</stats>
 		<skills>
 			<skill id="3852" level="1" /> <!-- Sword of Mana Boost -->
-			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="10896" type="Weapon" name="Sword of Valhalla - Nature - Magic Regeneration">
@@ -2259,7 +2259,7 @@
 		</stats>
 		<skills>
 			<skill id="3852" level="1" /> <!-- Sword of Mana Boost -->
-			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="10897" type="Weapon" name="Stormbringer*Samurai Long Sword - Destruction">
@@ -2288,7 +2288,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="10898" type="Weapon" name="Spell Breaker - Hail">

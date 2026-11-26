@@ -104,7 +104,18 @@
 											<xs:complexType>
 												<xs:attribute name="id" type="xs:unsignedShort" use="required" />
 												<xs:attribute name="level" type="xs:unsignedByte" use="required" />
-												<xs:attribute name="type" type="xs:string" use="optional" />
+												<xs:attribute name="type" use="optional">
+													<xs:simpleType>
+														<xs:restriction base="xs:token">
+															<xs:enumeration value="EQUIPPED" />
+															<xs:enumeration value="EQUIPPED_ENCHANT" />
+															<xs:enumeration value="ON_USE" />
+															<xs:enumeration value="ON_UNEQUIP" />
+															<xs:enumeration value="ON_NORMAL_ATTACK_CRITICAL_HIT" />
+															<xs:enumeration value="ON_MAGIC_SKILL_CAST" />
+														</xs:restriction>
+													</xs:simpleType>
+												</xs:attribute>
 												<xs:attribute name="type_chance" type="xs:unsignedByte" use="optional" />
 											</xs:complexType>
 										</xs:element>

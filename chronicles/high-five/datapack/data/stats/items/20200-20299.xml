@@ -1479,7 +1479,7 @@
 		</stats>
 		<skills>
 			<skill id="21042" level="1" /> <!-- Blessing of Baguette -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="20268" type="Weapon" name="Baguette Ancient Sword - 7-day limited period">

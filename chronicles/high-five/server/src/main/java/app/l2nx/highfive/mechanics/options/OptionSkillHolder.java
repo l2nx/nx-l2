@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.options;
 
+import app.l2nx.highfive.entity.item.enums.ItemSkillType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import lombok.Builder;
 
@@ -29,4 +30,4 @@ import lombok.Builder;
  * @author UnAfraid, Mobius
  */
 @Builder(toBuilder = true)
-public record OptionSkillHolder(Skill skill, double chance, OptionSkillType skillType) {}
+public record OptionSkillHolder(Skill skill, double chance, ItemSkillType skillType) {}

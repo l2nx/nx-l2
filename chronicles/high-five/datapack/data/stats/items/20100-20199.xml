@@ -515,7 +515,7 @@
 		</stats>
 		<skills>
 			<skill id="21028" level="1" /> <!-- Christmas Dream Weapon -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="20121" type="Weapon" name="Katzbalger (Event) - 4-hour limited period">
@@ -926,7 +926,7 @@
 		</stats>
 		<skills>
 			<skill id="21027" level="1" /> <!-- Christmas Dream Weapon -->
-			<skill id="3045" level="8" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="8" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="20134" type="Weapon" name="Admiral's Estoc (Event) - 4-hour limited period">
@@ -961,7 +961,7 @@
 		</stats>
 		<skills>
 			<skill id="21028" level="1" /> <!-- Christmas Dream Weapon -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="20135" type="Weapon" name="Saber Tooth (Event) - 4-hour limited period">
@@ -1372,7 +1372,7 @@
 		</stats>
 		<skills>
 			<skill id="21027" level="1" /> <!-- Christmas Dream Weapon -->
-			<skill id="3045" level="14" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="14" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="20148" type="Weapon" name="Colichemarde (Event) - 4-hour limited period">
@@ -1407,7 +1407,7 @@
 		</stats>
 		<skills>
 			<skill id="21028" level="1" /> <!-- Christmas Dream Weapon -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="20149" type="Weapon" name="Dismantler (Event) - 4-hour limited period">
@@ -1829,7 +1829,7 @@
 		<skills>
 			<skill id="21027" level="1" /> <!-- Christmas Dream Weapon -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3046" level="20" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="20" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="20162" type="Weapon" name="Lacerator (Event) - 4-hour limited period">
@@ -1865,7 +1865,7 @@
 		<skills>
 			<skill id="21028" level="1" /> <!-- Christmas Dream Weapon -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="20163" type="Weapon" name="Undertaker (Event) - 4-hour limited period">
@@ -2289,7 +2289,7 @@
 		<skills>
 			<skill id="21027" level="1" /> <!-- Christmas Dream Weapon -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3570" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Robust Health -->
+			<skill id="3570" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Robust Health -->
 		</skills>
 	</item>
 	<item id="20176" type="Weapon" name="Laevateinn (Event) - 4-hour limited period">
@@ -2325,7 +2325,7 @@
 		<skills>
 			<skill id="21028" level="1" /> <!-- Christmas Dream Weapon -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="20177" type="Weapon" name="Gram (Event) - 4-hour limited period">

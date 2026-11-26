@@ -1017,7 +1017,7 @@
 		</stats>
 		<skills>
 			<skill id="3026" level="1" /> <!-- Special Ability: Critical Anger -->
-			<skill id="3025" level="1" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Anger -->
+			<skill id="3025" level="1" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Anger -->
 		</skills>
 	</item>
 	<item id="4682" type="Weapon" name="Stormbringer - Focus">
@@ -1307,7 +1307,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3024" level="2" type_chance="15" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3024" level="2" type_chance="15" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4692" type="Weapon" name="Spirit Sword - Haste">
@@ -1394,7 +1394,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3022" level="2" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3022" level="2" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="4695" type="Weapon" name="Raid Sword - Critical Poison">
@@ -1423,7 +1423,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3024" level="2" type_chance="15" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3024" level="2" type_chance="15" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="4696" type="Weapon" name="Caliburs - Guidance">

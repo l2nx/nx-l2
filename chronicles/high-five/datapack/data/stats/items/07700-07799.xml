@@ -70,7 +70,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="16" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="16" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="7703" type="Weapon" name="Stick of Faith - Magic Shield">
@@ -100,7 +100,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="2" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="2" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="7704" type="Weapon" name="Stick of Eternity - Empower">
@@ -190,7 +190,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1045" level="3" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Bless the Body -->
+			<skill id="1045" level="3" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Bless the Body -->
 		</skills>
 	</item>
 	<item id="7707" type="Weapon" name="Nirvana Axe - M. Atk.">
@@ -250,7 +250,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="7709" type="Weapon" name="Nirvana Axe - Magic Weakness">
@@ -280,7 +280,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="9" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="7710" type="Weapon" name="Club of Nature - Acumen">
@@ -340,7 +340,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1035" level="3" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="3" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="7712" type="Weapon" name="Club of Nature - Magic Hold">
@@ -370,7 +370,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1201" level="21" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="21" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="7713" type="Weapon" name="Mace of Underworld - Mana Up">
@@ -430,7 +430,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3078" level="3" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3078" level="3" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="7715" type="Weapon" name="Mace of Underworld - Conversion">
@@ -520,7 +520,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3078" level="3" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3078" level="3" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="7718" type="Weapon" name="Inferno Staff - Magic Paralyze">
@@ -550,7 +550,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="3079" level="3" type_chance="5" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Paralyze -->
+			<skill id="3079" level="3" type_chance="5" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Paralyze -->
 		</skills>
 	</item>
 	<item id="7719" type="Weapon" name="Poleaxe - Critical Stun">
@@ -580,7 +580,7 @@
 		</stats>
 		<skills>
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="3" type_chance="31" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="3" type_chance="31" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="7720" type="Weapon" name="Poleaxe - Towering Blow">
@@ -696,7 +696,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="7724" type="Weapon" name="Sword of Valhalla - Magic Regeneration">
@@ -725,7 +725,7 @@
 			<stat type="pAtkRange">40</stat>
 		</stats>
 		<skills>
-			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="7725" type="EtcItem" name="Booty - Gray Pouch">

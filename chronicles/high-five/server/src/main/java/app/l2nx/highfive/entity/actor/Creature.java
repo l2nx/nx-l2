@@ -78,6 +78,7 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.Weapon;
 import app.l2nx.highfive.entity.item.enums.BodyPart;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.enums.ItemSkillType;
 import app.l2nx.highfive.entity.item.enums.ShotType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.item.type.WeaponType;
@@ -116,7 +117,6 @@ import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttacka
 import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
 import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.mechanics.options.OptionSkillHolder;
-import app.l2nx.highfive.mechanics.options.OptionSkillType;
 import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 import app.l2nx.highfive.mechanics.skill.BuffFinishTask;
@@ -2158,7 +2158,7 @@ public abstract class Creature extends WorldObject {
         return reuseStamp != null ? reuseStamp.getRemaining() : -1;
     }
 
-    /** @return the remaining time, or -1 without a time stamp. */
+    /** @return the remaining time, or -1 when no stamp of the group is pending. */
     public long getReuseDelayOnGroup(int group) {
         WorldPartition.checkOwner();
         if ((group > 0) && !itemReuseTimeStamps.isEmpty()) {
@@ -2868,7 +2868,8 @@ public abstract class Creature extends WorldObject {
 
         broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_STOP_FAKEDEATH));
 
-        // TODO: temp hack: remote clients see a moving fake-death player fall again after getting up.
+        // TODO: drop this Revive when remote clients stop showing a moving fake-death player fall again after getting
+        // up.
         broadcastPacket(new Revive(this));
     }
 
@@ -2920,8 +2921,6 @@ public abstract class Creature extends WorldObject {
     }
 
     public static class MoveData {
-        // When we retrieve x/y/z we use GameTimeControl.getGameTicks().
-        // If we are moving, but move timestamp==gameticks, we don't need to recalculate position.
         public int moveStartTime;
         public int moveTimestamp;
         public int xDestination;
@@ -3520,7 +3519,7 @@ public abstract class Creature extends WorldObject {
         target = object;
     }
 
-    /** @return the target's object id, or -1 without a target. */
+    /** @return the target's object id, or 0 without a target. */
     public int getTargetId() {
         WorldPartition.checkOwner();
         if (target != null) {
@@ -3572,7 +3571,6 @@ public abstract class Creature extends WorldObject {
         }
 
         // @formatter:off
-        // Define movement angles needed.
         // ^
         // |    X (x,y)
         // |   /
@@ -4063,8 +4061,9 @@ public abstract class Creature extends WorldObject {
                 try (ScratchBuffers.Snapshot<OptionSkillHolder> triggers =
                         ScratchBuffers.snapshot(triggerSkills.values())) {
                     for (OptionSkillHolder holder : triggers) {
-                        if (((!crit && (holder.skillType() == OptionSkillType.ATTACK))
-                                        || ((holder.skillType() == OptionSkillType.CRITICAL) && crit))
+                        if (((!crit && (holder.skillType() == ItemSkillType.ON_PHYSICAL_HIT))
+                                        || ((holder.skillType() == ItemSkillType.ON_NORMAL_ATTACK_CRITICAL_HIT)
+                                                && crit))
                                 && (ClockBridge.random().nextInt(100) < holder.chance())) {
                             makeTriggerCast(holder.skill(), target);
                         }
@@ -4736,9 +4735,9 @@ public abstract class Creature extends WorldObject {
                         try (ScratchBuffers.Snapshot<OptionSkillHolder> triggers =
                                 ScratchBuffers.snapshot(triggerSkills.values())) {
                             for (OptionSkillHolder holder : triggers) {
-                                if (((skill.isMagic() && (holder.skillType() == OptionSkillType.MAGIC))
+                                if (((skill.isMagic() && (holder.skillType() == ItemSkillType.ON_MAGIC_SKILL_CAST))
                                                 || (skill.isPhysical()
-                                                        && (holder.skillType() == OptionSkillType.ATTACK)))
+                                                        && (holder.skillType() == ItemSkillType.ON_PHYSICAL_HIT)))
                                         && (ClockBridge.random().nextInt(100) < holder.chance())) {
                                     makeTriggerCast(holder.skill(), target);
                                 }
@@ -4966,7 +4965,6 @@ public abstract class Creature extends WorldObject {
 
         final Calculator calc = calculators[stat.ordinal()];
 
-        // If no Func object found, no modifier is applied.
         if ((calc == null) || (calc.size() == 0)) {
             return value;
         }
@@ -5661,7 +5659,6 @@ public abstract class Creature extends WorldObject {
         }
 
         final ZoneRegion newZoneRegion = ZoneManager.getInstance().getRegion(newX, newY);
-        // Prevent moving to nonexistent regions.
         if (newZoneRegion == null) {
             return;
         }

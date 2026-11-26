@@ -1317,8 +1317,8 @@
 		</stats>
 		<skills>
 			<skill id="3427" level="1" /> <!-- Special Ability: Infinity Rapier -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
-			<skill id="3579" level="1" type_chance="4" type="ON_CRITICAL_SKILL" /> <!-- Decrease P. Def. -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
+			<skill id="3579" level="1" type_chance="4" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Decrease P. Def. -->
 		</skills>
 	</item>
 	<item id="15688" type="Weapon" name="Triumph Ancientsword">

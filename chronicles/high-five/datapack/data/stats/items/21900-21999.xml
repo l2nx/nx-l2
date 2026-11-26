@@ -845,7 +845,7 @@
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21253" level="1" /> <!-- Butcher Blades -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21936" type="Weapon" name="Butcher Blades {PvP}">
@@ -888,7 +888,7 @@
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
 			<skill id="21253" level="1" /> <!-- Butcher Blades -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21937" type="Weapon" name="Butcher Blades - Confusion">
@@ -927,7 +927,7 @@
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3858" level="3" /> <!-- Dagger of Avoid -->
 			<skill id="21253" level="1" /> <!-- Butcher Blades -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21938" type="Weapon" name="Butcher Blades - Confusion {PvP}">
@@ -971,7 +971,7 @@
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
 			<skill id="21253" level="1" /> <!-- Butcher Blades -->
-			<skill id="8296" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8296" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21939" type="Weapon" name="Claw of Destruction">
@@ -1549,7 +1549,7 @@
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21255" level="1" /> <!-- Blades of Delusion -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21956" type="Weapon" name="Blades of Delusion {PvP}">
@@ -1584,7 +1584,7 @@
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21255" level="1" /> <!-- Blades of Delusion -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21957" type="Weapon" name="Blades of Delusion - Earth">
@@ -1616,7 +1616,7 @@
 			<skill id="3836" level="2" /> <!-- Dual-Blade Weapon of Boost HP -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21255" level="1" /> <!-- Blades of Delusion -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21958" type="Weapon" name="Blades of Delusion - Earth {PvP}">
@@ -1649,7 +1649,7 @@
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21255" level="1" /> <!-- Blades of Delusion -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="21959" type="Weapon" name="Blood Brother">
@@ -2195,7 +2195,7 @@
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21257" level="1" /> <!-- Mardil -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="21976" type="Weapon" name="Mardil's Fan - Acumen">
@@ -2318,7 +2318,7 @@
 			<skill id="3856" level="1" /> <!-- Sword of Divine Power -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
 			<skill id="21257" level="1" /> <!-- Mardil -->
-			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3074" level="2" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 	<item id="21980" type="Weapon" name="Mardil's Fan - Holy Spirit - Acumen">

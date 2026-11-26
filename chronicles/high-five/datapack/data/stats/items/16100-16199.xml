@@ -793,7 +793,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3655" level="1" /> <!-- PvP Weapon - Rapid Fire -->
 			<skill id="3851" level="2" /> <!-- Ancient Sword of Critical Chance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="16146" type="Weapon" name="Vesper Shooter - Clairvoyance {PvP}">
@@ -907,7 +907,7 @@
 		<skills>
 			<skill id="3859" level="2" /> <!-- Dagger of Haste -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16149" type="Weapon" name="Vesper Dual Daggers - Gale {PvP}">
@@ -949,7 +949,7 @@
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
 			<skill id="3859" level="2" /> <!-- Dagger of Haste -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16150" type="Weapon" name="Vesper Dual Sword - Destruction">
@@ -980,7 +980,7 @@
 		<skills>
 			<skill id="3835" level="3" /> <!-- Dual-Blade Weapon of Might -->
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16151" type="Weapon" name="Vesper Dual Sword - Destruction {PvP}">
@@ -1014,7 +1014,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
 			<skill id="3835" level="3" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16152" type="Weapon" name="Skull Edge Dual Daggers">
@@ -1051,7 +1051,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16153" type="Weapon" name="Skull Edge Dual Daggers {PvP}">
@@ -1092,7 +1092,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16154" type="Weapon" name="Periel Dual Sword">
@@ -1122,7 +1122,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16155" type="Weapon" name="Periel Dual Sword {PvP}">
@@ -1155,7 +1155,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16156" type="Weapon" name="Mamba Edge Dual Daggers">
@@ -1192,7 +1192,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16157" type="Weapon" name="Mamba Edge Dual Daggers {PvP}">
@@ -1233,7 +1233,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
-			<skill id="8298" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="8298" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16158" type="Weapon" name="Eternal Core Dual Sword">
@@ -1263,7 +1263,7 @@
 		</stats>
 		<skills>
 			<skill id="3552" level="1" /> <!-- Special Ability: PvP Damage -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16159" type="Weapon" name="Eternal Core Dual Sword {PvP}">
@@ -1296,7 +1296,7 @@
 		<skills>
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3656" level="1" /> <!-- PvP Weapon - Decrease Range -->
-			<skill id="3411" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3411" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="16160" type="EtcItem" name="Life Stone - Level 85">
@@ -1917,7 +1917,7 @@
 			<skill id="3552" level="3" /> <!-- Special Ability: PvP Damage -->
 			<skill id="3654" level="1" /> <!-- PvP Weapon - Casting -->
 			<skill id="3853" level="2" /> <!-- Sword of Mana Regeneration -->
-			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Hold -->
+			<skill id="3577" level="2" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Hold -->
 		</skills>
 	</item>
 	<item id="16188" type="Weapon" name="Vesper Shaper - Gale {PvP} - Critical Damage">
@@ -2133,7 +2133,7 @@
 			<skill id="3651" level="1" /> <!-- PvP Weapon - Cancel -->
 			<skill id="3652" level="1" /> <!-- PvP Weapon - Ignore Shield Defense -->
 			<skill id="3880" level="2" /> <!-- Fist Weapon of Haste -->
-			<skill id="3571" level="2" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Crtical Stun -->
+			<skill id="3571" level="2" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Crtical Stun -->
 		</skills>
 	</item>
 	<item id="16194" type="Weapon" name="Vesper Stormer - Thunder {PvP} - Health">

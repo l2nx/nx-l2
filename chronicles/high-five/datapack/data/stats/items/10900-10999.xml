@@ -28,7 +28,7 @@
 		</stats>
 		<skills>
 			<skill id="3889" level="1" /> <!-- Blunt Weapon of Empower -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="10901" type="Weapon" name="Spell Breaker - Hail - Magic Hold">
@@ -59,7 +59,7 @@
 		</stats>
 		<skills>
 			<skill id="3889" level="1" /> <!-- Blunt Weapon of Empower -->
-			<skill id="1201" level="25" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="25" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="10902" type="Weapon" name="Arthro Nail - Destruction">
@@ -118,7 +118,7 @@
 		</stats>
 		<skills>
 			<skill id="3879" level="1" /> <!-- Fist Weapon of Might -->
-			<skill id="3040" level="5" type_chance="14" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3040" level="5" type_chance="14" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="10904" type="Weapon" name="Arthro Nail - Destruction - Rsk. Evasion">
@@ -297,7 +297,7 @@
 		</stats>
 		<skills>
 			<skill id="3895" level="1" /> <!-- Two-handed Blunt Weapon of Critical Chance -->
-			<skill id="3021" level="5" type_chance="41" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3021" level="5" type_chance="41" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="10910" type="Weapon" name="Sword of Nightmare*Sword of Nightmare - Destruction">
@@ -326,7 +326,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10911" type="Weapon" name="Sword of Nightmare*Tsurugi - Destruction">
@@ -355,7 +355,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="10912" type="Weapon" name="Military Fleuret - Destruction">
@@ -389,7 +389,7 @@
 		</stats>
 		<skills>
 			<skill id="3830" level="1" /> <!-- Rapier of Might -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10913" type="Weapon" name="Military Fleuret - Destruction - Guidance">
@@ -424,7 +424,7 @@
 		<skills>
 			<skill id="3830" level="1" /> <!-- Rapier of Might -->
 			<skill id="3007" level="5" /> <!-- Special Ability: Guidance -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10914" type="Weapon" name="Military Fleuret - Destruction - Focus">
@@ -459,7 +459,7 @@
 		<skills>
 			<skill id="3830" level="1" /> <!-- Rapier of Might -->
 			<skill id="3010" level="5" /> <!-- Special Ability: Focus -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10915" type="Weapon" name="Military Fleuret - Destruction - Back Blow">
@@ -494,7 +494,7 @@
 		<skills>
 			<skill id="3830" level="1" /> <!-- Rapier of Might -->
 			<skill id="3018" level="5" /> <!-- Special Ability: Back Blow -->
-			<skill id="3426" level="1" type="ON_ENCHANT_4" /> <!-- Maximum Ability -->
+			<skill id="3426" level="1" type="EQUIPPED_ENCHANT" /> <!-- Maximum Ability -->
 		</skills>
 	</item>
 	<item id="10916" type="Weapon" name="Sprite's Staff - Hail">
@@ -555,7 +555,7 @@
 		</stats>
 		<skills>
 			<skill id="3899" level="1" /> <!-- Staff of Empower -->
-			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="10918" type="Weapon" name="Sprite's Staff - Hail - Mental Shield">
@@ -586,7 +586,7 @@
 		</stats>
 		<skills>
 			<skill id="3899" level="1" /> <!-- Staff of Empower -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="10919" type="Weapon" name="Sprite's Staff - Hail - Magic Hold">
@@ -617,7 +617,7 @@
 		</stats>
 		<skills>
 			<skill id="3899" level="1" /> <!-- Staff of Empower -->
-			<skill id="1201" level="25" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Dryad Root -->
+			<skill id="1201" level="25" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Dryad Root -->
 		</skills>
 	</item>
 	<item id="10920" type="Weapon" name="Tsurugi*Tsurugi - Destruction">
@@ -646,7 +646,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10921" type="Weapon" name="Caliburs*Sword of Limit - Destruction">
@@ -675,7 +675,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="10922" type="Weapon" name="Caliburs*Sword of Delusion - Destruction">
@@ -704,7 +704,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3044" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10923" type="Weapon" name="Caliburs*Sword of Nightmare - Destruction">
@@ -733,7 +733,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3045" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="10924" type="Weapon" name="Caliburs*Tsurugi - Destruction">
@@ -762,7 +762,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3046" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="10925" type="Weapon" name="Caliburs*Caliburs - Destruction">
@@ -791,7 +791,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3042" level="11" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="11" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="10926" type="Weapon" name="Kris - Confusion">
@@ -1133,7 +1133,7 @@
 		</stats>
 		<skills>
 			<skill id="3868" level="1" /> <!-- Crossbow of Guidance -->
-			<skill id="3021" level="5" type_chance="41" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3021" level="5" type_chance="41" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="10937" type="Weapon" name="Peacemaker - Concentration - Miser">
@@ -1348,7 +1348,7 @@
 		</stats>
 		<skills>
 			<skill id="3858" level="1" /> <!-- Dagger of Avoid -->
-			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL" /> <!-- Regeneration -->
+			<skill id="1044" level="3" type_chance="30" type="ON_MAGIC_SKILL_CAST" /> <!-- Regeneration -->
 		</skills>
 	</item>
 	<item id="10944" type="Weapon" name="Hell Knife - Confusion - Mental Shield">
@@ -1379,7 +1379,7 @@
 		</stats>
 		<skills>
 			<skill id="3858" level="1" /> <!-- Dagger of Avoid -->
-			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL" /> <!-- Mental Shield -->
+			<skill id="1035" level="4" type_chance="50" type="ON_MAGIC_SKILL_CAST" /> <!-- Mental Shield -->
 		</skills>
 	</item>
 	<item id="10945" type="Weapon" name="Hell Knife - Confusion - Magic Weakness">
@@ -1410,7 +1410,7 @@
 		</stats>
 		<skills>
 			<skill id="3858" level="1" /> <!-- Dagger of Avoid -->
-			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL" /> <!-- Curse Weakness -->
+			<skill id="1164" level="11" type_chance="7" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Weakness -->
 		</skills>
 	</item>
 	<item id="10946" type="Weapon" name="Raid Sword*Samurai Long Sword - Destruction">
@@ -1439,7 +1439,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3044" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10947" type="Weapon" name="Shamshir*Samurai Long Sword - Destruction">
@@ -1468,7 +1468,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3046" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="10948" type="Weapon" name="Spirit Sword*Samurai Long Sword - Destruction">
@@ -1497,7 +1497,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="10949" type="Weapon" name="Katana*Samurai Long Sword - Destruction">
@@ -1526,7 +1526,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3042" level="12" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="12" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="10950" type="Weapon" name="Sword of Limit*Samurai Long Sword - Destruction">
@@ -1555,7 +1555,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3046" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Guidance -->
+			<skill id="3046" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Guidance -->
 		</skills>
 	</item>
 	<item id="10951" type="Weapon" name="Sword of Delusion*Samurai Long Sword - Destruction">
@@ -1584,7 +1584,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3042" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Critical Damage -->
+			<skill id="3042" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Critical Damage -->
 		</skills>
 	</item>
 	<item id="10952" type="Weapon" name="Sword of Nightmare*Samurai Long Sword - Destruction">
@@ -1613,7 +1613,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3013" level="1" type="ON_ENCHANT_4" /> <!-- Special Ability: Health -->
+			<skill id="3013" level="1" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Health -->
 		</skills>
 	</item>
 	<item id="10953" type="Weapon" name="Tsurugi*Samurai Long Sword - Destruction">
@@ -1642,7 +1642,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3044" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Focus -->
+			<skill id="3044" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Focus -->
 		</skills>
 	</item>
 	<item id="10954" type="Weapon" name="Caliburs*Samurai Long Sword - Destruction">
@@ -1671,7 +1671,7 @@
 		</stats>
 		<skills>
 			<skill id="3835" level="1" /> <!-- Dual-Blade Weapon of Might -->
-			<skill id="3045" level="13" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="13" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="10955" type="Weapon" name="Guardian Sword - Great Gale">
@@ -1730,7 +1730,7 @@
 		</stats>
 		<skills>
 			<skill id="3896" level="1" /> <!-- Two-handed Blunt Weapon of Haste -->
-			<skill id="3022" level="6" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3022" level="6" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="10957" type="Weapon" name="Guardian Sword - Great Gale - Health">
@@ -1790,7 +1790,7 @@
 		</stats>
 		<skills>
 			<skill id="3896" level="1" /> <!-- Two-handed Blunt Weapon of Haste -->
-			<skill id="3055" level="1" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3055" level="1" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="10959" type="Weapon" name="Sword of Damascus - Earth">
@@ -1976,7 +1976,7 @@
 		</stats>
 		<skills>
 			<skill id="3846" level="1" /> <!-- Ancient Sword of Haste -->
-			<skill id="3022" level="6" type_chance="35" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3022" level="6" type_chance="35" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="10965" type="Weapon" name="Dismantler - Great Gale - Health">
@@ -2044,7 +2044,7 @@
 		</stats>
 		<skills>
 			<skill id="3846" level="1" /> <!-- Ancient Sword of Haste -->
-			<skill id="3055" level="1" type_chance="24" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3055" level="1" type_chance="24" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="10967" type="Weapon" name="Lance - Earth">
@@ -2135,7 +2135,7 @@
 		<skills>
 			<skill id="3877" level="1" /> <!-- Polearm of Boost HP -->
 			<skill id="3599" level="1" /> <!-- Polearm Multi-attack -->
-			<skill id="3016" level="6" type_chance="25" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Stun -->
+			<skill id="3016" level="6" type_chance="25" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Stun -->
 		</skills>
 	</item>
 	<item id="10970" type="Weapon" name="Lance - Earth - Towering Blow">
@@ -2224,7 +2224,7 @@
 		</stats>
 		<skills>
 			<skill id="3880" level="1" /> <!-- Fist Weapon of Haste -->
-			<skill id="3039" level="6" type_chance="10" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Drain -->
+			<skill id="3039" level="6" type_chance="10" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Drain -->
 		</skills>
 	</item>
 	<item id="10973" type="Weapon" name="Bellion Cestus - Great Gale - Critical Poison">
@@ -2254,7 +2254,7 @@
 		</stats>
 		<skills>
 			<skill id="3880" level="1" /> <!-- Fist Weapon of Haste -->
-			<skill id="3040" level="6" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3040" level="6" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="10974" type="Weapon" name="Bellion Cestus - Great Gale - Rsk. Haste">
@@ -2345,7 +2345,7 @@
 		</stats>
 		<skills>
 			<skill id="3900" level="1" /> <!-- Staff of Divine Power -->
-			<skill id="1077" level="3" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Focus -->
+			<skill id="1077" level="3" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Focus -->
 		</skills>
 	</item>
 	<item id="10977" type="Weapon" name="Staff of Evil Spirits - Holy Spirit - Blessed Body">
@@ -2376,7 +2376,7 @@
 		</stats>
 		<skills>
 			<skill id="3900" level="1" /> <!-- Staff of Divine Power -->
-			<skill id="1045" level="5" type_chance="20" type="ON_MAGIC_SKILL" /> <!-- Bless the Body -->
+			<skill id="1045" level="5" type_chance="20" type="ON_MAGIC_SKILL_CAST" /> <!-- Bless the Body -->
 		</skills>
 	</item>
 	<item id="10978" type="Weapon" name="Staff of Evil Spirits - Holy Spirit - Magic Poison">
@@ -2407,7 +2407,7 @@
 		</stats>
 		<skills>
 			<skill id="3900" level="1" /> <!-- Staff of Divine Power -->
-			<skill id="1168" level="6" type_chance="6" type="ON_MAGIC_SKILL" /> <!-- Curse Poison -->
+			<skill id="1168" level="6" type_chance="6" type="ON_MAGIC_SKILL_CAST" /> <!-- Curse Poison -->
 		</skills>
 	</item>
 	<item id="10979" type="Weapon" name="Deadman's Glory - Landslide">
@@ -2674,7 +2674,7 @@
 		</stats>
 		<skills>
 			<skill id="3836" level="1" /> <!-- Dual-Blade Weapon of Boost HP -->
-			<skill id="3045" level="14" type="ON_ENCHANT_4" /> <!-- Special Ability: Haste -->
+			<skill id="3045" level="14" type="EQUIPPED_ENCHANT" /> <!-- Special Ability: Haste -->
 		</skills>
 	</item>
 	<item id="10988" type="Weapon" name="Art of Battle Axe - Landslide">
@@ -2852,7 +2852,7 @@
 		</stats>
 		<skills>
 			<skill id="3859" level="1" /> <!-- Dagger of Haste -->
-			<skill id="3020" level="6" type_chance="12" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Bleed -->
+			<skill id="3020" level="6" type_chance="12" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Bleed -->
 		</skills>
 	</item>
 	<item id="10994" type="Weapon" name="Demon's Dagger - Great Gale - Critical Poison">
@@ -2882,7 +2882,7 @@
 		</stats>
 		<skills>
 			<skill id="3859" level="1" /> <!-- Dagger of Haste -->
-			<skill id="3041" level="6" type_chance="6" type="ON_CRITICAL_SKILL" /> <!-- Special Ability: Critical Poison -->
+			<skill id="3041" level="6" type_chance="6" type="ON_NORMAL_ATTACK_CRITICAL_HIT" /> <!-- Special Ability: Critical Poison -->
 		</skills>
 	</item>
 	<item id="10995" type="Weapon" name="Demon's Dagger - Great Gale - Mortal Strike">
@@ -3034,7 +3034,7 @@
 		</stats>
 		<skills>
 			<skill id="3891" level="1" /> <!-- Blunt Weapon of Boost HP -->
-			<skill id="3078" level="6" type_chance="10" type="ON_MAGIC_SKILL" /> <!-- Special Ability: Magic Silence -->
+			<skill id="3078" level="6" type_chance="10" type="ON_MAGIC_SKILL_CAST" /> <!-- Special Ability: Magic Silence -->
 		</skills>
 	</item>
 </list>
