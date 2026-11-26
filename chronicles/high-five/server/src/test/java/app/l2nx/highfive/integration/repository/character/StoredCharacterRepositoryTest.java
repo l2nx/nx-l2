@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 class StoredCharacterRepositoryTest extends RepositoryTest {
     private final StoredCharacterRepository repository = StoredCharacterRepositories.of(JDBC, JDBC_TEMPLATE, registry);
@@ -114,6 +115,7 @@ class StoredCharacterRepositoryTest extends RepositoryTest {
         }
 
         @Test
+        @ResourceLock("character_recommendations")
         void find_shouldReadReferencesAsIds_andTheWorldEntryRows() {
             final UUID character = insertCharacter();
             final UUID friend = insertCharacter();
